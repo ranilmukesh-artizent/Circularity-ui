@@ -27,6 +27,18 @@ RENEWAL = "FC-30117-R"
 PART = tool_fleet.CLS["CMH"]["parts"][0][0]
 AS_OF = datetime(2026, 10, 7, 9, 0, tzinfo=UTC)
 KEYS = [RENEWAL, "SO-P1", "RO-P1", "RO-P2", "BID-P1", "TPR-P1"]
+# Demand that is not this test's: a synced stack has the fleet contract mock's renewals (no org unit, so every unit sees
+# them). The repository test seeds a few of its own and asserts only on the rows it wrote.
+_EX = {"site": "Phoenix", "tool_class": "CMH", "buyer": "Extra Co"}
+EXTRA = {
+    "FC-EXTRA-1-R": (
+        "fleet",
+        _EX
+        | {"kind": "lease", "need_by": "2026-12-05", "lease_rate": 300, "term_months": 6, "renew": True}
+        | {"contract_ref": "FC-EXTRA-1"},
+    ),
+    "SO-EXTRA-1": ("parts", _EX | {"kind": "so", "need_by": "2026-12-22", "price": 999}),
+}
 
 DEMAND = {
     RENEWAL: (
@@ -106,8 +118,15 @@ def _write_demand(only: list[str] | None = None, over: dict[str, dict] | None = 
         s.commit()
 
 
+def _write_extra() -> None:
+    with SessionLocal() as s:
+        for key, (src, row) in EXTRA.items():
+            canonical.apply(s, src, _facts(key, src, row))
+        s.commit()
+
+
 def _clear() -> None:
-    k = {"k": KEYS, "s": [SERIAL, OTHER]}
+    k = {"k": KEYS + list(EXTRA), "s": [SERIAL, OTHER]}
     with engine.begin() as c:
         for t in ("provenance", "canonical", "conflict"):
             c.execute(text(f"DELETE FROM {t} WHERE model = 'demand' AND key = ANY(:k)"), k)  # noqa: S608
@@ -162,20 +181,31 @@ def _by_k(v: dict) -> dict:
 
 
 # ------------------------------------------------------------------ the repository
+def _mine(items: list[dict]) -> list[dict]:
+    return [x for x in items if x["id"] in KEYS]
+
+
 def test_tf_07_named_demand_in_the_valuers_shape(clean):
     _write_demand()
+    _write_extra()
     with SessionLocal() as s:
         d = tool_demand.named_demand(s, ORG, "CMH", AS_OF)
         other = tool_demand.named_demand(s, ORG, "BRK", AS_OF)
-    assert [(x["id"], x["who"], x["site"], x["need"], x["rate"], x["term"], x["renew"], x["kind"]) for x in d["lease"]] == [
+    # rows that are not this test's (the extras it seeded, a synced stack's renewals) are read too; only ours are asserted
+    assert {"FC-EXTRA-1-R", "SO-EXTRA-1"} <= {x["id"] for x in d["lease"] + d["so"]}
+    mine = _mine(d["lease"])
+    assert [(x["id"], x["who"], x["site"], x["need"], x["rate"], x["term"], x["renew"], x["kind"]) for x in mine] == [
         (RENEWAL, "Brightline Mechanical", "Houston", 55, 410, 12, True, "lease")
     ]
-    assert [(x["id"], x["need"], x["price"]) for x in d["so"]] == [("SO-P1", 74, 2500)]
-    assert [(x["id"], x["gmin"], x["exp"], x["price"]) for x in d["bid"]] == [("BID-P1", "B", 13, 1500)]
+    assert [(x["id"], x["need"], x["price"]) for x in _mine(d["so"])] == [("SO-P1", 74, 2500)]
+    assert [(x["id"], x["gmin"], x["exp"], x["price"]) for x in _mine(d["bid"])] == [("BID-P1", "B", 13, 1500)]
     assert (d["proj"]["id"], d["proj"]["need"], d["proj"]["rental"], d["proj"]["quote"]) == ("TPR-P1", 18, 900, "PR-8841")
-    assert [(x["id"], x["backorder"]) for x in d["wo"][PART]] == [("RO-P1", True), ("RO-P2", False)]
+    assert [(x["id"], x["backorder"]) for x in _mine(d["wo"][PART])] == [("RO-P1", True), ("RO-P2", False)]
     assert d["rcq"] == ""
-    assert (other["lease"], other["so"], other["bid"], other["proj"], other["wo"]) == ([], [], [], None, {})
+    # another class sees none of ours
+    assert not _mine(other["lease"] + other["so"] + other["bid"])
+    assert (other["proj"] or {}).get("id") != "TPR-P1"
+    assert not _mine(other["wo"].get(PART, []))
 
 
 def test_tf_07_demand_in_the_past_is_not_offered(clean):
