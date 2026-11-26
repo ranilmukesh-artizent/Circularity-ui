@@ -222,7 +222,8 @@ def price_bands(
     }  # fmt: skip
     out: dict[str, dict[str, Any]] = {}
     for ch in device.RECOVER:
-        if ch in device.EXTRA or (isinstance(pred, FormulaPredictor) and ch == "wholesale"):  # repair, parts and recycle have no price band (P9-6.15)
+        # repair, parts and recycle have no price band (P9-6.15)
+        if ch in device.EXTRA or (isinstance(pred, FormulaPredictor) and ch == "wholesale"):
             continue
         b = pred.channel_price(facts, ch)
         week = b.feed_week or feed_week

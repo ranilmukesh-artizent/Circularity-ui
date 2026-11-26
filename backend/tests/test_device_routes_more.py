@@ -194,11 +194,13 @@ def test_dv_11_locked_parts_or_recycle_only(over):
     eligible = {r["id"] for r in c["routes"] if not r["excluded"]}
     assert eligible == {"parts", "recycle"}
     assert {r["id"] for r in c["routes"] if r["excluded"]} >= {"buynow", "offers", "auction", "wholesale", "repair_sell"}
+    # a route that already failed keeps its first reason: with no parts declaration it is the valuer's GR-D9 (P9-6.19)
     assert all(
-        "Blacklist or lock check hit (GR-D7)" in r["failReason"]
+        "Blacklist or lock check hit (GR-D7)" in r["failReason"] or "(GR-D9)" in r["failReason"]
         for r in c["routes"]
         if r["id"] in ("buynow", "offers", "auction", "wholesale")
     )
+    assert "Blacklist or lock check hit (GR-D7)" in next(r for r in c["routes"] if r["id"] == "wholesale")["failReason"]
     assert c["recommendation"]["id"] in eligible
     # Compliance still holds the case: its item stays open and the page names the routes the device may still take
     with SessionLocal() as s:

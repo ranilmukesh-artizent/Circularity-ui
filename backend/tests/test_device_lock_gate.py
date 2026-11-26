@@ -90,7 +90,11 @@ def test_dv_03_blacklist_blocks_sale_channels():
     c = _open()
     day = at[:10]
     assert c["routes"] and all(
-        r["excluded"] and f"Blacklist or lock check hit (GR-D7): reported stolen, checked {day}" in r["failReason"]
+        r["excluded"]
+        and (
+            f"Blacklist or lock check hit (GR-D7): reported stolen, checked {day}" in r["failReason"]
+            or "(GR-D9)" in r["failReason"]
+        )
         for r in _blocked(c)
     )
     # only the locked routes stay open ("as law allows", P9-6.15); the case is recommended one of them
@@ -106,7 +110,7 @@ def test_dv_03_blacklist_blocks_sale_channels():
 def test_dv_03_lock_and_balance_owed_are_hits(over, said):
     seed_registry(IMEI, **over)
     c = _open()
-    assert all(r["excluded"] and said in r["failReason"] for r in _blocked(c))
+    assert all(r["excluded"] and (said in r["failReason"] or "(GR-D9)" in r["failReason"]) for r in _blocked(c))
 
 
 def test_dv_03_waits_for_compliance_with_evidence():
@@ -157,7 +161,11 @@ def test_dv_03_stale_check_waits():
     seed_registry(IMEI, days_ago=9)
     c = _open()
     assert c["recommendation"] is None and c["gateHold"]["gates"] == ["G-DEV-LOCK"]
-    assert all(r["excluded"] and "Evidence stale" in r["failReason"] for r in c["routes"] if r["id"] != "repair_sell")
+    assert all(
+        r["excluded"] and ("Evidence stale" in r["failReason"] or "(GR-D9)" in r["failReason"])
+        for r in c["routes"]
+        if r["id"] != "repair_sell"
+    )
     assert _items(c["id"]) == []  # a stale check is not a hit
     assert len(_items(c["id"], "evidence_missing")) == 1
 
@@ -166,7 +174,11 @@ def test_dv_03_no_check_waits_and_a_fresh_one_releases():
     seed_wipe(IMEI)  # the wipe gate (P9-6.7) has its certificate; only the registry check is missing
     c = _open()
     assert c["gateHold"] is not None
-    assert all("No registry check on file" in r["failReason"] for r in c["routes"] if r["id"] != "repair_sell")
+    assert all(
+        ("No registry check on file" in r["failReason"] or "(GR-D9)" in r["failReason"])
+        for r in c["routes"]
+        if r["id"] != "repair_sell"
+    )
     seed_registry(IMEI, days_ago=1)
     from di.services.cases import gate_hold
 

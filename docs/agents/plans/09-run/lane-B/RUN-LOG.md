@@ -155,3 +155,7 @@ One line per event, newest last, times from `date`.
 | 26 Nov 12:26 | P9-6.17 merged. Interface: device/analytics.py Answer, Scope, WorkedQuestion, REGISTRY; action device.question |
 | 26 Nov 12:39 | P9-6.14 merged. Device customer diversions; wait hook in decide.py, wholesale-only applies to device |
 | 26 Nov 12:43 | P9-5.6 merged. Test-the-proposal levers: refresh.whatIf read action |
+| 26 Nov 16:43 | P9-5.8 merged. Refresh recall gate, GR-07 and simulate fixes found by the tests |
+| 26 Nov 16:43 | P9-6.18 merged. Shadow count and refit job; promote refused under 30 shadow cases |
+| 26 Nov 16:44 | P9-6.15 merged. repair_sell, parts and recycle recover-only routes; GR-D9 reason shown first on listing channels |
+| 26 Nov 16:44 | P9-6.19 merged. GR-D5 undercut and GR-D9 parts declaration |
