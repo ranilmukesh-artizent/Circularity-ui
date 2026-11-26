@@ -1084,7 +1084,7 @@ each story went.
 - [x] P9-13.7 Calibration and model candidates across all packs
 - [x] P9-13.8 Model quality, drift and cadence across packs
 - [x] P9-13.9 Per-agent credentials with client credentials
-- [ ] P9-13.10 OAuth for outside MCP clients
+- [x] P9-13.10 OAuth for outside MCP clients
 - [ ] P9-13.11 Final end-to-end smoke over the five packs
 - [ ] P9-13.12 Story matrix, fresh clone and trial package proof
 - [ ] P9-13.13 Plan 9 docs, status and user guides

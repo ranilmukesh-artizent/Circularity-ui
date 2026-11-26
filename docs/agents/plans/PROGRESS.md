@@ -335,6 +335,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-13.8 model quality, drift and cadence across packs | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
 | 2026-11-26 | 09 · P9-13.4 customer credit settlement with ERP match | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
 | 2026-11-26 | 09 · P9-13.5 close only with reporting evidence | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.10 oAuth for outside MCP clients | this commit | 3 api test files, ruff, mypy, lint-imports, tsc, vitest, eslint green | done |
 
 ## Decisions taken without the user (to review)
 
