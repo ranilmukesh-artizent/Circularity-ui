@@ -6,6 +6,10 @@ replaying it under a flow.
                                                                 store the good rows and the held ones with their reasons;
                                                                 answers the Batch. `batch_id` appends to a batch of the same
                                                                 pack and org unit.
+    replay.importDemand act {batch_id, csv}                     (P9-7.5) check a CSV of demand windows (demand_id, route, opens_at,
+                                                                closes_at, value, capacity) and store it with the batch; only for a
+                                                                pack that plans a queue (the tool fleet); answers the Batch with the
+                                                                demand counts and the first 50 held demand rows
     replay.batches  read  {pack, org_unit_id}                   the org's batches with counts, period and the first 50 held rows
 
     replay.run      act   {batch_id, flow_id, flow_ver?}          queue an as-of replay of the batch under the flow (`flow_ver` is
@@ -61,6 +65,10 @@ _BASE = {"pack": {"req": True, "t": "string"}, "org_unit_id": {"req": True, "t":
 _declare("replay.import", "Import a history batch", "import history",
          "Check a CSV of past decisions against a pack and store it: good rows are kept, bad rows are held with a reason.",
          "act", {**_BASE, "csv": {"req": True, "t": "string"}, "batch_id": {"t": "number"}})  # fmt: skip
+_declare("replay.importDemand", "Import demand at the time", "import demand",
+         "Check a CSV of demand windows (renewal, requisition, bid or repair slot: demand_id, route, opens_at, closes_at, value, "
+         "capacity) and store it with a history batch: good rows are kept, bad rows are held with a reason.",
+         "act", {"batch_id": {"req": True, "t": "number"}, "csv": {"req": True, "t": "string"}})  # fmt: skip
 _declare("replay.batches", "List history batches", "see history batches",
          "The history batches of a pack and org unit, with counts, the decision period and the first 50 held rows.",
          "read", _BASE)  # fmt: skip
@@ -136,6 +144,59 @@ def import_batch(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     repo.add_items(s, bid, held, held=True, start=start)
     batch = repo.refresh(s, bid)
     return {**batch.view(), "log": f"Imported {len(ok) + len(held)} history rows for {pack.key}: {len(held)} held"}
+
+
+def _demand_batch(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[dict[str, Any], Pack]:
+    """The batch a demand file is for and its pack, or the refusal: unknown, outside the actor's orgs, or of a pack with no
+    queue planner (only the tool fleet plans a queue today, `engine.queue.planner_for`)."""
+    b = repo.get(ctx.session, int(i["batch_id"]))
+    if b is None:
+        return "not_found", f"No history batch {i['batch_id']}."
+    if not _org_ok(ctx, b["org_unit_id"]):
+        return _boundary(b["org_unit_id"])
+    pack = load_pack(b["pack"])
+    if pack.valuer.kind != "tool_fleet":
+        return "validation_error", f"{pack.key} has no queue planner: demand windows are for packs that plan a queue."
+    return b, pack
+
+
+@guard("replay.importDemand")
+def import_demand_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if ctx.actor.role == "Executive":
+        return "out_of_scope", EXECUTIVE
+    got = _demand_batch(i, ctx)
+    if isinstance(got[0], str):
+        return got
+    try:
+        rows = history.parse_csv(i["csv"])
+        if not rows:
+            raise history.HistoryRefused("The file has no rows.")
+        if len(rows) > history.MAX_ROWS:
+            raise history.HistoryRefused(f"At most {history.MAX_ROWS:,} rows per import.")
+        history.check_demand_header({k for r in rows for k in r})
+    except history.HistoryRefused as e:
+        return "validation_error", str(e)
+    return None
+
+
+@implement("replay.importDemand")
+def import_demand(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    got = _demand_batch(i, ctx)
+    pack = cast(Pack, got[1])
+    s, bid = ctx.session, int(i["batch_id"])
+    repo.get(s, bid, for_update=True)
+    try:
+        ok, held = history.import_demand(history.parse_csv(i["csv"]), pack, seen=repo.demand_ids(s, bid))
+    except history.HistoryRefused as e:
+        raise ActionError("validation_error", str(e)) from e
+    start = repo.last_demand_n(s, bid)
+    repo.add_demand(s, bid, ok, held=False, start=start)
+    repo.add_demand(s, bid, held, held=True, start=start)
+    batch = repo.batches(s, [bid])[0]
+    return {
+        **batch.view(), "held_demand": repo.held_demand(s, bid),
+        "log": f"Imported {len(ok) + len(held)} demand rows for batch {bid}: {len(held)} held",
+    }  # fmt: skip
 
 
 @guard("replay.batches")
@@ -275,7 +336,7 @@ def run_job(payload: dict[str, Any]) -> dict[str, Any]:
             pack = live_pack(s, {"template": f.template_key, "owner": batch.org_unit_id})
             rep = replay_run.replay(
                 batch, repo.ok_items(s, batch.id), flow_version(s, f, pack, r["flow_ver"]), pack=pack, run_id=run_id,
-                label=r["flow_ver"],
+                label=r["flow_ver"], demand=repo.ok_demand(s, batch.id),
             )  # fmt: skip
             repo.set_status(s, run_id, "done", report=rep.model_dump(mode="json"))
             s.commit()

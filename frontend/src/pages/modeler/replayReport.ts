@@ -17,6 +17,12 @@ export const finished = (s: RunStatus): boolean => s === 'done' || s === 'failed
 /** "draft" or "v3", for a run's flow version. */
 export const versionLabel = (v: string): string => (v === 'draft' ? 'draft' : `v${v}`);
 
+/** "Constraint losses: $1,250.00" (what the day's capacity cost against deciding each return alone), or null when none. */
+export const constraintLine = (r: Pick<ReplayReport, 'constraint_loss'>): string | null =>
+  r.constraint_loss > 0
+    ? `Constraint losses: $${r.constraint_loss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : null;
+
 /** The three headline loads as the panel lists them, in the order the story reads them. */
 export const headline = (r: ReplayReport): { key: string; label: string; value: string }[] => [
   { key: 'straight', label: 'Straight-through', value: `${r.straight_through_pct.toFixed(1)} %` },

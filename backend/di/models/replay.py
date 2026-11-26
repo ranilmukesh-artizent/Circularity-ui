@@ -1,5 +1,5 @@
 """replay_batch and replay_item (migration 0049; plan 9 P9-7.1, registry entry I-16): imported history of past decisions,
-each item ok or held with its reason."""
+each item ok or held with its reason; replay_run (0050); replay_demand (0052, P9-7.5): the demand windows of a batch."""
 
 from sqlalchemy import BigInteger, CheckConstraint, Column, Date, ForeignKey, Index, Integer, Numeric, Table, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -55,4 +55,21 @@ replay_run = Table(
     ts("finished_at"),
     CheckConstraint("status IN ('queued','running','done','failed')", name="replay_run_status"),
     Index("ix_replay_run_flow", "flow_id", "dver", "status"),
+)
+
+replay_demand = Table(
+    "replay_demand",
+    metadata,
+    Column("batch_id", BigInteger, ForeignKey("replay_batch.id", ondelete="CASCADE"), primary_key=True),
+    Column("n", Integer, primary_key=True),
+    Column("demand_id", Text, nullable=False),
+    Column("route", Text),
+    Column("opens_at", Date),
+    Column("closes_at", Date),
+    Column("value", Numeric),
+    Column("capacity", Integer),
+    Column("status", Text, nullable=False),
+    Column("held_reason", Text),
+    CheckConstraint("status IN ('ok','held')", name="replay_demand_status"),
+    Index("ix_replay_demand_status", "batch_id", "status"),
 )

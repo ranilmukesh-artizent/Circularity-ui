@@ -9,6 +9,9 @@ accept a personal column. A header that looks personal refuses the whole import.
 Columns: `item_id, class, decided_at, reason, actual_route, realised_value, cost_logistics, cost_refurb, cost_test,
 cost_fees, market`, then `fact.<name>` each with `fact.<name>.at` (the ISO time the fact was known). A fact the pack's
 replay part lists as required (`replay.example["required_facts"]`; none of the packs lists one yet) must have its column.
+
+Demand at the time (P9-7.5): `import_demand` checks a second file, `demand_id, route, opens_at, closes_at, value, capacity`
+(a renewal, requisition, bid or repair slot window), the same way: a row failing a check is held with one reason.
 """
 
 import csv
@@ -221,3 +224,75 @@ def held_reasons(held: Iterable[dict[str, Any]]) -> dict[str, int]:
 def period(items: Iterable[dict[str, Any]]) -> tuple[date, date] | None:
     days = [i["decided_at"].date() for i in items if i.get("decided_at")]
     return (min(days), max(days)) if days else None
+
+
+# ---------------------------------------------------------------- demand at the time (P9-7.5)
+DEMAND_COLUMNS = ("demand_id", "route", "opens_at", "closes_at", "value", "capacity")
+# the routes a demand window can be for, and what the window is for the queue planner: a fleet contract (`lease`), a firm bid
+# (`bid`) or repair slots (`slot`). A route not listed takes no named order and no slot, so a window for it is held.
+DEMAND_ROUTES = {"release": "lease", "resell": "bid", "refurb": "slot"}
+R_DEM_DUP = "Duplicate demand_id."
+R_DEM_ORDER = "Demand closes before it opens."
+R_DEM_DATE = "No valid window date."
+R_DEM_VALUE = "No demand value."
+R_DEM_CAP = "Capacity is a whole number of at least 1."
+R_DEM_ID = "No demand_id."
+
+
+def check_demand_header(headers: Collection[str]) -> None:
+    """Refuse the file for a personal column or a missing demand column."""
+    if bad := personal_column(headers):
+        raise HistoryRefused(f"Column {bad} looks like personal data. Send de-identified extracts only.")
+    for c in DEMAND_COLUMNS:
+        if c not in headers:
+            raise HistoryRefused(f"Column {c} is missing.")
+
+
+def _day(raw: str) -> date | None:
+    d = when(raw) if raw.strip() else None
+    return d.date() if d else None
+
+
+def import_demand(
+    rows: list[dict[str, str]], pack: Pack, *, seen: Collection[str] = ()
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(ok rows, held rows with `held_reason`) of a demand file, checked like history items: one reason per row, the first
+    that fails of an unknown route, a route with no demand window, a repeated id (`seen` are the ids already stored), a
+    window that does not parse or closes before it opens, no value, a capacity that is not a whole number of at least 1.
+    Raises HistoryRefused for a bad header, no rows or too many."""
+    if len(rows) > MAX_ROWS:
+        raise HistoryRefused(f"At most {MAX_ROWS:,} rows per import.")
+    if not rows:
+        raise HistoryRefused("The file has no rows.")
+    check_demand_header({k for r in rows for k in r})
+    routes, taken = {r.id for r in pack.routes}, set(seen)
+    ok, held = [], []
+    for k, r in enumerate(rows):
+        did, route = r.get("demand_id", "").strip(), r.get("route", "").strip()
+        opens, closes = _day(r.get("opens_at", "")), _day(r.get("closes_at", ""))
+        value, cap = number(r.get("value", "")), number(r.get("capacity", ""))
+        why = ""
+        if not did:
+            why = R_DEM_ID
+        elif route not in routes:
+            why = f"Route '{route}' is not a route of {pack.key}."
+        elif route not in DEMAND_ROUTES:
+            why = f"Route '{route}' takes no demand window."
+        elif did in taken:
+            why = R_DEM_DUP
+        elif opens is None or closes is None:
+            why = R_DEM_DATE
+        elif closes <= opens:
+            why = R_DEM_ORDER
+        elif value is None or value < 0:
+            why = R_DEM_VALUE
+        elif cap is None or cap < 1 or cap != int(cap):
+            why = R_DEM_CAP
+        row = {"n": k + 1, "demand_id": did, "route": route or None, "opens_at": opens, "closes_at": closes,
+               "value": value, "capacity": int(cap) if cap is not None and cap == int(cap) else None}  # fmt: skip
+        if why:
+            held.append(row | {"held_reason": why})
+        else:
+            taken.add(did)
+            ok.append(row)
+    return ok, held

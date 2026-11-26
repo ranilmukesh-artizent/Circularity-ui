@@ -5,6 +5,7 @@
     case_input(...)                the valuer-shaped case a history item is decided as (from its as-of facts and the pack)
     replay(batch, items, flow, ...) -> ReplayReport   every ok item decided by `decide_case` as of its own date
     bootstrap_band(deltas, ...)    the 80 % and 95 % bands of the uplift, seeded, no numpy
+    DayPlanner                     (P9-7.5) the queue planner of one decision date: the demand and repair slots open that day
 
 Owns: running the one decider (R19, I-6) over a batch and measuring the result with `measures.py`. Both sides use that one
 decision's valued routes (A section 3.3 point 2, "estimated vs estimated"): the flow side is the route the decision chose
@@ -12,7 +13,12 @@ and its net, the actual side is the net the same valuer gives the route that was
 the flow's gates exclude is still valued and listed as "actual route excluded by <gate>".
 Never does: store anything (the action and the worker job do), value a route itself (never a second decider), read the
 clock, or write free text: every number is computed here, and a flip's reason is composed from the decision's own gate
-result. Counterfactual values are modelled; sensitivity runs (+-10 % market, +-20 % labour) are not part of this task.
+result. With demand windows (P9-7.5) a tool fleet replay decides per date through the pack's queue planner (I-5);
+`constraint_loss` is the net of each return decided alone with every open unit on offer, minus the net of the planned
+decision. A fleet or bid unit counts as taken when the day's plan hands it to a return whose final route is the plan's
+route; a bid is not exclusive in the valuer's plan, so a bid unit two returns chose on the same day is filled once and both
+decisions stand.
+Counterfactual values are modelled; sensitivity runs (+-10 % market, +-20 % labour) are not part of this task.
 
 Assumptions the history cannot settle (the pack's replay part, `replay.example`, may override them with `defaults`): a fact
 column is the valuer's field of that name (`condition` is the grade); a tool fleet item that names no site or function takes
@@ -25,7 +31,7 @@ import random
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -34,11 +40,14 @@ from pydantic import BaseModel
 from di.repositories.replay import Batch
 from di.services.actions.registry import ActionError
 from di.services.cases.decide import Decision, decide_case
+from di.services.engine.jsmath import js_round
+from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.gates import catalogue
 from di.services.modeler.pack import Pack
+from di.services.modeler.valuers import tool_fleet
 from di.services.policy_standing import decide_threshold, pack_value_limit
-from di.services.replay import measures
+from di.services.replay import history, measures
 
 FLIPS_SHOWN = 200
 DEVICE_DEFAULTS: dict[str, Any] = {"band": "25-48m", "ref": 300, "qty": 1}
@@ -244,6 +253,7 @@ class ReplayReport(BaseModel):
     exceptions_per_day: float
     by_guardrail: list[dict[str, Any]]
     uplift: Uplift
+    constraint_loss: float = 0.0  # case-by-case net minus planned net (P9-7.5); 0 without demand at the time
     agreement_pct: float
     flips: list[Flip]
     leakage: list[dict[str, Any]]
@@ -252,6 +262,111 @@ class ReplayReport(BaseModel):
         "Every item is decided by the one decider as of its own decision date, on the facts known then. Both sides are "
         "valued by the same valuer (estimated vs estimated); the uplift is modelled. Sensitivity runs are not part of it."
     )
+
+
+# ---------------------------------------------------------------- demand at the time (P9-7.5)
+def _by_date(items: Sequence[Mapping[str, Any]]) -> list[tuple[date, list[Mapping[str, Any]]]]:
+    """The items grouped by decision date, the dates in order, each group in file order."""
+    groups: dict[date, list[Mapping[str, Any]]] = defaultdict(list)
+    for it in items:
+        groups[it["decided_at"].date()].append(it)
+    return sorted(groups.items(), key=lambda g: g[0])
+
+
+class DayPlanner:
+    """The queue planner of one decision date: plans the day's returns (`cases`) over the demand open that day (`orders`, the
+    valuer's named orders by kind, offered to every return) and the repair `slots` open that day, whatever capacity the
+    caller passes. It wraps the pack's planner (`base`, I-5) and keeps what it planned: `offered` are the ids of the units on
+    offer, `plans` the plans made for the decision in hand, `claims` the unit (and whether a repair slot) each return took."""
+
+    def __init__(self, base: QueuePlanner, orders: Mapping[str, Any], slots: int) -> None:
+        self.base, self.orders, self.slots = base, orders, slots
+        self.offered = sorted({o["id"] for kind in ("lease", "bid") for o in orders.get(kind, [])})
+        self.plans: list[Any] = []
+        self.claims: dict[str, tuple[str | None, bool]] = {}
+
+    def plan(
+        self,
+        cases: Sequence[tool_fleet.Case],
+        demand: Mapping[str, Dem],  # noqa: ARG002 - the day's own demand is used, not the caller's
+        capacity: Capacity,
+        *,
+        rules: Sequence[tool_fleet.Rule] = (),
+        params: tool_fleet.Params | None = None,
+    ) -> tool_fleet.Plan:
+        offered = {c["id"]: dict(self.orders) for c in cases}
+        plan = self.base.plan(cases, offered, Capacity(self.slots, capacity.depots), rules=rules, params=params)
+        self.plans.append(plan)
+        return plan
+
+    def took(self, case_id: str, unit: str | None, slot: bool = False) -> None:
+        self.claims[case_id] = (unit, slot)
+
+    def claim(self, case_id: str, d: Decision) -> None:
+        """Record the unit the case's decision took: the destination of the plan's best path when the flow kept that path."""
+        if case_id in self.claims or not self.plans:
+            return
+        best = self.plans[0]["res"].get(case_id, {}).get("best")
+        if best and best["k"] == d.route and best.get("dest") and best["dest"].get("id") in self.offered:
+            self.took(case_id, best["dest"]["id"], best["k"] == "refurb")
+
+
+class _Demand:
+    """The demand windows of a batch as units to hand out. A window of `capacity` n for a release (a fleet contract) or a
+    resell (a firm bid) is n units, the first named by the window's id and the others `<id>.1`, `<id>.2`; a refurb window
+    gives n repair slots while it is open. Open on day d: opens_at <= d < closes_at and the unit not taken yet."""
+
+    SITE = tool_fleet.SITES[0]
+    NEED = 45  # days until the order needs the tool: late enough for any path's lead time
+
+    def __init__(self, demand: Sequence[Mapping[str, Any]]) -> None:
+        self.units: list[dict[str, Any]] = []
+        self.slot_rows: list[dict[str, Any]] = []
+        for r in demand:
+            kind = history.DEMAND_ROUTES.get(r["route"])
+            win = {"row": r["demand_id"], "opens": r["opens_at"], "closes": r["closes_at"]}
+            if kind == "slot":
+                self.slot_rows.append(win | {"left": int(r["capacity"])})
+            elif kind:
+                for k in range(int(r["capacity"])):
+                    self.units.append(win | {"id": r["demand_id"] if k == 0 else f"{r['demand_id']}.{k}", "kind": kind,
+                                             "value": float(r["value"]), "used": False})  # fmt: skip
+
+    def _open(self, w: Mapping[str, Any], day: date) -> bool:
+        return bool(w["opens"] <= day < w["closes"])
+
+    def open_on(self, day: date) -> tuple[dict[str, Any], int]:
+        """(the named orders of the day by kind, the repair slots of the day). With no refurb window in the batch the slots
+        are the valuer's default; with some, only the open ones count (none open: no slot)."""
+        orders: dict[str, list[dict[str, Any]]] = {"lease": [], "bid": []}
+        for u in self.units:
+            if u["used"] or not self._open(u, day):
+                continue
+            who, when = f"Demand {u['row']}", f"window open from {u['opens'].isoformat()}"
+            what = f"Demand window {u['row']}, to {u['closes'].isoformat()}"
+            if u["kind"] == "lease":
+                orders["lease"].append(
+                    {"kind": "lease", "id": u["id"], "renew": False, "who": who, "site": self.SITE, "need": self.NEED,
+                     "rate": u["value"], "term": 12, "what": what, "when": when}
+                )  # fmt: skip
+            else:
+                orders["bid"].append({"kind": "bid", "id": u["id"], "who": who, "gmin": "D", "exp": self.NEED,
+                                      "price": u["value"], "what": what, "when": when})  # fmt: skip
+        default = js_round(tool_fleet.BASEP["slots"])
+        slots = sum(w["left"] for w in self.slot_rows if self._open(w, day)) if self.slot_rows else default
+        return orders, slots
+
+    def fill(self, day: date, claims: Mapping[str, tuple[str | None, bool]]) -> None:
+        """Mark the units the day's returns took as taken (a unit taken twice that day counts once) and use up repair slots,
+        the window closing soonest first."""
+        for unit, slot in claims.values():
+            for u in self.units:
+                if u["id"] == unit:
+                    u["used"] = True
+            if slot:
+                for w in sorted((w for w in self.slot_rows if self._open(w, day) and w["left"] > 0), key=lambda w: w["closes"]):
+                    w["left"] -= 1
+                    break
 
 
 def _route(d: Decision, route: str | None) -> Mapping[str, Any] | None:
@@ -275,10 +390,16 @@ def replay(
     decide: Decider = decide_case,
     run_id: int = 0,
     label: str | None = None,
+    demand: Sequence[Mapping[str, Any]] = (),
 ) -> ReplayReport:
     """Decide each ok item as of its date under `flow_ver` (the draft or a published version, resolved by the caller:
     `label` names it in the report, default its version) and measure the result. An item the valuer refuses is counted
-    under `data_quality`, not decided."""
+    under `data_quality`, not decided.
+
+    `demand` (P9-7.5) are the batch's demand windows. For a pack with a queue planner (the tool fleet) and demand rows, the
+    items are decided per decision date, in date order, through `QueuePlanner.plan` (I-5): the day's returns share the
+    demand open that day and the repair slots open that day; a unit a return took is not offered again. Without demand rows
+    each item is decided on its own, as before."""
     rows: list[dict[str, Any]] = []
     flips: list[Flip] = []
     leakage: list[dict[str, Any]] = []
@@ -288,19 +409,14 @@ def replay(
     actual_routes: list[str | None] = []
     flow_routes: list[str | None] = []
     rails: dict[str, list[Any]] = defaultdict(lambda: ["", 0, 0])
-    for it in items:
-        facts, leaked = as_of_facts(it)
-        leakage += leaked
-        try:
-            d = decide(case_input(it, facts, pack), pack, flow_ver, as_of=it["decided_at"])
-        except ActionError as e:
-            dq[f"Not decided: {e.message}"] += 1
-            continue
+
+    def record(it: Mapping[str, Any], d: Decision) -> bool:
+        """Count one decided item in the measures; False when the actual route is not valued (listed under data quality)."""
         actual = it["actual_route"]
         ar = _route(d, actual)
         if ar is None:
             dq["Actual route not valued by the flow's pack."] += 1
-            continue
+            return False
         s = signals(d, pack)
         sig.append(s)
         days.append(it["decided_at"].date())
@@ -316,6 +432,60 @@ def replay(
             rails[gid][0] = owner
             rails[gid][1] += appr
             rails[gid][2] += exc
+        return True
+
+    loss = 0.0
+    if demand and pack.valuer.kind == "tool_fleet":  # a pack with a queue planner, and demand at the time (P9-7.5)
+        state, base = _Demand(demand), planner_for(pack)
+        for day, group in _by_date(items):
+            orders, slots = state.open_on(day)
+            built: list[tuple[Mapping[str, Any], dict[str, Any]]] = []
+            for it in group:
+                facts, leaked = as_of_facts(it)
+                leakage += leaked
+                try:
+                    built.append((it, case_input(it, facts, pack)))
+                except ActionError as e:
+                    dq[f"Not decided: {e.message}"] += 1
+            queue = [c for _, c in built]
+            planner = DayPlanner(base, orders, slots)
+            for it, case in built:
+                planner.plans.clear()
+                try:
+                    alone = decide(case, pack, flow_ver, as_of=it["decided_at"], queue=[case],
+                                   planner=DayPlanner(base, orders, 1))  # fmt: skip
+                    d = decide(case, pack, flow_ver, as_of=it["decided_at"], queue=queue, planner=planner)
+                except ActionError as e:
+                    dq[f"Not decided: {e.message}"] += 1
+                    continue
+                planner.claim(case["id"], d)
+                if record(it, d):
+                    loss += float(alone.net) - float(d.net)
+            state.fill(day, planner.claims)  # a unit taken today is not on offer on a later day
+        return _report(batch, items, flow_ver, pack, run_id, label, constraint_loss=loss, rows=rows, flips=flips,
+                       leakage=leakage, dq=dq, sig=sig, days=days, actual_routes=actual_routes, flow_routes=flow_routes,
+                       rails=rails)  # fmt: skip
+    for it in items:
+        facts, leaked = as_of_facts(it)
+        leakage += leaked
+        try:
+            d = decide(case_input(it, facts, pack), pack, flow_ver, as_of=it["decided_at"])
+        except ActionError as e:
+            dq[f"Not decided: {e.message}"] += 1
+            continue
+        record(it, d)
+    return _report(batch, items, flow_ver, pack, run_id, label, constraint_loss=0.0, rows=rows, flips=flips,
+                   leakage=leakage, dq=dq, sig=sig, days=days, actual_routes=actual_routes, flow_routes=flow_routes,
+                   rails=rails)  # fmt: skip
+
+
+def _report(
+    batch: Batch, items: Sequence[Mapping[str, Any]], flow_ver: FlowVersion, pack: Pack, run_id: int, label: str | None, *,
+    constraint_loss: float, rows: list[dict[str, Any]], flips: list[Flip], leakage: list[dict[str, Any]], dq: Counter[str],
+    sig: list[Signals], days: list[Any], actual_routes: list[str | None], flow_routes: list[str | None],
+    rails: dict[str, list[Any]],
+) -> ReplayReport:  # fmt: skip
+    """The measures of the decided items (`measures.py`) as the report."""
     n = len(rows)
     ndays = measures.business_days(min(days), max(days)) if days else 1
     up = measures.uplift(rows)
@@ -329,6 +499,7 @@ def replay(
         approvals_per_day=measures.per_day(sum(s.approval for s in sig), ndays),
         exceptions_per_day=measures.per_day(sum(s.exception for s in sig), ndays),
         by_guardrail=[{"guardrail": g, "owner": o, "approvals": a, "exceptions": e} for g, (o, a, e) in sorted(rails.items())],
-        uplift=Uplift(**up, **band), agreement_pct=measures.pct(sum(r["agree"] for r in rows), n),
+        uplift=Uplift(**up, **band), constraint_loss=round(constraint_loss, 2),
+        agreement_pct=measures.pct(sum(r["agree"] for r in rows), n),
         flips=flips[:FLIPS_SHOWN], leakage=leakage, data_quality=[{"reason": r, "count": c} for r, c in dq.most_common()],
     )  # fmt: skip

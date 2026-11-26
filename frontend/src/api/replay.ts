@@ -2,7 +2,8 @@
  * History batches for replay (plan 9, P9-7.1 and P9-7.2, story X-06; backend/di/services/actions/replay.py). `replay.import`
  * checks a CSV of past decisions row by row and stores it (a bad row is held with a reason; a personal column refuses the whole
  * file); `replay.batches` lists an org's batches; `replay.run` queues an as-of replay of a batch under a flow, `replay.report`
- * reads its four measures and `replay.runs` lists a flow's runs. All are actions, called when the Replay panel asks, not cached reads.
+ * reads its four measures and `replay.runs` lists a flow's runs; `replay.importDemand` stores the demand windows a replay plans
+ * against (P9-7.5). All are actions, called when the Replay panel asks, not cached reads.
  */
 import { invoke } from './actions';
 import type { ActionResult } from './types';
@@ -28,11 +29,26 @@ export type ImportedBatch = Batch & { log?: string };
 export interface BatchView extends Batch {
   /** the first 50 held rows */
   held_items: HeldRow[];
+  /** demand windows kept and held (P9-7.5) */
+  demand_rows: number;
+  demand_held: number;
 }
 
 /** Check and store a CSV text; `batchId` appends to a batch of the same pack and org unit. */
 export const importHistory = (pack: string, org: string, csvText: string, batchId?: number): Promise<ActionResult<ImportedBatch>> =>
   invoke<ImportedBatch>('replay.import', { pack, org_unit_id: org, csv: csvText, ...(batchId === undefined ? {} : { batch_id: batchId }) });
+
+export interface HeldDemand {
+  n: number;
+  demand_id: string;
+  held_reason: string;
+}
+
+export type ImportedDemand = Batch & { demand_rows: number; demand_held: number; held_demand: HeldDemand[]; log?: string };
+
+/** Check and store a CSV of demand windows (demand_id, route, opens_at, closes_at, value, capacity) for a batch (P9-7.5). */
+export const importDemand = (batchId: number, csvText: string): Promise<ActionResult<ImportedDemand>> =>
+  invoke<ImportedDemand>('replay.importDemand', { batch_id: batchId, csv: csvText });
 
 export const replayBatches = (pack: string, org: string): Promise<ActionResult<{ batches: BatchView[] }>> =>
   invoke<{ batches: BatchView[] }>('replay.batches', { pack, org_unit_id: org });
@@ -74,6 +90,8 @@ export interface ReplayReport {
   exceptions_per_day: number;
   by_guardrail: { guardrail: string; owner: string; approvals: number; exceptions: number }[];
   uplift: ReplayUplift;
+  /** case-by-case net minus planned net: what capacity and competing returns cost (P9-7.5); 0 with no demand file */
+  constraint_loss: number;
   agreement_pct: number;
   flips: { item_id: string; actual: string | null; flow: string | null; delta: number; reason: string }[];
   leakage: { item_id: string; fact: string; fact_at: string | null; decided_at: string }[];

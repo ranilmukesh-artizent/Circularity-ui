@@ -5,7 +5,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock('./client', () => ({ apiInvoke: m.apiInvoke, cachedAction: vi.fn(), cached: vi.fn(), http: vi.fn(), peek: vi.fn() }));
 
-import { importHistory, replayBatches, replayReport, replayRuns, runReplay } from './replay';
+import { importDemand, importHistory, replayBatches, replayReport, replayRuns, runReplay } from './replay';
 
 const last = () => (m.apiInvoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>]).slice(0, 2);
 
@@ -19,6 +19,10 @@ describe('the replay facade (plan 9, P9-7.1, X-06)', () => {
   it('x-06: importHistory appends with batch_id when given', async () => {
     await importHistory('device', 'Customer A', 'x', 4);
     expect(last()[1]).toMatchObject({ batch_id: 4 });
+  });
+  it('x-06: importDemand sends {batch_id, csv}', async () => {
+    await importDemand(4, 'demand_id\nD1\n');
+    expect(last()).toEqual(['replay.importDemand', { batch_id: 4, csv: 'demand_id\nD1\n' }]);
   });
   it('x-06: replayBatches asks for the pack and org unit', async () => {
     await replayBatches('device', 'Customer B');

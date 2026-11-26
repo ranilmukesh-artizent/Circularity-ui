@@ -26,6 +26,8 @@ class Batch:
     held: int
     period: tuple[date, date] | None
     held_reasons: dict[str, int] = field(default_factory=dict)
+    demand_rows: int = 0  # demand windows kept and held (P9-7.5)
+    demand_held: int = 0
 
     def view(self) -> dict[str, Any]:
         return {
@@ -36,6 +38,8 @@ class Batch:
             "held": self.held,
             "period": [self.period[0].isoformat(), self.period[1].isoformat()] if self.period else None,
             "held_reasons": self.held_reasons,
+            "demand_rows": self.demand_rows,
+            "demand_held": self.demand_held,
         }
 
 
@@ -122,7 +126,14 @@ def _batch(s: Session, r: Any) -> Batch:
         {"b": r.id},
     ).all()
     period = (r.period_from, r.period_to) if r.period_from and r.period_to else None
-    return Batch(r.id, r.pack, r.org_unit_id, r.rows, r.held, period, {k: int(v) for k, v in reasons})
+    dem = s.execute(
+        text(
+            "SELECT count(*) FILTER (WHERE status = 'ok'), count(*) FILTER (WHERE status = 'held') "
+            "FROM replay_demand WHERE batch_id = :b"
+        ),
+        {"b": r.id},
+    ).one()
+    return Batch(r.id, r.pack, r.org_unit_id, r.rows, r.held, period, {k: int(v) for k, v in reasons}, int(dem[0]), int(dem[1]))
 
 
 def for_org(s: Session, pack: str, org: str) -> list[Batch]:
@@ -195,6 +206,54 @@ def runs_of_flow(s: Session, flow_id: int) -> list[dict[str, Any]]:
             "FROM replay_run WHERE flow_id = :f ORDER BY id DESC"
         ),
         {"f": flow_id},
+    ).mappings()
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------- demand at the time (P9-7.5; migration 0052)
+def demand_ids(s: Session, batch_id: int) -> set[str]:
+    return set(s.execute(text("SELECT demand_id FROM replay_demand WHERE batch_id = :b"), {"b": batch_id}).scalars())
+
+
+def last_demand_n(s: Session, batch_id: int) -> int:
+    """The number of the batch's last demand row (0 for none): an append numbers its rows after it."""
+    return int(s.execute(text("SELECT COALESCE(MAX(n), 0) FROM replay_demand WHERE batch_id = :b"), {"b": batch_id}).scalar_one())
+
+
+def add_demand(s: Session, batch_id: int, rows: list[dict[str, Any]], held: bool, start: int = 0) -> None:
+    """Store demand rows under `start` + their row number in the file."""
+    if not rows:
+        return
+    s.execute(
+        text(
+            "INSERT INTO replay_demand (batch_id, n, demand_id, route, opens_at, closes_at, value, capacity, status, "
+            "held_reason) VALUES (:b, :n, :i, :r, :o, :c, :v, :k, :s, :h)"
+        ),
+        [
+            {"b": batch_id, "n": start + r["n"], "i": r["demand_id"], "r": r["route"], "o": r["opens_at"], "c": r["closes_at"],
+             "v": r["value"], "k": r["capacity"], "s": "held" if held else "ok", "h": r.get("held_reason")}
+            for r in rows
+        ],
+    )  # fmt: skip
+
+
+def ok_demand(s: Session, batch_id: int) -> list[dict[str, Any]]:
+    """The batch's good demand rows in file order, as a replay reads them."""
+    rows = s.execute(
+        text(
+            "SELECT demand_id, route, opens_at, closes_at, value, capacity FROM replay_demand "
+            "WHERE batch_id = :b AND status = 'ok' ORDER BY n"
+        ),
+        {"b": batch_id},
+    ).mappings()
+    return [{**r, "value": float(r["value"])} for r in rows]
+
+
+def held_demand(s: Session, batch_id: int) -> list[dict[str, Any]]:
+    """The first HELD_SHOWN held demand rows of a batch."""
+    rows = s.execute(
+        text("SELECT n, demand_id, held_reason FROM replay_demand WHERE batch_id = :b AND status = 'held' ORDER BY n LIMIT :l"),
+        {"b": batch_id, "l": HELD_SHOWN},
     ).mappings()
     return [dict(r) for r in rows]
 

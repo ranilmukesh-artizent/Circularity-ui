@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { importHistory, replayBatches, replayReport, replayRuns, runReplay, type BatchView, type ReplayReport } from '../../api/replay';
+import { importDemand, importHistory, replayBatches, replayReport, replayRuns, runReplay, type BatchView, type ReplayReport } from '../../api/replay';
 import { can, currentAccount } from '../../api/session';
 import type { ModelerScreen } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { finished, headline, upliftLine, versionLabel } from './replayReport';
+import { constraintLine, finished, headline, upliftLine, versionLabel } from './replayReport';
 
 /** The packs history can be replayed for (the pack of the template on screen). */
 export const REPLAY_PACKS = ['tool_fleet', 'device'];
@@ -84,6 +84,16 @@ export function ReplayPanel({ s }: { s: ModelerScreen }) {
     await load();
   };
 
+  const pickDemand = async (b: BatchView, file: File | undefined) => {
+    if (!file) return;
+    setErr('');
+    const csv = await file.text();
+    const r = await action.run(() => importDemand(b.id, csv), { inline: setErr, ms: 4200 });
+    if (!r.ok) return;
+    toast(`${r.output.demand_rows} demand rows kept, ${r.output.demand_held} held.`);
+    await load();
+  };
+
   return (
     <Panel title="Replay" sub="Past decisions to test the rules on" cls="mdl-replay">
       {canImport && (
@@ -109,6 +119,14 @@ export function ReplayPanel({ s }: { s: ModelerScreen }) {
                 <button type="button" className="btn sm pri" disabled={action.pending || waiting} onClick={() => void replayBatch(b)}>
                   {ver === 'draft' ? 'Replay the draft' : `Replay ${versionLabel(ver)}`}
                 </button>
+              </span>
+            )}
+            {canImport && pack === 'tool_fleet' && b.rows > b.held && (
+              <span className="mdl-row" data-replay-demand>
+                <label className="btn sm" htmlFor={`mdl-rp-demand-${b.id}`}>Demand at the time (CSV)</label>
+                <input id={`mdl-rp-demand-${b.id}`} type="file" accept=".csv,text/csv" className="sr" disabled={action.pending}
+                       onChange={(e) => { void pickDemand(b, e.target.files?.[0]); e.target.value = ''; }} />
+                <span className="note">{b.demand_rows} demand rows{b.demand_held > 0 ? `, ${b.demand_held} held` : ''}</span>
               </span>
             )}
             {b.held > 0 && (
@@ -143,6 +161,7 @@ function ReplayResult({ r }: { r: ReplayReport }) {
       </table>
       <ul className="mdl-hist" data-replay-loads>
         {headline(r).map((h) => <li key={h.key} data-replay-load={h.key}>{h.label}: <b>{h.value}</b></li>)}
+        {constraintLine(r) && <li data-replay-constraint>{constraintLine(r)}</li>}
         <li data-replay-uplift>Uplift: <b>{upliftLine(r.uplift)}</b> <span className="note">· the flow agrees with {r.agreement_pct.toFixed(1)} % of past routes</span></li>
       </ul>
       {r.leakage.length > 0 && (
