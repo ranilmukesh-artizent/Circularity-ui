@@ -69,6 +69,7 @@ from di.services.modeler.gates import (
     pack_gates,
     triggered,
 )
+from di.services.modeler.gate_checks.data import media_facts
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack, close_kinds
 from di.services.modeler.templates import Template, template_of_pack
@@ -535,6 +536,8 @@ def decide_case(
         for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
             if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
                 c[model] = data
+    if sane := media_facts(c, pack):  # an ITAD asset's media: G-DATA-2 triggers on `media.sanitisable` (P9-12.3)
+        c["media"] = {**(c.get("media") or {}), **sane}
     roled = [r for r in pack.routes if r.downstream_roles]
     own_vendors = "vendors" not in c and bool(roled) and session is not None and any(g.id == "G-DS-1" for g in pack_gates(pack))
     if own_vendors:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case

@@ -21,7 +21,8 @@ it is relied on.
 from collections.abc import Mapping
 from typing import Any
 
-from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult
+from di.services.modeler.evidence import evidence_of
+from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult, _fact
 from di.services.modeler.pack import Pack
 from di.services.modeler.valuers.medical_steps import patient_data
 
@@ -51,3 +52,105 @@ def check_patient_data_sanitised(case: Mapping[str, Any], pack: Pack, gate: Gate
 
 
 CHECKS[GATE] = check_patient_data_sanitised
+
+
+# ---------------------------------------------------------------- ITAD: sanitisation per media serial (P9-12.3, NS-IT-02)
+# `G-DATA-1` and `G-DATA-2` for the `itad` pack (NIST SP 800-88 Rev. 2, IEEE 2883 summarised; Kinective's Legal team reviews the
+# wording before it is relied on). The asset's `asset.media` ({mediaSerial, type: ssd | hdd}) are matched to its
+# `condition.erasures` ({mediaSerial, method: clear | purge | destruct, verification: passed | failed}).
+ITAD = "itad"
+DATA_1, DATA_2 = "G-DATA-1", "G-DATA-2"
+STEP_DESTRUCT = "destruct_media"
+DESTRUCTION = "destruction_record"
+LEAVING = ("return_to_lessor", "resell", "harvest", "recycle")  # routes that take the asset out of the owner's control
+NO_PARTS = "Media failed verification: no parts sale"
+_STRONG = ("purge", "destruct")
+_ENOUGH = {"ssd": _STRONG, "hdd": ("clear", *_STRONG)}  # what lets a media type leave
+
+
+def _records(case: Mapping[str, Any], pack: Pack, path: str) -> list[Mapping[str, Any]]:
+    v = _fact(case, pack, path)
+    return [x for x in v if isinstance(x, Mapping)] if isinstance(v, list) else []
+
+
+def _problem(media: Mapping[str, Any], erasures: list[Mapping[str, Any]], leaves: bool) -> str | None:
+    """Why one media serial does not allow the route (None when it does): no record, a failed verification, or too weak a method."""
+    serial = str(media.get("mediaSerial"))
+    mine = [e for e in erasures if str(e.get("mediaSerial")) == serial]
+    if not mine:
+        return f"Sanitisation record missing for media {serial}"
+    kind = str(media.get("type") or "hdd")
+    need = _ENOUGH.get(kind, _STRONG) if leaves else ("clear", *_STRONG)
+    if any(e.get("verification") == "passed" and e.get("method") in need for e in mine):
+        return None
+    if any(e.get("verification") == "failed" for e in mine):
+        return f"Sanitisation of media {serial} failed verification"
+    methods = ", ".join(sorted({str(e.get("method")) for e in mine}))
+    return f"Media {serial} ({kind}) is only {methods}: {' or '.join(need)} needed" + (" to leave" if leaves else "")
+
+
+def media_facts(case: Mapping[str, Any], pack: Pack) -> dict[str, Any]:
+    """The derived fact `media.sanitisable` that triggers G-DATA-2: False when any erasure failed its verification. Empty for
+    another pack or an asset with no media records."""
+    if pack.key != ITAD or not _records(case, pack, "asset.media"):
+        return {}
+    failed = any(e.get("verification") == "failed" for e in _records(case, pack, "condition.erasures"))
+    return {"sanitisable": not failed}
+
+
+def _same_owner_and_level(case: Mapping[str, Any], pack: Pack) -> bool:
+    """A redeploy stays inside the owner's control when the request's owner and security level (facts `request.owner_org`,
+    `request.security_level`, when the request names them) are the asset's."""
+    for mine, theirs in (("asset.owner_org", "request.owner_org"), ("asset.security_level", "request.security_level")):
+        want = _fact(case, pack, theirs)
+        if want is not None and want != _fact(case, pack, mine):
+            return False
+    return True
+
+
+def check_media_sanitised(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
+    """G-DATA-1: every media serial needs an erasure record; a route leaving the owner's control needs `purge` or `destruct` for an
+    `ssd` and at least `clear` for an `hdd`, verified; a redeploy inside the same owner and level accepts `clear` for any type. A
+    failing route says which media (its own reason); a harvest of failed media says "no parts sale". The result never holds the
+    case: the routes fail and a new erasure record is read by the next decision. None for another pack or an asset with no media."""
+    media = _records(case, pack, "asset.media")
+    if pack.key != ITAD or not media:
+        return None
+    erasures = _records(case, pack, "condition.erasures")
+    ids = {r.id for r in pack.routes}
+    leaving = [r for r in (gate.params.get("routes") or LEAVING) if r in ids]
+    failed = any(e.get("verification") == "failed" for e in erasures)
+    stays = _same_owner_and_level(case, pack)
+    reasons: list[tuple[str, str]] = []
+    for rid in [*(["redeploy"] if "redeploy" in ids else []), *leaving]:
+        why = next((p for m in media if (p := _problem(m, erasures, leaves=rid != "redeploy" or not stays))), None)
+        if why and failed and rid == "harvest":
+            why = NO_PARTS
+        if why:
+            reasons.append((rid, why))
+    if not reasons:
+        return GateResult(gate.id, True, GateEffect("block", (), False, None), (), "Sanitisation record on file for every media serial")
+    return GateResult(
+        gate.id, False, GateEffect("block", tuple(r for r, _ in reasons), False, None), (), reasons[0][1],
+        route_reasons=tuple(reasons),
+    )  # fmt: skip
+
+
+def check_sanitisation_verified(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
+    """G-DATA-2: media whose verification `failed` require the step `destruct_media` (effect `require_step`) until a
+    `destruction_record` is on file. None for another pack, with no failed media, or once the destruction is recorded."""
+    if pack.key != ITAD:
+        return None
+    failed = [str(e.get("mediaSerial")) for e in _records(case, pack, "condition.erasures") if e.get("verification") == "failed"]
+    if not failed or evidence_of(case, DESTRUCTION) is not None:
+        return None
+    ids = {r.id for r in pack.routes}
+    routes = tuple(r for r in LEAVING if r in ids)
+    return GateResult(
+        gate.id, False, GateEffect("require_step", routes, False, STEP_DESTRUCT), (DESTRUCTION,),
+        f"Media failed verification: destroy {', '.join(failed)}",
+    )  # fmt: skip
+
+
+CHECKS[DATA_1] = check_media_sanitised
+CHECKS[DATA_2] = check_sanitisation_verified
