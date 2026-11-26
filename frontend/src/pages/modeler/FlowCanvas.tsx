@@ -9,14 +9,22 @@ import { Handle, Position, type NodeProps, type NodeTypes } from '@xyflow/react'
 import { useSimNodes, type NodeFlow } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
 import { GraphView, type GEdge, type GNode, type GSel } from '../../components/graph/GraphView';
+import { Icon } from '../../components/Icon';
 import { toast } from '../../components/toast';
 import { NODE_W } from './flowEdit';
+import './canvas.css';
 
 /** The prototype's TTAG: what each node type is. */
 export const TTAG: Record<FlowNode['t'], string> = {
   trigger: 'Core · intake', agent: 'Core agent', gate: 'Guardrail gate', guard: 'Guardrail', decision: 'Core decision',
   approval: 'Owner approval', execute: 'Core · execute', learn: 'Core · learning', rule: 'Business rule', path: 'Outcome',
   step: 'Process step', table: 'Decision table',
+}; // prettier-ignore
+
+/** The kind icon of each node type (plan 10, 4.6: the demo's icon set, 14px on a node; the meaning table). */
+export const KIND_ICON: Record<FlowNode['t'], string> = {
+  trigger: 'database', agent: 'bot', gate: 'shield', guard: 'shield', decision: 'scale', approval: 'user',
+  execute: 'send', learn: 'trend', rule: 'branch', path: 'target', step: 'list', table: 'matrix',
 }; // prettier-ignore
 
 export const LockIcon = () => (
@@ -49,19 +57,35 @@ interface FlowData extends Record<string, unknown> {
   io?: string;
   bad: boolean;
   proposed: boolean;
+  /** this node was just applied: its revision outline closes once */
+  resolved: boolean;
+  /** the draft version shown in the revision tag ("Δ2") */
+  revision: number | null;
   pick: (id: string) => void;
 }
 interface BandData extends Record<string, unknown> { label: string; rectH: number }
 
 function ModelerNode({ data, selected }: NodeProps) {
-  const { n, title, owner, returned, io, bad, proposed, pick } = data as FlowData;
-  const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop'];
+  const { n, title, owner, returned, io, bad, proposed, resolved, revision, pick } = data as FlowData;
+  const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop rev', resolved && 'rev-done'];
   return (
     <div className={cls.filter(Boolean).join(' ')} data-node={n.id} title={returned ? 'Returned: ' + returned : undefined}
       role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => e.key === 'Enter' && pick(n.id)}>
       {n.t !== 'trigger' && <Handle type="target" position={Position.Left} className="port in mdl-port" />}
       <Handle type="source" position={Position.Right} className="port out mdl-port" />
-      <span className="hd"><span className="tg">{TTAG[n.t]}</span>{n.lock && <LockIcon />}</span>
+      {(proposed || resolved) && (
+        <>
+          <svg className="rev-ol" aria-hidden="true">
+            <rect className="dash" x=".75" y=".75" rx="7.25" />
+            {resolved && <rect className="solid" x=".75" y=".75" rx="7.25" pathLength="100" />}
+          </svg>
+          <span className={'rev-tag mono' + (resolved ? ' fade' : '')} translate="no">Δ{revision ?? ''}</span>
+        </>
+      )}
+      <span className="hd">
+        <span className="kind"><Icon name={KIND_ICON[n.t]} className="kind-ic" /><span className="tg">{TTAG[n.t]}</span></span>
+        {n.lock && <span className="mdl-key" role="img" aria-label="Locked"><Icon name="key" className="kind-ic" /></span>}
+      </span>
       <b>{title}</b>
       <span className="s">{n.t === 'rule' ? n.owner ?? '' : n.sub}</span>
       {owner && <span className="ow">{owner}</span>}
@@ -90,6 +114,10 @@ interface Props {
   bad: Set<string>;
   /** a proposed node (drawn dashed until applied or dismissed) */
   proposed?: string | null;
+  /** the draft version the proposal would become, for the revision tag ("Δ2") */
+  revision?: number | null;
+  /** a node just applied from a proposal: its dashed revision outline closes into a solid line once (plan 10, 4.4) */
+  resolved?: string | null;
   editable: boolean;
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, y: number) => void;
@@ -100,7 +128,7 @@ interface Props {
   onDisconnect: (edgeId: string) => void;
 }
 
-export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSelect, onMove, onMoved, onConnect, onRemove, onDisconnect }: Props) {
+export function FlowCanvas({ s, graph, selected, bad, proposed, revision = null, resolved = null, editable, onSelect, onMove, onMoved, onConnect, onRemove, onDisconnect }: Props) {
   const [edgeSel, setEdgeSel] = useState<string | null>(null);
   const by = new Map(graph.nodes.map((n) => [n.id, n]));
   const ret = s.flow.returned;
@@ -109,7 +137,7 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
   const gnodes: GNode[] = graph.nodes.map((n) => {
     const p = n.t === 'path' ? s.template.paths.find((x) => x.id === n.path) : undefined;
     const isRet = !!ret && n.id === ret.node_id;
-    const data: FlowData = { n, title: nodeTitle(n, s), owner: p?.owner, returned: isRet ? ret.reason : undefined, io: n.t === 'rule' && sim?.[n.id] ? flowText(sim[n.id]) : undefined, bad: bad.has(n.id), proposed: n.id === proposed, pick: (id) => onSelect(id) };
+    const data: FlowData = { n, title: nodeTitle(n, s), owner: p?.owner, returned: isRet ? ret.reason : undefined, io: n.t === 'rule' && sim?.[n.id] ? flowText(sim[n.id]) : undefined, bad: bad.has(n.id), proposed: n.id === proposed, resolved: n.id === resolved && n.id !== proposed, revision, pick: (id) => onSelect(id) };
     return { id: n.id, x: n.x, y: n.y, w: NODE_W, h: n.h, type: 'flow', data, selected: n.id === selected };
   });
   if (s.band) {
@@ -136,7 +164,7 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, editable, onSele
   return (
     <div className="mdl-canvas" role="group" aria-label="Decision flow canvas">
       <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap
-        nodeColor={(id) => (by.get(id)?.lock ? 'var(--ink)' : 'var(--mv-line)')}
+        nodeColor={(id) => (by.get(id)?.lock ? 'var(--muted)' : 'var(--ink2)')}
         label="Decision flow canvas. Select a step, then use arrow keys to move it or Delete to remove it."
         onSelect={select} onDelete={remove} onConnect={onConnect} onMove={moveTo}
         onNudge={(id, dx, dy) => { const n = by.get(id); if (n) moveTo(id, n.x + dx, n.y + dy); }} />

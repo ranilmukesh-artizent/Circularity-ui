@@ -1,0 +1,109 @@
+/*
+ * Plan 10 (one assistant): tokens and styles for the Ask Circularity panel in both hosts (the Ctrl+J dock and the
+ * Modeler's pinned column), its turns, cards, status line and provenance tags, the revision mark, and the Modeler's
+ * agent-first layout tokens. Imported after the generated legacy.gen.css (never hand-edited) so it can reuse its
+ * tokens (--ink, --panel, --line, --warn, --bad ...). The app's theme switch is data-theme on <html>, not
+ * prefers-color-scheme. No gradients, no glow, no shadow on the docked panel, no card inside a card.
+ * Motion: none on frequent actions; the one meaningful motion (a proposal becoming part of the draft) is in
+ * pages/modeler/canvas.css and only animates stroke-dashoffset and opacity. Never `transition: all`.
+ */
+:root {
+  /* revision marks (4.1): graphite line and wash, amber for held, red for blocked */
+  --as-rev: var(--ink2); /* #4B4541 */
+  --as-rev-bg: rgba(20, 20, 20, .035);
+  --as-hold: var(--warn); /* #8A6400 */
+  --as-block: var(--bad); /* #B3382C */
+  /* spacing, shape, motion (4.3) */
+  --as-w: var(--afpw, 400px);
+  --as-pad: 16px;
+  --as-gap: 20px;
+  --as-radius: 8px;
+  --as-dur: 240ms;
+  --as-ease: cubic-bezier(.2, 0, 0, 1);
+  /* the Modeler's agent-first layout (3.5) */
+  --mdl-agent-w: 384px;
+  --mdl-agent-w-sm: 320px;
+  --mdl-rail-w: 340px;
+  --mdl-strip-w: 44px;
+  --mdl-bar-h: 48px;
+  --mdl-head: 168px; /* title, tabs and bar */
+  --mdl-grid: 24px;
+}
+:root[data-theme="dark"] {
+  --as-rev: var(--ink2); /* #CBC8C1 */
+  --as-rev-bg: rgba(243, 242, 238, .05);
+  --as-hold: var(--warn); /* #E5A543 */
+  --as-block: var(--bad); /* #EC7A6E */
+}
+
+/* ---------- the panel (one component, two hosts) ---------- */
+.as-panel { display: flex; flex-direction: column; min-height: 0; background: var(--panel); color: var(--ink); font-size: 14px; line-height: 1.5; }
+.as-panel :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.as-dock { position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: var(--as-w); max-width: 100vw; border-left: 1px solid var(--line); }
+/* docked at 1280px and wider: part of the layout, no shadow, no radius; below that it overlays and keeps the shadow */
+@media (max-width: 1279px) { .as-dock { box-shadow: var(--shadow); } }
+@media (max-width: 699px) { .as-dock { width: 100vw; } }
+.as-panel.pinned { width: var(--mdl-agent-w); flex: none; overflow: hidden; border-right: 1px solid var(--line); }
+@media (max-width: 1279px) { .as-panel.pinned { width: var(--mdl-agent-w-sm); } }
+.as-panel > header, .as-panel .as-head { display: flex; align-items: center; gap: 8px; padding: var(--as-pad); border-bottom: 1px solid var(--line); }
+.as-panel .as-head h2 { margin: 0; font: 600 15px/1.3 var(--f-display); }
+.as-panel .as-head svg { width: 20px; height: 20px; flex: none; }
+.as-panel .as-ctx { padding: 8px var(--as-pad); border-bottom: 1px solid var(--line2); color: var(--muted); font-size: 12.5px; }
+
+/* ---------- turns: the person's words are a plain line, a hairline between turns, no bubbles ---------- */
+.as-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--as-pad); }
+.as-turn { padding: var(--as-gap) 0; border-bottom: 1px solid var(--line2); overflow-wrap: anywhere; }
+.as-turn:last-child { border-bottom: 0; }
+.as-turn > .q { margin: 0 0 8px; font-weight: 600; }
+.as-turn p { margin: 0 0 8px; max-width: 72ch; }
+.as-status { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.as-status .item, .as-turn code { font-family: var(--f-mono); font-size: 12px; }
+.as-status.failed { color: var(--as-block); }
+.as-status.held { color: var(--as-hold); }
+.as-basis { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; }
+.as-basis.amber { color: var(--as-hold); }
+
+/* ---------- cards: only the preview card and the held card are boxed; no shadow, nothing nested ---------- */
+.as-card { margin: 8px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--as-radius); background: var(--panel2); }
+.as-card h3 { margin: 0 0 4px; font: 650 14px/1.35 var(--f-display); }
+.as-card .as-limits { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; }
+.as-card .as-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.as-card .as-diff { margin: 8px 0 0; padding: 0; list-style: none; font-family: var(--f-mono); font-size: 12px; }
+.as-card .as-diff li { padding: 2px 8px; border-radius: 4px; }
+.as-card .as-diff .add { background: var(--as-rev-bg); box-shadow: inset 2px 0 0 var(--as-rev); }
+.as-card.held { border-left: 3px solid var(--as-hold); }
+.as-card.blocked { border-left: 3px solid var(--as-block); }
+.as-card.blocked .gr { font-family: var(--f-mono); font-size: 12px; color: var(--as-block); }
+
+/* ---------- the Modeler's agent column: sections, rows, tags (3.3, 3.5) ---------- */
+.mdl-agent { display: flex; flex-direction: column; min-height: 0; }
+.mdl-agent .as-sections { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px; display: grid; gap: 24px; align-content: start; }
+.as-sec { display: grid; gap: 8px; }
+.as-sec-t { display: flex; align-items: center; gap: 8px; font: 600 13px/1.3 var(--f-display); }
+.as-sec-t svg { width: 18px; height: 18px; flex: none; }
+.as-sec-t .as-prov { margin-left: auto; }
+.as-row { display: flex; align-items: flex-start; gap: 8px; min-height: 32px; padding: 4px 0; font-size: 13.5px; line-height: 1.45; }
+.as-row > svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.as-row > svg.hold { color: var(--as-hold); }
+.as-row > svg.block { color: var(--as-block); }
+.as-row button.link { margin-left: auto; flex: none; }
+
+/* provenance tags keep the demo's colour mapping, in sentence case (4.1) */
+.as-prov { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid transparent; border-radius: 4px; font-size: 11.5px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+.as-prov.retrieved { color: var(--ok); background: var(--ok-soft); }
+.as-prov.rules { color: var(--info); background: var(--info-soft); }
+.as-prov.model { color: var(--ink2); background: transparent; border-color: var(--line); }
+.as-prov.simulated { color: var(--ink2); background: transparent; border: 1px dashed var(--muted); } /* text in ink2: --muted fails 4.5:1 on the card surface */
+.as-prov.agent { color: var(--ink); background: var(--yellow-soft); }
+
+/* ---------- composer (fixed at the bottom of either host) ---------- */
+.as-composer { padding: var(--as-pad); border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.as-composer textarea { width: 100%; box-sizing: border-box; min-height: 2.9em; max-height: 9em; resize: none; font-size: 14px; }
+
+/* ---------- the revision mark outside the canvas (a diff line or a card title; on a canvas node it is canvas.css) ---------- */
+.as-card .rev { outline: 1.5px dashed var(--as-rev); outline-offset: -1px; background-color: var(--as-rev-bg); }
+.rev-tag { display: inline-block; padding: 0 5px; font: 600 11px/16px var(--f-mono); color: var(--as-rev); border: 1px solid var(--as-rev); border-radius: 4px; }
+
+/* ---------- the Modeler's tab strip and rail hosts (T4 fills them, these are the shared looks) ---------- */
+.mdl-strip { width: var(--mdl-strip-w); flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 16px; border-left: 1px solid var(--line); background: var(--panel); }
+.mdl-rail { width: var(--mdl-rail-w); flex: none; padding: 20px; display: grid; gap: 24px; align-content: start; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--panel); }

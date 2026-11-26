@@ -7,7 +7,8 @@ import type { FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
 const toasts = vi.hoisted(() => [] as string[]);
 vi.mock('../../components/toast', () => ({ toast: (m: string) => { toasts.push(m); } }));
 
-import { FlowCanvas } from './FlowCanvas';
+import { ICON } from '../../assets/assets.gen';
+import { FlowCanvas, KIND_ICON } from './FlowCanvas';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -76,7 +77,7 @@ describe('Modeler canvas on xyflow (P9-8.14)', () => {
     await m.go();
     expect(host.querySelectorAll('.mdl-node')).toHaveLength(2);
     expect(host.textContent).toContain('Core prediction and agents · fixed');
-    expect(host.querySelector('[data-node="gate"] .mdl-lock')).not.toBeNull();
+    expect(host.querySelector('[data-node="gate"] .mdl-key')).not.toBeNull();
   });
 
   it('a lock node delete is a no-op: nothing is removed, the person is told', async () => {
@@ -106,5 +107,41 @@ describe('Modeler canvas on xyflow (P9-8.14)', () => {
     await m.go();
     expect(host.querySelector('[data-node="r1"]')!.classList.contains('prop')).toBe(true);
     expect(host.querySelector('[data-node="gate"]')!.classList.contains('prop')).toBe(false);
+  });
+
+  it('a proposed node carries the revision mark with the draft version', async () => {
+    const m = mount({ proposed: 'r1', revision: 2 });
+    await m.go();
+    const node = host.querySelector('[data-node="r1"]')!;
+    expect(node.classList.contains('rev')).toBe(true);
+    expect(node.querySelector('.rev-tag')!.textContent).toBe('Δ2');
+    expect(node.querySelector('svg.rev-ol')).not.toBeNull();
+    expect(host.querySelector('[data-node="gate"] .rev-tag')).toBeNull();
+  });
+
+  it('resolved takes the revision mark off and closes the outline once', async () => {
+    const m = mount({ proposed: null, resolved: 'r1', revision: 2 });
+    await m.go();
+    const node = host.querySelector('[data-node="r1"]')!;
+    expect(node.classList.contains('rev')).toBe(false);
+    expect(node.classList.contains('rev-done')).toBe(true);
+    expect(node.querySelector('.rev-tag.fade')).not.toBeNull();
+  });
+
+  it('a locked node shows the key icon, an unlocked one does not', async () => {
+    const m = mount();
+    await m.go();
+    expect(host.querySelector('[data-node="gate"] .mdl-key')).not.toBeNull();
+    expect(host.querySelector('[data-node="r1"] .mdl-key')).toBeNull();
+  });
+
+  it('the kind line is sentence case with a 14px kind icon, not drawn in capitals', async () => {
+    const m = mount();
+    await m.go();
+    const kind = host.querySelector('[data-node="gate"] .kind')!;
+    expect(kind.textContent).toBe('Guardrail gate');
+    expect(kind.textContent).not.toBe(kind.textContent!.toUpperCase());
+    expect(kind.querySelector('svg.kind-ic')).not.toBeNull();
+    expect(Object.values(KIND_ICON).every((n) => n in ICON)).toBe(true);
   });
 });
