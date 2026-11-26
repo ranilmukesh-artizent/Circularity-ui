@@ -147,7 +147,14 @@ why, the agent and the time. **Accept** runs it as you; **Reject** asks for a re
 proposal from an agent that acted for you shows "Your agent's proposal: another person accepts it." instead of
 **Accept**; you can only reject it. See [Approvals](../approvals.md#5-agent-proposals).
 
-### 9. Read a pilot report
+### 9. Approvals that the new packs hold for you
+
+Some packs hold a decision for a person with a typed reason: a lot below the floor, an export-control check, a repair
+approval, a customer credit that the ERP posted differently (Finance), or a standing policy limit. They show in your queue
+like any decision. Everything else in this guide applies. An outside MCP client or an agent with credentials cannot
+approve: its writes wait as proposals for a person.
+
+### 10. Read a pilot report
 
 In **Analytics**, pick an organisation under *Org unit* and press **Pilot report**. It shows what that organisation's
 cases did (cases, decisions submitted and approved, the recommended net value, cases with business rules applied,

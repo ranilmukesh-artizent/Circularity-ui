@@ -933,6 +933,94 @@ model provider; exchange-programme and remanufacture routes; digital product pas
 
 ---
 
+## Plan 9 status: Recover on the agentic core (25–26 Nov 2026)
+
+Plan: [docs/agents/plans/09-agentic-platform.md](agents/plans/09-agentic-platform.md). Built by a lead with parallel
+writers. The plan's checklist ticks each task; `docs/agents/plans/PROGRESS.md` has one line per task with its commit and
+gate, and `docs/agents/plans/09-run/RUN-LOG.md` the run's merges and notes. This section is a first draft written on
+26 Nov while phases 12 and 13 were still landing; the final pass refreshes it. All data stays synthetic and every
+enterprise system is a source-sim mock (rule 14). Decisions are in `docs/agents/decision-log.md` (rows dated 25 and
+26 Nov).
+
+**What each phase delivered**
+- **0 Harness and quick wins:** plan decisions and the licence list, `scripts/dev/gate-p9.sh`, `story-matrix.sh`,
+  catalogue hygiene and credential rotation on the forbidden list, the model chain with rate-limit fallback, a carbon
+  factor set and a CO2e line in both valuers, workflow JSON Schema with validated import and export, autopilot on case
+  opened behind a setting, guardrail type and stage, role matrix and "test a user" in Access.
+- **1 Packs as data:** pack format v1 (`modeler/packs/*.json`, `pack.schema.json`), tool fleet and device as data, the
+  gate catalogue with evidence and batch hold, the customer overlay (tighten only, rebase), one decider for intake,
+  re-evaluation and simulation, pack versions through maker-checker, the queue planner on live named demand, the case
+  process layer with SLA timers, **My work** (replaces Home tasks), the standard valuer, match to the system of record,
+  the contract entitlement gate, carbon with provenance.
+- **2 The agent chain:** stage chain runtime, the `AgentLoop` port with the Pydantic AI adapter, the LLM router
+  (`di/services/llm/router.py`: budgets, cooldowns, fallback), hold policy with typed reasons, standing policy that
+  approves within thresholds, run tracing, the configuration agent, calibrated stage confidence, the exception
+  assistant, fraud triage with a person release, MCP tools generated from the action catalogue, OAuth protected-resource
+  metadata, agent evals with an injection corpus.
+- **3 Tool fleet returns:** fleet contract, repair log, recall, telematics and parts mocks; gates for contract right,
+  recall quarantine and stale telematics; wear index and remaining life; six paths valued against live named demand;
+  the queue plan; CO2e and the recycling certificate; threshold approvals; key accounts to account manager review; fees
+  posted from closed lines; batteries as their own class.
+- **4 Service desk:** per-market decision tables with maker-checker, one case per ticket or batch, repair estimates and
+  their accuracy, price fix, covered swap and upgrade options, credits tested before they are offered, a take-up model.
+- **5 Contract refresh:** a case per contract entering the window, keep, like-life swap or upgrade, like-life units
+  reserved once, a priced proposal, test-the-proposal levers, renewal outcomes compared.
+- **6 Device recommerce:** registry, lab and market mocks; one case per device; verify against the quote; blacklist and
+  wipe-certificate gates; payout adjustment within 10 percent; a price model per channel with interval and floor;
+  wholesale lots; ageing suggestions accepted into rules; customer diversions.
+- **7 Replay and staged publish:** history batch import with checks, as-of replay with four measures, publish in steps
+  with a canary by region and share, automatic pause, the back-test report with PDF export.
+- **8 Compose end to end:** adapter registry with test and production environments and owner approval, mapping
+  suggestions with calibrated confidence and the five choices (including ask the owner), discovery that samples 500
+  records, API spec import, agent-drafted adapter specs held for a person, a directory mock with organisation sign-in
+  (OIDC), directory groups to roles as data, SCIM, the workflow author, canvases on xyflow, per-node samples, the
+  decision table editor, the composition object with maker-checker, Compose's steps, DMN and BPMN export.
+- **9 Used cars, 10 Telecom network, 11 Medical rental:** one pack each (`used_cars.json`, `telecom_network.json`,
+  `medical_rental.json`), their system mocks, a case per VIN, serial or tag, each industry's gates (title and lien,
+  odometer and open recall; inventory match, configuration wipe, export control; decontamination, service in date,
+  safety notice), the route valuers, Compose drafts and mappings from a prompt, diversions, replay data with a 20
+  percent publish, plain-words guardrails, alerts and suggestions, follow-through, and worked analytics questions
+  (`di/services/questions/`).
+- **12 Next segments (partly landed):** the standard valuer extended with conditions, decay and division; the ITAD pack
+  (`itad.json`, manifest reconciliation) and the rental fleet pack (`rental_fleet.json`, re-rent, rebuild or sell) are
+  on the run branch. Not landed when this was written: 12.3, 12.5 to 12.13 (ITAD sanitisation per serial, rental damage
+  recovery, telecom CPE, battery, automotive cores, medical capital, serialised retail returns, the industrial pack in
+  the full format, the smoke, the gate).
+- **13 Close and learn across packs** (landed: 13.1 to 13.5 and 13.7 to 13.10):
+  - 13.1 a pack with `close.fixed_asset` appends a `retire` or `transfer` step; the ERP's answer (document, proceeds,
+    book value, gain or loss) is stored on the case (`execution/asset.py`), not computed.
+  - 13.2 the lease residual's gain or loss on the case (`execution/residual.py`): proceeds minus the contract's
+    residual, in Decimal.
+  - 13.3 downstream vendor qualification with certificate dates (`modeler/vendor_qualification.py`, gate G-DS-1),
+    judged as of the decision date.
+  - 13.4 customer credit settlement with an ERP match (`execution/settlement.py`); a different ERP amount holds the case
+    for Finance (`settlement.resolve`).
+  - 13.5 a case closes only with reporting evidence (`execution/reporting.py`, gates G-REP-1 and G-REP-2,
+    `case.attachReporting`).
+  - 13.7 calibration and model candidates for every pack; 13.8 model quality, drift (PSI and error ratio,
+    `engine/drift.py`) and cadence (monthly, or at 50 new confirmed outcomes), with a model-written explanation that code
+    checks.
+  - 13.9 per-agent credentials (`agent_credentials.py`, `POST /oauth/token` with client credentials, 900-second tokens,
+    secret shown once, scrypt hash stored). 13.10 OAuth for outside MCP clients (`oauth.py`: authorization code with PKCE
+    S256, pre-registered clients, consent by a signed-in person, audience-bound 15-minute tokens, no refresh token).
+  - Not landed: 13.6 core credit settlement, 13.11 final smoke, 13.12 fresh clone and trial package proof, 13.13 these
+    docs (this draft), 13.14 the gate.
+
+**Known gaps and deferred items**
+- Client ID metadata documents and dynamic client registration for outside clients: not built (fetching a
+  client-supplied URL is an outbound call the plan does not add). DMN import: not built (export only).
+- The S/4 asset endpoints are modelled in the mock, not verified against the vendor's documentation.
+- Telecom: the case's battery and downstream facts are not yet wired from bench and recycler records; the agent does not
+  prepare `requisition.reduce` itself. Medical: no demand model table (training rows stay on the case); a case waiting
+  for disposal has no requeue hook yet. Used cars: saved views, role sharing and the days-in-stock alert are not built.
+- Migration 0060 (agent credentials) is filled: re-apply it on an existing database.
+- The gate lines of phases 3 to 13 are not ticked yet.
+- The compliance and accounting texts (CSRD, waste treatment codes, fixed-asset accounting, outside-client access) are
+  orientation only: Kinective's Legal team reviews them before anyone relies on them.
+
+**To refresh in the final pass:** the api, source-sim and web counts at the last gate (`PROGRESS.md`), the ticked tasks,
+the pack list and versions, the smoke list.
+
 ## Order and rough size
 
 | Step | Size | Can run in parallel with |

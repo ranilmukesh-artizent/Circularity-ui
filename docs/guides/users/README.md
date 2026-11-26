@@ -51,6 +51,51 @@ Open the app and sign in with one of these IDs and **any password**. You can als
 Your account menu (top right) shows your role, your description and, for a Planner, the customers you can see. A
 Planner also finds **Request tenant access** there. Use **Switch account** or **Sign out** there.
 
+## More industries (plan 9)
+
+The demo company leases industrial assets, but the platform runs other kinds of returns from the same pages. Each
+industry is a *pack*: a data file with its routes, gates, guardrails, wording and valuation. Admin chooses which pack an
+organisation uses (see [admin.md](admin.md#the-organisation-tree)). The data is synthetic and the systems are
+simulations, as in the rest of the demo.
+
+| Pack | Unit | Routes | Close extras |
+|---|---|---|---|
+| Industrial returns | asset | redeploy, resale, internal parts, re-lease, material recovery, external parts, exit | none |
+| Tool fleet returns | tool | release, refurbish, redeploy, resell, harvest parts, exit | customer credit, reporting evidence |
+| Device recommerce | device | buy now, offers, auction, market, wholesale | customer credit, reporting evidence |
+| Used vehicles (lease and trade-in) | car | retail, auction, dealer trade, salvage | fixed-asset retirement, lease residual, reporting evidence |
+| Telecom network equipment | unit | redeploy, spare, resell, harvest, recycle | fixed-asset retirement, reporting evidence |
+| Medical rental (hospital equipment) | device | re-rent, service then re-rent, refurbish, retire | fixed-asset retirement, lease residual, reporting evidence |
+| IT asset disposition (IT lease end) | asset | redeploy, return to lessor, resell, harvest, recycle | none yet |
+| Rental and construction fleets (landing) | machine | re-rent, rebuild, branch transfer, retail, auction, dealer, parts, scrap | none yet |
+
+The packs are in `backend/di/services/modeler/packs/`. The industrial pack in the full pack format and the other
+segments of phase 12 are still landing.
+
+What the phase-13 close adds, by role (each guide has the steps):
+
+- **Fixed-asset retirement or transfer** (packs marked above): after the route steps, the case sends the ERP a
+  retirement (sale, salvage, write-off) or a transfer. The ERP's gain or loss is shown as the ERP answered it.
+- **Lease residual:** for a leased vehicle or device, the gain or loss is the proceeds minus the lease contract's
+  residual.
+- **Customer credit:** for a trade-in or upgrade, the credit the case computed is compared with what the ERP posted. A
+  difference goes to **Finance**; see [finance.md](finance.md).
+- **Reporting evidence:** a case closes only when the treatment facility's mass, material and treatment code are on it
+  where the rules ask for them; see [engineer.md](engineer.md).
+- **Vendor qualification:** a downstream vendor is chosen only while its certificate is approved and in date on the
+  day of the decision; see [planner.md](planner.md).
+
+> **Review before reliance.** The accounting and reporting rules named in these guides (fixed-asset retirement, waste
+> treatment codes, sustainability reporting) are orientation only. Kinective's Legal team reviews them before anyone
+> relies on them or offers them to a customer.
+
+## One assistant (plan 10, in progress)
+
+Ask Circularity, the Modeler's assistant and Compose's helper are being merged into one assistant dock that knows
+which page and which draft you are on, proposes changes and applies them only when you approve. This is a front-end
+change in progress ([plan 10](../../agents/plans/10-unified-assistant-ux.md)); until it lands the three keep working as
+described in the role guides.
+
 ## Things every role has
 
 - **Home**: a briefing, *Needs you* (items whose next step is yours), *Agent activity* (what the agent prepared) and

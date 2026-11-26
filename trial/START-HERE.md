@@ -72,6 +72,14 @@ what: start with `guides/users/README.md`.
 - **Your data** stays in Docker until you run reset or uninstall. Stopping keeps it.
 - **The `.env` file** holds this installation's own secrets. Don't share it.
 
+## Organisation sign-in
+
+In this trial, organisation sign-in (OpenID Connect) is **off**: you sign in with the IDs above and any password. A
+company that wants its own directory to sign people in sets the `DI_OIDC_ISSUER`, `DI_OIDC_CLIENT_ID`,
+`DI_OIDC_CLIENT_SECRET` and `DI_OIDC_REDIRECT_URI` settings on the app's API service and restarts it; directory groups
+then map to roles (Admin, Access page). Outside AI clients stay off until an Admin registers them, and Kinective's Legal
+team reviews that access before it is offered to a customer.
+
 ## If something goes wrong
 
 - *"Docker is not running"*: start Docker Desktop and wait until it says it's running.

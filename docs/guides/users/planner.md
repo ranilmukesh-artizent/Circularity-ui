@@ -168,6 +168,23 @@ press **Fit a candidate** to fit one on the confirmed outcomes; then **Propose p
 Approver or Admin) approves the promotion; you cannot approve a model you fitted or proposed. See
 [Approvals](../approvals.md#6-model-promotion).
 
+### Cases of the other industries
+
+The same Decision Workbench and **My work** show cases of the other packs ([README](README.md#more-industries-plan-9)):
+one case per VIN, serial, tag or device. Each pack has its own gates, and a gate that lacks evidence holds the case, or
+the whole batch it came in, until the evidence arrives. A few examples you may meet: title or lien on a vehicle,
+an open recall, a configuration wipe or export control on network equipment, a decontamination record or service date on
+a medical device.
+
+**Downstream vendor.** Where a route sends the asset to a vendor (a recycler, a parts supplier), the case shows the
+vendor chosen and why. A vendor qualifies while its certificate is approved and its valid-to date is on or after the
+decision date; otherwise the case says, for example, that the certificate expired on a date, or that none is on file,
+and picks the best vendor that does qualify. A replay as of an earlier date judges on that date.
+
+**Close.** Some packs add a last step: retire or transfer the asset in the ERP, record the lease residual, credit a
+customer, or wait for the treatment facility's reporting evidence. The case stays *executing* until they are done; see
+[finance.md](finance.md) and [engineer.md](engineer.md) for who answers.
+
 ### Requesting access to another customer
 
 If you need to plan across customers (for example a shared pool), open the account menu (top right) and press
