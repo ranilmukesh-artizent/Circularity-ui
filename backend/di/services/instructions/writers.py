@@ -703,7 +703,10 @@ WRITERS = {
     "pod": pod,
     "finance": finance,
 }
-from di.services.instructions import writers_fleet  # noqa: E402 - it uses Sent, Refused and client, defined above
+from di.services.instructions import (  # noqa: E402 - it uses Sent, Refused and client, defined above
+    writers_fleet,
+    writers_telecom,
+)
 
 WRITERS |= {
     "fleet_issue": writers_fleet.fleet_issue,
@@ -712,6 +715,13 @@ WRITERS |= {
     "proposal_send": writers_fleet.proposal_send,
     "lines_draft": writers_fleet.lines_draft,
     "units_reserve": writers_fleet.units_reserve,
+    # P9-10.16: the telecom pack's steps (its `teardown` is `bench_teardown` through WRITE_KIND)
+    "site_transfer": writers_telecom.site_transfer,
+    "spares_transfer": writers_telecom.spares_transfer,
+    "refurb_order": writers_telecom.refurb_order,
+    "bench_teardown": writers_telecom.bench_teardown,
+    "broker_listing": writers_telecom.broker_listing,
+    "recycler_pickup": writers_telecom.recycler_pickup,
 }
 
 
@@ -729,7 +739,8 @@ WRITE_KIND = {
     "tool_fleet": {
         "lease": "fleet_issue", "partsxfer": "parts_issue",
         "propsend": "proposal_send", "propdraft": "lines_draft", "propreserve": "units_reserve",
-    }
+    },
+    "telecom_network": {"teardown": "bench_teardown"},
 }  # fmt: skip
 
 

@@ -409,6 +409,11 @@ def _unit_pack(
     values = unit_plan.plan(c, pack, as_of, blocked, members)
     routes = to_routes(t, values)
     _decorate(t, routes)
+    by_id = {
+        r.id: list(r.instructions) for r in pack.routes
+    }  # P9-10.16: a route's steps are the valuer's (`dest.steps`) or the pack's
+    for r in routes:
+        r["steps"] = list((r.get("dest") or {}).get("steps") or by_id.get(r["id"].split(":", 1)[0]) or [])
     best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
     return _Valued(routes, best["k"] if best else None)
 

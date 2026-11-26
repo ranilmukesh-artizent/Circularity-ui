@@ -62,6 +62,14 @@ describe('ProposalsCard', () => {
     expect(m.accept).toHaveBeenCalledWith(7);
   });
 
+  it('shows a held requisition reduction with Accept and Reject (P9-10.16, TN-19)', () => {
+    m.list = [{ ...P, id: 9, action: 'requisition.reduce', title: 'Reduce purchase requisition', case_id: 'RT-1048', input: { case_id: 'RT-1048', req_id: 'PR-3302', qty: 1 } }];
+    draw();
+    expect(host.textContent).toContain('Reduce purchase requisition');
+    expect(button('Accept')).toBeTruthy();
+    expect(button('Reject')).toBeTruthy();
+  });
+
   it('shows why the hold policy held it (plan 9 P9-2.4), and nothing for a proposal held before', () => {
     m.list = [{ ...P, reasons: [{ reason: 'value', detail: 'Value $900 is above the $600 limit' }, { reason: 'confidence', detail: 'Confidence 0.62 is below 0.75' }] }];
     draw();
