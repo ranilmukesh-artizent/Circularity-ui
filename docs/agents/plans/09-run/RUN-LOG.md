@@ -184,3 +184,10 @@ unattended". Times are local (IST).
 | 26 Nov 10:06 | P9-11.8 merged. Batch b9; approval holds of 9.11 and 11.9 unified (Decision.approvals), one valuer dispatch kind_of. |
 | 26 Nov 10:06 | P9-11.9 merged. Batch b9; approval holds of 9.11 and 11.9 unified (Decision.approvals), one valuer dispatch kind_of. |
 | 26 Nov 10:06 | P9-11.10 merged. Batch b9; approval holds of 9.11 and 11.9 unified (Decision.approvals), one valuer dispatch kind_of. |
+| 26 Nov 13:23 | P9-9.13 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-9.17 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-9.20 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-10.11 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-10.12 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-11.11 merged. merged with the lead's batch-10 fixes e87d616 |
+| 26 Nov 13:23 | P9-11.12 merged. merged with the lead's batch-10 fixes e87d616 |
