@@ -34,7 +34,7 @@ def test_every_guardrail_has_type_and_stage():
         got = {g.id: (g.type, g.stage) for g in load_template(key).guardrails}
         assert got == rows, key
         n += len(got)
-    assert n == 20
+    assert n == 22  # 20 of the demo and the first plan 9 packs, plus GR-14 and GR-15 of the tool fleet (P9-3.15)
 
 
 def test_compliance_guardrails_are_locked():

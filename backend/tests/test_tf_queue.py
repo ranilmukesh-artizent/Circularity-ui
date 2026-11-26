@@ -14,6 +14,8 @@ from di.services.cases import intake, store, tool_queue
 from tests import starting
 from tests.helpers import call, client, h, tool_case_facts
 
+pytestmark = pytest.mark.usefixtures("no_synced_demand")
+
 ORG = "tool-fleet-q"
 RENEWAL = "FC-30117-R"
 SLOTS_MSG = "No repair center slot in the next two weeks: the queue plan gives the slots to refurbishments that add more"

@@ -68,3 +68,31 @@ def no_synced_conflicts(monkeypatch):
 
     real = hold._case_state
     monkeypatch.setattr(hold, "_case_state", lambda *a, **k: (real(*a, **k)[0], False))
+
+
+@pytest.fixture
+def no_synced_demand(monkeypatch):
+    """Plan 9 (P9-3.12): every open tool-fleet case reads the live named demand of the `fleet` and `parts` sources
+    (di.repositories.tool_demand), whose records carry no org unit and so reach every org. On a stack whose Connection Fabric
+    has synced, the fleet mock's renewals (FC-30101-R and others) are offered to every case and change the queue plan; on a
+    fresh database there are none. Tests about the queue plan or the panel's own orders use this fixture
+    (`pytestmark = pytest.mark.usefixtures("no_synced_demand")`) so they give the same answer on both: the demand records
+    that exist when the test starts are not offered, and the rows the test seeds itself are."""
+    from di.repositories import tool_demand
+
+    with SessionLocal() as s:
+        synced = set(s.execute(text("SELECT key FROM canonical WHERE model = 'demand'")).scalars())
+    real = tool_demand.named_demand
+
+    def named_demand(*a, **k):
+        d = real(*a, **k)
+        proj = d.get("proj")
+        return d | {
+            "lease": [x for x in d["lease"] if x["id"] not in synced],
+            "so": [x for x in d["so"] if x["id"] not in synced],
+            "bid": [x for x in d["bid"] if x["id"] not in synced],
+            "proj": None if proj and proj["id"] in synced else proj,
+            "wo": {p: [x for x in xs if x["id"] not in synced] for p, xs in d["wo"].items()},
+        }
+
+    monkeypatch.setattr(tool_demand, "named_demand", named_demand)

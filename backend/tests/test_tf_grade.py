@@ -25,6 +25,8 @@ from di.services.modeler.valuers.tool_inputs import GradeView
 from tests import starting
 from tests.helpers import call, client, h, tool_case_facts
 
+pytestmark = pytest.mark.usefixtures("no_synced_demand")
+
 ORG = "tool-fleet-a"
 SERIAL = "CMH-48213"
 GRADED = datetime(2026, 10, 7, 3, 0, tzinfo=UTC)
@@ -122,7 +124,11 @@ def test_tf_03_view_shows_the_estimate(opened):
     assert gates == [("G-TOOL-REC", True), ("G-TOOL-TEL", True), ("G-CON-2", True)]
     # `life` is computed when the canonical store holds run hours or months on contract for the serial (P9-3.9, test_tf_life)
     assert len(v["paths"]) == 6  # the six valued paths (P9-3.12, test_tf_paths)
-    assert (v["plan"], v["approval"], v["followThrough"]) == (None, None, None)
+    # the queue plan (P9-3.13): this return is in its org's queue and no order is there to take; the approval (P9-3.15):
+    # who approves; the follow-through is still to come
+    assert v["plan"]["holds"] is None and v["plan"]["lost"] == []
+    assert v["approval"] is None or v["approval"]["kind"] in ("policy", "person")
+    assert v["followThrough"] is None
 
 
 def test_tf_03_late_grade_reevaluates(opened):
