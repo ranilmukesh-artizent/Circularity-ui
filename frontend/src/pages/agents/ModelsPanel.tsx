@@ -77,7 +77,7 @@ export function ModelsPanel() {
     <section className="sect" id="agModels">
       <div className="sh">
         <h2>Models</h2>
-        <span className="note">
+        <span className="note ag-active">
           Base model {s.base} ·{' '}
           {templates.map((t, k) => (
             <span key={t}>{k > 0 && ' · '}{label(t)}: {s.active[t] ? <b>{s.active[t]}</b> : 'no calibration'}</span>
@@ -94,14 +94,14 @@ export function ModelsPanel() {
             promotion. Open cases keep their values.
           </p>
           {s.can.fit && (
-            <div className="row" style={{ gap: 8 }}>
+            <div className="ag-form ag-fit">
               <label htmlFor="ag-mdl-template">Template</label>
-              <select id="ag-mdl-template" value={template} onChange={(e) => setTemplate(e.target.value)}>
+              <select className="sel" id="ag-mdl-template" value={template} onChange={(e) => setTemplate(e.target.value)}>
                 {templates.map((t) => <option key={t} value={t}>{label(t)}</option>)}
               </select>
               <button className="btn sm pri" id="ag-mdl-fit" disabled={action.pending} onClick={fit}>Fit a candidate</button>
               <label htmlFor="ag-mdl-stage">Stage</label>
-              <select id="ag-mdl-stage" value={stage} onChange={(e) => setStage(e.target.value)}>
+              <select className="sel" id="ag-mdl-stage" value={stage} onChange={(e) => setStage(e.target.value)}>
                 {STAGE_OPTIONS.map((t) => <option key={t} value={t}>{stageLabel(t)}</option>)}
               </select>
               {template === 'tool_fleet' && (
@@ -173,7 +173,7 @@ function RepairAccuracy() {
   };
   return (
     <div className="panel" id="agRepairAccuracy" style={{ marginTop: 12 }}>
-      <div className="sh" style={{ padding: '8px 12px' }}>
+      <div className="ph">
         <h3>Repair estimate accuracy</h3>
         {a.can.compute && <button className="btn sm" id="ag-acc-compute" disabled={action.pending} onClick={compute}>Compute now</button>}
       </div>

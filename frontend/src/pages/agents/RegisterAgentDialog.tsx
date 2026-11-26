@@ -78,7 +78,7 @@ export function RegisterAgentDialog({ s, onClose }: { s: AgentsScreen; onClose: 
           </div>
           <div className="fld">
             <label htmlFor="ag-reg-kind">Kind</label>
-            <select id="ag-reg-kind" value={kind} onChange={(e) => setKind(e.target.value as AgentKind)}>
+            <select className="sel" id="ag-reg-kind" value={kind} onChange={(e) => setKind(e.target.value as AgentKind)}>
               <option value="external">External: runs outside Circularity</option>
               <option value="internal">Internal: runs inside Circularity</option>
             </select>
