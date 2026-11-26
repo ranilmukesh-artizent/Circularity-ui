@@ -236,9 +236,11 @@ export interface ModelVersion {
     n: number; active_id: string | null; mae_active: number | null; mae_candidate: number | null;
     /** rated life (P9-3.10): MAE in run hours of the predicted median life on the last 3 months held out, and the concordance index */
     mae?: number | null; concordance?: number | null; by_class?: Record<string, { skipped: { name: string; n: number; reason: string }[] }>;
+    /** device price model (P9-6.9), on the newest 20% of rows: mean absolute percentage error, share of prices inside P10 to P90 and its target */
+    mape?: number; coverage?: number; target?: number; n_train?: number; n_test?: number; window?: { from: string; to: string };
   };
-  /** what the model predicts: a price calibration (default) or the remaining life of tool components */
-  kind?: 'calibration' | 'rated_life';
+  /** what the model predicts: a calibration of route values (default), the remaining life of tool components, or a device's price per channel */
+  kind?: 'calibration' | 'rated_life' | 'price';
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
   blocks: { propose: string | null; promote: string | null };
@@ -251,6 +253,8 @@ export interface ModelsScreen {
   active: Record<string, string | null>;
   /** the active remaining-life model (kind rated_life, P9-3.10), or null */
   activeRatedLife: string | null;
+  /** the active device price model (kind price, P9-6.9), or null */
+  activePrice?: string | null;
   models: ModelVersion[];
   can: { fit: boolean; promote: boolean };
   /** the repair estimate replayed on held-out repairs (plan 9, P9-4.5): the newest figures per org unit and tool class */
@@ -289,7 +293,7 @@ export const computeRepairAccuracy = (): Promise<ActionResult<{ families: number
 export const useModels = (): ModelsScreen => cached<ModelsScreen>('/api/screens/agents/models');
 
 /** Fit a candidate calibration model on the confirmed outcomes (manageFlows; model.fit). */
-export const fitModel = (template = 'industrial', kind?: 'rated_life'): Promise<ActionResult<ModelVersion>> =>
+export const fitModel = (template = 'industrial', kind?: 'rated_life' | 'price'): Promise<ActionResult<ModelVersion>> =>
   invoke('model.fit', kind ? { template, kind } : { template });
 
 /**

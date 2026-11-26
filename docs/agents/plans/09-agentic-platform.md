@@ -909,7 +909,7 @@ each story went.
 - [x] P9-6.6 Blacklist and lock gate for devices
 - [x] P9-6.7 Wipe certificate gate with batch hold
 - [x] P9-6.8 Payout adjustment within 10 percent
-- [ ] P9-6.9 Price model behind the predictor
+- [x] P9-6.9 Price model behind the predictor
 - [ ] P9-6.10 Price per channel with interval and floor
 - [ ] P9-6.11 Wholesale lots sold to the best approved bid
 - [ ] P9-6.12 List, settle and learn from device sales

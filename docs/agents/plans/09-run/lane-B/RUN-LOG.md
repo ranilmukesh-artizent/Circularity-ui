@@ -117,3 +117,4 @@ One line per event, newest last, times from `date`.
 | 26 Nov 03:53 | P9-4.8 merged. batch decided per tool as one split; one-set-of-orders test is in P9-4.9 |
 | 26 Nov 03:53 | P9-4.9 merged. terms on every instruction; swap reserves its unit; takeback opens one Returns case; no new action, no model step |
 | 2026-11-26 09:24 | Staged and committed P9-3.13 (c6679c1), 3.14 (adf891f), 3.15 (319ce3e), 4.8 (2ec99e4), 4.9 (6eedbfa) from a scratch worktree (conflicts in toolfleet.py, decide.py, toolFleet.ts, serviceDesk.ts/tsx resolved by keeping both; smoke-p9-3 now counts its own steps so its last line stops conflicting). P9-3.10 verified green (105 api, web 589). By-impact verify of the five running on the main stack. |
+| 26 Nov 04:18 | P9-6.9 merged. LightGBM price model with MAPIE intervals; artefact in model_version.factors; price_predictor and activePrice for P9-6.10; nothing uses channel_price yet so no device numbers change |

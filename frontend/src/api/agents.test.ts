@@ -60,6 +60,7 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       [() => fitModel(), 'model.fit', { template: 'industrial' }],
       [() => fitModel('device'), 'model.fit', { template: 'device' }],
       [() => fitModel('tool_fleet', 'rated_life'), 'model.fit', { template: 'tool_fleet', kind: 'rated_life' }],
+      [() => fitModel('device', 'price'), 'model.fit', { template: 'device', kind: 'price' }],
       [() => fitStageCalibration('industrial', 'disposition'), 'stage.fitCalibration', { pack: 'industrial', stage: 'disposition' }],
       [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
       [() => promoteModel('MV-001'), 'model.promote', { id: 'MV-001' }],

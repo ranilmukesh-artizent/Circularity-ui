@@ -12,10 +12,10 @@ Pure: no Session, no I/O. The rows come from `di.repositories.outcomes`.
 
 import statistics
 from collections.abc import Mapping, Sequence
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from di.services.engine.jsmath import js_round
-from di.services.engine.predictor import Asset, Predictor
+from di.services.engine.predictor import Asset, Predictor, PriceBand
 
 MIN_FACTOR, MAX_FACTOR = 0.5, 1.5
 Key = tuple[str, str, str]  # (template, route, asset class)
@@ -53,6 +53,9 @@ class CalibratedPredictor:
     def _scale(self, route: str, v: int) -> int:
         f = self._f(route)
         return v if f == 1.0 else js_round(v * f)
+
+    def channel_price(self, facts: Mapping[str, Any], channel: str) -> PriceBand:
+        return self.base.channel_price(facts, channel)
 
     def market_value(self, a: Asset) -> float:
         return self.base.market_value(a)

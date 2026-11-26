@@ -48,6 +48,17 @@ describe('a remaining-life candidate', () => {
     expect(t).toContain('Chuck: Needs at least 30 verdicts');
   });
 
+  it('says a device price model\'s error, interval coverage against its target and window (P9-6.9, DV-06)', () => {
+    const m = model({
+      kind: 'price', template: 'device', factors: [],
+      metrics: { n: 900, active_id: null, mae_active: null, mae_candidate: 12.5, mae: 12.5, mape: 0.041, coverage: 0.79, target: 0.8, n_train: 540, n_test: 180, window: { from: '2026-01-01', to: '2026-10-27' } },
+    });
+    act(() => root.render(<ModelNote m={m} />));
+    expect(host.querySelector('[data-testid="price-note"]')?.textContent).toBe(
+      'MAE $13, MAPE 4.1%, inside the range 79% (target 80%); trained on 540 rows, tested on 180, 2026-01-01 to 2026-10-27',
+    );
+  });
+
   it('keeps the factor line for a price calibration', () => {
     act(() => root.render(<ModelNote m={model({ kind: 'calibration', template: 'industrial', factors: [{ route: 'resell', cls: 'Motor', factor: 0.8 }] })} />));
     expect(host.textContent).toBe('resell · Motor ×0.80');
