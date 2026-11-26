@@ -3,6 +3,8 @@
     read_text(text, packs=None) -> Reading         the reading log: word count, controls, systems, unit
     match_pack(reading, text, packs) -> PackMatch  the closest pack (RapidFuzz token_set_ratio); below 60, nearest only
     draft_change_set(text, org, *, packs, answer, reader) -> ChangeSet   the change set of typed overlay operations
+    guardrail_groups(text, pack) -> GuardrailGroups   the pack's guardrails the description states, the pack's own, the
+                                                      research additions and the shared ones (P9-10.11)
 
 A person describes a business in words; the agent turns the controls they state into customer overlay operations
 (`di.services.modeler.overlay`, I-4: tighten, add_approver, add_step, shortcut, set_param), places the answer to the pack's
@@ -34,7 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from rapidfuzz import fuzz, utils
 
 from di.services.modeler.compile import CompiledRule
-from di.services.modeler.gates import pack_gates
+from di.services.modeler.gates import catalogue, pack_gates
 from di.services.modeler.overlay import AddApprover, AddStep, OverlayError, OverlayOp, Shortcut, Tighten, apply_overlay, parse_ops
 from di.services.modeler.pack import Pack, PackGuardrail, load_pack, pack_keys
 from di.services.modeler.stages import STAGE_KEYS, StageKey
@@ -52,7 +54,7 @@ STOP = frozenset(
     "a an the and or of to for from in on at by with we our us is are be it its this that as into their they you your".split()
 )
 
-Kind = Literal["amount", "percent", "role", "market", "condition"]
+Kind = Literal["amount", "percent", "role", "market", "condition", "check"]
 
 
 class Control(BaseModel):
@@ -252,9 +254,29 @@ def _find(pattern: str, text: str) -> bool:
     return re.search(rf"(?<![\w]){re.escape(pattern)}(?![\w])", text, re.I) is not None
 
 
+def _words(s: str) -> set[str]:
+    return set(_prep(s).split())
+
+
+def _stated_checks(clause: str, packs: Sequence[Pack]) -> list[PackGuardrail]:
+    """The guardrails without a number (a check, not a threshold) that the clause states: every word of the guardrail's text
+    is in the clause, which has at least three of them ("Export control check before any resale")."""
+    have = _words(clause)
+    seen: set[str] = set()
+    out: list[PackGuardrail] = []
+    for p in packs:
+        for g in p.guardrails:
+            w = _words(g.text)
+            if g.param is None and len(w) >= 3 and w <= have and g.id not in seen:
+                seen.add(g.id)
+                out.append(g)
+    return out
+
+
 def read_text(text: str, packs: Sequence[Pack] | None = None) -> Reading:
     """The reading log of a description (pure): word count; amounts (`$600`), percents, market codes, roles and conditions
-    ("over 3 months", "older than 2 years"); the systems and the unit that the packs name. `packs` defaults to every pack."""
+    ("over 3 months", "older than 2 years"), and the checks a clause states by the words of a pack guardrail; the systems
+    and the unit that the packs name. `packs` defaults to every pack."""
     packs = list(packs) if packs is not None else [load_pack(k) for k in pack_keys()]
     controls: list[Control] = []
     markets = _markets(packs)
@@ -283,6 +305,8 @@ def read_text(text: str, packs: Sequence[Pack] | None = None) -> Reading:
             if _find(r, clause):
                 controls.append(Control(kind="role", text=clause.rstrip(".;!?"), value=r))
                 break
+        for g in _stated_checks(clause, packs):
+            controls.append(Control(kind="check", text=clause.rstrip(".;!?"), value=g.id))
     systems = list(dict.fromkeys(s for p in packs for s in _systems_of(p) if _find(s, text)))
     unit = next((p.unit for p in packs if re.search(rf"\b{re.escape(p.unit)}s?\b", text, re.I)), None)
     return Reading(word_count=len(text.split()), controls=controls, systems=systems, unit=unit, explicit_controls=explicit)
@@ -747,3 +771,36 @@ def draft_change_set(
             error = e.message
             log.warning("configuration agent: the model draft was refused (%s)", error)
     return _deterministic(text, reading, packs, answer)
+
+
+# ---------------------------------------------------------------- the guardrails a draft lists
+class GuardrailGroups(BaseModel):
+    """The pack's guardrails as a draft lists them: `stated` in the description, the pack's own (`pack`), the research
+    additions (`research`, the gate's `research_addition` parameter) and the ones shared with other packs (`shared`)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    stated: list[PackGuardrail] = Field(default_factory=list)
+    pack: list[PackGuardrail] = Field(default_factory=list)
+    research: list[PackGuardrail] = Field(default_factory=list)
+    shared: list[PackGuardrail] = Field(default_factory=list)
+
+
+def guardrail_groups(text: str, pack: Pack) -> GuardrailGroups:
+    """Each of the pack's guardrails in exactly one group, in the pack's order: stated when a clause of the description has
+    all its words (a check, `_stated_checks`); else a research addition when the pack's gate of that id says so; else shared
+    when the gate catalogue lists it for other packs too; else the pack's own. Pure; nothing here changes the pack."""
+    stated = {g.id for c in _clauses(text) for g in _stated_checks(c, [pack])}
+    research = {r.id for r in pack.gates if r.params.get("research_addition")}
+    cat = catalogue()
+    out: dict[str, list[PackGuardrail]] = {"stated": [], "pack": [], "research": [], "shared": []}
+    for g in pack.guardrails:
+        if g.id in stated:
+            out["stated"].append(g)
+        elif g.id in research:
+            out["research"].append(g)
+        elif g.id in cat and set(cat[g.id].packs) - {pack.key}:
+            out["shared"].append(g)
+        else:
+            out["pack"].append(g)
+    return GuardrailGroups(**out)

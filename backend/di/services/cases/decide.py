@@ -46,7 +46,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import car_facts, gate_hold, store, unit_plan
+from di.services.cases import car_facts, gate_hold, store, telecom_facts, unit_plan
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
@@ -355,7 +355,8 @@ def _unit_pack(
     as_of: datetime | None, blocked: frozenset[str],
 ) -> _Valued:  # fmt: skip
     """A unit pack (telecom network, P9-10.10) valued, then planned with the units of its queue: the `queue` given, else the
-    org's other open cases of the template. Spares before new and every named demand filled once (`unit_plan`)."""
+    org's other open cases of the template. Spares before new and every named demand filled once (`unit_plan`). With a session,
+    each unit (this one and the queue's) is valued on its canonical facts where the case holds none (`telecom_facts`)."""
     members = (
         [dict(x) for x in queue]
         if queue is not None
@@ -363,6 +364,9 @@ def _unit_pack(
         if session is not None and c.get("owner")
         else []
     )
+    if session is not None:  # the market, demand and spares facts of each unit from the canonical store (P9-10.11)
+        c = telecom_facts.overlay(session, c)
+        members = [telecom_facts.overlay(session, m) for m in members]
     values = unit_plan.plan(c, pack, as_of, blocked, members)
     routes = to_routes(t, values)
     _decorate(t, routes)
