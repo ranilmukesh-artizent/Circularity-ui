@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { acknowledgeAlert, alertAssignee, alertKinds, alerts, assignAlert, status, type Alert } from '../../api/home';
 import { useBackend } from '../../api/useBackend';
-import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
-import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { Panel } from '../../components/kit/Panel';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusPill } from '../../components/kit/StatusPill';
@@ -66,7 +65,7 @@ export function AlertsPage() {
                         <button className="lnk" onClick={() => { setTo(ROLES[0]); setAssign(a); }}>Assign</button>
                       </>
                     )}
-                    <button className="lnk" onClick={askSoon}><Icon name="spark" /> Explain</button>
+                    <button className="lnk" onClick={() => ask(launch.explainAlert(a.t))}>Explain</button>
                   </>
                 ),
                 st: <StatusPill {...(a.ack ? status('ack') : a.sev >= 2 ? status('failed', 'High') : status('open', 'Medium'))} />,

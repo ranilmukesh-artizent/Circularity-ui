@@ -8,7 +8,7 @@ import { sessionScoped } from '../../api/view';
 import {
   ago, ageShort, attention, importWorkflow, nowMs, recentRuns, RUN_LABEL, source, sources, systemOf, trigText, wfStat, workflows, type Workflow, type WfStat,
 } from '../../api/workflows';
-import { openAsk } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
 import { problemRows, type ProblemRow } from './importProblems';
@@ -130,7 +130,7 @@ export function WorkflowList({ query }: { query: URLSearchParams }) {
             {[['last', 'Last run (recent)'], ['name', 'Name (A–Z)'], ['ok', '24 h success (lowest)'], ['status', 'Status (failing first)']].map(([k, t]) => <option key={k} value={k}>{t}</option>)}
           </select>
           <span className="grow" />
-          {mgr && <button className="btn" onClick={() => setModal({ k: 'ai', prompt: '' })}><Icon name="spark" /> Build with AI</button>}
+          {mgr && <button className="btn" onClick={() => setModal({ k: 'ai', prompt: '' })}>Build a workflow</button>}
           {mgr && <>
             <input ref={fileRef} type="file" accept=".json,application/json" hidden aria-hidden="true" tabIndex={-1} onChange={(e) => { void importFile(e.target.files?.[0]); }} />
             <button className="btn" id="frWfImport" onClick={() => fileRef.current?.click()}><Icon name="upload" /> Import</button>
@@ -230,7 +230,7 @@ function Row({ w, sel, mgr, onPick, onOpen, onDelete, onInvestigate, onDup }: {
 
 function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: number; onInvestigate: (id: string) => void }) {
   const at = attention();
-  const soon = () => openAsk('Which workflows are failing and why?');
+  const soon = () => ask(launch.diagnoseWorkflows());
   return (
     <>
       {at.length > 0 && (
@@ -239,7 +239,7 @@ function Side({ c, total, onInvestigate }: { c: Record<WfStat, number>; total: n
           <ol className="frtl">{at.map((a, i) => (
             <li key={i}><IconTile ic={a.ic} h={a.h} cls="sm" />
               <div className="frtlb"><b>{a.t}</b><span className="note">{a.s}</span>
-                <span className="frtlx">{a.go && <button className="lnk" onClick={() => onInvestigate(a.go!)}>Investigate</button>}<button className="lnk" onClick={soon}><Icon name="spark" /> Diagnose</button></span>
+                <span className="frtlx">{a.go && <button className="lnk" onClick={() => onInvestigate(a.go!)}>Investigate</button>}<button className="lnk" onClick={soon}>Diagnose</button></span>
               </div></li>
           ))}</ol>
         </div></section>

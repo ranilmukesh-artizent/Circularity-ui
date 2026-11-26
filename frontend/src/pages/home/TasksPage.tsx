@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { runTaskAct, taskGroupOf, taskGroups, taskItems, type TaskItem } from '../../api/home';
 import { useBackend } from '../../api/useBackend';
-import { Icon } from '../../components/Icon';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
-import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { Panel } from '../../components/kit/Panel';
 import { Segmented } from '../../components/kit/Segmented';
 import { HomeHeader } from './HomeHeader';
@@ -25,8 +24,8 @@ export function TaskRow({ i }: { i: TaskItem }) {
       </span>
       <span className="row">
         {cid && (
-          <button className="afai" aria-label={'Ask about ' + cid} onClick={askSoon}>
-            ✦
+          <button className="lnk" aria-label={'Ask about ' + cid} onClick={() => ask(launch.howToDoTask(i.t, cid))}>
+            Ask
           </button>
         )}
         {i.act ? (
@@ -77,7 +76,7 @@ export function TasksPage() {
         groups.map(({ g, it }) => (
           <Panel
             key={g[0]} title={g[1]} sub={it.length + ' item' + (it.length > 1 ? 's' : '')}
-            right={<button className="btn sm" onClick={askSoon}><Icon name="spark" /> Do it for me</button>}
+            right={<button className="btn sm" onClick={() => ask(launch.howToDo(g[1], it.length))}>Ask how to do this</button>}
           >
             <ul className="aol">
               {it.map((i, k) => <TaskRow key={k} i={i} />)}

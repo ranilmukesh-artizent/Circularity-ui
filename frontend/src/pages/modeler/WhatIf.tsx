@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { simulateFlow } from '../../api/modeler';
 import type { FlowGraph, ModelerScreen, SimResult } from '../../api/types';
 import { toast } from '../../components/toast';
+import { RailSection } from './RailSection';
 import { formatWhatIf, leverError, LEVERS, poMoney, type LeverName, type Levers } from './impact';
 
 const NAMES = Object.keys(LEVERS) as LeverName[];
@@ -28,8 +29,8 @@ export function WhatIf({ s, graph }: { s: ModelerScreen; graph: FlowGraph }) {
     }
   };
   return (
+    <RailSection title="What if" icon="activity" sub="Move the levers, then run it against the published rules. Nothing is saved.">
     <div className="mdl-whatif">
-      <h4>What if</h4>
       {NAMES.map((k) => {
         const { label, lo, hi, pct } = LEVERS[k];
         return (
@@ -55,5 +56,6 @@ export function WhatIf({ s, graph }: { s: ModelerScreen; graph: FlowGraph }) {
         </>
       )}
     </div>
+    </RailSection>
   ); // prettier-ignore
 }

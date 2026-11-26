@@ -10,6 +10,7 @@ import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { Delta } from '../../components/kit/Delta';
 import { IconTile } from '../../components/kit/IconTile';
 import { Panel } from '../../components/kit/Panel';
@@ -82,7 +83,6 @@ function AskBox() {
         <Segmented name="askmode" label="Ask mode" cur={M[0]} items={modes.map((x) => [x[0], x[1], x[2]])} onPick={(v) => setHomeUi('frMode', v)} />
         <form className="afhpr frhpr" onSubmit={submit}>
           <label className="sr" htmlFor="afhq">{M[1]}: state a goal or ask</label>
-          <Icon name="spark" />
           <input id="afhq" type="text" placeholder={M[3]} autoComplete="off" data-mode={M[0]} value={q} onChange={(e) => setQ(e.target.value)} />
           <button className="btn pri" type="submit" aria-label={M[1]}>
             <Icon name="send" />
@@ -120,7 +120,7 @@ function ActivityTimeline({ win, compact }: { win: string; compact?: boolean }) 
         key: String(i), ic: o.ic, h: o.h,
         t: <>{o.title}{o.badge && <> <span className="afb afb-preparedbyagent">{o.badge}</span></>}</>,
         s: o.sub, ago: o.ago, st: o.st && <StatusPill {...o.st} />,
-        x: !compact && o.links.length ? <>{o.links.map((l) => <button key={l.act} className="lnk" onClick={askSoon}>{l.label}</button>)}</> : undefined,
+        x: !compact && o.links.length ? <>{o.links.map((l) => <button key={l.act} className="lnk" onClick={() => ask(`${l.label}: ${o.title}.`)}>{l.label}</button>)}</> : undefined,
       }))}
     />
   );
@@ -337,7 +337,7 @@ function Figures() {
                 {f.delta && <Delta d={f.delta} />}
                 <span className="note">{f.sub}</span>
               </span>
-              <button className="lnk" onClick={askSoon}><Icon name="spark" /> Explain this number</button>
+              <button className="lnk" onClick={() => ask(launch.explainKpi(f.l))}>Explain this number</button>
             </div>
           </div>
         ))}

@@ -230,7 +230,7 @@ export function ConnectFlow({ start, onClose }: { start: CxStart; onClose: () =>
         ) : maps ? (
           <div className="callout">No field of {v} maps to a canonical model. Its records are kept as source records (Sync &amp; History, Source Tables) and add no canonical data.</div>
         ) : (
-          <button className="btn pri" disabled={suggesting} onClick={() => void suggest()}><Icon name="spark" /> Suggest mappings</button>
+          <button className="btn pri" disabled={suggesting} onClick={() => void suggest()}>Suggest mappings</button>
         )}
       </>
     );

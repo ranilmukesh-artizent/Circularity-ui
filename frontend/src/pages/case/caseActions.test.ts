@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({
   invoke: vi.fn(async () => ({ ok: true, output: { case_id: 'RT-1002' }, key: null, action: 'case.reevaluate' })),
   toast: vi.fn(),
+  openAsk: vi.fn(),
 }));
 vi.mock('../../api/actions', () => ({
   invoke: m.invoke,
@@ -23,14 +24,15 @@ vi.mock('../../api/case', () => ({
   evidencePack: vi.fn(),
 }));
 vi.mock('../../components/toast', () => ({ toast: m.toast }));
-vi.mock('../../utils/askBus', () => ({ askSoon: vi.fn() }));
+vi.mock('../../utils/askBus', () => ({ askSoon: vi.fn(), openAsk: m.openAsk }));
 
-import { runNextStep } from './caseActions';
+import { caseActions, runNextStep } from './caseActions';
 import type { CaseUi } from './CaseContext';
 
 beforeEach(() => {
   m.invoke.mockClear();
   m.toast.mockClear();
+  m.openAsk.mockClear();
 });
 
 describe('runNextStep', () => {
@@ -38,5 +40,20 @@ describe('runNextStep', () => {
     await expect(runNextStep('RT-1002', {} as CaseUi)).resolves.toBeUndefined();
     expect(m.invoke).toHaveBeenCalledWith('case.reevaluate', { case_id: 'RT-1002' });
     expect(m.toast).toHaveBeenCalledWith('Re-evaluate a case · RT-1002.', 3600);
+  });
+});
+
+describe('the assistant launchers of the case pages', () => {
+  it('"Ask about RT-1048" opens Ask with a question that names the case', () => {
+    caseActions.askAboutCase('RT-1048');
+    expect(m.openAsk).toHaveBeenCalledWith('Tell me about RT-1048: where it stands, why this route, and what it is waiting for.');
+  });
+  it('"Ask about this stage" names the case, the stage number and its title', () => {
+    caseActions.askAboutStage('RT-1048', 6, 'Re-evaluate');
+    expect(m.openAsk).toHaveBeenCalledWith('Tell me about stage 6 (Re-evaluate) of RT-1048: what it needs and who owns it.');
+  });
+  it('"Notify the owner" drafts a note to the stage owner', () => {
+    caseActions.notifyOwner('Approver');
+    expect(m.openAsk).toHaveBeenCalledWith('Draft a note to Approver asking them to act on the step this case is waiting for.');
   });
 });

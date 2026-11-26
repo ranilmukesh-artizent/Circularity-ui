@@ -13,7 +13,7 @@ import {
 import { Icon } from '../../components/Icon';
 import type { GraphApi } from '../../components/graph/GraphView';
 import { autoLayout as layout } from '../../components/graph/layout';
-import { openAsk } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { toast } from '../../components/toast';
 import { refused, useAction } from '../../hooks/useAction';
 import { draftOf, edit, reload, setPin, undoRedo, useDrafts, type Draft } from './draftStore';
@@ -371,7 +371,7 @@ function Loaded({ w, d, query }: { w: Workflow; d: Draft; query: URLSearchParams
     const o = runOrder(g);
     return (
       <>{head}
-        <Panel title="Documentation" right={<button className="btn sm" onClick={() => openAsk(`Explain the workflow ${w.name} (${w.id}).`)}><Icon name="spark" /> Explain this workflow</button>}>
+        <Panel title="Documentation" right={<button className="btn sm" onClick={() => ask(launch.explainWorkflow(w.name, w.id))}>Explain this workflow</button>}>
           <div className="frdoc">
             <p>{w.desc}</p>
             <p className="note">Generated from the workflow graph · {g.nodes.length} steps, {g.edges.length} links · {trigText(d.trig)} · owner {d.owner}</p>
@@ -542,14 +542,15 @@ function Investigation({ w, mgr, onRun }: { w: Workflow; mgr: boolean; onRun: ()
   if (!r || !n) return null;
   const i = stepInfo(n), q = runQuality(w.id), tries = retriesOf(r, w);
   const mine = q && r.key && q.key === r.key ? q : null; // the held records of this run (a seeded run has none)
-  const soon = () => openAsk(`Why did ${w.name} (${w.id}) fail at ${i.label} in run ${r.id}, and how do I fix it?`);
+  const diagnose = () => ask(launch.diagnoseRun(w.name, w.id, i.label, r.id));
+  const fix = () => ask(launch.fixRun(w.name, w.id, i.label, r.id));
   return (
     <section className="panel frinvp" id="frInvest">
       <div className="ph">
         <div><h3><Icon name="alert" /> Investigation · {r.id}</h3><span className="note">{i.label} {failedAfter(tries)} · {ago(nowMs() - r.ts)}</span></div>
         <span className="row">
-          <button className="btn sm" onClick={soon}><Icon name="spark" /> Diagnose</button>
-          <button className="btn sm" onClick={soon}><Icon name="spark" /> Fix</button>
+          <button className="btn sm" onClick={diagnose}>Diagnose</button>
+          <button className="btn sm" onClick={fix}>Fix</button>
           {mgr && <button className="btn sm pri" onClick={onRun}><Icon name="play" /> Run now</button>}
         </span>
       </div>

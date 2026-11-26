@@ -1,0 +1,47 @@
+/* The contents of the Modeler's rail panels (plan 10, T6). The rail (ModelerRail) is the container and supplies the 20px
+   padding; these rules give each group a title, 24px between groups and 32px rows. No card inside the rail, no shadow,
+   no uppercase. Colours are the app's tokens, so both themes follow. Nothing here animates. */
+.mdl-rsec { display: grid; gap: 8px; margin: 0; }
+.mdl-rsec + .mdl-rsec { margin-top: 24px; }
+.mdl-rsec-t { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.mdl-rsec-t > svg { width: 18px; height: 18px; flex: none; }
+.mdl-rsec-t h3 { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.mdl-rsec-r { margin-left: auto; display: inline-flex; gap: 8px; }
+.mdl-rsec-s { margin: 0; font-size: 12.5px; color: var(--muted); }
+.mdl-rsec h4 { margin: 16px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.mdl-rsec .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* The inspector was a bordered card of its own; in the rail (.mdl-rail, ModelerRail) it is a section, with the
+   container's 24px between its groups. The selectors are scoped so the JSX stays as it is. */
+.mdl-rail .mdl-insp { border: 0; border-radius: 0; background: none; padding: 0; gap: 8px; }
+.mdl-rail .mdl-insp h3 { display: flex; align-items: center; gap: 8px; min-height: 32px; margin: 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.mdl-rail .mdl-insp h3 > svg { width: 18px; height: 18px; flex: none; }
+.mdl-rail .mdl-insp h4 { margin: 16px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.mdl-rail .mdl-insp .note, .mdl-rail .mdl-insp .mdl-read { font-size: 13.5px; line-height: 1.45; }
+.mdl-rail .mdl-insp .mdl-prop { border-radius: 8px; }
+.mdl-rail .mdl-insp .mdl-prop .label { text-transform: none; font-size: 12.5px; }
+.mdl-rail .mdl-insp ul li { min-height: 32px; display: flex; align-items: center; gap: 8px; }
+
+/* Checks: one row per check, 32px high, a 16px icon in the status colour, the message as the control. */
+.mdl-rsec .mdl-checks { margin: 0; padding: 0; list-style: none; display: grid; }
+.mdl-rsec .mdl-checks li { display: flex; align-items: flex-start; gap: 8px; min-height: 32px; padding: 6px 0; font-size: 13.5px; line-height: 1.45; border-top: 1px solid var(--line2); }
+.mdl-rsec .mdl-checks li:first-child { border-top: 0; }
+.mdl-rsec .mdl-checks li > svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.mdl-rsec .mdl-checks li.ok > svg { color: var(--ok); }
+.mdl-rsec .mdl-checks li.warn > svg { color: var(--warn); }
+.mdl-rsec .mdl-checks li.fail > svg { color: var(--bad); }
+.mdl-rsec .mdl-checks li > button { all: unset; cursor: pointer; text-align: left; }
+.mdl-rsec .mdl-checks li > button:hover { text-decoration: underline; }
+.mdl-rsec .mdl-checks li > button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+
+/* Impact, What if and History rows. */
+.mdl-rsec .mdl-flips ul, .mdl-rsec .mdl-hist { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.mdl-rsec .mdl-flips li, .mdl-rsec .mdl-hist li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-height: 32px; padding: 6px 0; font-size: 13px; line-height: 1.45; border-top: 1px solid var(--line2); }
+.mdl-rsec .mdl-flips li:first-child, .mdl-rsec .mdl-hist li:first-child { border-top: 0; }
+.mdl-rsec .mdl-impact-line { margin: 0; font-size: 13.5px; line-height: 1.45; }
+.mdl-rsec .mdl-whatif { display: grid; gap: 8px; }
+.mdl-rsec .mdl-whatif .mdl-lever { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; min-height: 32px; font-size: 13px; }
+.mdl-rsec .mdl-whatif .mdl-lever input[type='range'] { grid-column: 1 / -1; width: 100%; }
+.mdl-rsec .mdl-whatif .btn { justify-self: start; }
+.mdl-rsec .mdl-whatif .good { color: var(--ok); }
+.mdl-rsec .mdl-whatif .bad { color: var(--bad); }

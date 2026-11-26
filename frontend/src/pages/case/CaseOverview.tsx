@@ -129,13 +129,13 @@ export function Overview({ c }: { c: CaseRec }) {
             </section>
           )}
           <section className="panel frp">
-            <div className="ph"><h3><Icon name="spark" /> Agent suggests</h3></div>
+            <div className="ph"><h3><Icon name="bot" /> Agent suggests</h3></div>
             <div className="pb">
               <p style={{ margin: '0 0 8px' }}>
                 {nx.kind === 'done' ? 'Every stage is done.' : nx.label}
                 {nx.role && nx.kind !== 'act' && <> <span className="note">({nx.role})</span></>}
               </p>
-              <button className="btn sm afai2" onClick={caseActions.askSoon}><Icon name="spark" /> Ask about {id}</button>
+              <button className="btn sm afai2" onClick={() => caseActions.askAboutCase(id)}>Ask about {id}</button>
             </div>
           </section>
           {o && r && (

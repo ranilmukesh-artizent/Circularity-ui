@@ -70,12 +70,12 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
       {s.rounds.length > 0 && <button className="btn ghost" onClick={() => dispatch({ t: 'back' })} disabled={s.busy}><Icon name="back" /> Back</button>}
       <span className="grow" />
       <button className="btn ghost" onClick={onClose}>Cancel</button>
-      {!reply && <button className="btn pri" onClick={() => void ask({})} disabled={s.busy || !s.prompt.trim()}><Icon name="spark" /> Plan it</button>}
+      {!reply && <button className="btn pri" onClick={() => void ask({})} disabled={s.busy || !s.prompt.trim()}>Plan it</button>}
       {qs.length > 0 && <>
         <button className="btn" onClick={() => void ask({ ...nextAnswers(s), _defaults: true })} disabled={s.busy}>Use defaults for the rest</button>
         <button className="btn pri" onClick={() => void ask(nextAnswers(s))} disabled={s.busy || !formComplete(qs, s.form)}>Continue</button>
       </>}
-      {plan && <button className="btn" onClick={() => void draftIt()} disabled={s.busy}><Icon name="spark" /> Draft with the assistant</button>}
+      {plan && <button className="btn" onClick={() => void draftIt()} disabled={s.busy}>Draft with the assistant</button>}
       {authored?.draft_id && <button className="btn pri" onClick={() => onCreated(authored.draft_id as string)}>Open the draft</button>}
       {plan && <button className="btn pri" onClick={() => void create(plan)} disabled={s.busy}><Icon name="plus" /> Create workflow</button>}
     </>

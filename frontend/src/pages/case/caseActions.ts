@@ -5,6 +5,7 @@ import { money } from '../../api/format';
 import { can } from '../../api/session';
 import type { ActionResult } from '../../api/types';
 import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
 import type { CaseUi } from './CaseContext';
@@ -66,6 +67,16 @@ export const caseActions = {
     (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast(v + ' copied.'), () => toast('Copy: ' + v, 5000));
   },
   askSoon,
+  /** "Ask about RT-1048": the assistant opens with a question that names the case (the context line shows it). */
+  askAboutCase(id: string) {
+    ask(launch.askAboutCase(id));
+  },
+  askAboutStage(id: string, n: number, title: string) {
+    ask(launch.askAboutStage(id, n, title));
+  },
+  notifyOwner(who: string) {
+    ask(launch.notifyOwner(who));
+  },
 };
 
 /** The agent's suggested next step for this person (runNext): one action, the approval card, or why it waits. */

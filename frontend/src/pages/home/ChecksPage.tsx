@@ -3,7 +3,7 @@ import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import { Icon } from '../../components/Icon';
 import { toast } from '../../components/toast';
-import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { Panel } from '../../components/kit/Panel';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { HomeHeader } from './HomeHeader';
@@ -43,7 +43,7 @@ export function ChecksPage() {
                   <td className="note">{r.detail}</td>
                   <td><StatusPill {...(r.ok ? status('success', 'Pass') : status('failed', 'Fail'))} /></td>
                   <td>{checkOwner(r.name)}</td>
-                  <td><button className="lnk" onClick={askSoon}><Icon name="spark" /> Explain</button></td>
+                  <td><button className="lnk" onClick={() => ask(launch.explainCheck(r.name))}>Explain</button></td>
                 </tr>
               ))}
             </tbody>
