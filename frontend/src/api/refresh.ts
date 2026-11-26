@@ -4,7 +4,9 @@
  * counts back from: the contract's end date or its notice date. The other fields are empty until the tasks that fill them.
  * A read only; writes go through the action pipeline.
  */
+import { invoke } from './actions';
 import { cached } from './client';
+import type { ActionResult } from './types';
 
 export interface RefreshContract {
   id: string;
@@ -110,3 +112,33 @@ export interface RefreshView {
 
 /** The panel's read for a contract refresh case (GET /api/screens/refresh/{id}). */
 export const refreshView = (caseId: string): RefreshView => cached<RefreshView>('/api/screens/refresh/' + encodeURIComponent(caseId));
+
+/** The proposal's levers (P9-5.6, CR-06): the swap threshold in percent of life left (10 to 50) and the upgrade rule on or off. */
+export interface RefreshLeverInput {
+  swapThreshold?: number;
+  upgrades?: boolean;
+}
+
+/** What moving the levers would do, all computed by the server on a copy of the market's table (nothing is stored or sent). */
+export interface RefreshWhatIf {
+  case_id: string;
+  before: { keep: number; swap: number; upgrade: number };
+  split: { keep: number; swap: number; upgrade: number };
+  changed: { serial: string; from: 'keep' | 'swap' | 'upgrade'; to: 'keep' | 'swap' | 'upgrade' }[];
+  fee_delta: number;
+  renewal_delta: number;
+  credit_total: number;
+  flips_route: boolean;
+  best_before: string;
+  best_after: string;
+  currency: string;
+  note: string;
+}
+
+/** Test the levers on a refresh case (refresh.whatIf, a read): which tools change action, and the fee, credit and renewal impact. */
+export const refreshWhatIf = (caseId: string, levers: RefreshLeverInput): Promise<ActionResult<RefreshWhatIf>> =>
+  invoke<RefreshWhatIf>('refresh.whatIf', {
+    case_id: caseId,
+    ...(levers.swapThreshold === undefined ? {} : { swap_threshold: levers.swapThreshold }),
+    ...(levers.upgrades === undefined ? {} : { upgrades: levers.upgrades }),
+  });

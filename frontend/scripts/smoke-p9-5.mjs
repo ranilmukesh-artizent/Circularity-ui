@@ -8,7 +8,9 @@
  *      contract_refresh") and FC-30117's panel shows 14 lines.
  *   2  The same panel lists each tool with its action and reason and the split "keep N, swap M, upgrade K" (the three add
  *      up to FC-30117's 14 lines).
- *
+ *   6  (runs before 5: the levers hide once a person approves) Admin moves the swap threshold to 40 on FC-30117's panel and reads
+ *      the split before and after, the tools that change action and the fee and renewal impact (refresh.whatIf: nothing stored
+ *      or sent).
  *   5  planner.a submits FC-30117, the Approver (Sales or Fleet desk) approves the proposal route; only time moves (the source-sim
  *      clock) and the panel shows "Proposal sent PR-…", "Contract lines drafted DL-…" and "Units reserved RU-…".
  *
@@ -201,8 +203,30 @@ await step('4 Refresh: the proposal is priced and waits for a person', async () 
   if (!/^Waits for (Sales: credits .* are over \$300|the Fleet desk)$/.test(who)) throw new Error('the approval line says: ' + who);
   return `${pricing}; ${who}`;
 });
+// ---------------------------------------------------------------- 6 (runs before 5: the levers hide once a person approves)
+await step('6 Refresh: moving the swap threshold to 40 shows the tools that change action and the impact', async () => {
+  const admin = await as('admin');
+  const id = (await must(admin, 'cases.list', { q: 'FC-30117', limit: 5 })).rows.find((x) => x.id)?.id;
+  if (!id) throw new Error('no refresh case for FC-30117 (run steps 1 to 4 first)');
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="rf-lever-threshold"]').first().fill('40');
+  const split = await until(
+    async () => {
+      const x = await admin.locator('[data-testid="rf-lever-split"]').first().innerText();
+      return /^keep \d+, swap \d+, upgrade \d+ → keep \d+, swap \d+, upgrade \d+$/.test(x) ? x : null;
+    },
+    'the levers do not show the split before and after',
+    UI,
+    admin,
+  );
+  const changed = await admin.locator('[data-testid="rf-lever-changed"]').first().innerText({ timeout: 2000 }).catch(() => 'no tool changes action');
+  const impact = await admin.locator('[data-testid="rf-lever-impact"]').first().innerText();
+  if (!/Fee a month .*renewal likelihood/.test(impact)) throw new Error('the impact line says: ' + impact);
+  return `${split}; ${changed.replace(/\n/g, '; ')}`;
+});
 // ---------------------------------------------------------------- 5
-await step('5 Refresh: planner.a submits, the Approver approves, the panel shows proposal sent, lines drafted, units reserved', async () => {
+await step('5Refresh: planner.a submits, the Approver approves, the panel shows proposal sent, lines drafted, units reserved', async () => {
   const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
   const planner = await as('planner.a');
   const approver = await as('approver');

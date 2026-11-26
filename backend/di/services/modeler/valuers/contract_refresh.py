@@ -4,7 +4,8 @@
     totals(actions) -> {"keep": n, "swap": n, "upgrade": n}                                       the panel's split
     flag(action) -> str | None                                                                    "life estimate low confidence"
     hold_reason(actions) -> "confidence" | None                                           why the decision waits for a person
-    needs(case_id, actions) -> list[Need]                                                 the like-life need of each swap (P9-5.3)
+    with_levers(table, swap_threshold, upgrades) -> JdmTable                              a copy with the what-if levers (P9-5.6)
+    needs(case_id, actions) -> list[Need]                                                the like-life need of each swap (P9-5.3)
     price(actions, match, rate_card, credit_table, history, market, *, fees, lines, term_months) -> Pricing   the money (P9-5.4)
 
 The per-tool choice is the market's decision table `refresh_tool_action` (I-15, P9-4.2), first hit: parts end before the next term
@@ -32,6 +33,8 @@ there is no `AgentLoop` step here, and no number is ever written by a model) or 
 reads I-15 tables.
 """
 
+import copy
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
@@ -97,6 +100,29 @@ def tool_actions(
         )
         out.append(ToolAction(serial, cls, action, reason, rul, conf, ends, successor))
     return out
+
+
+_UNDER = re.compile(r"^\s*<\s*\d+\s*$")  # a rule on the remaining life: "< 25"
+
+
+def with_levers(table: JdmTable, swap_threshold: int | None = None, upgrades: bool | None = None) -> JdmTable:
+    """A copy of the `refresh_tool_action` table with the levers of P9-5.6 moved (the table itself is never changed): every
+    `swap` rule on the remaining life reads `< swap_threshold` (its reason text too), and `upgrades=False` drops the
+    `upgrade` rules, so those tools fall to the swap and keep rows by their life. Publishing a lever is the table's
+    maker-checker, never this function."""
+    body = copy.deepcopy(table.dump())
+    for node in body["nodes"]:
+        if node["type"] != "decisionTableNode":
+            continue
+        rules = node["content"]["rules"]
+        if upgrades is False:
+            rules[:] = [r for r in rules if r.get("out_action") != '"upgrade"']
+        if swap_threshold is not None:
+            for r in rules:
+                if r.get("out_action") == '"swap"' and _UNDER.match(str(r.get("in_rul_pct") or "")):
+                    r["in_rul_pct"] = f"< {swap_threshold}"
+                    r["out_reason"] = re.sub(r"under \d+%", f"under {swap_threshold}%", str(r.get("out_reason") or ""))
+    return JdmTable.model_validate(body)
 
 
 def totals(actions: Sequence[ToolAction]) -> dict[str, int]:

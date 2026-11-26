@@ -2,6 +2,7 @@ import { refreshView, type RefreshView } from '../../../api/refresh';
 import { money } from '../../../api/format';
 import { Panel } from '../../../components/kit/Panel';
 import { RefreshExecution } from './RefreshExecution';
+import { RefreshLevers } from './RefreshLevers';
 import { RefreshMatch } from './RefreshMatch';
 import { RefreshPricing } from './RefreshPricing';
 import { RefreshTools } from './RefreshTools';
@@ -48,6 +49,7 @@ export function RefreshPanel({ caseId }: { caseId: string }) {
       <RefreshTools tools={v.tools} totals={v.tools_totals} hold={v.tools_hold} />
       <RefreshMatch match={v.match} />
       <RefreshPricing pricing={v.pricing} approval={v.approval} />
+      {v.pricing && !v.execution && <RefreshLevers caseId={caseId} />}
       <RefreshExecution execution={v.execution} />
     </Panel>
   );

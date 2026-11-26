@@ -83,17 +83,27 @@ def _add_months(d: date, n: int) -> date:
     return date(y, m + 1, min(d.day, calendar.monthrange(y, m + 1)[1]))
 
 
-def refresh_actions(s: Session, c: Mapping[str, Any]) -> list[contract_refresh.ToolAction]:
+def refresh_table(s: Session, c: Mapping[str, Any]) -> JdmTable | None:
+    """The market's `refresh_tool_action` table in force today for the refresh case `c`; None without a market or a table."""
+    market = (c.get("refresh") or {}).get("market")
+    if not market:
+        return None
+    tables_repo.ensure_seeded(s, PACK)
+    row = tables_repo.effective(s, c.get("owner"), PACK, FLOW, str(market), "refresh_tool_action", clock.now().date())
+    return None if row is None else JdmTable.model_validate(row.body)
+
+
+def refresh_actions(s: Session, c: Mapping[str, Any], table: JdmTable | None = None) -> list[contract_refresh.ToolAction]:
     """The action of each tool of the refresh case `c` (contract_refresh.tool_actions) with the life of its serial, PLM's end of
-    parts and the market's table in force today; [] without a market, a term end, lines or the market's table."""
+    parts and the market's table in force today (`table`: a copy of it with the what-if levers moved, P9-5.6); [] without a
+    market, a term end, lines or the market's table."""
     r = c.get("refresh") or {}
     market, end, lines = r.get("market"), refresh_window.as_date(r.get("term_end")), list(r.get("lines") or [])
     if not market or end is None or not lines:
         return []
-    today, org = clock.now().date(), c.get("owner")
-    tables_repo.ensure_seeded(s, PACK)
-    row = tables_repo.effective(s, org, PACK, FLOW, str(market), "refresh_tool_action", today)
-    if row is None:
+    org = c.get("owner")
+    table = table or refresh_table(s, c)
+    if table is None:
         return []
     life = {}
     for ln in lines:
@@ -103,8 +113,7 @@ def refresh_actions(s: Session, c: Mapping[str, Any]) -> list[contract_refresh.T
             life[str(ln["serial"])] = res
     eop = {k: plm.end_of_parts(s, org, k) for k in sorted({str(ln.get("cls")) for ln in lines if ln.get("cls")})}
     return contract_refresh.tool_actions(
-        lines, life, eop, _add_months(end, int(r.get("term_months") or 0)), ZenEvaluator(), str(market),
-        JdmTable.model_validate(row.body),
+        lines, life, eop, _add_months(end, int(r.get("term_months") or 0)), ZenEvaluator(), str(market), table,
     )  # fmt: skip
 
 
@@ -123,14 +132,15 @@ def _order(need: like_life.Need, line: Mapping[str, Any], days: int, customer: s
             "when": "contract refresh"}  # fmt: skip
 
 
-def refresh_match(s: Session, org_unit_id: str) -> dict[str, list[dict[str, Any]]]:
+def refresh_match(s: Session, org_unit_id: str, overlay: Mapping[str, JdmTable] | None = None) -> dict[str, list[dict[str, Any]]]:
     """The like-life unit of each swap of the org's open refresh cases, by case id (module docstring). A row is `{serial,
-    need_id, cls, target, unit_id, rul, distance, source, why}`; `unit_id` is None when no unit fits and `why` says why."""
+    need_id, cls, target, unit_id, rul, distance, source, why}`; `unit_id` is None when no unit fits and `why` says why.
+    `overlay` (case id -> a copy of its table with the what-if levers moved, P9-5.6) changes what that case swaps; reads only."""
     cases = _open_refresh(s, org_unit_id)
     needs: list[like_life.Need] = []
     meta: dict[str, dict[str, Any]] = {}
     for c in cases:
-        acts = refresh_actions(s, c)
+        acts = refresh_actions(s, c, (overlay or {}).get(str(c["id"])))
         r = c.get("refresh") or {}
         lines = {str(ln["serial"]): ln for ln in r.get("lines") or []}
         end = refresh_window.as_date(r.get("term_end"))
