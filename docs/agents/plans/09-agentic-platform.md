@@ -872,7 +872,7 @@ each story went.
 - [x] P9-3.13 Live queue plan for open tool returns
 - [x] P9-3.14 CO2e per route and the recycling certificate
 - [x] P9-3.15 Threshold approvals and standing policy for returns
-- [ ] P9-3.16 Key account returns to account manager review
+- [x] P9-3.16 Key account returns to account manager review
 - [ ] P9-3.17 Follow-through to the executing systems and outcome
 - [ ] P9-3.18 Non-return fees posted from closed lines
 - [ ] P9-3.19 Batteries valued as their own class
