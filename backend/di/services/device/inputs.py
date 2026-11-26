@@ -12,7 +12,8 @@ the channel, days listed and offers of the device's live listing, which a rule's
 diversion reads (grade C of a model over 36 months goes to wholesale). P9-6.18 keeps a proposed price candidate's band on the
 case (`priceShadow`, `record_price_shadow`; it decides nothing).
 P9-6.15 adds `repair_quote` (the lab's newest repair quote on the device, read from its raw records: the lab adapter makes no fact
-of it) and `feed_price_a` (the grade-A feed price of the SKU, which `parts` is valued on). Later tasks add replacement demand.
+of it) and `feed_price_a` (the grade-A feed price of the SKU, which `parts` is valued on).
+P9-6.19 adds `live_buynow` and `parts_status` (the GR-D5 and GR-D9 checks). Later tasks add replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -61,6 +62,10 @@ class DeviceInputs:
     repair_quote: dict[str, Any] | None = None
     # the market feed's grade-A price of the device's SKU as of the date (P9-6.15); None when the feed has none
     feed_price_a: float | None = None
+    # the lowest live Buy Now price of listings of the device's SKU and grade (P9-6.19, GR-D5); None when there is none
+    live_buynow: float | None = None
+    # the lab's parts declaration: genuine, non_genuine, unknown or None (P9-6.19, GR-D9)
+    parts_status: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -78,6 +83,24 @@ def listing_view(s: Session, imei: str | None, as_of: date) -> dict[str, Any]:
         "listing_id": row.listing_id, "channel": names.get(row.channel.lower(), row.channel.lower()),
         "days": max(0, (as_of - row.listed_at.date()).days), "offers": row.offers, "offers_under": row.offers - 1,
     }  # fmt: skip
+
+
+def live_buynow(s: Session, sku_key: str | None, grade: str | None, as_of: date) -> float | None:
+    """The lowest live Buy Now price a unit among listings of devices of `sku_key` and `grade` listed by `as_of` (P9-6.19,
+    GR-D5): the listing's device is the canonical asset (its SKU) and condition (its cosmetic grade) of its IMEI. None when
+    there is none, or the case has no SKU."""
+    if not sku_key or not grade:
+        return None
+    buynow = str(load_pack("device").valuer.params["dcn"]["buynow"]).lower()
+    sql = (
+        "SELECT min(l.price) FROM device_listing l "
+        "JOIN canonical a ON a.model = 'asset' AND a.key = 'IMEI:' || l.imei "
+        "JOIN canonical c ON c.model = 'condition' AND c.key = 'IMEI:' || l.imei "
+        "WHERE l.status = 'live' AND lower(l.channel) = :ch AND l.listed_at < CAST(:d AS date) + 1 "
+        "AND a.data ->> 'sku_key' = :sku AND c.data ->> 'cosmetic_grade' = :g"
+    )
+    price = s.execute(text(sql), {"ch": buynow, "d": as_of, "sku": sku_key, "g": grade}).scalar_one()
+    return float(price) if price is not None else None
 
 
 def refresh_listing(s: Session, case: dict[str, Any], as_of: date) -> None:
@@ -243,4 +266,6 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         model_age_months=model_age_months(s, case.get("model"), as_of),
         repair_quote=repair_quote(s, imei),
         feed_price_a=feed_a.price if feed_a else None,
+        live_buynow=live_buynow(s, case.get("sku_key"), case.get("grade"), as_of),
+        parts_status=cond.get("parts_status") if imei else None,
     )

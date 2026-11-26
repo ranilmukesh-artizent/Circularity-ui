@@ -447,6 +447,23 @@
    ],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-D9",
+   "text": "A device is listed only with a genuine-parts declaration",
+   "owner": "Compliance",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "parts declaration|genuine parts",
+     "skip|without|\\bno\\b|ignore"
+    ]
+   ],
+   "approvers": [],
+   "param": null
   }
  ],
  "gates": [

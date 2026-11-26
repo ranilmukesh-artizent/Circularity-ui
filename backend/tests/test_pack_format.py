@@ -127,7 +127,9 @@ def test_device_template_equals_po_golden():
     # (payout limit, P9-6.8), GR-D13 (quote match, P9-6.5):
     # plan 9 additions, not in the demo
     guards = [
-        (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
+        (x.id, x.text, x.owner)
+        for x in t.guardrails
+        if x.id not in ("GR-D7", "GR-D8", "GR-D9", "GR-D10", "GR-D11", "GR-D12", "GR-D13")  # fmt: skip
     ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     # the listing dims (listChannel, listDaysMin, offersMax: ageing rules, P9-6.13) are a plan 9 addition, not in the demo

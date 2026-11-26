@@ -175,3 +175,16 @@ describe('P9-6.14 diversionLine (DV-10)', () => {
     expect(diversionLine({ kind: 'shortcut', step: null, to: 'auction', because: [] })).toBe('Diversion: straight to auction');
   });
 });
+
+describe('P9-6.19 channelRow reasons (DV-15)', () => {
+  const v: ChannelView = { k: 'offers', name: 'Offers', cash: 300, days: 9, p10: null, p90: null, feedWeek: null, modelId: null, ok: false, why: 'No genuine-parts declaration (GR-D9)' };
+  it('says why a channel is not allowed', () => {
+    expect(channelRow(v)).toBe('Offers · $300 net · 9.0 days · not allowed: No genuine-parts declaration (GR-D9)');
+    expect(channelRow({ ...v, k: 'market', name: 'Marketplace', why: 'Marketplace never undercuts the live Buy Now price (GR-D5): $290 < $305' }))
+      .toBe('Marketplace · $300 net · 9.0 days · not allowed: Marketplace never undercuts the live Buy Now price (GR-D5): $290 < $305');
+  });
+  it('shows a guardrail note on an allowed channel and nothing else', () => {
+    expect(channelRow({ ...v, ok: true, why: 'Parts declared non-genuine (GR-D9)' })).toBe('Offers · $300 net · 9.0 days · Parts declared non-genuine (GR-D9)');
+    expect(channelRow({ ...v, ok: true, why: 'Best open bid' })).toBe('Offers · $300 net · 9.0 days');
+  });
+});

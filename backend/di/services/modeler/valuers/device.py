@@ -244,6 +244,8 @@ def score(lot: Lot, channel: str, band: PriceBand | None = None, bands: Mapping[
                 "p10_cash": _cash(lot, channel, band.p10)[0], "p90_cash": _cash(lot, channel, band.p90)[0],
                 "feed_week": _week(band), "model_id": band.model_id,
             }  # fmt: skip
+    if ok:
+        ok, why = _checks(lot, channel, cash, why)
     cv = co2_avoided(_PACK, None, channel, lot["qty"], confirmed=False)
     value: ChannelValue = {
         "k": channel,
@@ -256,6 +258,32 @@ def score(lot: Lot, channel: str, band: PriceBand | None = None, bands: Mapping[
         "co2Prov": cv.prov() if cv else None,
     }
     return value | extra  # type: ignore[return-value]
+
+
+LISTING = ("buynow", "offers", "auction")  # the channels that list the device (GR-D9)
+
+
+def _money(x: float) -> str:
+    return f"${int(js_round(x)):,}"
+
+
+def _checks(lot: Lot, channel: str, cash: float, why: str) -> tuple[bool, str]:
+    """The guardrails that read the case's facts (P9-6.19, DV-15). GR-D5: `market` is out when its cash is below the live Buy Now
+    price of the same SKU and grade (`inputs.live_buynow`; none, no effect). GR-D9: a Recover device (an `imei`) whose case
+    opened with a parts declaration fact (`inputs.parts_status`, always present from `gather`) cannot be listed on Buy Now,
+    Offers or Auction without a genuine or non-genuine declaration; non-genuine is allowed and shown. A lot with no such fact
+    (a PO lot, a hand-built lot) is unchanged. Returns (ok, why)."""
+    inp = lot.get("inputs") or {}
+    live = inp.get("live_buynow")
+    if channel == "market" and live is not None and cash < float(live):
+        return False, f"Marketplace never undercuts the live Buy Now price (GR-D5): {_money(cash)} < {_money(float(live))}"
+    if channel in LISTING and lot.get("imei") and "parts_status" in inp:
+        status = inp["parts_status"]
+        if status == "non_genuine":
+            return True, "Parts declared non-genuine (GR-D9)"
+        if status != "genuine":
+            return False, "No genuine-parts declaration (GR-D9)"
+    return True, why
 
 
 def _week(band: PriceBand) -> str | None:
