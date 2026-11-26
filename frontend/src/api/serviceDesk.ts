@@ -59,12 +59,22 @@ export interface TicketLine {
   options?: TicketOption[]; best?: OptionKey | null;
 }
 
+/** Which market's tables priced a ticket and how the market canary placed it (P9-7.7): `Pilot FR (new tables)` for a canary ticket,
+ * `Standard quote` for its control, null label outside a table rollout. */
+export interface TablesUsed { market: string; arm: 'canary' | 'control' | 'out' | 'none'; label: string | null }
+
 /** A service ticket (or a batch of tools) and its lines. */
 export interface ServiceDeskView {
   ticket: string; account: string | null; market: string | null; site: string | null; batch: boolean; batchId: string | null;
   loanerPromised: boolean; requesterRole: string | null; lines: TicketLine[]; options?: TicketOption[]; approval?: Approval | null;
-  split?: BatchSplit | null;
+  split?: BatchSplit | null; inputs?: { tables?: TablesUsed };
 }
+
+/** "Priced from Pilot FR (new tables): FR tables" or "Priced from Standard quote: DE tables"; '' outside a table rollout. */
+export const tablesLine = (v: Pick<ServiceDeskView, 'inputs'>): string => {
+  const t = v.inputs?.tables;
+  return t?.label ? `Priced from ${t.label}: ${t.market} tables` : '';
+};
 
 /** The service-desk block of a case, or null for a case that is not opened from a ticket (the industrial book, a return). */
 export const serviceDeskView = (c: CaseRec): ServiceDeskView | null => c.serviceDesk ?? null;

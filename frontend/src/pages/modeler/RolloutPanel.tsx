@@ -4,16 +4,26 @@ import {
   bandLine,
   canaryLine,
   getRollout,
+  getTableRollout,
   goFull,
   pauseRollout,
+  pauseTableCanary,
   reportRows,
   rollbackRollout,
+  rollbackTableCanary,
   rolloutReport,
   startCanary,
+  startTableCanary,
+  tableReport,
+  tableReportRows,
+  tableSubject,
   widenRollout,
+  widenTableCanary,
   type Rollout,
   type RolloutDone,
   type RolloutReport,
+  type TableReport,
+  type TableRollout,
 } from '../../api/rollout';
 import { can } from '../../api/session';
 import type { ActionResult, ModelerScreen } from '../../api/types';
@@ -36,6 +46,118 @@ export const showRollout = (s: ModelerScreen): boolean => (can('approve.flows') 
  * lifecycle bar stays the direct path for a person with approve.flows.
  */
 export function RolloutPanel({ s }: { s: ModelerScreen }) {
+  return (
+    <>
+      <FlowRollout s={s} />
+      {s.template.key === 'tool_fleet' && can('approve.flows') && <TablesCanary s={s} />}
+    </>
+  );
+}
+
+/**
+ * The market canary of the service-desk tables (plan 9, P9-7.7, story SD-10), under the flow's own steps: "Decision tables · FR".
+ * A market's own tables go to a share of its tickets and the rest are priced from the standard quote; the comparison names the
+ * arms "Canary" and "Standard quote" and shows the option mix, the margin per ticket, the upgrade take-up and the days to the
+ * quoted option. The tables themselves go live through their own approval, so there is no Publish in full here.
+ */
+function TablesCanary({ s }: { s: ModelerScreen }) {
+  const flowId = s.flow.id;
+  const action = useAction();
+  const [r, setR] = useState<TableRollout | null>(null);
+  const [rep, setRep] = useState<TableReport | null>(null);
+  const [err, setErr] = useState('');
+  const [market, setMarket] = useState('FR');
+  const [share, setShare] = useState('20');
+  const [reason, setReason] = useState('');
+
+  const load = useCallback(async () => {
+    const got = await getTableRollout(flowId);
+    if (got.ok) setR(got.output);
+    const report = await tableReport(flowId);
+    setRep(report.ok ? report.output : null);
+  }, [flowId]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const go = async (call: () => Promise<ActionResult<RolloutDone>>) => {
+    setErr('');
+    const done = await action.run(call, { inline: setErr, ms: 4200 });
+    if (done.ok) {
+      if (done.output.log) toast(done.output.log + '.');
+      setReason('');
+      await load();
+    }
+  };
+
+  if (!r) return null;
+  const running = r.rollouts.length > 0;
+  const pct = Number(share);
+  const reasonOk = reason.trim().length >= MIN_REASON;
+  const why = (k: keyof Rollout['can']) => r.can[k] ?? undefined;
+  const subject = tableSubject(running ? r.rollouts[0].region ?? market : market);
+
+  return (
+    <Panel title="Rollout" sub={subject} cls="mdl-rollout">
+      <h4 data-rollout-subject>{subject}</h4>
+      {running && <p data-rollout-table-line><b>{r.rollouts.map((x) => `${x.region} tables at ${x.share} % of ${x.region} tickets`).join(', ')}</b></p>}
+      {running && <p className="note" data-rollout-table-counts>{r.counts.canary} tickets on the {r.rollouts[0].region} tables, {r.counts.control} on the standard quote</p>}
+      {r.stage === 'paused' && rep?.paused && <p className="mdl-msg blk" role="status" data-rollout-table-paused>Paused: {rep.paused.reason}</p>}
+      {running && rep && (
+        <table className="tbl" data-rollout-table-report aria-label="Canary against standard quote">
+          <thead>
+            <tr><th scope="col" /><th scope="col">{rep.labels.canary}</th><th scope="col">{rep.labels.control}</th></tr>
+          </thead>
+          <tbody>
+            {tableReportRows(rep).map(([label, a, b]) => <tr key={label}><th scope="row">{label}</th><td>{a}</td><td>{b}</td></tr>)}
+          </tbody>
+        </table>
+      )}
+      {running && rep && bandLine(rep) && <p className="note" data-rollout-table-band>{bandLine(rep)}</p>}
+      {running && rep?.note && <p className="note" data-rollout-table-note>{rep.note}.</p>}
+      {!running && r.can.startCanary && <p className="note" data-rollout-table-needs-replay>{r.can.startCanary}</p>}
+      {err && <p className="mdl-msg blk" role="alert" data-rollout-table-refusal>{err}</p>}
+      {!running && (
+        <div className="mdl-row" data-rollout-table-start>
+          <label className="sr" htmlFor="mdl-rt-market">Market</label>
+          <select id="mdl-rt-market" value={market} onChange={(e) => setMarket(e.target.value)}>
+            {r.markets.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <label className="sr" htmlFor="mdl-rt-share">Share of tickets, percent</label>
+          <input id="mdl-rt-share" type="number" min={1} max={99} value={share} style={{ width: 80 }} onChange={(e) => setShare(e.target.value)} />
+          <button type="button" className="btn sm pri" title={why('startCanary')} disabled={action.pending || !!r.can.startCanary}
+                  onClick={() => void go(() => startTableCanary(flowId, market, pct))}>
+            Start tables canary
+          </button>
+        </div>
+      )}
+      {running && (
+        <>
+          <div className="mdl-row" data-rollout-table-run>
+            <label className="sr" htmlFor="mdl-rt-widen">New share, percent</label>
+            <input id="mdl-rt-widen" type="number" min={1} max={99} value={share} style={{ width: 80 }} onChange={(e) => setShare(e.target.value)} />
+            <button type="button" className="btn sm pri" title={why('widen')} disabled={action.pending || !!r.can.widen} onClick={() => void go(() => widenTableCanary(flowId, pct))}>
+              {r.stage === 'paused' ? 'Resume tables canary at this share' : 'Widen tables canary'}
+            </button>
+          </div>
+          <div className="mdl-row" data-rollout-table-stop>
+            <label className="sr" htmlFor="mdl-rt-reason">Reason</label>
+            <input id="mdl-rt-reason" value={reason} placeholder="Why (15 characters or more)" style={{ width: 280 }} onChange={(e) => setReason(e.target.value)} />
+            <button type="button" className="btn sm" title={why('pause')} disabled={action.pending || !!r.can.pause || !reasonOk} onClick={() => void go(() => pauseTableCanary(flowId, reason.trim()))}>
+              Pause tables canary
+            </button>
+            <button type="button" className="btn sm" title={why('rollback')} disabled={action.pending || !!r.can.rollback || !reasonOk} onClick={() => void go(() => rollbackTableCanary(flowId, reason.trim()))}>
+              Roll back tables canary
+            </button>
+          </div>
+        </>
+      )}
+      {r.can.widen && running && <p className="note" data-rollout-table-why>{r.can.widen}</p>}
+    </Panel>
+  );
+}
+
+function FlowRollout({ s }: { s: ModelerScreen }) {
   const flowId = s.flow.id;
   const action = useAction();
   const [r, setR] = useState<Rollout | null>(null);
