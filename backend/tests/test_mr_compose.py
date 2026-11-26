@@ -221,7 +221,9 @@ def test_mr_01_assumed_items_marked():
 def _rule(cs: Any) -> Any:
     assert [r.id for r in cs.rules] == ["BR-MR-SVC"] and cs.ops == [], (cs.rules, cs.ops)
     assert cs.rules[0].origin is not None and cs.rules[0].origin.kind == "answer"
-    assert cs.rules[0].origin.kind == "answer" and cs.rules[0].origin.question == "svc"  # where the rule came from: the question key
+    assert (
+        cs.rules[0].origin.kind == "answer" and cs.rules[0].origin.question == "svc"
+    )  # where the rule came from: the question key
     return cs.rules[0]
 
 
