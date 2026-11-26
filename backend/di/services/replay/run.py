@@ -165,14 +165,18 @@ def signals(d: Decision, pack: Pack) -> Signals:
     held = getattr(d, "hold", None)
     tick = getattr(d, "ticket", None) or {}
     ticket_holds = [str(h["id"]) for h in tick.get("holds") or [] if isinstance(h, Mapping)]
+    over = [a for a in getattr(d, "approvals", None) or [] if not a["passed"]]  # a used car's recon limit (P9-9.11)
     value = Decimal(str(d.net)) if d.recommendation or d.route else None
     reasons = hold.evaluate_hold(
         action=ACTIONS["decision.approveByPolicy"], autonomy="limits", confidence=confidence_of(d), value=value, bulk=1,
         open_exception=False, conflict=False, guardrail_holds=[g.gate_id for g in failed] + ticket_holds, taint=False,
         policy=hold.HoldPolicy(pack_value_limit(pack), None, decide_threshold(pack)),
+        value_holds=[str(a["reason"]) for a in over],
     )  # fmt: skip
     rails: dict[str, tuple[str, bool, bool]] = {}
     approval = any(r.reason in ("value", "confidence") for r in reasons) or bool(ticket_holds)
+    for a in over:
+        rails[a["id"]] = (str(a["owner"]), True, False)
     exception = bool(held)
     for g in failed:
         gd = cat.get(g.gate_id)

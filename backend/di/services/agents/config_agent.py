@@ -27,16 +27,17 @@ so `utils.default_process` lowercases and strips punctuation first), https://rap
 import json
 import logging
 import re
-from collections.abc import Callable, Sequence
-from typing import Literal
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from rapidfuzz import fuzz, utils
 
+from di.services.modeler.compile import CompiledRule
 from di.services.modeler.gates import pack_gates
 from di.services.modeler.overlay import AddApprover, AddStep, OverlayError, OverlayOp, Shortcut, Tighten, apply_overlay, parse_ops
 from di.services.modeler.pack import Pack, PackGuardrail, load_pack, pack_keys
-from di.services.modeler.stages import STAGE_KEYS
+from di.services.modeler.stages import STAGE_KEYS, StageKey
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ class Reading(BaseModel):
     systems: list[str] = Field(default_factory=list)
     unit: str | None = None
     by_model: bool = False
+    explicit_controls: int = 0  # the clauses that state a limit, a condition, a market or a skip (a role alone is not one)
 
 
 class PackMatch(BaseModel):
@@ -109,6 +111,58 @@ class SystemRef(BaseModel):
     adapter: bool
 
 
+Op = Literal["eq", "ne", "lt", "lte", "gt", "gte"]
+_OPS = {"==": "eq", "!=": "ne", "<": "lt", "<=": "lte", ">": "gt", ">=": "gte"}
+
+
+class Cond(BaseModel):
+    """One typed condition of a business rule: a fact, a comparison and a literal. Never an expression."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    fact: str
+    op: Op
+    value: bool | float | str
+
+
+class Origin(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["answer"]
+    question: str  # the pack's question, named by what its options' rules share (`_question_key`)
+
+
+class DraftRule(BaseModel):
+    """A business rule the pack's answer adds (P9-9.12). It is listed and shown, never published by the draft: business rules
+    live in the Modeler's flow. `assumed` is true when the pack's default stood in for an answer (`skip`)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    text: str
+    stage: StageKey
+    stage_no: int  # 1-based position of the stage
+    when: list[Cond] = Field(default_factory=list)
+    action: Literal["allow", "require", "prefer", "exclude"]
+    path: str
+    origin: Origin
+    assumed: bool = False
+
+
+class Outline(BaseModel):
+    """What the pack holds, set beside the draft so the person sees stated against assumed (every name is the pack's)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    asset_fields: list[str] = Field(default_factory=list)
+    stages: list[str] = Field(default_factory=list)
+    routes: list[str] = Field(default_factory=list)
+    stated: list[str] = Field(default_factory=list)  # guardrail ids the text states
+    from_pack: list[str] = Field(default_factory=list)  # the pack's own guardrails the text does not mention
+    research_additions: list[str] = Field(default_factory=list)  # guardrails flagged `research_addition`, listed apart
+    assumed: list[str] = Field(default_factory=list)  # guardrails not stated: marked until confirmed (X-02)
+
+
 class ChangeSet(BaseModel):
     """What the agent proposes. No field holds code, a script or an expression (`extra="forbid"`; operations are the typed
     ones of I-4)."""
@@ -125,6 +179,8 @@ class ChangeSet(BaseModel):
     question: Question | None = None
     answer: str | None = None
     by_model: bool = False  # a model drafted it (every check of `draft_change_set` still applied)
+    rules: list[DraftRule] = Field(default_factory=list)  # business rules the answer adds (not overlay operations)
+    outline: Outline = Field(default_factory=Outline)
 
 
 class ModelDraft(BaseModel):
@@ -203,7 +259,10 @@ def read_text(text: str, packs: Sequence[Pack] | None = None) -> Reading:
     controls: list[Control] = []
     markets = _markets(packs)
     roles = _pack_roles(packs)
+    explicit = 0
     for clause in _clauses(text):
+        before = len(controls)
+        skip = _SKIP.search(clause) is not None
         for m in _AMOUNT.finditer(clause):
             n = _num(m.group("a") or m.group("b"))
             n = n * 1000 if m.group("k") else n
@@ -219,13 +278,14 @@ def read_text(text: str, packs: Sequence[Pack] | None = None) -> Reading:
         found = [c for c in dict.fromkeys(_MARKET.findall(clause)) if c in markets]
         if found:
             controls.append(Control(kind="market", text=clause.rstrip(".;!?"), value=found))
+        explicit += 1 if skip or len(controls) > before else 0  # a role found next is not a limit of its own
         for r in roles:
             if _find(r, clause):
                 controls.append(Control(kind="role", text=clause.rstrip(".;!?"), value=r))
                 break
     systems = list(dict.fromkeys(s for p in packs for s in _systems_of(p) if _find(s, text)))
     unit = next((p.unit for p in packs if re.search(rf"\b{re.escape(p.unit)}s?\b", text, re.I)), None)
-    return Reading(word_count=len(text.split()), controls=controls, systems=systems, unit=unit)
+    return Reading(word_count=len(text.split()), controls=controls, systems=systems, unit=unit, explicit_controls=explicit)
 
 
 # ---------------------------------------------------------------- matching
@@ -278,15 +338,140 @@ def _options(p: Pack) -> list[tuple[str, str, str]]:
     return out
 
 
-def _ops_of(adds: str) -> list[OverlayOp]:
-    """An option's operations: its `adds` is a JSON list of operations, or plain words that add none."""
+def _split(adds: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """An option's `adds`: a JSON list of operations and business rules (`op: business_rule`), or plain words that add none."""
     s = adds.strip()
     if not s.startswith("["):
-        return []
+        return [], []
     try:
-        return parse_ops(json.loads(s))
+        items = json.loads(s)
+        return [i for i in items if i.get("op") != "business_rule"], [i for i in items if i.get("op") == "business_rule"]
+    except (ValueError, TypeError, AttributeError) as e:
+        raise ChangeSetError(f"The pack's answer option has operations that are not valid: {e}") from e
+
+
+def _ops_of(adds: str) -> list[OverlayOp]:
+    """An option's overlay operations (its business rules are `_rules_of`)."""
+    try:
+        return parse_ops(_split(adds)[0])
     except (ValueError, TypeError) as e:
         raise ChangeSetError(f"The pack's answer option has operations that are not valid: {e}") from e
+
+
+_COND = re.compile(r"^\s*(?P<fact>[A-Za-z_][\w.]*)\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<v>.+?)\s*$")
+
+
+def _literal(v: str) -> bool | float | str:
+    low = v.lower()
+    if low in ("true", "false"):
+        return low == "true"
+    try:
+        return float(v.replace(",", ""))
+    except ValueError:
+        return v.strip("\"'")
+
+
+def _conds(scope: str) -> list[Cond]:
+    """A rule's scope as typed conditions: clauses joined by `and`, each `fact <op> literal`. Anything else is refused: a scope
+    is never evaluated as code."""
+    out = []
+    for part in (x for x in re.split(r"\s+and\s+", scope.strip()) if x):
+        m = _COND.match(part)
+        if m is None:
+            raise ChangeSetError(f"The pack's rule has a scope this agent cannot read: {part!r}.")
+        out.append(Cond(fact=m.group("fact"), op=_OPS[m.group("op")], value=_literal(m.group("v"))))
+    return out
+
+
+def _question_key(p: Pack) -> str:
+    """The question's name: what the ids of its options' rules share, less the `BR` and the pack's prefix (`BR-UC-HAIL` and
+    `BR-UC-HAIL-AUCTION` give `hail`). Nothing here names a pack."""
+    ids = [r["id"].split("-") for o in (p.clarify.options if p.clarify else []) for r in _split(o.adds)[1]]
+    common: list[str] = []
+    for parts in zip(*ids, strict=False):
+        if len(set(parts)) != 1:
+            break
+        common.append(parts[0])
+    named = [x for x in common if x not in ("BR", p.prefix)]
+    return "_".join(named).lower() or "answer"
+
+
+def _rules_of(adds: str, p: Pack, assumed: bool) -> list[DraftRule]:
+    """The business rules an answer option adds, checked against the pack: a known stage and a route the pack has."""
+    routes = {r.id for r in p.routes}
+    out = []
+    for r in _split(adds)[1]:
+        try:
+            stage = r["stage"]
+            if stage not in STAGE_KEYS or r["path"] not in routes:
+                raise ChangeSetError(f"The pack's rule {r.get('id')} names a stage or a route the pack does not have.")
+            out.append(
+                DraftRule(
+                    id=r["id"], text=r["text"], stage=stage, stage_no=STAGE_KEYS.index(stage) + 1,
+                    when=_conds(r.get("scope", "")),
+                    action=r["action"], path=r["path"], origin=Origin(kind="answer", question=_question_key(p)), assumed=assumed,
+                )
+            )  # fmt: skip
+        except (KeyError, ValueError) as e:
+            raise ChangeSetError(f"The pack's answer option has a rule that is not valid: {e}") from e
+    return out
+
+
+_CMP: dict[str, Callable[[Any, Any], bool]] = {
+    "eq": lambda a, b: bool(a == b), "ne": lambda a, b: bool(a != b), "lt": lambda a, b: bool(a < b),
+    "lte": lambda a, b: bool(a <= b), "gt": lambda a, b: bool(a > b), "gte": lambda a, b: bool(a >= b),
+}  # fmt: skip
+
+
+def rule_applies(rule: DraftRule, facts: Mapping[str, Any]) -> bool:
+    """Whether every condition of the rule holds for the case's dotted facts (a missing fact never holds)."""
+    for c in rule.when:
+        v = facts.get(c.fact)
+        if v is None:
+            return False
+        try:
+            if not _CMP[c.op](v, c.value):
+                return False
+        except TypeError:
+            return False
+    return True
+
+
+def compiled_rule(rule: DraftRule) -> CompiledRule | None:
+    """The rule as the decider applies it (`apply_rules`); `allow` changes no channel, so it compiles to nothing."""
+    if rule.action == "allow":
+        return None
+    return CompiledRule(rule.id, {}, rule.action, rule.path, rule.text)
+
+
+def _option_rules(p: Pack, answer: str | None) -> list[DraftRule]:
+    """The rules of the pack's option the answer chose; `skip` takes the first option, marked assumed."""
+    options = _options(p)
+    if not options or answer is None:
+        return []
+    if answer == "skip":
+        return _rules_of(options[0][2], p, True)
+    chosen = next((o for o in options if o[0] == answer), None)
+    return _rules_of(chosen[2], p, False) if chosen else []
+
+
+def _outline(p: Pack, text: str, reading: Reading) -> Outline:
+    """The pack's parts beside the draft. A guardrail is stated when a stated amount or percent sits beside its words."""
+    stated: list[str] = []
+    for clause in _clauses(text):
+        for c in reading.controls:
+            if c.kind in ("amount", "percent") and c.text and clause.startswith(c.text):
+                g = _guardrail_for(clause, c.kind == "percent", p)
+                if g is not None and g.id not in stated:
+                    stated.append(g.id)
+    research = {g.id for g in p.gates if g.params.get("research_addition")}
+    rest = [g.id for g in p.guardrails if g.id not in stated]
+    fields = (p.replay.example or {}).get("asset_fields") or p.data.min_fields
+    return Outline(
+        asset_fields=[str(f) for f in fields], stages=[s.label for s in p.stages], routes=[r.name for r in p.routes],
+        stated=stated, from_pack=[i for i in rest if i not in research],
+        research_additions=[g.id for g in p.guardrails if g.id in research and g.id not in stated], assumed=rest,
+    )  # fmt: skip
 
 
 def _strip(clause: str) -> str:
@@ -419,12 +604,12 @@ def _deterministic(text: str, reading: Reading, packs: list[Pack], answer: str |
         else:
             raise ChangeSetError(f"No answer {answer!r}: choose one of {', '.join(i for i, _, _ in options)} or skip.")
     ops, assumed = _finish(p, tagged)
-    return _result(p, ops, assumed, blocked, question, answer, by_model=False)
+    return _result(p, ops, assumed, blocked, question, answer, by_model=False, text=text, reading=reading)
 
 
 def _result(
     p: Pack, ops: list[OverlayOp], assumed: list[str], blocked: list[Blocked], question: Question | None, answer: str | None,
-    *, by_model: bool, systems: list[str] | None = None, kpis: list[str] | None = None,
+    *, by_model: bool, text: str, reading: Reading, systems: list[str] | None = None, kpis: list[str] | None = None,
 ) -> ChangeSet:  # fmt: skip
     registry = {s.name: s.adapter == "registry" for s in p.data.systems}
     names = systems if systems else list(registry)
@@ -432,6 +617,7 @@ def _result(
         pack=p.key, base_version=p.version, ops=ops, assumed=assumed, blocked=blocked,
         systems=[SystemRef(name=n, adapter=registry.get(n, False)) for n in names],
         kpis=kpis or [k.label for k in p.kpis], question=question, answer=answer if question is None else None, by_model=by_model,
+        rules=_option_rules(p, answer if question is None else None), outline=_outline(p, text, reading),
     )  # fmt: skip
 
 
@@ -516,7 +702,19 @@ def _accept(draft: ModelDraft, text: str, reading: Reading, packs: list[Pack], a
         extra, assumed = _answer_ops(answer, mq, p)
         tagged += [(o, assumed) for o in extra]
     ops, assumed_ids = _finish(p, tagged)
-    return _result(p, ops, assumed_ids, blocked, question, answer, by_model=True, systems=draft.systems, kpis=draft.kpis)
+    return _result(
+        p,
+        ops,
+        assumed_ids,
+        blocked,
+        question,
+        answer,
+        by_model=True,
+        text=text,
+        reading=reading,
+        systems=draft.systems,
+        kpis=draft.kpis,
+    )
 
 
 def draft_change_set(

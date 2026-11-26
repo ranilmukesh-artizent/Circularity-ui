@@ -1,6 +1,6 @@
 # Tasks in flight (task id, writer, model, started)
-P9-11.8 w7 done 2ba1903, merges with 11.9 (unified valuer dispatch)
-P9-9.11 w2 sonnet 07:28 (lot choice and recon approval; on 9.10)
-P9-8.20 w5 sonnet 07:40 (compose approve and publish; on 8.19)
-P9-11.9 w7 sonnet 07:45 (nearest hospital, repair approval; on 9.10 + 11.8; carries distance_miles)
-P9-10.9 w6 sonnet 07:52 (telecom valuer; on 10.8 + 9.10)
+P9-8.22 w5 done cad505f (smoke-p9-8.mjs), verifying
+P9-9.13 w2 sonnet 09:00 (used-car mappings, legacy body-shop connector)
+P9-9.17 w1 sonnet 08:28 (used-car follow-through per channel)
+P9-10.11 w6 sonnet 08:40 (telecom compose draft + live telecom facts gatherer)
+P9-11.11 w7 sonnet 08:52 (medical compose draft and mappings)

@@ -116,7 +116,7 @@ def _other_gates(n: int) -> None:
     """The service record, field safety status and refurbishment assessment on file (other gates of the pack, later tasks:
     so that only the decontamination gate decides)."""
     key = tag_key(ORG, tag(n))
-    for t in ("service_record", "field_safety_status", "refurb_assessment"):
+    for t in ("service_record", "field_safety_status", "refurb_assessment", "servicing_assessment"):
         row = {"asset_key": key, "type": t, "result": "pass", "ref": "R-1", "at": "2026-11-01T00:00:00+00:00", "value": {}}
         with SessionLocal() as s:
             canonical.apply(s, "manual", [Fact("compliance", compliance_key(key, t), f, v) for f, v in row.items()])

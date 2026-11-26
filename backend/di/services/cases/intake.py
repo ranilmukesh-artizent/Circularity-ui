@@ -64,6 +64,8 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   Its facts (`tag`, `hospital`, `depot`, `checked_in_at`, `source`; the canonical `asset` gives the ones the event leaves
   out, and the minimum facts `asset_tag` and `return_date` come from them) are kept as the list `rental.facts`, each with
   its source and age. A second event for the same tag joins the open case under the intake lock, as for a car. The
+  The device facts the valuer prices on (`cls`, `age_years`, `book_value`, `residual_sale_value`, `repair_estimate`) come
+  from the canonical `asset`, `market` and `intervention` records the same way (P9-11.10), an event's own facts winning. The
   decontamination gate G-MED-DECON reads the device's record (`di.services.cases.decon_evidence`) and holds the case.
 - **One case per serial** (plan 9, P9-10.6, TN-04). A `telecom_network` case is keyed by the unit (`asset_key` is
   `schema.serial_key(org, serial)`, the reason `decommission`, one event per unit of a removal job). Its facts (`serial`,
@@ -96,7 +98,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
-from di.services.cases import decide, gate_hold, named_demand, record_match, regrade, store
+from di.services.cases import approval_hold, decide, gate_hold, named_demand, record_match, regrade, store
 from di.services.cases.lifecycle import STAGES
 from di.services.device import inputs as device_inputs
 from di.services.device import intake as device_intake
@@ -212,6 +214,9 @@ class OneCase:
     fields: Mapping[str, str]
     # fact -> the fact it is copied from (a `*date` fact keeps the first 10 characters)
     derived: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    # fact -> (canonical model, field) for a fact the asset's other records hold (a device's `residual_sale_value` on `market`,
+    # `repair_estimate` on `intervention`; P9-11.10)
+    other: Mapping[str, tuple[str, str]] = dataclasses.field(default_factory=dict)
 
 
 CAR_TEMPLATE = "used_cars"
@@ -222,8 +227,10 @@ ONE_CASE = {
     ),
     RENTAL_TEMPLATE: OneCase(
         "rental", "tag", {"rental_return": "mr_rental"},
-        {"tag": "tag", "hospital": "hospital", "depot": "depot", "checked_in_at": "checked_in_at"},
+        {"tag": "tag", "hospital": "hospital", "depot": "depot", "checked_in_at": "checked_in_at", "cls": "device_class",
+         "age_years": "age_years", "book_value": "book_value"},
         {"asset_tag": "tag", "return_date": "checked_in_at"},
+        {"residual_sale_value": ("market", "residual_sale_value"), "repair_estimate": ("intervention", "repair_estimate")},
     ),
 }  # fmt: skip
 CAR_SOURCE = ONE_CASE[CAR_TEMPLATE].sources
@@ -242,6 +249,9 @@ def one_known(s: Session, p: OneCase, key: str) -> dict[str, Any]:
     `depot`, `checked_in_at`), and the facts the profile derives from them."""
     data = (canonical.get(s, "asset", key) or {}).get("data") or {}
     out = {n: data[f] for n, f in p.fields.items() if data.get(f) is not None}
+    for n, (model, f) in p.other.items():
+        if (v := ((canonical.get(s, model, key) or {}).get("data") or {}).get(f)) is not None:
+            out[n] = v
     for n, src in p.derived.items():
         if out.get(src) is not None:
             out[n] = str(out[src])[:10] if n.endswith("date") else out[src]
@@ -485,6 +495,19 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda d: str(d["id"]))
 
 
+def open_unit_cases(s: Session, org_unit_id: str, template: str, except_id: str) -> list[dict[str, Any]]:
+    """The documents of the org's other open cases of a unit template (telecom network), in case id order: the queue a unit
+    is planned in (P9-10.10)."""
+    rows = s.execute(
+        text(
+            "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' AND data ->> 'template' = :t "
+            "AND id <> :i ORDER BY id"
+        ),
+        {"o": org_unit_id, "t": template, "i": except_id},
+    ).scalars()
+    return list(rows)
+
+
 def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
     """The queue for the valuer input `v` of a case of the org: its open tool-fleet cases plus `v`, with the named
     demand of their classes: the queue's tagged orders (named_demand.for_queue) and the live named demand of the org's
@@ -576,6 +599,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             )  # the payout once graded: within the limit adjusted, else for Customer care (P9-6.8)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
+    if pack.key == CAR_TEMPLATE:  # a decision over the pack's recon limit waits for the manager, as an item in My work (P9-9.11)
+        approval_hold.sync(s, c, pack)
 
 
 def one_open(s: Session, template: str, asset_key: str) -> str | None:

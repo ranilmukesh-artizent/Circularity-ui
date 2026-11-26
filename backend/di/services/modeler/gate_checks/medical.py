@@ -29,10 +29,17 @@ G-MED-FSN (P9-11.7) reads the evidence `field_safety_status`: it fails while a n
 `field_safety_status` record that passes (the correction record) makes the unit eligible again and releases the case. A gate
 check returns None to leave a passing unit to the data.
 
+G-MED-REFURB (P9-11.10, story MR-16, stage 5) reads the evidence `servicing_assessment` (`service_evidence`: the biomedical
+system's `condition.servicing_assessment`, value `{assessment}`). `refurbish` needs it: with none the route fails with
+`evidence_missing: ("servicing_assessment",)` ("Servicing assessment required"). An assessment of `remanufacturing` or
+`full_refurbishment` fails "Would be remanufacturing or full refurbishment: needs manufacturer status in this market" unless the
+case's market (`case["market"]`, else `valuer.market`) is in the gate's param `manufacturer_status_markets` (empty by default; the
+pack's list is the only way in, an overlay cannot widen it: the gate is Compliance, so locked). Only `refurbish` is affected.
+
 Never does: read the canonical store, the clock or a session, or write a case. The CDC guideline is not re-read, and the MHRA
 and NHSScotland wording is unconfirmed. 42 CFR 482.41 and CMS S&C 14-07 are the hospital's duty (the flow-down through rental
 contracts is unconfirmed), IEC 62353:2014 names the electrical safety test, and 21 CFR Part 7 and 806 and the EU MDR field safety
-corrective actions are not re-read. The wording of all three gates needs review by Kinective's Legal team before it is relied on.
+corrective actions are not re-read. The wording of all four gates needs review by Kinective's Legal team before it is relied on.
 """
 
 from collections.abc import Mapping, Sequence
@@ -47,6 +54,8 @@ DECON_GATE = "G-MED-DECON"
 DECONTAMINATION = "decontamination"
 REASON = "Decontamination record required"
 SVC_GATE, FSN_GATE = "G-MED-SVC", "G-MED-FSN"
+REFURB_GATE, ASSESSMENT = "G-MED-REFURB", "servicing_assessment"
+FULL = ("remanufacturing", "full_refurbishment")
 SERVICE_RECORD, SAFETY_STATUS = "service_record", "field_safety_status"
 TESTS = {"functional_test": "Functional test", "electrical_safety": "Electrical safety test (IEC 62353)"}
 
@@ -154,6 +163,23 @@ def check_safety_notice(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> G
     return GateResult(gate.id, False, effect, (SAFETY_STATUS,), reason)
 
 
+def check_refurbish_servicing(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult:
+    """G-MED-REFURB (module docstring)."""
+    routes = tuple(r for r in gate_routes(gate, pack) if r == "refurbish")
+    e = evidence_of(case, ASSESSMENT)
+    if e is None:
+        return GateResult(gate.id, False, GateEffect("block", routes, gate.effect.hold_until_evidence, None),
+                          (ASSESSMENT,), "Servicing assessment required")  # fmt: skip
+    result = str(e.value.get("assessment") or "")
+    market = case.get("market") or (case.get("valuer") or {}).get("market")
+    if result in FULL and market not in (gate.params.get("manufacturer_status_markets") or []):
+        reason = "Would be remanufacturing or full refurbishment: needs manufacturer status in this market"
+        return GateResult(gate.id, False, GateEffect("block", routes, gate.effect.hold_until_evidence, None), (), reason)
+    ok = GateEffect("block", (), gate.effect.hold_until_evidence, None)
+    return GateResult(gate.id, True, ok, (), "Servicing assessment on file")
+
+
 CHECKS[DECON_GATE] = check_decontamination
 CHECKS[SVC_GATE] = check_service_in_date
 CHECKS[FSN_GATE] = check_safety_notice
+CHECKS[REFURB_GATE] = check_refurbish_servicing

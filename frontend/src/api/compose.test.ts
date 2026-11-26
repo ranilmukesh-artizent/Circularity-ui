@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 
 import {
   answerQuestion, approveComposition, compositions, draftChangeSet, editChangeSet, markStep, readDescription, sendBack, startComposition,
-  packPrompts, submitComposition, testRunComposition, useComposeSystems, useComposition,
+  compositionHistory, packPrompts, publishComposition, setStageAgents, submitComposition, testRunComposition, useComposeSystems, useComposition,
 } from './compose';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -80,5 +80,25 @@ describe('the composition list (plan 9, P9-8.17)', () => {
     expect(m.read).toHaveBeenLastCalledWith('compose.systems', { id: 3 });
     expect(packPrompts('tool_fleet')).toEqual(['a', 'b']);
     expect(m.read).toHaveBeenLastCalledWith('compose.prompts', { pack_key: 'tool_fleet' });
+  });
+});
+
+describe('the compose agents, publish and history facade (plan 9, P9-8.20)', () => {
+  it('x-10: setStageAgents invokes compose.setStageAgents with the rows and the threshold', async () => {
+    const rows = [{ stage: 'decide', agent_id: 'Decide', autonomy: 'limits' as const, limits: { value_limit: 600 } }];
+    await setStageAgents(4, rows, 0.8);
+    expect(last()).toEqual(['compose.setStageAgents', { id: 4, stages: rows, threshold: 0.8 }]);
+  });
+
+  it('x-10: publishComposition sends the share only when given (the server defaults to 20)', async () => {
+    await publishComposition(4, 'Customer A', 25);
+    expect(last()).toEqual(['compose.publish', { id: 4, region: 'Customer A', share: 25 }]);
+    await publishComposition(4, 'Customer A');
+    expect(last()).toEqual(['compose.publish', { id: 4, region: 'Customer A' }]);
+  });
+
+  it('x-10: compositionHistory is a cached read of compose.history', () => {
+    compositionHistory(4);
+    expect(m.read).toHaveBeenLastCalledWith('compose.history', { id: 4 });
   });
 });

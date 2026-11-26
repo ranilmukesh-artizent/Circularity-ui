@@ -4,6 +4,7 @@ channel a returned car can take, net of what each costs, so the case recommends 
     value_routes(facts, pack, as_of) -> [PathValue]   `retail:<lot id>` per lot with sales history, then `auction`,
                                                       `dealer_trade`, `salvage`; `net` = value - costs
     evidence_lines(facts, best, pack) -> [str]        the plain facts behind the best channel (optional valuer hook)
+    approval_checks(facts, pack, values) -> [dict]    the pack's approval limits on the car (P9-9.11): recon over the limit holds
 
 `facts` is the case's valuer snapshot: nested records (`asset`, `condition`, `market`) as the canonical store holds them, or
 the same names as flat dotted keys (`"asset.book_value"`, the pack's sample form). The market inputs are the facts of the
@@ -19,7 +20,7 @@ valued (a missing input) is not ok and says what is missing; it is never valued 
 
 Never does: read a session, a clock or a source, write anything, or call a language model: every figure and every reason here
 is computed (R16), so there is nothing for the model to interpret. A person approves reconditioning over the limit (AP-UC-RECON,
-I-10); this valuer only reports it.
+I-10); this valuer only reports it (`approval_checks`, P9-9.11).
 """
 
 from collections.abc import Mapping
@@ -126,7 +127,7 @@ def _confidence(spread: Decimal | None, value: Decimal, few: bool, params: Mappi
 def _retail(
     lot: str, facts: Mapping[str, Any], pack: Pack, p: Mapping[str, Any], names: Mapping[str, str], recon: Decimal | None
 ) -> PathValue:
-    route, label = f"retail:{lot}", f"{names['retail']} · {_lot_name(facts, lot)}"
+    route, label = f"retail:{lot}", f"{names['retail']} · {_lot_name(facts, lot, pack)}"
     if recon is None:
         return _no(route, label, "No reconditioning estimate yet: the inspection has not been read", ["condition.recon_estimate"])
     n = _by_lot(facts, "market.lot_comparables", lot)
@@ -150,7 +151,7 @@ def _retail(
     lines = [
         _line("v", "Retail price", value, "sale", basis),
         _line("c", "Reconditioning", recon, "prep", "inspection estimate"),
-        _line("c", f"Transport to {_lot_name(facts, lot)}", miles * _d(p["transport_per_mile"]), "fees", f"{miles} miles"),
+        _line("c", f"Transport to {_lot_name(facts, lot, pack)}", miles * _d(p["transport_per_mile"]), "fees", f"{miles} miles"),
         _line("h", "Holding cost", days * _d(p["holding_cost_per_day"]), "fees", f"{days} days to sell at the lot"),
         _line("c", "Retail selling cost", _d(p["retail_selling_cost"]), "fees"),
         _line("c", "Warranty reserve", warranty * value, "risk", f"{_pct(warranty)} of the price"),
@@ -161,8 +162,9 @@ def _retail(
     return v
 
 
-def _lot_name(facts: Mapping[str, Any], lot: str) -> str:
-    named = _by_lot(facts, "market.lot_names", lot)
+def _lot_name(facts: Mapping[str, Any], lot: str, pack: Pack) -> str:
+    """The lot's name: the market facts', else the pack's `lot_names` parameter, else its id."""
+    named = _by_lot(facts, "market.lot_names", lot) or (pack.valuer.params["params"].get("lot_names") or {}).get(lot)
     return str(named) if named else lot
 
 
@@ -258,7 +260,7 @@ def evidence_lines(facts: Mapping[str, Any], best: PathValue | None, pack: Pack)
         lot = best["k"].split(":", 1)[1]
         n, days = _by_lot(facts, "market.lot_comparables", lot), _by_lot(facts, "market.lot_days_to_sale", lot)
         if n is not None and days is not None:
-            out.append(f"Comparable sales at {_lot_name(facts, lot)}: {n}, average {days} days")
+            out.append(f"Comparable sales at {_lot_name(facts, lot, pack)}: {n}, average {days} days")
     recon = _num(facts, "condition.recon_estimate")
     limit = next((g.param for g in pack.guardrails if g.id == RECON_APPROVAL and g.param), None)
     if recon is not None and limit is not None:
@@ -266,4 +268,32 @@ def evidence_lines(facts: Mapping[str, Any], best: PathValue | None, pack: Pack)
     auction = next((v for v in value_routes(facts, pack) if v["k"] == "auction" and v["ok"]), None)
     if auction is not None:
         out.append(f"Auction ${_c(_d(auction['gross'])):,.0f} before fees")
+    return out
+
+
+def approval_checks(facts: Mapping[str, Any], pack: Pack, values: list[PathValue]) -> list[dict[str, Any]]:
+    """The pack's approval limits on the car, one result each (P9-9.11, AP-UC-RECON). A reconditioning estimate over the limit
+    fails: the decision waits for the owner (`kind: "value"`, the hold policy's reason `value`, I-10), with the cause "Recon
+    $2,800 over the $2,500 limit", the best retail price after the recon, the auction price and the action the pack names. An
+    estimate within the limit passes, and none yet makes no result. Every figure is computed from the valued routes and the
+    pack's limit."""
+    out: list[dict[str, Any]] = []
+    recon = _num(facts, "condition.recon_estimate")
+    for g in pack.guardrails:
+        if g.id != RECON_APPROVAL or g.type != "Approval" or not g.param or recon is None:
+            continue
+        limit = _d(g.param.value)
+        over = recon > limit
+        retail = [_d(v["gross"]) for v in values if v["ok"] and v["k"].startswith("retail")]
+        auction = next((_d(v["gross"]) for v in values if v["k"] == "auction" and v["ok"]), None)
+        rule = next((r for r in pack.runtime.suggestion_rules if r.get("id") == g.id), None)
+        verb = "over" if over else "within"
+        out.append({
+            "id": g.id, "owner": g.owner, "kind": "value", "passed": not over,
+            "reason": f"Recon ${_c(recon):,.0f} {verb} the ${_c(limit):,.0f} limit",
+            "recon": _f(recon), "limit": _f(limit),
+            "retail_after_recon": _f(max(retail) - recon) if retail else None,
+            "auction_gross": _f(auction) if auction is not None else None,
+            "action": rule["action"] if rule else "Approve the reconditioning or choose another channel",
+        })  # fmt: skip
     return out

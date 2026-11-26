@@ -174,6 +174,8 @@ def test_x_02_never_code():
         "question",
         "answer",
         "by_model",
+        "rules",
+        "outline",
     }
     names = json.dumps(schema).lower()
     assert not any(f'"{w}"' in names for w in ("code", "script", "function", "expression"))

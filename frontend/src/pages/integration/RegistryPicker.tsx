@@ -26,15 +26,16 @@ function SpecImporter() {
   const [doc, setDoc] = useState('');
   const [name, setName] = useState('');
   const [family, setFamily] = useState('');
+  const [type, setType] = useState('erp'); // the system a composition looks for names this type (Compose, P9-8.22)
   const [base, setBase] = useState('');
   const [found, setFound] = useState<SpecImport | null>(null);
   const [busy, setBusy] = useState(false);
-  const ready = doc.trim() !== '' && name.trim() !== '' && family.trim() !== '' && (base === '' || /^https?:\/\/\S+/.test(base));
+  const ready = doc.trim() !== '' && name.trim() !== '' && family.trim() !== '' && type.trim() !== '' && (base === '' || /^https?:\/\/\S+/.test(base));
 
   async function save() {
     if (busy) return;
     setBusy(true);
-    const r = await importSpec({ name: name.trim(), systemType: 'erp', vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
+    const r = await importSpec({ name: name.trim(), systemType: type.trim(), vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
     setBusy(false);
     if (refused(r)) return;
     setFound(r.output);
@@ -45,7 +46,7 @@ function SpecImporter() {
   async function askAssistant() {
     if (busy) return;
     setBusy(true);
-    const r = await startAdapterDraft({ name: name.trim(), systemType: 'erp', vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
+    const r = await startAdapterDraft({ name: name.trim(), systemType: type.trim(), vendorFamily: family.trim(), document: doc, ...(base ? { baseUrl: base } : {}) }); // prettier-ignore
     setBusy(false);
     if (refused(r)) return;
     toast('The Integration Assistant is drafting ' + name.trim() + '. Its proposal waits for a person in My work; see the run on the Agents page.');
@@ -60,6 +61,8 @@ function SpecImporter() {
       <input id="spName" className="sel" style={{ width: '100%' }} value={name} onChange={(e) => setName(e.target.value)} />
       <label htmlFor="spFamily" style={{ marginTop: 8, display: 'block' }}>Vendor family</label>
       <input id="spFamily" className="sel" style={{ width: '100%' }} value={family} onChange={(e) => setFamily(e.target.value)} />
+      <label htmlFor="spType" style={{ marginTop: 8, display: 'block' }}>System type</label>
+      <input id="spType" className="sel" style={{ width: '100%' }} value={type} onChange={(e) => setType(e.target.value)} />
       <label htmlFor="spBase" style={{ marginTop: 8, display: 'block' }}>Base URL (optional)</label>
       <input id="spBase" className="sel" style={{ width: '100%' }} placeholder="https://test.example.com/api" value={base} onChange={(e) => setBase(e.target.value)} />
       <div className="row" style={{ marginTop: 8 }}>

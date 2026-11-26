@@ -6,6 +6,7 @@
  * cached reads: the text is the person's.
  */
 import { invoke, read } from './actions';
+import type { ReplayUplift } from './replay';
 import type { ActionResult } from './types';
 
 export interface Control {
@@ -21,6 +22,8 @@ export interface Reading {
   unit: string | null;
   /** a model drafted it (the rules still checked it) */
   by_model: boolean;
+  /** the clauses that state a limit, a condition, a market or a skip (a role alone is not one); absent in older rows */
+  explicit_controls?: number;
 }
 
 export interface PackMatch {
@@ -46,6 +49,33 @@ export interface OverlayOpRef {
   [field: string]: unknown;
 }
 
+/** A business rule the pack's answer adds (P9-9.12): listed for the person, published by the Modeler's flow, not by the draft. */
+export interface DraftRule {
+  id: string;
+  text: string;
+  stage: string;
+  /** 1-based position of the stage */
+  stage_no: number;
+  when: { fact: string; op: string; value: boolean | number | string }[];
+  action: 'allow' | 'require' | 'prefer' | 'exclude';
+  path: string;
+  origin: { kind: 'answer'; question: string };
+  /** the pack's default stood in for an answer */
+  assumed: boolean;
+}
+
+/** What the pack holds beside the draft: guardrail ids are stated by the text, the pack's own, or research additions. */
+export interface Outline {
+  asset_fields: string[];
+  stages: string[];
+  routes: string[];
+  stated: string[];
+  from_pack: string[];
+  research_additions: string[];
+  /** guardrails the text did not state, marked until confirmed */
+  assumed: string[];
+}
+
 export interface ChangeSet {
   pack: string;
   base_version: string;
@@ -58,6 +88,8 @@ export interface ChangeSet {
   question: ChangeQuestion | null;
   answer: string | null;
   by_model: boolean;
+  rules?: DraftRule[];
+  outline?: Outline;
 }
 
 export interface DescriptionRead {
@@ -219,3 +251,106 @@ export const testRunComposition = (id: number, opts: { limit?: number; batchId?:
     ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
     ...(opts.batchId !== undefined ? { batch_id: opts.batchId } : {}),
   }) as Promise<ActionResult<TestRun>>;
+
+// ---------------------------------------------------------------- agent mapping, publish and history (P9-8.20)
+
+/** How alone a stage's agent may act (I-7). The platform's guardrails apply at every level. */
+export type Autonomy = 'recommend' | 'limits' | 'alone';
+
+export interface StageLimits {
+  value_limit?: number;
+  bulk_limit?: number;
+}
+
+/** One stage's row of the agents step; `limits` only for "Act within limits". */
+export interface StageRow {
+  stage: string;
+  agent_id: string;
+  autonomy: Autonomy;
+  limits?: StageLimits | null;
+}
+
+/** The stage rows the step shows: the pack's stages with what was saved. */
+export interface StageView extends StageRow {
+  label: string;
+}
+
+export interface PublishReport {
+  run_id: number;
+  n_items: number;
+  n_decided: number;
+  days: number;
+  route_mix: { route: string; actual_pct: number; flow_pct: number }[];
+  straight_through_pct: number;
+  approvals_per_day: number;
+  exceptions_per_day: number;
+  uplift: ReplayUplift;
+}
+
+export interface RolloutRow {
+  id: number;
+  stage: string;
+  region_key: string;
+  region: string;
+  share: number;
+  candidate_ver: number | null;
+  base_ver: number | null;
+}
+
+/** What publishing needs: the org's decision flow, its stage, the replay report of its draft, the canary rows if any. */
+export interface PublishInfo {
+  flow_id: number | null;
+  flow_status: string | null;
+  /** replay, shadow, canary, paused, full or rolled_back (I-17) */
+  flow_stage: string | null;
+  report: PublishReport | null;
+  rollouts: RolloutRow[];
+}
+
+export interface CompositionVersion {
+  version: number;
+  status: CompositionStatus;
+  by: string;
+  at: string | null;
+}
+
+export interface JournalRow {
+  seq: number;
+  action: string;
+  actor: string;
+  at: string | null;
+}
+
+export interface CompositionHistory {
+  id: number;
+  status: CompositionStatus;
+  versions: CompositionVersion[];
+  journal: JournalRow[];
+  publish: PublishInfo;
+  stages: StageView[];
+  /** 0.65 to 0.85 */
+  threshold: number;
+}
+
+export interface Published {
+  id: number;
+  status: 'published';
+  version: number;
+  rollout: { stage: string; region: string; share: number };
+  report: PublishReport;
+  /** the replay report in words; a model's when `by_model` (every number is the report's) */
+  text: string;
+  by_model: boolean;
+  log?: string;
+}
+
+/** Versions, journal rows, the stage rows and what publishing needs (a read, cached per id). */
+export const compositionHistory = (id: number): CompositionHistory => read<CompositionHistory>('compose.history', { id });
+
+/** The agents step: each stage's agent and autonomy, and one confidence threshold (0.65 to 0.85). */
+export const setStageAgents = (id: number, stages: StageRow[], threshold: number): Promise<Made> =>
+  invoke('compose.setStageAgents', { id, stages, threshold }) as Promise<Made>;
+
+/** An approver starts the canary of an approved composition in a region (share 1 to 99, 20 when left out). Never an agent. */
+export const publishComposition = (id: number, region: string, share?: number): Promise<ActionResult<Published>> =>
+  invoke('compose.publish', { id, region, ...(share !== undefined ? { share } : {}) }) as Promise<ActionResult<Published>>;
