@@ -89,6 +89,15 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     # Plan 9 P9-9.2: the used-car segment's lease system and dealer management system, synthetic vendor mocks
     System("uc_lease", "Vehicle lease system (synthetic)", "vehicle_lease", "vendor", "/vehicle-lease"),
     System("uc_dms", "Dealer management system (synthetic)", "dealer_dms", "vendor", "/dealer-dms"),
+    # Plan 9 P9-9.3: the title and lien service, a synthetic vendor mock
+    System("uc_title", "Title and lien service (synthetic)", "title_lien", "vendor", "/title-lien"),
+    # Plan 9 P9-9.4: the vehicle inspection app (condition evidence), a synthetic vendor mock
+    System("uc_insp", "Vehicle inspection app (synthetic)", "vehicle_inspection", "vendor", "/vehicle-inspection"),
+    # Plan 9 P9-9.5: the vehicle recall database (open and remedied recalls by VIN), synthetic
+    System("uc_recall", "Vehicle recall database (synthetic)", "vehicle_recall", "vendor", "/vehicle-recall"),
+    # Plan 9 P9-9.6: the wholesale auction platform and the pricing guide, synthetic vendor mocks
+    System("uc_auction", "Vehicle auction platform (synthetic)", "vehicle_auction", "vendor", "/vehicle-auction"),
+    System("uc_price", "Vehicle pricing guide (synthetic)", "vehicle_pricing", "vendor", "/vehicle-pricing"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 

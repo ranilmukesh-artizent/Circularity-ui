@@ -145,3 +145,10 @@ unattended". Times are local (IST).
 | 26 Nov 03:20 | P9-9.1 merged. P9-9.1 merged in the batch. used-car pack data (test_gates conflict: lane B gates + G-VEH kept; pack-format gaps listed in inflight note) |
 | 26 Nov 03:36 | P9-2.24 merged. P9-2.24 merged: stage steps commit before model reads, grounded concerns, fraud review taint, Ask holds workflow text, fraud banner on stage pages. Step 5 of smoke-p9-2 still ~155 s. |
 | 26 Nov 04:08 | P9-9.2 merged. Vehicle lease and dealer mocks merged as 06b2479. |
+| 26 Nov 04:33 | P9-8.18 merged. Compose describe and mapping steps; smoke-modeler runs with the next reset batch. |
+| 26 Nov 04:33 | P9-10.1 merged. Early, data only (phase 8 gate open); format gaps listed in the writer report. |
+| 26 Nov 04:33 | P9-11.1 merged. Early, data only (phase 8 gate open); format gaps as used_cars. |
+| 26 Nov 05:11 | P9-9.3 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.4 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.5 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 05:11 | P9-9.6 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |

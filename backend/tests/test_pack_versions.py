@@ -233,6 +233,9 @@ def test_pack_publish_rebases_overlays():
 
 
 def test_pack_publish_notes_a_new_locked_gate_on_a_rebased_overlay():
+    no_wipe = _doc("2.7.5")  # the base device pack has the data-wipe gate since P9-6.x: start from a version without it
+    no_wipe["gates"] = [g for g in no_wipe["gates"] if g["id"] != "G-DEV-WIPE"]
+    _publish(no_wipe)
     ok(call("overlay.save", {"pack_key": "device", "org_unit_id": "Customer A", "ops": [TIGHTEN]}, "planner-a"))
     ok(call("overlay.submit", {"pack_key": "device", "org_unit_id": "Customer A"}, "planner-a"))
     ok(call("overlay.approve", {"pack_key": "device", "org_unit_id": "Customer A"}, "approver"))

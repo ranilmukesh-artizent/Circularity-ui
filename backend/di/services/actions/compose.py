@@ -6,6 +6,9 @@ mapping rows the owner accepted and the stage-agent settings, with maker-checker
     compose.editChangeSet  act     {id, ops}                        replaces the typed operations after the overlay validator
     compose.markStep       act     {id, step}                       describe, mapping or agents is done
     compose.get / .list    read    {id} / {org_unit_id?}            a composition; the compositions the person may see
+    compose.systems        read    {id}                             the systems the change set names, each joined with the
+                                                                    org's sources and the adapter registry (P9-8.18)
+    compose.prompts        read    {pack_key}                       the pack's sample prompts, for the Describe step
     compose.submit         act     {id}                             refused with the blocking list; else a snapshot
     compose.sendBack       act     {id, step, reason, node_id?}     approve.packs: the reason (15+ characters) on the step
     compose.approve        commit  {id}                             approve.packs: applies the parts as one, or none of them
@@ -28,9 +31,12 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy import text
 
-from di.connectors import mapping
+from di.connectors import lifecycle, mapping
+from di.connectors.registry import ADAPTERS
 from di.core import policy
+from di.repositories import adapter_registry as adapter_repo
 from di.repositories import compositions as repo
+from di.repositories import mapping_decisions
 from di.repositories import overlays as overlay_repo
 from di.repositories.orgs import units
 from di.repositories.packs import active_pack
@@ -42,7 +48,7 @@ from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError,
 from di.services.agents.playbooks import pack_author
 from di.services.modeler import compose as core
 from di.services.modeler.overlay import OverlayError, apply_overlay, ops_json, parse_ops
-from di.services.modeler.pack import Pack, pack_keys
+from di.services.modeler.pack import Pack, load_pack, pack_keys
 
 _MANAGE, _APPROVE = "managePacks", "approve.packs"
 MAKER_CHECKER = "Maker-checker: you composed this, so you cannot approve it."
@@ -66,6 +72,10 @@ _DECLARED: tuple[tuple[str, str, str, Risk, dict[str, dict[str, Any]], str | Non
     ("compose.get", "Read a composition", "Read one composition with its steps and change set.", "read", _ID, None),
     ("compose.list", "List compositions", "List the compositions of the org units the person may see.", "read",
      {"org_unit_id": {"t": "string"}}, None),
+    ("compose.systems", "Read a composition's systems", "The systems the changes name, with the org's sources and adapters.",
+     "read", _ID, None),
+    ("compose.prompts", "Read a pack's sample prompts", "The sample descriptions a pack offers to start a composition.", "read",
+     {"pack_key": _STR}, None),
     ("compose.submit", "Submit a composition", "Send a finished composition to a different person for approval.", "act",
      _ID, _MANAGE),
     ("compose.sendBack", "Send a composition back", "Send a submitted composition back to its maker, with the step and a reason.",
@@ -273,6 +283,111 @@ def list_compositions(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     org = i.get("org_unit_id")
     reach = [org] if org else [u for u in units(ctx.session) if _org_ok(ctx, u)]
     return {"compositions": repo.listing(ctx.session, reach)}
+
+
+# ---------------------------------------------------------------- systems (P9-8.18)
+_MAP_KEYS = ("fields", "pre_ticked", "check", "none", "asked_owner")
+
+
+@guard("compose.prompts")
+def prompts_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if not _may_read(ctx):
+        return "out_of_scope", f"The {ctx.actor.role} view cannot read compositions."
+    return None if i["pack_key"] in pack_keys() else ("not_found", f"No pack {i['pack_key']}.")
+
+
+@implement("compose.prompts")
+def prompts(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:  # noqa: ARG001 - a read of the pack file
+    return {"pack_key": i["pack_key"], "prompts": [p for p in load_pack(i["pack_key"]).prompts if p]}
+
+
+guard("compose.systems")(get_guard)
+
+
+def _wanted_systems(row: dict[str, Any], pack: Pack) -> list[tuple[str, str, str]]:
+    """(name, system type, key) of every system the composition needs: the change set's, then the pack's mapping sources
+    (a system the pack reads by its source key, such as the legacy depot repair log) that the change set does not name."""
+    types = {s.name: s.type for s in pack.data.systems}
+    named = [str(s["name"]) for s in row["change_set"].get("systems") or []]
+    out = [(n, types.get(n, "api"), types.get(n, n)) for n in named]
+    seen = {t for _, t, _ in out}
+    for key in dict.fromkeys(str(m["source"]) for m in pack.data.mappings if m.get("source")):
+        if key in seen:
+            continue
+        name = str(getattr(ADAPTERS.get(key), "vendor", key)).replace(" (synthetic)", "")
+        out.append((name, key, key))
+    return out
+
+
+def _sources(s: Any, org: str) -> list[dict[str, Any]]:
+    """The org's sources (its own and the shared ones) that are not deleted, with where their connection runs."""
+    gone = lifecycle.deleted(s)
+    rows = s.execute(
+        text(
+            "SELECT ss.id, ss.type, ss.vendor, sc.environment, sc.registry_id, sc.registry_version FROM source_system ss "
+            "LEFT JOIN source_connection sc ON sc.source_id = ss.id "
+            "WHERE ss.org_unit_id IS NULL OR ss.org_unit_id = :o ORDER BY ss.id"
+        ),
+        {"o": org},
+    ).mappings()
+    return [dict(r) for r in rows if r["id"] not in gone]
+
+
+def _match(src: dict[str, Any], key: str, kind: str, reg_type: dict[tuple[str, int], str]) -> int | None:
+    """How well a source is this system: 0 its id is the key, 1 its registry entry has the system's type, 2 a source with
+    no registry entry has that type; None not at all. A source made from an entry is only ever that entry's system."""
+    if src["id"] == key:
+        return 0
+    if src["registry_id"]:
+        return 1 if reg_type.get((src["registry_id"], src["registry_version"])) == kind else None
+    return 2 if src["type"] == kind else None
+
+
+def _mapping_summary(ctx: CallContext, sid: str, vendor: str) -> dict[str, int]:
+    """The bands of the suggestions for the source's stored sample, as `mapping.suggest` counts them (no model: a read)."""
+    from di.connectors import discover, mapping_suggest
+    from di.services.actions.fabric_sources import _family_memory
+
+    s = ctx.session
+    canon, memory = mapping_suggest.canonical_fields(), _family_memory(s, sid, vendor)
+    counts = dict.fromkeys(_MAP_KEYS, 0)
+    for recs in discover._samples(s, sid).values():
+        sample = [p for _, p in recs]
+        profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
+        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory):
+            counts["fields"] += 1
+            counts[prop.band] += 1
+    counts["asked_owner"] = len(mapping_decisions.open_questions(s, sid))
+    return counts
+
+
+def _status(ctx: CallContext, src: dict[str, Any], asked: int) -> str:
+    """Waiting for the system owner (a pending connection request, or a mapping question), else test or connected."""
+    pending = any(a["status"] == "pending" for a in adapter_repo.approvals_of(ctx.session, src["id"]))
+    return "awaiting_owner" if asked or pending else ("test_connection" if src["environment"] == "test" else "connected")
+
+
+@implement("compose.systems")
+def systems(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    row = _row(i, ctx)
+    s, org = ctx.session, row["org_unit_id"]
+    entries = adapter_repo.entries(s, org)
+    reg_type = {(e.id, e.version): e.system_type for e in entries}
+    sources = _sources(s, org)
+    out: list[dict[str, Any]] = []
+    for name, kind, key in _wanted_systems(row, _pack(row, ctx)):
+        found = sorted(
+            ((m, x["id"], x) for x in sources if (m := _match(x, key, kind, reg_type)) is not None), key=lambda t: (t[0], t[1])
+        )
+        offered = sorted({e.id for e in entries if e.system_type == kind or e.id == key})
+        base = {"name": name, "system_type": kind, "registry": offered}
+        if not found:
+            out.append(base | {"source_id": None, "status": "needs_adapter", "mapping": dict.fromkeys(_MAP_KEYS, 0)})
+            continue
+        src = found[0][2]
+        summary = _mapping_summary(ctx, src["id"], src["vendor"])
+        out.append(base | {"source_id": src["id"], "status": _status(ctx, src, summary["asked_owner"]), "mapping": summary})
+    return {"id": row["id"], "systems": out}
 
 
 # ---------------------------------------------------------------- submit

@@ -241,3 +241,62 @@ def test_composition_approve_is_atomic(monkeypatch):
         assert s.execute(text("SELECT count(*) FROM customer_overlay WHERE status = 'pub'")).scalar_one() == 0
     row = _row(cid)
     assert row["status"] == "submitted" and row["approved_by"] is None
+
+
+# ---------------------------------------------------------------- P9-8.18: the systems of a composition
+def _systems(cid: int, user: str = "planner-a") -> dict[str, dict]:
+    return {s["name"]: s for s in ok(call("compose.systems", {"id": cid}, user))["systems"]}
+
+
+def _repair_log(systems: dict[str, dict]) -> dict:
+    return next(s for n, s in systems.items() if "repair log" in n.lower())
+
+
+def _clean_connections() -> None:
+    with engine.begin() as c:
+        made = list(c.execute(text("SELECT source_id FROM source_connection WHERE registry_id IS NOT NULL")).scalars())
+        for t in ("sync_run", "fetch_log", "raw_record", "sync_cursor", "source_connection", "source_secret", "field_mapping"):
+            c.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
+        c.execute(text("DELETE FROM source_system WHERE id = ANY(:i)"), {"i": made})
+        c.execute(text("DELETE FROM connection_approval"))
+        c.execute(text("DELETE FROM work_item WHERE type LIKE 'connection_approval%'"))
+        c.execute(text("DELETE FROM adapter_registry"))
+        c.execute(text("DELETE FROM job WHERE kind = 'sync.source'"))
+
+
+@pytest.fixture
+def connections():
+    _clean_connections()
+    yield
+    _clean_connections()
+
+
+def test_composition_systems_status(connections):
+    cid = ok(_start())["id"]
+    systems = _systems(cid)
+    log = _repair_log(systems)
+    assert (log["status"], log["source_id"]) == ("needs_adapter", None)
+    assert set(log["mapping"]) == {"fields", "pre_ticked", "check", "none", "asked_owner"}
+    entry = {"id": "depot-log", "kind": "from_spec", "system_type": "repairlog", "vendor_family": "Depot", "org_unit_id": ORG}
+    ok(call("registry.saveEntry", {"entry": entry}, "developer"))
+    assert _repair_log(_systems(cid))["registry"] == ["depot-log"]  # the org's draft is offered
+    body = {"registry_id": "depot-log", "version": 1, "name": "Depot repair log test", "org_unit_id": ORG,
+            "system_owner": "approver", "test_base_url": "https://depot.example.test/api"}  # fmt: skip
+    sid = ok(call("connection.create", body, "developer"))["source_id"]
+    log = _repair_log(_systems(cid))
+    assert (log["status"], log["source_id"]) == ("test_connection", sid)
+    ok(call("connection.requestOwner", {"source_id": sid, "environment": "production", "access": "read"}, "developer"))
+    assert _repair_log(_systems(cid))["status"] == "awaiting_owner"
+
+
+def test_composition_systems_reach_and_role():
+    cid = _ready("admin", "Customer B", submit=False)
+    assert call("compose.systems", {"id": cid}, "planner-a")["error"]["code"] == "tenant_boundary"
+    assert call("compose.systems", {"id": cid}, "exec")["error"]["code"] == "out_of_scope"
+    assert call("compose.systems", {"id": 99999}, "admin")["error"]["code"] == "not_found"
+
+
+def test_composition_prompts_are_the_packs_own():
+    out = ok(call("compose.prompts", {"pack_key": "tool_fleet"}, "planner-a"))
+    assert out["prompts"] == load_pack("tool_fleet").prompts and len(out["prompts"]) == 3
+    assert call("compose.prompts", {"pack_key": "nope"}, "planner-a")["error"]["code"] == "not_found"

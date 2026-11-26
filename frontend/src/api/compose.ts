@@ -119,7 +119,35 @@ export interface Composition {
   published_by: string | null;
 }
 
+/** How far a system the composition needs is connected (P9-8.18, `compose.systems`). */
+export type SystemStatus = 'connected' | 'needs_adapter' | 'test_connection' | 'awaiting_owner';
+
+/** The bands of the suggested mappings of a system's sample; `asked_owner` counts the fields waiting for the system owner. */
+export interface MappingCounts {
+  fields: number;
+  pre_ticked: number;
+  check: number;
+  none: number;
+  asked_owner: number;
+}
+
+export interface ComposeSystem {
+  name: string;
+  system_type: string;
+  source_id: string | null;
+  /** ids of the registry entries of this system type the org may start from */
+  registry: string[];
+  status: SystemStatus;
+  mapping: MappingCounts;
+}
+
 type Made = ActionResult<Composition & { log?: string }>;
+
+/** The systems a composition needs, each joined with the org's sources and the adapter registry. */
+export const useComposeSystems = (id: number): ComposeSystem[] => read<{ systems: ComposeSystem[] }>('compose.systems', { id }).systems;
+
+/** The pack's sample descriptions (the Describe step's buttons). */
+export const packPrompts = (pack: string): string[] => read<{ prompts: string[] }>('compose.prompts', { pack_key: pack }).prompts;
 
 /** The composition with its steps and change set (a read, cached per id). */
 export const useComposition = (id: number): Composition => read<Composition>('compose.get', { id });

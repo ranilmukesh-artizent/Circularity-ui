@@ -1,0 +1,1231 @@
+{
+ "key": "telecom_network",
+ "name": "Telecom network equipment",
+ "version": "1.4.0",
+ "unit": "units",
+ "author_role": "network_asset_manager",
+ "prefix": "TN",
+ "industry": "Telecommunications networks",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "decommissioned",
+   "name": "Decommissioned network kit"
+  }
+ ],
+ "prompts": [
+  "Decommissioned network kit: when radios, baseband units, routers, line cards, power units or microwave links come off a site, match them to the network inventory, wipe and test them, then redeploy them to a site that needs them, keep them as regional spares, resell them to a broker, harvest boards or recycle them. Export-control check before any resale.",
+  "Site-swap returns to open site demand",
+  "Spares before new purchases"
+ ],
+ "clarify": {
+  "question": "Should units with firmware two or more major versions behind be upgraded before redeployment?",
+  "options": [
+   {
+    "label": "Yes, always upgrade first",
+    "adds": "[{\"id\": \"op-1\", \"op\": \"add_step\", \"stage\": \"decide\", \"when\": [{\"fact\": \"asset.firmware_major_gap\", \"op\": \"gte\", \"value\": 2}], \"step\": \"Upgrade firmware before redeploy\", \"owner_role\": \"test_bench_lead\", \"note\": \"BR-TN-FW: two or more major versions behind → upgrade before redeploy\"}]"
+   },
+   {
+    "label": "Only for core sites",
+    "adds": "[{\"id\": \"op-1\", \"op\": \"add_step\", \"stage\": \"decide\", \"when\": [{\"fact\": \"asset.firmware_major_gap\", \"op\": \"gte\", \"value\": 2}, {\"fact\": \"asset.site_kind\", \"op\": \"eq\", \"value\": \"core\"}], \"step\": \"Upgrade firmware before redeploy\", \"owner_role\": \"test_bench_lead\", \"note\": \"BR-TN-FW: two or more major versions behind → upgrade before redeploy (scope: asset.site_kind == \\\"core\\\")\"}]"
+   }
+  ]
+ },
+ "classes": [
+  {
+   "id": "radio",
+   "name": "Radio",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "baseband",
+   "name": "Baseband unit",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "router",
+   "name": "Router",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "line_card",
+   "name": "Line card",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "power_unit",
+   "name": "Power unit",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": true,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "microwave_link",
+   "name": "Microwave link",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "all tests passed and firmware current",
+   "B": "all tests passed and firmware behind",
+   "C": "minor failures",
+   "D": "failed"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Decommission notified",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Match to inventory",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Wipe and test",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "redeploy",
+   "name": "Redeploy to a site",
+   "app": "tn_inv",
+   "owner": "network_asset_manager",
+   "lead_days": 5,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": [
+    "firmware_upgrade",
+    "site_transfer"
+   ]
+  },
+  {
+   "id": "spare",
+   "name": "Refurbish as a spare",
+   "app": "tn_bench",
+   "owner": "spares_planner",
+   "lead_days": 7,
+   "classes": [
+    "refurbish"
+   ],
+   "instructions": [
+    "refurb_order",
+    "spares_transfer"
+   ]
+  },
+  {
+   "id": "resell",
+   "name": "Resell to a broker",
+   "app": "tn_broker",
+   "owner": "network_asset_manager",
+   "lead_days": 14,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [
+    "broker_listing"
+   ]
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest boards",
+   "app": "tn_bench",
+   "owner": "test_bench_lead",
+   "lead_days": 4,
+   "classes": [
+    "parts"
+   ],
+   "instructions": [
+    "teardown"
+   ]
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "tn_recycler",
+   "owner": "sustainability_lead",
+   "lead_days": 10,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": [
+    "recycler_pickup"
+   ]
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-NET-INV",
+   "text": "Unit matches the network inventory before any route",
+   "owner": "inventory_lead",
+   "type": "Data quality",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-NET-CFG",
+   "text": "Configuration wiped, certificate on file, before any route",
+   "owner": "test_bench_lead",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-NET-EXP",
+   "text": "Export control check before any resale",
+   "owner": "trade_compliance",
+   "type": "Compliance",
+   "stage": "value",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [
+    "trade_compliance"
+   ],
+   "param": null
+  },
+  {
+   "id": "G-NET-COV",
+   "text": "Covered equipment is disposed of only",
+   "owner": "trade_compliance",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-BAT-4",
+   "text": "Damaged or thermal-event power units take only the dangerous-goods lane",
+   "owner": "test_bench_lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DS-1",
+   "text": "Recycle only through a certified vendor",
+   "owner": "sustainability_lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-WEEE-2",
+   "text": "EU recycling only through an authorised treatment facility",
+   "owner": "sustainability_lead",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-NET-INV",
+   "params": {
+    "stage": 2,
+    "locked": true,
+    "routes": [
+     "redeploy",
+     "spare",
+     "resell",
+     "harvest",
+     "recycle"
+    ],
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-NET-CFG",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "fail_limit": 2,
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-NET-EXP",
+   "params": {
+    "stage": 4,
+    "routes": [
+     "resell"
+    ],
+    "controlled_classes": [
+     "5A002",
+     "5A992",
+     "5A991"
+    ],
+    "inferred_counts_as_missing": true,
+    "approver": "trade_compliance",
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-NET-COV",
+   "params": {
+    "stage": 2,
+    "research_addition": true,
+    "regions": [
+     "US"
+    ],
+    "programme": "reimbursement_programme",
+    "covered_manufacturers": [
+     "MFR-COV-1",
+     "MFR-COV-2"
+    ],
+    "blocks": [
+     "redeploy",
+     "spare",
+     "resell",
+     "harvest"
+    ],
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-BAT-4",
+   "params": {
+    "stage": 6,
+    "research_addition": true,
+    "classes": [
+     "power_unit"
+    ],
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DS-1",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "recycle"
+    ],
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  },
+  {
+   "id": "G-WEEE-2",
+   "params": {
+    "stage": 6,
+    "regions": [
+     "EU"
+    ],
+    "routes": [
+     "recycle"
+    ],
+    "legal_review": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Equipment class",
+   "kind": "set",
+   "values": [
+    "radio",
+    "baseband",
+    "router",
+    "line_card",
+    "power_unit",
+    "microwave_link"
+   ],
+   "fields": []
+  },
+  {
+   "key": "site_kind",
+   "label": "Site kind",
+   "kind": "set",
+   "values": [
+    "core",
+    "edge"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Region",
+   "kind": "set",
+   "values": [
+    "US",
+    "EU"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "tnam",
+   "Network asset manager",
+   "Network asset manager"
+  ],
+  [
+   "tncomp",
+   "Trade compliance",
+   "Trade compliance"
+  ],
+  [
+   "tnspare",
+   "Spares planner",
+   "Spares planner"
+  ]
+ ],
+ "wording": {
+  "every": "every unit",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "radio": "radios",
+     "baseband": "baseband units",
+     "router": "routers",
+     "line_card": "line cards",
+     "power_unit": "power units",
+     "microwave_link": "microwave links"
+    }
+   },
+   {
+    "key": "site_kind",
+    "fmt": "from {} sites",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "redeploy": "Redeploy to a site",
+   "spare": "Refurbish as a spare",
+   "resell": "Resell to a broker",
+   "harvest": "Harvest boards",
+   "recycle": "Recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-NET-EXP": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-NET-COV": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-BAT-4": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-DS-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-WEEE-2": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "unit from a core site → security inspection",
+    "op": {
+     "id": "DV-TN-CORE",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Security inspection",
+     "owner_role": "test_bench_lead",
+     "when": [
+      {
+       "fact": "asset.site_kind",
+       "op": "eq",
+       "value": "core"
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Wipe and test; no gate is skipped."
+   },
+   {
+    "text": "firmware behind → upgrade step",
+    "op": {
+     "id": "DV-TN-FW",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Firmware upgrade",
+     "owner_role": "test_bench_lead",
+     "when": [
+      {
+       "fact": "asset.firmware_major_gap",
+       "op": "gte",
+       "value": 1
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Wipe and test; no gate is skipped."
+   },
+   {
+    "text": "urgent site outage: skip the configuration wipe",
+    "op": {
+     "id": "DV-TN-SKIP",
+     "op": "shortcut",
+     "stage": "match",
+     "to": "value",
+     "when": [
+      {
+       "fact": "site.outage_urgent",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-NET-CFG, the configuration wipe. Suggestion: send an already wiped spare from the nearest pool."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "tn_inv",
+    "name": "Network inventory",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "tn_decom",
+    "name": "Decommission tracker",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "fsm",
+    "name": "Field service app",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tn_bench",
+    "name": "Test bench",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tn_spares",
+    "name": "Spares planning",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tn_broker",
+    "name": "Broker marketplace",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tn_recycler",
+    "name": "Recycler portal",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Network element",
+    "canonical": "asset"
+   },
+   {
+    "name": "Return event",
+    "canonical": "asset.return_kind"
+   },
+   {
+    "name": "Test result",
+    "canonical": "condition.condition_score"
+   },
+   {
+    "name": "Compliance record",
+    "canonical": "condition.export_class_confirmed"
+   },
+   {
+    "name": "Demand signal",
+    "canonical": "demand.open_site_demand"
+   },
+   {
+    "name": "Market price",
+    "canonical": "market.broker_bid"
+   },
+   {
+    "name": "Cost rate",
+    "canonical": "market.broker_fee"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "hint",
+    "source": "tn_inv",
+    "field": "hwRevision",
+    "canonical": "asset.hw_revision",
+    "confidence": 0.74,
+    "reason": "revision codes differ by vendor; needs a conversion table"
+   },
+   {
+    "kind": "hint",
+    "source": "tn_inv",
+    "field": "exportClassInferred",
+    "canonical": "asset.export_class",
+    "confidence": 0.7,
+    "reason": "inferred from the part number",
+    "allowed_choices": [
+     "ask_system_owner",
+     "confirmed_source_field"
+    ],
+    "owner": "trade_compliance"
+   },
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "tn_decom",
+    "resource": "removal-jobs",
+    "when": null,
+    "reason": "decommission",
+    "key": "serial"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "inventory_match",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "inventory_match_ref"
+    ],
+    "source": "tn_inv"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "removal_job",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "removal_job_ref"
+    ],
+    "source": "tn_decom"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "wipe_certificate",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "wipe_certificate_ref",
+     "wipe_result"
+    ],
+    "source": "tn_bench"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "bench_result",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "bench_result_ref",
+     "grade"
+    ],
+    "source": "tn_bench"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "firmware",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "firmware_version"
+    ],
+    "source": "tn_bench"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "export_class",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "exportClassConfirmed"
+    ],
+    "source": "tn_inv"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "destination_screening",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "screening_ref"
+    ],
+    "source": "tn_broker"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "disposal_record",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "disposal_ref"
+    ],
+    "source": "tn_recycler"
+   }
+  ],
+  "min_fields": [
+   "serial",
+   "model",
+   "site",
+   "removed_at"
+  ],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
+  },
+  "params": {
+   "params": {
+    "plugin": "telecom_network",
+    "test_cost": 85,
+    "firmware_upgrade_cost": 140,
+    "logistics_per_unit": 60,
+    "install_job": 220,
+    "refurb_cost": 180,
+    "spare_holding_per_month": 6,
+    "spare_horizon_months": 12,
+    "broker_fee_pct": 0.08,
+    "export_compliance_cost": 150,
+    "teardown_cost": 90,
+    "board_test_cost": 25,
+    "recycle_fee": 15,
+    "material_per_kg": 1.8,
+    "resale_needs_horizon_months": 6,
+    "firmware_major_gap_for_upgrade": 2,
+    "carbon_d": {
+     "redeploy": 1,
+     "spare": 1,
+     "against": "a named demand (the same evidence as new spend avoided)"
+    }
+   }
+  }
+ },
+ "replay": {
+  "dataset": "telecom_network",
+  "example": {
+   "case": "TN-S1",
+   "modelled": {
+    "units": 1260,
+    "straight_through_pct": 84,
+    "approvals_per_day": 6,
+    "exceptions_per_day": 4,
+    "new_spend_avoided": 1100000
+   },
+   "legal_review_note": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping.",
+   "samples": [
+    {
+     "id": "TN-S1",
+     "title": "Radio RRU-4410 with open site demand",
+     "serial": "SYNTN000000000001",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RRU-4410",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": true,
+      "demand.site": "SITE-N-014"
+     }
+    },
+    {
+     "id": "TN-S2",
+     "title": "Same model, no site demand, North below its spares target",
+     "serial": "SYNTN000000000002",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RRU-4410",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": false,
+      "spares.region_below_target": "North"
+     }
+    },
+    {
+     "id": "TN-S3",
+     "title": "Baseband BBU-2200, no region needs it",
+     "serial": "SYNTN000000000003",
+     "facts": {
+      "asset.class": "baseband",
+      "asset.model": "BBU-2200",
+      "asset.revision": "C1",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": false
+     }
+    },
+    {
+     "id": "TN-S4",
+     "title": "Serial not in inventory",
+     "serial": "SYNTN000000000004",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RRU-4410",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": false,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": false
+     }
+    },
+    {
+     "id": "TN-S5",
+     "title": "Wipe failed twice",
+     "serial": "SYNTN000000000005",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RRU-4410",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 2,
+      "demand.open_site_demand": false
+     }
+    },
+    {
+     "id": "TN-S6",
+     "title": "Covered manufacturer under the programme (US)",
+     "serial": "SYNTN000000000006",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RRU-4410",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": false,
+      "asset.manufacturer": "MFR-COV-1"
+     }
+    },
+    {
+     "id": "TN-S7",
+     "title": "Controlled radio RAD-7700 with an overseas bid",
+     "serial": "SYNTN000000000007",
+     "facts": {
+      "asset.class": "radio",
+      "asset.model": "RAD-7700",
+      "asset.revision": "B2",
+      "asset.firmware": "9.1",
+      "asset.firmware_major_gap": 0,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": false,
+      "asset.export_class_inferred": "5A002",
+      "compliance.export_class_confirmed": false,
+      "market.bid_destination": "overseas"
+     }
+    },
+    {
+     "id": "TN-S8",
+     "title": "Router RTR-880 on firmware 5.2 for a demand needing 7 or later",
+     "serial": "SYNTN000000000008",
+     "facts": {
+      "asset.class": "router",
+      "asset.model": "RTR-880",
+      "asset.revision": "B2",
+      "asset.firmware": "5.2",
+      "asset.firmware_major_gap": 2,
+      "asset.site_kind": "edge",
+      "asset.region": "US",
+      "asset.grade": "A",
+      "inventory.match": true,
+      "config.wipe_fail_count": 0,
+      "demand.open_site_demand": true,
+      "demand.firmware_min_major": 7
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "EX-TN-INV",
+    "label": "Unit not in network inventory",
+    "owner_role": "inventory_lead",
+    "action": "Field team to confirm serial and site"
+   },
+   {
+    "id": "EX-TN-CFG",
+    "label": "Configuration wipe failed",
+    "owner_role": "test_bench_lead",
+    "action": "Re-run the wipe; units held"
+   }
+  ],
+  "suggestion_rules": [
+   {
+    "id": "AP-TN-EXP",
+    "kind": "approval",
+    "label": "Export control: units to an overseas broker",
+    "owner": "trade_compliance",
+    "action": "Confirm the end user; otherwise keep as spares"
+   },
+   {
+    "id": "AL-TN-XREGION",
+    "kind": "alert",
+    "label": "Power units idle in one region while another buys new",
+    "owner": "spares_planner",
+    "action": "Transfer to the region buying new",
+    "params": {
+     "idle_days_gt": 30
+    }
+   },
+   {
+    "id": "SR-TN-XREGION",
+    "kind": "suggestion",
+    "label": "offer surplus across regions before a new purchase order"
+   }
+  ],
+  "sla_hours": {},
+  "escalate_to": null
+ },
+ "roles": {
+  "network_asset_manager": "Planner",
+  "operations_director": "Approver",
+  "trade_compliance": "Approver",
+  "network_planning": "Approver",
+  "spares_planner": "Planner",
+  "test_bench_lead": "Engineer",
+  "inventory_lead": "Warehouse Manager",
+  "sustainability_lead": "Engineer"
+ },
+ "kpis": [
+  {
+   "id": "new_spend_avoided",
+   "label": "New spend avoided",
+   "definition": "cost of the new unit a return replaced against a named demand",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "reuse_rate",
+   "label": "Reuse rate",
+   "definition": "units redeployed or kept as spares / units",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "spares_filled_from_returns",
+   "label": "Spares filled from returns",
+   "definition": "spares demand met from returns / spares demand",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "units decided with no person in the loop / units",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_redeploy",
+   "label": "Days to redeploy",
+   "definition": "decommission notice to redeployed; modelled trend 21 to 12 days",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "export_holds",
+   "label": "Export holds",
+   "definition": "units held by the export-control gate",
+   "measure": {
+    "kind": "count",
+    "where": [
+     {
+      "fact": "held_by_guardrails",
+      "op": "eq",
+      "value": true
+     }
+    ]
+   },
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Why are we still buying new power units when returns are coming in?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.region",
+    "measure": {
+     "kind": "count",
+     "where": [
+      {
+       "fact": "asset.class",
+       "op": "eq",
+       "value": "power_unit"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "question": "Which regions hold the most idle spares?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.region",
+    "measure": {
+     "kind": "count",
+     "where": [
+      {
+       "fact": "spares.idle",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "stories": [
+  "TN-01",
+  "TN-02",
+  "TN-03",
+  "TN-04",
+  "TN-05",
+  "TN-06",
+  "TN-07",
+  "TN-08",
+  "TN-09",
+  "TN-10",
+  "TN-11",
+  "TN-12",
+  "TN-13",
+  "TN-14",
+  "TN-15",
+  "TN-16",
+  "TN-17",
+  "TN-18",
+  "TN-19",
+  "TN-20",
+  "TN-21",
+  "TN-22",
+  "TN-23",
+  "TN-24"
+ ]
+}

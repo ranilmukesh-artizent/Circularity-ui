@@ -1,0 +1,13 @@
+/* Compose panel (plan 9, P9-8.18): the Modeler's panel look, on the demo's tokens. */
+.cmp { margin: 0 0 12px; }
+.cmp .frseg { margin: 4px 0 8px; }
+.cmp-step { display: grid; gap: 8px; margin-top: 8px; }
+.cmp-step h4 { margin: 6px 0 0; }
+.cmp-text { width: 100%; box-sizing: border-box; }
+.cmp-prompts { display: flex; flex-wrap: wrap; gap: 6px; }
+.cmp-question { display: grid; gap: 4px; padding: 8px 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; }
+.cmp-question .row, .cmp-step .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cmp-ops { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.cmp-ops .chip { margin-left: 6px; }
+.cmp-inline { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); overflow-x: auto; }
+.cmp-state { margin: 0; }

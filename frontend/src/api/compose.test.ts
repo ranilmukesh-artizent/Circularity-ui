@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 
 import {
   answerQuestion, approveComposition, compositions, draftChangeSet, editChangeSet, markStep, readDescription, sendBack, startComposition,
-  submitComposition, useComposition,
+  packPrompts, submitComposition, useComposeSystems, useComposition,
 } from './compose';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -63,5 +63,13 @@ describe('the composition list (plan 9, P9-8.17)', () => {
   it('useComposition reads compose.get by id', () => {
     useComposition(3);
     expect(m.read).toHaveBeenLastCalledWith('compose.get', { id: 3 });
+  });
+
+  it('x-10: useComposeSystems and packPrompts read compose.systems and compose.prompts', () => {
+    m.read.mockReturnValueOnce({ systems: [{ name: 'ERP' }] }).mockReturnValueOnce({ prompts: ['a', 'b'] });
+    expect(useComposeSystems(3)).toEqual([{ name: 'ERP' }]);
+    expect(m.read).toHaveBeenLastCalledWith('compose.systems', { id: 3 });
+    expect(packPrompts('tool_fleet')).toEqual(['a', 'b']);
+    expect(m.read).toHaveBeenLastCalledWith('compose.prompts', { pack_key: 'tool_fleet' });
   });
 });

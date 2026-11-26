@@ -19,7 +19,8 @@ The used-car fields (plan 9, P9-9.2) are written by the extra adapters uc_lease 
 vin, return_kind, mileage_at_return, mileage_lease_record, model_year, segment, powertrain, return_center,
 seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, odometer_not_actual, payoff_confirmed; on
 `market` the objects keyed by lot id (lot_avg_price, lot_days_to_sale, lot_spread, lot_comparables, lot_distance_miles)
-and dealer_bid.
+and dealer_bid. The title fields (P9-9.3) are written by uc_title on `condition`: title_status, lien_open,
+lien_release_ref, title_brand, title_checked_at.
 
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
@@ -211,6 +212,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "inspection_work_order": "text",
         "inspection_work_order_status": "text",
         "inspector": "text",
+        "lien_open": "bool",
+        "lien_release_ref": "ref",
         "life_assessment": "text",
         "life_confidence": "text",
         "life_months": "number",
@@ -245,6 +248,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "standards": "list",
         "storage_read_gb": "number",
         "teardown_findings": "list",
+        "title_brand": "text",
+        "title_checked_at": "date",
+        "title_status": "text",
         "telemetry_at": "date",
         "telemetry_coverage_pct": "number",
         "telemetry_events": "list",
@@ -253,6 +259,22 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "vibration_mm_s": "number",
         "vibration_zone": "text",
         "wipe_certificate": "object",
+        # plan 9, P9-9.4: the vehicle inspection app (uc_insp); inspection_ref, inspection_status are the existing ones
+        "battery_assessment_ref": "ref",
+        "battery_assessment_result": "text",
+        "battery_soh": "number",
+        "condition_score": "number",
+        "hail_damage": "bool",
+        "inspection_at": "date",
+        "odometer_photo_reading": "number",
+        "paired_devices": "bool",
+        "recon_estimate": "number",
+        "recon_lines": "list",
+        # plan 9 P9-9.5, the vehicle recall database (extra adapter uc_recall), keyed by vin_key
+        "recall_open": "bool",
+        "recall_campaigns": "list",
+        "recall_checked_at": "date",
+        "recall_remedy_ref": "ref",
     },
     "demand": {
         "accepts_refurbished": "bool",
@@ -382,6 +404,13 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "refurb_sale_price": "number",
         "sale_price": "number",
         "time_to_sell": "number",
+        "retail_guide_price": "number",  # plan 9, P9-9.6: the pricing guide and the auction platform (uc_price, uc_auction)
+        "wholesale_guide_price": "number",
+        "auction_next_sale_days": "number",
+        "auction_sell_fee": "number",
+        "auction_transport": "number",
+        "salvage_bid": "number",
+        "salvage_buyer": "text",
     },
     "outcome": {
         "accounting_document": "text",
@@ -453,6 +482,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "role": "text",
         "status": "text",
         "yields": "object",
+        "title_db_reporting": "bool",  # plan 9, P9-9.6: per buyer, key = the buyer id (uc_auction)
     },
     # PLM parts and BOM lines (plan 8, MVP-9.1): written by the PLM adapters beyond the demo (Windchill, MVP-9.3);
     # keys from schema.part_key and schema.bom_key
