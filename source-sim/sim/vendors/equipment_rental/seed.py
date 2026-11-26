@@ -41,7 +41,8 @@ def docs() -> list[tuple[str, str, dict]]:
     out.append(("damage", "DC-2", {"claimId": "DC-2", "machineId": "M-0004", "renterRef": "R-0007", "amount": 80,
                                    "photosRef": "PH-0004"}))  # fmt: skip
     out.append(("plan", "PP-1", {"planId": "PP-1", "branch": "BR-3", "assetClass": "wheel_loader", "qty": 1}))
-    return out
+    seen: set[tuple[str, str]] = set()
+    return [r for r in out if not ((r[0], r[1]) in seen or seen.add((r[0], r[1])))]  # one row per kind and key
 
 
 def load(conn: Connection, _s: Seed) -> dict[str, int]:
