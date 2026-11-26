@@ -20,6 +20,7 @@ Facts (condition.<vin key>)
     recall_campaigns     the open campaigns, as the source gives them ({campaignId, component, summary, remedyAvailable})
     recall_checked_at    the source's `checkedAt`
     recall_remedy_ref    the remedy reference of a remedied campaign (the last one); absent when none is remedied
+    recall_remedied      the campaign ids of the remedied campaigns (P9-9.9: the gate compares them with the open ones)
 """
 
 from collections.abc import Iterator
@@ -58,6 +59,15 @@ def facts(doc: dict[str, Any], org_unit_id: str | None) -> list[Fact]:
                 remedied,
                 "Remedy reference of the last remedied campaign",
             ),
+            Fact(
+                "condition",
+                key,
+                "recall_remedied",
+                [r.get("campaignId") for r in remedied if r.get("campaignId")],
+                "remedied",
+                remedied,
+                "Campaign ids of the remedied campaigns",
+            ),  # fmt: skip
         ]
     )
 

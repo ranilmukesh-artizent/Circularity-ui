@@ -98,6 +98,7 @@ def test_adapter_vehicle_recall_lookup_remedied_and_org_key():
     facts = vehicle_recall.lookup(Stub(REMEDIED_DOC), vin(60), org_unit_id=ORG)
     v = by(facts)
     assert v["recall_open"] is False and v["recall_campaigns"] == [] and v["recall_remedy_ref"] == "RR-0060"
+    assert v["recall_remedied"] == ["SYN-25V-014"]  # P9-9.9: the gate compares open campaigns with these ids
     assert {f.key for f in facts} == {vin_key(ORG, vin(60))}
 
 

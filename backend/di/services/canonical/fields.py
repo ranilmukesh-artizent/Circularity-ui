@@ -319,6 +319,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         # plan 9, P9-11.5: the disposal partner (sanitisation record and disposal certificate), keyed by tag_key
         "sanitisation_record_ref": "ref",
         "disposal_certificate_ref": "ref",
+        "recall_remedied": "list",  # P9-9.9: the remedied campaign ids
     },
     "demand": {
         "accepts_refurbished": "bool",

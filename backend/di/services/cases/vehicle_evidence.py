@@ -12,7 +12,7 @@ recall database's `recall_open`, `recall_campaigns`, `recall_checked_at` and `re
     odometer_statement  {ref, statement_ref}, on file once the lessee's statement reference is (the evidence the gate lists)
     vin_recall          {checked_at, open, campaigns, remedy_ref}, dated at the check: the recall check and its date
     odometer (case)     {model_year, return_kind, statement_ref, photo_reading, lease_record, not_actual}
-    recall (case)       {checked_at, open, campaigns, remedy_ref, fleet_size}
+    recall (case)       {checked_at, open, campaigns, remedy_ref, remedied (campaign ids), fleet_size}
 
 A fact that is not on file is left out of the dict; no recall check yet leaves `recall` empty and the gate asks for the check.
 `gate_hold.attach_evidence` adds the records and the two dicts to a `used_cars` case; a later write of the odometer facts queues
@@ -62,6 +62,7 @@ def evidence(s: Session, asset_key: Any) -> tuple[list[dict[str, Any]], dict[str
         for name, value in (
             ("checked_at", c.get("recall_checked_at")), ("open", bool(c.get("recall_open"))),
             ("campaigns", c.get("recall_campaigns") or []), ("remedy_ref", c.get("recall_remedy_ref")),
+            ("remedied", c.get("recall_remedied") or []),
             ("fleet_size", a.get("seller_fleet_size")),
         ):  # fmt: skip
             _put(recall, name, value)

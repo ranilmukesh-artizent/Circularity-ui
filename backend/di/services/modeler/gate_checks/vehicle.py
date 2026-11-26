@@ -36,10 +36,10 @@ releases it (X-07). `not_actual` adds the disclosure "Odometer reading is not th
 **G-VEH-RECALL.** The case fact `recall` and the evidence `vin_recall`. A check with no date, or older than
 `params.check_max_age_days` at the case's `gateNow` (`valuers.fleet_evidence.NOW_KEY`; a case read without it is not judged
 stale), fails with effect `require_step` and `evidence_missing: ("recall_check",)`: "Recall check older than 30 days; re-run"
-(the action `evidence.refresh` re-runs it). An open recall with no remedy reference is disclosed as "Open recall disclosed:
-<campaign ids>" on every route and blocks `retail` ("Open recall: no retail until remedied"); a seller fleet of
-`params.rental_fleet_min` or more blocks every route of `params.rental_fleet_block_routes` instead. Neither holds the case.
-The check's date is the evidence's `at`.
+(the action `evidence.refresh` re-runs it). An open campaign not among the case's remedied campaign ids is disclosed as
+"Open recall disclosed: <campaign ids>" on every route and blocks `retail` ("Open recall: no retail until remedied"); a
+seller fleet of `params.rental_fleet_min` or more blocks every route of `params.rental_fleet_block_routes` instead.
+Neither holds the case. The check's date is the evidence's `at`.
 
 Never does: read the canonical store, the clock or a session, release a lien, or write a case. State title and brand law differ
 and is unconfirmed per state; the pack's lists are data, and any wording built on them needs review by Kinective's Legal team
@@ -188,9 +188,13 @@ def check_open_recall(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> Gat
         return GateResult(gate.id, False, ask, (RECALL_CHECK,), REASON_UNCHECKED)
     if now is not None and now - checked > timedelta(days=float(p.get("check_max_age_days") or 30)):
         return GateResult(gate.id, False, ask, (RECALL_CHECK,), REASON_STALE)
-    if not r.get("open") or r.get("remedy_ref"):
+    remedied = {str(x) for x in r.get("remedied") or []}
+    campaigns = [c for c in r.get("campaigns") or [] if isinstance(c, Mapping)]
+    still_open = [c for c in campaigns if str(c.get("campaignId")) not in remedied]
+    # passes only when every open campaign is remedied; an open recall that names no campaign is still open
+    if not r.get("open") or (campaigns and not still_open):
         return GateResult(gate.id, True, GateEffect("block", (), False, None), (), "No open recall")
-    ids = ", ".join(str(c["campaignId"]) for c in r.get("campaigns") or [] if isinstance(c, Mapping) and c.get("campaignId"))
+    ids = ", ".join(str(c["campaignId"]) for c in still_open if c.get("campaignId"))
     shown = (f"Open recall disclosed: {ids}" if ids else "Open recall disclosed",)
     fleet, minimum = _num(r.get("fleet_size")), _num(p.get("rental_fleet_min"))
     if fleet is not None and minimum is not None and fleet >= minimum:

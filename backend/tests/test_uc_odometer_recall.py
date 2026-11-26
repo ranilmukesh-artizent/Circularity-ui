@@ -254,6 +254,22 @@ def test_uc_08_a_remedied_recall_does_not_block():
     assert all("disclosures" not in r for r in c["routes"])
 
 
+def test_uc_08_one_campaign_remedied_another_still_open_fails_naming_the_open_one():
+    second = CAMPAIGN | {"campaignId": "SYN-25V-002", "component": "Brake hose"}
+    done = [{"campaignId": "SYN-24V-001", "remedyRef": "RR-0002", "remediedAt": "2026-09-01"}]
+    c = _car(2, recall=_recall_doc(2, open_=[second], remedied=done))  # a remedy ref is on file, but for the other campaign
+    gate = _gate(c, "G-VEH-RECALL")
+    assert gate["passed"] is False and gate["routes"] == ["retail"]
+    assert _failed(c)["retail"] == f"{RECALL}: Open recall: no retail until remedied"
+    assert _route(c, "auction")["disclosures"] == ["Open recall disclosed: SYN-25V-002"]  # the open campaign, not the remedied
+    both = [CAMPAIGN, second]  # the same campaign open and remedied counts as remedied
+    ok = _car(3, recall=_recall_doc(3, open_=both, remedied=done))
+    assert _route(ok, "auction")["disclosures"] == ["Open recall disclosed: SYN-25V-002"]
+    all_done = [*done, {"campaignId": "SYN-25V-002", "remedyRef": "RR-0003", "remediedAt": "2026-09-02"}]
+    clear = _car(4, recall=_recall_doc(4, open_=both, remedied=all_done))
+    assert _gate(clear, "G-VEH-RECALL")["passed"] is True and _failed(clear) == dict.fromkeys(CHANNELS)
+
+
 def test_uc_08_rental_fleet_blocks_all_sale():
     c = _car(50, lease={"sellerFleetSize": 40}, recall=_recall_doc(50, open_=[CAMPAIGN]))
     msg = "Open recall: a rental fleet of 35 or more may not sell until remedied"
