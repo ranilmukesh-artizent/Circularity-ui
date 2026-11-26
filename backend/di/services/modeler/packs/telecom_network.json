@@ -905,6 +905,54 @@
     "exceptions_per_day": 4,
     "new_spend_avoided": 1100000
    },
+   "required_facts": [
+    "asset.model",
+    "asset.grade",
+    "inventory.match",
+    "config.wipe_fail_count"
+   ],
+   "defaults": {
+    "evidenceRecords": [
+     {
+      "type": "inventory_match",
+      "source": "history",
+      "at": "2026-01-01T00:00:00+00:00",
+      "result": "pass",
+      "value": {}
+     },
+     {
+      "type": "config_wipe",
+      "source": "history",
+      "at": "2026-01-01T00:00:00+00:00",
+      "result": "pass",
+      "value": {
+       "status": "verified",
+       "attempts": 1,
+       "scope": [
+        "configuration",
+        "credentials",
+        "keys",
+        "logs"
+       ],
+       "certificate_ref": "WC-HISTORY"
+      }
+     },
+     {
+      "type": "vendor_certificate",
+      "source": "history",
+      "at": "2026-01-01T00:00:00+00:00",
+      "result": "pass",
+      "value": {}
+     },
+     {
+      "type": "treatment_facility_authorisation",
+      "source": "history",
+      "at": "2026-01-01T00:00:00+00:00",
+      "result": "pass",
+      "value": {}
+     }
+    ]
+   },
    "legal_review_note": "Export control (US EAR, EU dual-use list) and US covered-equipment rules summarised; classification is always a person's. Kinective's Legal team must review before shipping.",
    "samples": [
     {

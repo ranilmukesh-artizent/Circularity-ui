@@ -203,3 +203,26 @@ def test_paths_agree_telecom_network():
         assert (alone.route, alone.net) == (a.route, a.net), sid  # no two samples name the same demand
     assert decide(units["TN-S1"], queue).route == "redeploy" and decide(units["TN-S8"], queue).route == "redeploy"
     assert unit_plan.key_of(units["TN-S1"], unit_plan.facts_of(units["TN-S1"])) == "SN-TN-0001"
+
+
+def test_paths_agree_telecom_network_replay():
+    """TN-20: the eight samples replayed as history (the as-of replay's decider, evidence laid in from their facts) give the
+    route and net of the decider on the sample alone where the sample is decided, and no route where it is held."""
+    from datetime import UTC, datetime
+
+    from di.services.replay import telecom as tn
+
+    own = ("id", "template", "serial", "network", "evidenceRecords")
+    at, known = datetime(2026, 11, 10, 10, tzinfo=UTC), datetime(2026, 11, 1, tzinfo=UTC)
+    units = {f"TN-S{i}": sample(f"TN-S{i}", f"SN-TN-{i:04d}") for i in range(1, 9)}
+    its = [
+        {"item_id": sid, "decided_at": at, "cls": "radio", "market": "US", "actual_route": "recycle", "realised_value": 1,
+         "costs": {}, "facts": {k: {"value": v, "at": known} for k, v in c.items() if k not in own}}
+        for sid, c in units.items()
+    ]  # fmt: skip
+    got = tn.replay(its).decided
+    assert set(got) == set(units)
+    for sid in ("TN-S1", "TN-S2", "TN-S8"):
+        alone = decide(units[sid], [])
+        assert got[sid] == (alone.route, alone.net), sid
+    assert got["TN-S4"][0] is None and got["TN-S5"][0] is None  # held in both worlds

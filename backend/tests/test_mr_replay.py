@@ -53,7 +53,7 @@ def test_mr_20_rows_deterministic():
     assert len(young) == 11  # MR-11
     head = next(csv.reader(io.StringIO(M.csv_text(a).split("\n", 1)[1])))
     assert not any(w in h.lower() for h in head for w in ("name", "address", "patient", "email", "phone", "dob"))
-    assert DATASETS["medical_rental"] == M.__name__
+    assert DATASETS["medical_rental"]() == a  # the registry gives the same rows
     assert M.csv_text(a).startswith(f"# {M.COMMAND}\n")
 
 
