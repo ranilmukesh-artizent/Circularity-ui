@@ -20,13 +20,11 @@ import type { ActionResult, ModelerScreen } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { STEP_MEANING, currentStep, stepStates } from './rolloutSteps';
 
 const STEP_LABEL: Record<(typeof ROLLOUT_STEPS)[number], string> = { replay: 'Replay', shadow: 'Shadow', canary: 'Canary', full: 'Full' };
 const MIN_REASON = 15;
-
-/** The step to mark as current: a paused canary is still the Canary step; a rolled-back flow is back at Shadow. */
-export const currentStep = (stage: Rollout['stage']): (typeof ROLLOUT_STEPS)[number] | null =>
-  stage === 'paused' ? 'canary' : stage === 'rolled_back' ? 'shadow' : stage;
+export { currentStep };
 
 /** Show the panel to the people who manage or approve flows, while the flow is not simply published. */
 export const showRollout = (s: ModelerScreen): boolean => (can('approve.flows') || can('manageFlows')) && s.flow.status !== 'pub';
@@ -77,9 +75,11 @@ export function RolloutPanel({ s }: { s: ModelerScreen }) {
   return (
     <Panel title="Rollout" sub={`${r.name}: v${r.base_ver} is live${r.candidate_ver ? `, v${r.candidate_ver} is the candidate` : ''}`} cls="mdl-rollout">
       <ol className="mdl-row" data-rollout-steps aria-label="Publish steps">
-        {ROLLOUT_STEPS.map((k) => (
-          <li key={k} className={'pill' + (k === step ? ' on' : '')} data-step={k} aria-current={k === step ? 'step' : undefined}>
-            {STEP_LABEL[k]}
+        {stepStates(r).map((v) => (
+          <li key={v.step} className={'mdl-step ' + v.state} data-step={v.step} data-state={v.state} aria-current={v.step === step ? 'step' : undefined}>
+            <b>{STEP_LABEL[v.step]}</b>
+            <span className="s">{STEP_MEANING[v.step]}</span>
+            <span className="st">{v.state === 'done' ? '✓ ' : v.state === 'unavailable' ? 'Not yet: ' : ''}{v.note}</span>
           </li>
         ))}
         {r.stage === 'paused' && <li className="pill" data-rollout-paused>Paused</li>}

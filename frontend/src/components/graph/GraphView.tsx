@@ -9,20 +9,12 @@ import '@xyflow/react/dist/base.css';
 import './graph.css';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
-  Background, BackgroundVariant, Controls, MarkerType, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow,
-  type Edge, type Node, type NodeChange, type NodePositionChange, type NodeTypes,
+  Background, BackgroundVariant, Controls, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow,
+  type NodeChange, type NodePositionChange, type NodeTypes,
 } from '@xyflow/react';
+import { toRfEdges, toRfNodes, type GEdge, type GNode } from './rfModel';
 
-export interface GNode {
-  id: string; x: number; y: number; w: number; h: number;
-  /** A key of `nodeTypes`. */
-  type: string;
-  data: Record<string, unknown>;
-  selected?: boolean;
-  /** A locked node cannot be moved: a drag calls `onBlocked` and the node stays. */
-  locked?: boolean;
-}
-export interface GEdge { id: string; a: string; b: string; selected?: boolean; className?: string; label?: string }
+export type { GNode, GEdge };
 export type GSel = { t: 'n' | 'e'; id: string } | null;
 
 /** What the owner can ask of the canvas (a drop from a palette, "centre on this step", "fit"). */
@@ -90,13 +82,8 @@ function Inner(p: GraphViewProps) {
     return () => document.removeEventListener('keydown', key);
   }, []);
 
-  const nodes: Node[] = p.nodes.map((n) => ({
-    id: n.id, type: n.type, data: n.data, position: live[n.id] ?? { x: n.x, y: n.y }, width: n.w, height: n.h, selected: !!n.selected, draggable: !p.readOnly,
-  }));
-  const edges: Edge[] = p.edges.map((e) => ({
-    id: e.id, source: e.a, target: e.b, type: 'smoothstep', className: e.className, label: e.label, selected: !!e.selected,
-    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 }, interactionWidth: 24,
-  }));
+  const nodes = toRfNodes(p.nodes, live, !!p.readOnly);
+  const edges = toRfEdges(p.edges);
   const by = new Map(p.nodes.map((n) => [n.id, n]));
 
   function changes(cs: NodeChange[]) {
