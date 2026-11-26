@@ -230,7 +230,8 @@
     "data_sanitisation",
     "disposal_collection",
     "write_off"
-   ]
+   ],
+   "asset_effect": "retire"
   }
  ],
  "guardrails": [
@@ -1171,5 +1172,8 @@
   "MR-21",
   "MR-22",
   "MR-23"
- ]
+ ],
+ "close": {
+  "fixed_asset": true
+ }
 }

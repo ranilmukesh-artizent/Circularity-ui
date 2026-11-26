@@ -141,7 +141,34 @@ def load(conn: Connection, seed: Seed) -> dict[str, int]:
     for name, data in rows.items():
         if data:
             conn.execute(insert(t.metadata.tables[f"s4.{name}"]), data)
-    return {name: len(data) for name, data in rows.items()}
+    return {name: len(data) for name, data in rows.items()} | {"ANLA": load_assets(conn)}
+
+
+def assets() -> list[dict]:
+    """The fixed-asset master of the three packs that own their assets (P9-13.1): 60 cars, 120 network units and 45 medical
+    devices, keyed as the other mocks key them. Book values are computed from the unit's number (no randomness); in USD."""
+    from sim.vendors.medical_rental_system.seed import tag
+    from sim.vendors.network_inventory.seed import serial
+    from sim.vendors.vehicle_lease.seed import vin
+
+    out = []
+    groups = (("Vehicle", range(1, 61), vin, 18000, 100, 10), ("Network unit", range(1, 121), serial, 4200, 25, 7),
+              ("Medical device", range(1, 46), tag, 9500, 60, 9))  # fmt: skip
+    for label, nums, key, base, step, mod in groups:
+        for n in nums:
+            book = base - step * ((n - 1) % mod)
+            out.append({
+                "ANLN1": f"{100000 + len(out) + 1}", "ASSET_KEY": key(n), "TXT50": f"{label} {key(n)}",
+                "AK_VALUE": Decimal(book) * Decimal("1.6"), "BOOK_VALUE": Decimal(book), "WAERS": "USD", "LOCATION": "",
+                "STATUS": "active",
+            })  # fmt: skip
+    return out
+
+
+def load_assets(conn: Connection) -> int:
+    rows = assets()
+    conn.execute(insert(t.ANLA), rows)
+    return len(rows)
 
 
 def reset(conn: Connection, seed: Seed) -> dict[str, int]:
@@ -179,3 +206,5 @@ def ensure(conn: Connection, seed: Seed) -> None:
     create(conn)
     if conn.execute(text('SELECT count(*) FROM s4."MARA"')).scalar_one() == 0:
         load(conn, seed)
+    elif conn.execute(text('SELECT count(*) FROM s4."ANLA"')).scalar_one() == 0:
+        load_assets(conn)  # a database seeded before P9-13.1 gets the asset master once

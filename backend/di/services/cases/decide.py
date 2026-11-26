@@ -70,7 +70,7 @@ from di.services.modeler.gates import (
     triggered,
 )
 from di.services.modeler.guard import rule_breaks
-from di.services.modeler.pack import Diversion, Pack
+from di.services.modeler.pack import Diversion, Pack, close_kinds
 from di.services.modeler.templates import Template, template_of_pack
 from di.services.modeler.valuers import (
     APPROVALS,
@@ -392,11 +392,17 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     best = best_of(values)
     if kind == "used_cars":
         for r in routes:
-            r["steps"] = used_car_steps.follow_steps(r["id"], pack, facts)  # the channel's follow-through (P9-9.17)
+            r["steps"] = [
+                *used_car_steps.follow_steps(r["id"], pack, facts),
+                *close_kinds(pack, r),
+            ]  # follow-through (P9-9.17), close (P9-13.1)
         return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
     if kind == "medical_rental":
         for r in routes:
-            r["steps"] = medical_steps.follow_steps(r["id"], pack, facts)  # the route's follow-through (P9-11.17)
+            r["steps"] = [
+                *medical_steps.follow_steps(r["id"], pack, facts),
+                *close_kinds(pack, r),
+            ]  # follow-through, close (P9-13.1)
     approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
     holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)
     return _Valued(routes, best["k"] if best else None, approvals=[dict(h) | {"passed": False} for h in holds], facts=facts)
@@ -426,7 +432,7 @@ def _unit_pack(
         r.id: list(r.instructions) for r in pack.routes
     }  # P9-10.16: a route's steps are the valuer's (`dest.steps`) or the pack's
     for r in routes:
-        r["steps"] = list((r.get("dest") or {}).get("steps") or by_id.get(r["id"].split(":", 1)[0]) or [])
+        r["steps"] = [*((r.get("dest") or {}).get("steps") or by_id.get(r["id"].split(":", 1)[0]) or []), *close_kinds(pack, r)]
     best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
     return _Valued(routes, best["k"] if best else None)
 

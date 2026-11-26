@@ -25,7 +25,7 @@ from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, guard, implement
 from di.services.cases import lifecycle, store
 from di.services.engine.jsmath import js_sum
-from di.services.execution import EX_STEP, ack_note, ack_ref, ex_ev, line_actuals, ref_label, value_order, variance
+from di.services.execution import EX_STEP, ack_note, ack_ref, asset, ex_ev, line_actuals, ref_label, value_order, variance
 
 
 def _active(c: store.Case) -> int:
@@ -143,6 +143,8 @@ def adapter_acknowledge(i: dict[str, Any], ctx: CallContext):
     if k + 1 < len(e["steps"]):
         e["steps"][k + 1]["state"] = "active"
         e["steps"][k + 1]["activeAt"] = NOW
+    if s.get("k") in asset.KINDS:  # P9-13.1: the ERP's gain or loss on the asset, stored as it answered
+        asset.record(ctx.session, c, k)
     t = ex_ev(s)
     note = ack_note(s, c)
     push_event(

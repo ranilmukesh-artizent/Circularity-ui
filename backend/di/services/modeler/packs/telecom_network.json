@@ -191,7 +191,8 @@
    "instructions": [
     "firmware_upgrade",
     "site_transfer"
-   ]
+   ],
+   "asset_effect": "transfer"
   },
   {
    "id": "spare",
@@ -218,7 +219,8 @@
    ],
    "instructions": [
     "broker_listing"
-   ]
+   ],
+   "asset_effect": "retire"
   },
   {
    "id": "harvest",
@@ -250,7 +252,8 @@
    ],
    "instructions": [
     "recycler_pickup"
-   ]
+   ],
+   "asset_effect": "retire"
   }
  ],
  "guardrails": [
@@ -1281,5 +1284,8 @@
   "TN-22",
   "TN-23",
   "TN-24"
- ]
+ ],
+ "close": {
+  "fixed_asset": true
+ }
 }

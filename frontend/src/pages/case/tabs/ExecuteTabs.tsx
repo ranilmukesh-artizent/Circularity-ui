@@ -5,7 +5,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { actionCatalog } from '../../../api/actions';
 import {
-  approverRole, defaultSpend, exNum, exTs, fmtD, fmtDY, inr, moveDay, refList, when,
+  approverRole, defaultSpend, exNum, fixedAssetLine, exTs, fmtD, fmtDY, inr, moveDay, refList, when,
   type CaseAnalysis, type CaseRec, type OutcomeLine, type ScenRoutes,
 } from '../../../api/case';
 import { money } from '../../../api/format';
@@ -153,6 +153,7 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
             {c.outcome
               ? <><b>Outcome confirmed.</b> Predicted {money(r.net)} · actual {money(c.outcome.net)} · variance {money(c.outcome.net - r.net)}{c.outcome.order ? ' against ' + c.outcome.order : ''}. Linked to {c.exec?.decisionId} for learning. <a className="lnk" href={'#/product/' + c.id + '/stage/10'}>Line by line (step 10)</a></>
               : <><b>Outcome reported by source systems.</b> Finance confirms the economic result.{can('confirm') && <div style={{ marginTop: 8 }}><button className="btn sm pri" onClick={() => caseActions.confirmOutcome(c.id)}>Confirm outcome <Stp n={10} /></button></div>}</>}
+            {fixedAssetLine(c) && <div className="note" style={{ marginTop: 6 }}>{fixedAssetLine(c)}</div>}
           </div>
         )}
       </div>

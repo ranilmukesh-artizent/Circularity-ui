@@ -21,13 +21,14 @@ from sqlalchemy.engine import Connection
 
 from sim.core import clock, events
 from sim.core.db import engine
-from sim.vendors.s4 import journal, security
+from sim.vendors.s4 import assets, journal, security
 from sim.vendors.s4 import models as t
 from sim.vendors.s4.odata.service import ODataError, error_response
 from sim.vendors.s4.services import SERVICES
 
 router = APIRouter()
 router.include_router(journal.router)
+router.include_router(assets.router)  # P9-13.1: fixed-asset retirement and transfer
 BASE = "/sap/opu/odata/sap"
 SOURCE = "erp"
 

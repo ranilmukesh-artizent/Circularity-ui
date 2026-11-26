@@ -708,11 +708,14 @@ WRITERS = {
     "finance": finance,
 }
 from di.services.instructions import (  # noqa: E402 - it uses Sent, Refused and client, defined above
+    writers_asset,
     writers_fleet,
     writers_telecom,
 )
 
 WRITERS |= {
+    "retire": writers_asset.retire,  # P9-13.1: the fixed-asset close of a pack that owns the asset
+    "transfer": writers_asset.transfer,
     "fleet_issue": writers_fleet.fleet_issue,
     "parts_issue": writers_fleet.parts_issue,
     "nonreturnfee": writers_fleet.fee_post,

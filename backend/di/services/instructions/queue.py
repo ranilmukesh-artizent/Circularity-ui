@@ -43,6 +43,8 @@ SYSTEM_OF = {
     "salvage_sale": "uc_auction",
     "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
     "lessee_charge": "uc_lease",
+    "retire": "erp",  # P9-13.1: the fixed-asset retirement and transfer of a pack that owns the asset
+    "transfer": "erp",
     "dispatch": "mr_rental",  # P9-11.17: the follow-through of a medical rental route (the pack's route instructions)
     "service_order": "mr_biomed",
     "biomed_refurb": "mr_biomed",

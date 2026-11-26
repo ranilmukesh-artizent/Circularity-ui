@@ -269,5 +269,38 @@ SEQUENCES_DDL = [
     "CREATE SEQUENCE IF NOT EXISTS s4.rsnum_seq START 100000",
     "CREATE SEQUENCE IF NOT EXISTS s4.mblnr_seq START 4900000000",
     "CREATE SEQUENCE IF NOT EXISTS s4.belnr_seq START 100000000",  # number range 01 for document type SA
+    "CREATE SEQUENCE IF NOT EXISTS s4.anek_seq START 100000",  # asset documents (P9-13.1)
 ]
-SEQUENCES = ("rsnum_seq", "mblnr_seq", "belnr_seq")
+SEQUENCES = ("rsnum_seq", "mblnr_seq", "belnr_seq", "anek_seq")
+
+# Fixed assets (plan 9, P9-13.1): the asset master (ANLA-like) and the retirement and transfer documents (ANEK-like). The
+# book value is the ERP's: a retirement's gain or loss is computed here, never by di.
+ANLA = Table(
+    "ANLA",
+    metadata,
+    Column("ANLN1", String(12), primary_key=True),  # asset number
+    Column("ASSET_KEY", String(40), nullable=False, unique=True),  # the VIN, serial or tag of the unit
+    Column("TXT50", String(50)),
+    Column("AK_VALUE", AMT),  # acquisition value
+    Column("BOOK_VALUE", AMT),
+    Column("WAERS", String(3)),
+    Column("LOCATION", String(20)),  # plant, site or cost centre
+    Column("STATUS", String(10), nullable=False, server_default="active"),  # active | retired
+    _changed(),
+)
+
+ANEK = Table(
+    "ANEK",
+    metadata,
+    Column("BELNR", String(12), primary_key=True),  # asset document number
+    Column("TYPE", String(10), nullable=False),  # retire | transfer
+    Column("XBLNR", String(40), nullable=False, unique=True),  # external reference: one document per reference
+    Column("ANLN1", String(12), nullable=False),
+    Column("PROCEEDS", AMT),
+    Column("BOOK_VALUE", AMT),
+    Column("GAIN_LOSS", AMT),
+    Column("WAERS", String(3)),
+    Column("TO_LOCATION", String(20)),
+    Column("BUDAT", Date),
+    _changed(),
+)

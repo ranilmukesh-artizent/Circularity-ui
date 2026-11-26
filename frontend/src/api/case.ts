@@ -47,6 +47,16 @@ export interface GateRow {
   missingTypes?: string[];
 }
 /** A case held until evidence arrives; `batch` names the lot batch it was opened in. */
+/** A fixed-asset retirement or transfer as the ERP answered it; the platform stores the gain or loss, it never computes it. */
+export interface FixedAsset { kind: 'retire' | 'transfer'; doc: string; proceeds?: number | null; book_value?: number | null; gain_loss?: number | null; currency?: string; at?: string }
+/** The line the close block shows for the case's fixed asset, or null (P9-13.1). */
+export function fixedAssetLine(c: { finance?: { asset?: FixedAsset } | null }): string | null {
+  const a = c.finance?.asset;
+  if (!a) return null;
+  if (a.kind !== 'retire' || a.gain_loss == null) return `Asset transfer · ${a.doc} (from the ERP)`;
+  const usd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
+  return `Fixed-asset retirement · ${a.doc} · proceeds ${usd(a.proceeds ?? 0)} · book value ${usd(a.book_value ?? 0)} · ${a.gain_loss >= 0 ? 'gain' : 'loss'} ${usd(a.gain_loss)} (from the ERP)`;
+}
 export interface GateHold { gates: string[]; since: string; batch: string | null }
 export interface RequiredStep { gate: string; step: string; owner: string }
 export interface BatchStatus { ref: string; total: number; held: number; released: number }
@@ -60,6 +70,8 @@ export interface CaseRec {
   approval?: { ref: string; by: string; at: string; rationale: string; spend?: number | null; terms?: string } | null;
   packet?: { rationale: string; at: string; by: string; prep?: string | null } | null;
   outcome?: { net: number; by?: string; at?: string; order?: string | null; lines: OutcomeLine[] } | null;
+  /** The ERP's answer to the fixed-asset step of a pack that owns its assets (P9-13.1); read it with `fixedAssetLine`. */
+  finance?: { asset?: FixedAsset } | null;
   exec?: { ref: string; decisionId: string; approvedAt?: string; instruction?: number; steps: ExecStep[]; terms?: MarketTerms } | null;
   blocked?: { action: string; owner: string; reason: string; gateName?: string } | null;
   requested?: { ref: string; at: string } | null;

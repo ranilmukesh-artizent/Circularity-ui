@@ -137,6 +137,7 @@
    "app": "uc_dms",
    "owner": "lot_manager",
    "lead_days": 7,
+   "asset_effect": "retire",
    "classes": [
     "sale"
    ],
@@ -153,6 +154,7 @@
    "app": "uc_auction",
    "owner": "remarketing_manager",
    "lead_days": 10,
+   "asset_effect": "retire",
    "classes": [
     "sale"
    ],
@@ -167,6 +169,7 @@
    "app": "uc_dms",
    "owner": "remarketing_manager",
    "lead_days": 3,
+   "asset_effect": "retire",
    "classes": [
     "sale"
    ],
@@ -181,6 +184,7 @@
    "app": "uc_auction",
    "owner": "remarketing_manager",
    "lead_days": 5,
+   "asset_effect": "retire",
    "classes": [
     "recycle"
    ],
@@ -1240,5 +1244,8 @@
   "UC-23",
   "UC-24",
   "UC-25"
- ]
+ ],
+ "close": {
+  "fixed_asset": true
+ }
 }

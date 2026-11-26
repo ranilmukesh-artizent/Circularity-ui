@@ -568,6 +568,18 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool, waiting: st
         order = (o9 or {}).get("order") or (vo["ref"] if vo else None)
         if order:
             F("Order", order, "ret", "ERP")
+        fa: Any = (c.get("finance") or {}).get("asset")  # P9-13.1: the ERP's retirement or transfer document, as it answered
+        if fa and fa.get("kind") == "retire" and fa.get("gain_loss") is not None:
+            gl = fa["gain_loss"]
+            F(
+                "Fixed-asset retirement",
+                f"{fa['doc']} · proceeds {money(fa['proceeds'])} · book value {money(fa['book_value'])} · "
+                f"{'gain' if gl >= 0 else 'loss'} {money(abs(gl))} (from the ERP)",
+                "ret",
+                "ERP fixed assets",
+            )
+        elif fa:
+            F("Asset transfer", f"{fa['doc']} (from the ERP)", "ret", "ERP fixed assets")
         o["docs"] = [d for d in (last["ack"]["ref"] if last and last.get("ack") else None, (o9 or {}).get("order")) if d]
         if o9:
             if o9["net"] >= r["net"]:
