@@ -568,8 +568,11 @@ def revalue(s: Session, c: store.Case) -> None:
 def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     """Routes, recommendation and the flow version they were evaluated with (as a re-evaluation records them): the one
     decider's decision (di.services.cases.decide) set on the case."""
-    if is_refresh(c):  # a contract refresh is priced and matched by the later refresh tasks (P9-5.1): nothing to value yet
+    if is_refresh(c):  # a contract refresh is priced (P9-5.4): its priced routes are the decision a person approves (P9-5.5)
+        from di.services import refresh_decision  # lazy: it imports this module
+
         c |= {"routes": [], "recommendation": None, "stage": STAGES[0]}
+        refresh_decision.attach(s, c)  # nothing to price (no market, tools or tables): the case stays without a decision
         return
     fv = flow_version(s, c)  # also refreshes the case's scope facts
     pack = _pack(s, c)

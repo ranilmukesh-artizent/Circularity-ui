@@ -896,7 +896,7 @@ each story went.
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
 - [x] P9-5.3 Like-life units matched and reserved once
 - [x] P9-5.4 Refresh proposal priced with fee and renewal odds
-- [ ] P9-5.5 Approved proposal sent, lines drafted, units reserved
+- [x] P9-5.5 Approved proposal sent, lines drafted, units reserved
 - [ ] P9-5.6 Test-the-proposal levers
 - [ ] P9-5.7 Renewal outcomes recorded and compared
 - [ ] P9-5.8 Paths agree and order invariant for refresh

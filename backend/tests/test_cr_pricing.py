@@ -4,8 +4,8 @@ Everything priced here is computed: the fees from the market's `terms` and `refr
 date, the credits from the market's `credit_rules` table, the renewal likelihood from the fleet's contract history (a
 Laplace-smoothed rate by market and size, `renewal_odds`, nothing trained). Nothing is worded by a language model: every
 sentence is a template over those numbers, so there is no `AgentLoop` step and no model tests belong to this task
-(R16 has nothing to route; a model may never write a computed number). Sending the proposal is a person's (P9-5.5); `refresh_route` only says who
-must approve, and an agent approves nothing (no new action, so `FORBIDDEN_ACTIONS` is unchanged).
+(R16 has nothing to route; a model may never write a computed number). Sending the proposal is a person's (P9-5.5);
+`refresh_route` only says who must approve, and an agent approves nothing (no new action, so `FORBIDDEN_ACTIONS` is unchanged).
 """
 
 import copy

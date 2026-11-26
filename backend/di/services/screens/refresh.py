@@ -6,7 +6,13 @@ GET /api/screens/refresh/{case_id}
     `contract` is `{id, customer, market, start, end, notice, term_months, status}` as the case opened with it; `window` is
     `{opens, basis}`, `basis` "end" (the window counts back from the contract's end date) or "notice" (from its notice
     date); `lines` are `{serial, cls, model, fee, months}` from the contract's lines.
-    `execution` and `outcome` are null until the tasks that fill them.
+    `outcome` is null until the task that fills it.
+
+    `execution` (P9-5.5, CR-05) is null until a person approves, then `{approval, route, approver, valid_until, steps: [{kind,
+    system, state, ref, text}], done, back}`: the three steps of the approved plan (propsend, propdraft, propreserve; a route
+    without units skips none, the reserve step is then acknowledged as simulated) with the reference each system returned
+    ("Proposal sent PR-40201", "Contract lines drafted DL-40214", "Units reserved RU-40227"); `back` is `{to, reason}` when a unit
+    was taken meanwhile and the decision went back to the Fleet desk.
 
     `match` (P9-5.3, CR-03) is one `{serial, need_id, cls, target, unit_id, rul, distance, source, why}` per swapped tool: the
     unit closest to the median life of the tools kept (`target`), from refurbished stock or a return planned to refurbish for
@@ -43,16 +49,11 @@ from typing import Any
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from di.core import clock
 from di.core.auth import Principal
-from di.repositories import contract_history
-from di.repositories import market_tables as tables_repo
 from di.repositories.context import load_case
+from di.services import refresh_decision
 from di.services.cases import intake, tool_queue
-from di.services.modeler import tables
-from di.services.modeler.pack import load_pack
-from di.services.modeler.valuers import contract_refresh, renewal_odds, tool_approval
-from di.services.service_desk.inputs import fx_per_usd
+from di.services.modeler.valuers import contract_refresh, tool_approval
 
 
 def _tools(s: Session, c: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int], str | None]:
@@ -81,31 +82,18 @@ def _pricing(
     s: Session, c: dict[str, Any], acts: list[contract_refresh.ToolAction], match: list[dict[str, Any]]
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """The proposal's pricing and who approves it; (None, None) without tools, a market or the market's tables in force."""
-    r = c.get("refresh") or {}
-    market, org, today = r.get("market"), c.get("owner"), clock.now().date()
-    if not acts or not market:
+    q = refresh_decision.quote(s, c, acts, match)  # the same pricing the decision is made of (P9-5.5)
+    if q is None:
         return None, None
-    card = tables_repo.effective(s, org, tool_queue.PACK, tool_queue.FLOW, str(market), "terms", today)
-    credit = tables_repo.effective(s, org, tool_queue.PACK, tool_queue.FLOW, str(market), "credit_rules", today)
-    fees = tables_repo.effective(s, org, tool_queue.PACK, tool_queue.FLOW, str(market), "refresh_terms", today)
-    if card is None or credit is None or fees is None:
-        return None, None
-    p = contract_refresh.price(
-        acts, match, tables.rate_card(card), tables.JdmTable.model_validate(credit.body),
-        renewal_odds.within(contract_history.rows(s), today), str(market),
-        fees=tables.rate_card(fees), lines=list(r.get("lines") or []), term_months=int(r.get("term_months") or 0),
-        credit_version=credit.version,
-    )  # fmt: skip
-    usd = float(p.credit_total / fx_per_usd(s, p.currency, today))
-    route = tool_approval.refresh_route(usd, load_pack(tool_queue.PACK))
+    p, route = q.pricing, q.route
     pricing = {
-        "currency": p.currency, "rate_card_version": p.rate_card_version, "fees_version": fees.version,
-        "credit_rules_version": credit.version,
+        "currency": p.currency, "rate_card_version": p.rate_card_version, "fees_version": q.fees_version,
+        "credit_rules_version": q.credit_version,
         "term_months": p.term_months, "current_fee_month": float(p.current_fee_month),
         "proposed_fee_month": float(p.proposed_fee_month), "saving_vs_new": float(p.saving_vs_new),
         "renewal_likelihood": p.renewal_likelihood, "renewal_without": p.renewal_without, "renewal_basis": p.renewal_basis,
         "credits": [{"serial": x.serial, "amount": float(x.amount), "rule_version": x.rule_version} for x in p.credits],
-        "credit_total": float(p.credit_total), "credit_total_usd": round(usd, 2),
+        "credit_total": float(p.credit_total), "credit_total_usd": round(q.credit_usd, 2),
         "lines": [{"label": x.label, "amount": float(x.amount), "cite": x.cite} for x in p.lines],
         "routes": [{"id": x.id, "name": x.name, "net": float(x.net), "standard": x.standard} for x in p.routes],
         "best": p.best, "uplift": float(p.uplift),
@@ -117,6 +105,33 @@ def _pricing(
     )
     approval = {"kind": route.kind, "role": route.role, "text": text, "holds": [dict(h) for h in route.holds]}
     return pricing, approval
+
+
+EXECUTION_TEXT = {  # step kind -> (before, after the system acknowledged it)
+    "propsend": ("Send the proposal", "Proposal sent"),
+    "propdraft": ("Draft the contract lines", "Contract lines drafted"),
+    "propreserve": ("Reserve the units", "Units reserved"),
+}
+
+
+def _execution(c: dict[str, Any]) -> dict[str, Any] | None:
+    """What the approval carried out: the three steps with the reference each system returned; None before an approval."""
+    x = c.get("exec")
+    if not x or "proposal" not in x:
+        return None
+    steps = []
+    for st in x["steps"]:
+        before, after = EXECUTION_TEXT.get(st["k"], (st["label"], st["label"]))
+        ack = st.get("ack")
+        steps.append(
+            {"kind": st["k"], "system": st["sys"], "state": st["state"], "ref": ack["ref"] if ack else None,
+             "text": f"{after} {ack['ref']}" if ack else before}
+        )  # fmt: skip
+    p = x["proposal"]
+    return {
+        "approval": x["ref"], "route": p["route"], "approver": p.get("approver"), "valid_until": p["valid_until"],
+        "steps": steps, "done": all(st["state"] == "done" for st in steps), "back": c.get("refreshBack"),
+    }  # fmt: skip
 
 
 def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
@@ -141,6 +156,6 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "match": match,
         "pricing": pricing,
         "approval": approval,
-        "execution": None,
+        "execution": _execution(c),
         "outcome": None,
     }  # fmt: skip

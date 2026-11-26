@@ -10,6 +10,8 @@ API key in `x-api-key` (demo key `parts-demo-key`), offset paging (`items`, `nex
 Seed (deterministic, md5, anchored on 2026-10-07): 120 open repair orders, 90 catalogue rows (15 a class), 48
 refurbished units (eight a class, remaining useful life 35 to 85%), 20 sales orders, 10 pool requests and 30 trade bids.
 Part names are those of the pack's classes (tool_fleet.json `classes.<cls>.parts`); prices are synthetic.
+Two resources take writes: an open repair order takes the part a harvest issues (P9-3.17, `parts.repair_order.updated`) and a
+refurbished unit takes the reservation of an approved contract refresh (P9-5.5, PATCH `status` "reserved", `parts.stock.updated`).
 """
 
 from datetime import timedelta
@@ -112,7 +114,8 @@ SPEC = Spec(
         Resource("openRepairOrders", "/repair-orders/open", "roId", filters=("toolClass", "partName"), update=True,
                  event="parts.repair_order"),  # P9-3.17: a harvest posts its certified part here
         Resource("catalogue", "/catalogue", "partNo", filters=("toolClass", "market")),
-        Resource("stock", "/refurbished-units", "unitId", filters=("toolClass", "status", "site")),
+        Resource("stock", "/refurbished-units", "unitId", filters=("toolClass", "status", "site"), update=True,
+                 event="parts.stock"),  # P9-5.5: an approved refresh reserves its swap's unit here
         Resource("salesOrders", "/sales-orders", "soId", filters=("toolClass", "site")),
         Resource("poolRequests", "/pool-requests", "requestId", filters=("toolClass", "site")),
         Resource("bids", "/trade-bids", "bidId", filters=("toolClass", "dealer")),

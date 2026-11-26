@@ -9,6 +9,10 @@
 | pod | `sterling.order.fulfilled` (oms) | Reference = the instruction key | the proof of delivery (POD-5nnnn) |
 | finance | `sap.s4.beh.journalentry.v1.JournalEntry.Created.v1` (erp) | DocumentReferenceID = approval ref | AccountingDocument |
 
+A tool-fleet refresh (P9-5.5) has three more, all matched by `issuedKey` (the instruction key): `propsend` by
+`fleet.proposal.created` (fleet), `propdraft` by `fleet.draft_line.created` (fleet; the first line's event completes it) and
+`propreserve` by `parts.stock.updated` (parts). The reference acknowledged is the planned PR-, DL- or RU- number the writer sent.
+
 Why these: each is the moment the step's work is done in the system that owns it — the unit is allocated to the line;
 the repair is complete (tests passed, release to service); the carrier accepted the tender, so the load is booked
 (the delivery itself is the delivery step's business); the warehouse shipped the unit; the order line is delivered
@@ -66,6 +70,11 @@ COMPLETES: dict[str, Completion] = {
     # `issuedKey` the writers send, which is the instruction key
     "fleet.line.updated": Completion("fleet", ("lease",), lambda d: [d.get("issuedKey")], lambda d: d.get("lineId")),
     "parts.repair_order.updated": Completion("parts", ("partsxfer",), lambda d: [d.get("issuedKey")], lambda d: d.get("roId")),
+    # P9-5.5: an approved refresh's proposal is created, its draft lines are created (one event each; the first completes it)
+    # and its units are reserved in the parts system; each carries the instruction key as `issuedKey` and the planned reference
+    "fleet.proposal.created": Completion("fleet", ("propsend",), lambda d: [d.get("issuedKey")], lambda d: d.get("proposalId")),
+    "fleet.draft_line.created": Completion("fleet", ("propdraft",), lambda d: [d.get("issuedKey")], lambda d: d.get("draftRef")),
+    "parts.stock.updated": Completion("parts", ("propreserve",), lambda d: [d.get("issuedKey")], lambda d: d.get("reserveRef")),
 }
 DELIVERED = "otm.shipment.delivered"
 

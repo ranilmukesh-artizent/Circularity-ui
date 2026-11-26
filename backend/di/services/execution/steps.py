@@ -87,6 +87,17 @@ EX_STEP: dict[str, dict[str, Any]] = {
                    "old tool received; a Returns case opened for it", "The Fleet desk receives the tool the customer returns"),
     "credit": _s("Release the credit", "ERP · credit memo", ("CM", "Credit memo"), "Finance", 16, "credit.released", 71,
                  "credit memo released to the customer", "Finance releases the credit once the old tool is received"),
+    # plan 9 P9-5.5: an approved contract refresh is sent, its lines drafted and its units held (the systems answer
+    # with the proposal, the draft lines and the reservation; PR-, DL- and RU- are their planned numbers, which the mocks keep)
+    "propsend": _s("Send the proposal", "Fleet contract system · proposal", ("PR", "Proposal"), "Fleet desk", 8,
+                   "proposal.sent", 8,
+                   "proposal sent to the customer", "The Fleet desk owns what the customer is offered"),
+    "propdraft": _s("Draft the contract lines", "Fleet contract system · draft lines", ("DL", "Contract lines"), "Fleet desk", 8,
+                    "contract.drafted", 21, "contract lines drafted for the renewal",
+                    "The lines are drafted in the fleet contract system, ready for the customer's answer"),
+    "propreserve": _s("Reserve the units", "Parts and service system · reserve units", ("RU", "Reservation"), "Fleet desk", 8,
+                      "stock.reserved", 34, "refurbished units reserved for the swaps",
+                      "The units promised in the proposal are held so no other contract takes them"),
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
@@ -122,6 +133,11 @@ STEP_TPL: dict[str, list[str]] = {
     "upgrade": ["sale", "transport", "takeback", "credit", "finance"],
     "all_fix": ["repair", "transport", "finance"],
     "all_upgrade": ["sale", "transport", "takeback", "credit", "finance"],
+    # a contract refresh's routes (P9-5.4, P9-5.5): the proposal goes out, its lines are drafted, the swaps' units are held;
+    # renewing as it is has no swap to hold
+    "proposal": ["propsend", "propdraft", "propreserve"],
+    "renew_as_is": ["propsend", "propdraft"],
+    "upgrade_all": ["propsend", "propdraft", "propreserve"],
 }
 # plan 9 P9-3.17: the executing system of a step per template (the other steps keep EX_STEP's). A tool-fleet re-issue goes to the
 # fleet contract system and a harvest to the parts system; an industrial case never reads this

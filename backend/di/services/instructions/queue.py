@@ -39,7 +39,9 @@ SYSTEM_OF = {
 
 # P9-3.17: the steps a template writes to a source of its own (the tool fleet's re-issue goes to the fleet contract system, its
 # harvest to the parts system); every other step, and every industrial step, goes where SYSTEM_OF says
-TEMPLATE_SYSTEM_OF = {"tool_fleet": {"lease": "fleet", "partsxfer": "parts"}}
+TEMPLATE_SYSTEM_OF = {
+    "tool_fleet": {"lease": "fleet", "partsxfer": "parts", "propsend": "fleet", "propdraft": "fleet", "propreserve": "parts"}
+}  # P9-5.5: an approved refresh's proposal and draft lines go to the fleet contract system, its units to the parts system
 
 
 def template_system(template: str | None, kind: str) -> str | None:

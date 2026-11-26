@@ -432,8 +432,13 @@ WRITERS = {
 from di.services.instructions import writers_fleet  # noqa: E402 - it uses Sent, Refused and client, defined above
 
 WRITERS |= {
-    "fleet_issue": writers_fleet.fleet_issue, "parts_issue": writers_fleet.parts_issue, "nonreturnfee": writers_fleet.fee_post,
-}  # fmt: skip
+    "fleet_issue": writers_fleet.fleet_issue,
+    "parts_issue": writers_fleet.parts_issue,
+    "nonreturnfee": writers_fleet.fee_post,
+    "proposal_send": writers_fleet.proposal_send,
+    "lines_draft": writers_fleet.lines_draft,
+    "units_reserve": writers_fleet.units_reserve,
+}
 
 
 def operations(system: str) -> list[str]:
@@ -446,7 +451,12 @@ def operations(system: str) -> list[str]:
 
 # P9-3.17: the writer of a step of a template that writes it to its own system (the industrial `lease` and `partsxfer` steps
 # have none: the simulated adapter acknowledges them)
-WRITE_KIND = {"tool_fleet": {"lease": "fleet_issue", "partsxfer": "parts_issue"}}
+WRITE_KIND = {
+    "tool_fleet": {
+        "lease": "fleet_issue", "partsxfer": "parts_issue",
+        "propsend": "proposal_send", "propdraft": "lines_draft", "propreserve": "units_reserve",
+    }
+}  # fmt: skip
 
 
 def write_kind(c: store.Case, kind: str) -> str:

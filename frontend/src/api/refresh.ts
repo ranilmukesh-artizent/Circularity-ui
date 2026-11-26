@@ -81,6 +81,18 @@ export interface RefreshApproval {
   holds: { id: string; reason: string; owner: string }[];
 }
 
+/** What an approved refresh carried out (P9-5.5, CR-05): the three steps with the reference each system returned. Null before an approval. */
+export interface RefreshExecution {
+  approval: string;
+  route: string;
+  approver: string | null;
+  valid_until: string;
+  steps: { kind: string; system: string; state: 'done' | 'active' | 'todo'; ref: string | null; text: string }[];
+  done: boolean;
+  /** Set when a unit was taken meanwhile and the decision went back to the Fleet desk. */
+  back: { to: string; reason: string } | null;
+}
+
 export interface RefreshView {
   case_id: string;
   contract: RefreshContract;
@@ -92,7 +104,7 @@ export interface RefreshView {
   match: RefreshMatch[];
   pricing: RefreshPricing | null;
   approval: RefreshApproval | null;
-  execution: unknown | null;
+  execution: RefreshExecution | null;
   outcome: unknown | null;
 }
 

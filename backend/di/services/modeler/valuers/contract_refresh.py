@@ -20,11 +20,12 @@ confidence is Low (GR-13) keeps its action but is flagged, and `hold_reason` say
 `price` (P9-5.4, CR-04) puts money on the choices, in the market's currency, all `Decimal`, each figure to the cent.
 Fees come from the market's rate cards in force on the decision date (the version is cited on every line): a tool's new-unit fee a
 month is its class's list price (`terms`) times `refresh_fee_rate` (`refresh_terms`), a refurbished unit's that less
-`refurb_fee_discount`. Kept tools keep their fee, swaps move to the refurbished-unit fee, upgrades to the new-unit fee. Saving versus new is the swaps' fee difference over the
-next term. An upgraded tool is credited from the market's `credit_rules` table (`credit_pct` of the list price, at most
-`credit_cap`), by life used. Three routes are valued (`proposal`, `renew_as_is`, `upgrade_all`), the first two weighted by the
-renewal likelihood of `renewal_odds` (a computed rate from the contract history), and ranked by net; the standard route is
-`renew_as_is`.
+`refurb_fee_discount`. Kept tools keep their fee, swaps move to the refurbished-unit fee, upgrades to the new-unit fee. Saving
+versus new is the swaps' fee difference over the next term. `Pricing.tools` gives each route's line for every tool (action, fee a
+month, credit), the document of the proposal that route sends (P9-5.5). An upgraded tool is credited from the market's
+`credit_rules` table (`credit_pct` of the list price, at most `credit_cap`), by life used. Three routes are valued (`proposal`,
+`renew_as_is`, `upgrade_all`), the first two weighted by the renewal likelihood of `renewal_odds` (a computed rate from the
+contract history), and ranked by net; the standard route is `renew_as_is`.
 
 Never does: read the database or the clock, write text with a model (every sentence is a table template over computed numbers, so
 there is no `AgentLoop` step here, and no number is ever written by a model) or approve anything. Implements no registry entry; it
@@ -32,7 +33,7 @@ reads I-15 tables.
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Literal
@@ -153,6 +154,18 @@ class RouteValue:
 
 
 @dataclass(frozen=True)
+class ToolFee:
+    """One tool's line of a route's proposal: the action, the fee a month it is offered at and the credit on its old tool."""
+
+    serial: str
+    cls: str
+    action: Action
+    fee_month: Decimal
+    credit: Decimal
+    successor: str | None
+
+
+@dataclass(frozen=True)
 class Pricing:
     currency: str
     rate_card_version: int
@@ -169,6 +182,7 @@ class Pricing:
     routes: list[RouteValue]  # best net first
     best: str
     uplift: Decimal  # the best route's net less the standard route's
+    tools: dict[str, list["ToolFee"]] = field(default_factory=dict)  # route id -> each tool's line of its proposal (P9-5.5)
 
 
 def _credit(ev: DecisionTableEvaluator, table: JdmTable, market: str, a: ToolAction, months: int, list_price: Decimal) -> Decimal:
@@ -205,6 +219,7 @@ def price(
     out: list[ValueLine] = []
     current = proposed = saving = swap_cost = new_all = credit_all = D(0)
     credits: list[Credit] = []
+    per: dict[str, list[ToolFee]] = {"proposal": [], STANDARD: [], "upgrade_all": []}
     for a in actions:
         ln = by.get(a.serial, {})
         cur = D(str(ln.get("fee") or 0))
@@ -214,12 +229,17 @@ def price(
         current += cur
         new_all += new_fee
         months = int(ln.get("months") or 0)
-        credit_all += _credit(ev, credit_table, market, a, months, list_price)
+        credit_one = _credit(ev, credit_table, market, a, months, list_price)
+        credit_all += credit_one
+        per[STANDARD].append(ToolFee(a.serial, a.cls, "keep", _c(cur), D(0), None))
+        per["upgrade_all"].append(ToolFee(a.serial, a.cls, "upgrade", new_fee, credit_one, a.successor))
         if a.action == "keep":
             proposed += cur
+            per["proposal"].append(ToolFee(a.serial, a.cls, "keep", _c(cur), D(0), None))
             out.append(ValueLine(f"{a.serial} kept at its fee", _c(cur), card))
         elif a.action == "swap":
             proposed += refurb_fee
+            per["proposal"].append(ToolFee(a.serial, a.cls, "swap", refurb_fee, D(0), None))
             saving += (new_fee - refurb_fee) * n
             cost = _c(cost_share * list_price + logistics)
             swap_cost += cost
@@ -232,6 +252,7 @@ def price(
             proposed += new_fee
             c = _credit(ev, credit_table, market, a, months, list_price)
             credits.append(Credit(a.serial, c, credit_version))
+            per["proposal"].append(ToolFee(a.serial, a.cls, "upgrade", new_fee, c, a.successor))
             out.append(ValueLine(f"{a.serial} upgraded to {a.successor or 'its successor'}: fee a month", new_fee, card))
             out.append(ValueLine(f"{a.serial} credit on the old tool", -c, cred))
     total = sum((c.amount for c in credits), D(0))
@@ -251,4 +272,5 @@ def price(
         current_fee_month=_c(current), proposed_fee_month=_c(proposed), saving_vs_new=_c(saving),
         renewal_likelihood=p_with, renewal_without=p_without, renewal_basis=basis, credits=credits, credit_total=_c(total),
         lines=out, routes=routes, best=routes[0].id, uplift=_c(routes[0].net - nets[STANDARD]),
+        tools=per,
     )  # fmt: skip

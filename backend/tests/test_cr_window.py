@@ -126,7 +126,9 @@ def test_cr_01_opens_once_per_contract_and_term():
         "FC-30117",
     )
     assert c["intake"]["reason"] == "contract_refresh" and c["intake"]["key"] == "FC-30117@2027-01-05:contract_refresh"
-    assert c["stage"] == "none" and c["routes"] == [] and c["recommendation"] is None
+    # priced when it opens (P9-5.5): the three routes wait for a person's approval, nothing is sent yet
+    assert c["stage"] == "awaiting_approval" and {r["id"] for r in c["routes"]} == {"proposal", "renew_as_is", "upgrade_all"}
+    assert c["recommendation"] is not None and not c.get("submitted") and not c.get("exec")
     assert c["refresh"]["term_end"] == "2027-01-05" and c["refresh"]["market"] == "US" and len(c["refresh"]["lines"]) == 14
     assert {"serial", "cls", "model", "fee", "months"} <= set(c["refresh"]["lines"][0])
     assert _scan(TODAY) == []  # the same day
@@ -221,7 +223,8 @@ def test_cr_01_view_shape():
     assert v["case_id"] == cid and v["contract"]["id"] == "FC-30117" and v["contract"]["end"] == "2027-01-05"
     assert v["window"] == {"opens": "2026-10-07", "basis": "end"} and len(v["lines"]) == 14
     assert len(v["tools"]) == 14 and v["tools_totals"] == {"keep": 14, "swap": 0, "upgrade": 0}  # P9-5.2 fills the tools
-    assert (v["match"], v["pricing"], v["approval"], v["execution"], v["outcome"]) == ([], None, None, None, None)
+    assert v["match"] == [] and v["pricing"]["term_months"] == 36 and v["approval"]["kind"] == "person"  # P9-5.3, P9-5.4
+    assert (v["execution"], v["outcome"]) == (None, None)  # nothing is sent before a person approves (P9-5.5)
 
 
 def test_cr_01_view_refuses_a_case_that_is_not_a_refresh():
@@ -248,7 +251,7 @@ def test_cr_01_refresh_case_stays_out_of_the_tool_queue():
         assert [d["id"] for d in intake.open_tool_cases(s, ORG)] == []
         c = intake.store.get(s, cid)
         intake.revalue(s, c)
-        assert c["stage"] == "none" and c["routes"] == []
+        assert c["stage"] == "awaiting_approval" and len(c["routes"]) == 3  # priced again, still waiting for a person (P9-5.5)
     assert worker.HANDLERS["case.replan"]({"org_unit_id": ORG, "template": "tool_fleet"}) is None
 
 
