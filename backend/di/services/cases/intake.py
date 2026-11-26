@@ -650,7 +650,8 @@ def battery_facts(s: Session, c: Mapping[str, Any]) -> dict[str, Any]:
     snap = dict(c.get("valuer") or {})
     read = {
         "chemistry": asset.get("pack_chemistry"), "market": asset.get("pack_market"), "safety_class": asset.get("safety_class"),
-        "soh_pct": cond.get("soh_pct"), "expected_life_years": cond.get("expected_life_years"), "read_at": cond.get("soh_read_at"),
+        "soh_pct": cond.get("soh_pct"),
+        "expected_life_years": cond.get("expected_life_years"), "read_at": cond.get("soh_read_at"),
     }  # fmt: skip
     facts = snap | {k: v for k, v in read.items() if v is not None}
     facts["damaged"] = bool(snap.get("damaged")) or bool(asset.get("pack_damaged"))
@@ -660,7 +661,8 @@ def battery_facts(s: Session, c: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def open_battery_case(s: Session, c: store.Case) -> bool:
-    """NS-BAT-01 (P9-12.7): a used car whose battery assessment (P9-9.14) says `pack_replacement_needed` opens a `battery` case for
+    """NS-BAT-01 (P9-12.7): a used car whose battery assessment (P9-9.14) says `pack_replacement_needed` opens a
+    `battery` case for
     its pack, linked both ways: the new case's `linked_case` is the car case, the car case's `linked` lists it. The pack is the
     one the BMS names for the car's VIN (`asset.vin_ref`); with none on file nothing opens. Returns True when this call linked a
     case; the caller saves `c`."""

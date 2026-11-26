@@ -10,7 +10,8 @@ business rule (R20).
     case_view(facts) -> dict                                    the `battery` facts the gates read, from a pack's facts
 
 **Equipment with a battery (P9-10.16).** The case's `battery` is the test bench's read of the unit (`chemistry`, `damaged`: the
-facts `condition.battery_chemistry` and `condition.battery_damaged`). A unit with no battery fact is left to the gate's data (None).
+facts `condition.battery_chemistry` and `condition.battery_damaged`). A unit with no battery fact is left to the gate's
+data (None).
   - `chemistry == "lithium"`: every shipping route of the pack takes the dangerous-goods lane. The result fails with effect
     `require_step` and the step `dg_lane`, routes the pack's.
   - `damaged` true as well: `resell` fails "Damaged lithium battery: no resale" (effect `block`, step `dg_lane` kept), and a
@@ -18,8 +19,8 @@ facts `condition.battery_chemistry` and `condition.battery_damaged`). A unit wit
 
 **The `battery` pack (P9-12.7).** Its case keeps `battery` = `case_view(...)`: `packId`, `chemistry`, `soh_pct`,
 `expected_life_years`, `read_at` (the BMS's read), `thermal_event`, `damaged` (true for a thermal event too), `safety_class`,
-`market`, and the flags the catalogue triggers read (`rechargeable`, `waste`, `eu_market`). The four checks leave a case of another
-pack to the data (None); the gates' `params.routes` name the routes they act on.
+`market`, and the flags the catalogue triggers read (`rechargeable`, `waste`, `eu_market`). The four checks leave a case of
+another pack to the data (None); the gates' `params.routes` name the routes they act on.
   - G-BAT-1: without `soh_pct`, `expected_life_years` and `read_at` the routes of the gate fail ("State of health and expected
     life not read from the BMS"), so only `recycle` is left; with them the gate passes ("State of health 74% read 2026-11-10").
   - G-BAT-2: `repurpose` needs the evidence `repurpose_fitness` (a pass).
@@ -30,8 +31,9 @@ pack to the data (None); the gates' `params.routes` name the routes they act on.
     lane only, no resale", effect `block`, step `dg_lane`); recycling it goes through that lane.
   - G-BAT-5: `recycle` needs the evidence `recycler_permit` whose `chemistries` include the pack's chemistry.
 Never does: read the store or the clock, choose a carrier, or write a case. Reg. (EU) 2023/1542 has been amended (due diligence
-moved to 18 Aug 2027 by Reg. 2025/1561), which provisions the ELV Regulation (EU) 2026/1738 changes is unconfirmed, and the ADR and
-IATA special provisions are unconfirmed in the pack; the wording needs review by Kinective's Legal team before it is relied on.
+moved to 18 Aug 2027 by Reg. 2025/1561), which provisions the ELV Regulation (EU) 2026/1738 changes is unconfirmed, and the
+ADR and IATA special provisions are unconfirmed in the pack; the wording needs review by Kinective's Legal team before it is
+relied on.
 """
 
 from collections.abc import Mapping
@@ -60,8 +62,9 @@ NOW_KEY = "gateNow"  # the time `gate_hold` reads a case at (as the vehicle gate
 
 def case_view(facts: Mapping[str, Any]) -> dict[str, Any]:
     """The `battery` facts of a pack case from its facts (`packId`, `chemistry`, `soh_pct`, `expected_life_years`, `read_at`,
-    `thermal_event`, `damaged`, `safety_class`, `market`): a thermal event makes the pack damaged; a pack is rechargeable and, at the
-    end of its first life, waste; `eu_market` is whether it is placed on the EU market (the catalogue's triggers read these)."""
+    `thermal_event`, `damaged`, `safety_class`, `market`): a thermal event makes the pack damaged; a pack is
+    rechargeable and, at the end of its first life, waste; `eu_market` is whether it is placed on the EU market (the catalogue's
+    triggers read these)."""
     thermal = bool(facts.get("thermal_event"))
     return {
         "packId": facts.get("packId"), "chemistry": facts.get("chemistry"), "soh_pct": facts.get("soh_pct"),
@@ -161,8 +164,12 @@ def check_recycler_chemistry(case: Mapping[str, Any], pack: Pack, gate: GateDef)
         return GateResult(gate.id, False, GateEffect("block", routes, False, None), ("recycler_permit",), REASON_NO_RECYCLER)
     chem = str(b.get("chemistry") or "")
     if chem and chem not in [str(c) for c in e.value.get("chemistries") or []]:
-        return GateResult(gate.id, False, GateEffect("block", routes, False, None), (), f"Recycler's permit does not cover {chem}")
-    return GateResult(gate.id, True, GateEffect("block", (), False, None), (), f"Permitted recycler on file: {e.value.get('permit_ref')}")
+        return GateResult(
+            gate.id, False, GateEffect("block", routes, False, None), (), f"Recycler's permit does not cover {chem}"
+        )
+    return GateResult(
+        gate.id, True, GateEffect("block", (), False, None), (), f"Permitted recycler on file: {e.value.get('permit_ref')}"
+    )
 
 
 CHECKS[BATTERY_GATE] = check_battery_lane

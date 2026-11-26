@@ -3,8 +3,8 @@
 Written against source-sim's synthetic BMS mock (source-sim/sim/vendors/battery_bms): no real battery management system is
 connected. API key in `x-api-key`; one unpaged list, read in full (Resource.delta False).
 
-Not one of the demo's 21 sources: it starts unregistered (di.connectors.extra registers it). It implements no registry entry of its
-own: it fills the canonical models `asset` and `condition` for a pack, keyed by the pack id and the source's org unit
+Not one of the demo's 21 sources: it starts unregistered (di.connectors.extra registers it). It implements no registry entry
+of its own: it fills the canonical models `asset` and `condition` for a pack, keyed by the pack id and the source's org unit
 (schema.serial_key), which the `battery` pack's gates and valuer read (G-BAT-1 to G-BAT-5).
 
 Resource and facts
@@ -63,7 +63,9 @@ class BatteryBmsAdapter(GenericAdapter):
         key = serial_key(p.get("org_unit_id"), p["packId"])
         facts = [Fact("asset", key, f, p.get(s), s, p.get(s), "The BMS's pack record") for s, f in ASSET.items()]
         facts += [Fact("condition", key, f, p.get(s), s, p.get(s), "The BMS's last read") for s, f in CONDITION.items()]
-        facts.append(Fact("asset", key, "owner_tenant", p.get("org_unit_id"), "org_unit_id", p.get("org_unit_id"), "Source's org"))
+        facts.append(
+            Fact("asset", key, "owner_tenant", p.get("org_unit_id"), "org_unit_id", p.get("org_unit_id"), "Source's org")
+        )
         return keep(facts)
 
 

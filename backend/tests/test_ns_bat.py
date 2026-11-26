@@ -123,8 +123,9 @@ def test_ns_bat_01_ev_assessment_opens_battery_case(world):
 
 def test_ns_bat_01_a_replacement_needed_without_a_pack_on_file_opens_nothing(world):
     car = uc.open_car(44, like=6)
-    uc.write("uc_insp", "battery_assessments", {"assessmentId": "BA-0044", "vin": uc.vin(44), "status": "complete",
-                                                  "batterySoh": 74, "result": "pack_replacement_needed", "org_unit_id": ORG})  # fmt: skip
+    done = {"assessmentId": "BA-0044", "vin": uc.vin(44), "status": "complete", "batterySoh": 74,
+            "result": "pack_replacement_needed", "org_unit_id": ORG}  # fmt: skip
+    uc.write("uc_insp", "battery_assessments", done)
     with SessionLocal() as s:
         c = cases.get(s, car["id"], for_update=True)
         assert c is not None
@@ -176,7 +177,11 @@ def test_battery_soh_read_gates_everything_but_recycle():
     """G-BAT-1: without a reading of state of health and expected life, with its date, only recycle is left."""
     d = _decide(_case(soh_pct=None, read_at=None))
     g = _gates(d)["G-BAT-1"]
-    assert not g.passed and g.evidence_missing == ("battery_soh",) and set(g.effect.routes) == {"reuse", "remanufacture", "repurpose"}
+    assert (
+        not g.passed
+        and g.evidence_missing == ("battery_soh",)
+        and set(g.effect.routes) == {"reuse", "remanufacture", "repurpose"}
+    )
     assert d.route == "recycle"
     ok = _gates(_decide(_case()))["G-BAT-1"]
     assert ok.passed
