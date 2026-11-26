@@ -4,5 +4,7 @@
  */
 import type { ModeDef } from '../types';
 import { askMode } from './ask';
+import { changeMode } from './change';
+import { setupMode } from './SetupMode';
 
-export const MODES: ModeDef[] = [askMode];
+export const MODES: ModeDef[] = [askMode, changeMode, setupMode];
