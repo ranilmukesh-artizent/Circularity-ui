@@ -280,7 +280,7 @@ def check_standard(params: Mapping[str, Any], route_ids: list[str]) -> None:
     at parse (the amounts by `valuers.amount.check`). ValueError names the line."""
     from di.services.modeler.valuers.amount import AmountError, check  # the valuers import this module: not at the top
 
-    extra = set(params) - {"lines", "requires", "tables", "params"}
+    extra = set(params) - {"lines", "requires", "routes", "tables", "params"}
     if extra:
         raise ValueError(f"valuer.params of a standard valuer has no {sorted(extra)[0]}")
     for i, ln in enumerate(params.get("lines") or []):
@@ -303,6 +303,10 @@ def check_standard(params: Mapping[str, Any], route_ids: list[str]) -> None:
         if not isinstance(rq, dict) or set(rq) != {"route", "requires", "why"} or rq["route"] not in route_ids:
             raise ValueError(f"{at} is {{route, requires, why}} for a route of the pack")
         _check_conds(rq["requires"], f"{at}.requires")
+    for i, rt in enumerate(params.get("routes") or []):
+        at = f"routes[{i}]"
+        if not isinstance(rt, dict) or "route" not in rt or not set(rt) <= {"route", "eligible_if", "ineligible_reason"}:
+            raise ValueError(f"{at} is {{route, eligible_if?, ineligible_reason?}}")
     for name in ("tables", "params"):
         if not isinstance(params.get(name) or {}, dict):
             raise ValueError(f"valuer.params.{name} is an object")
@@ -443,4 +447,10 @@ def load_pack(key: str) -> Pack:
     """`packs/<key>.json` through `parse_pack`. Cached: treat as read-only. KeyError for an unknown key."""
     if key not in pack_keys():
         raise KeyError(key)
-    return parse_pack(json.loads((PACKS_DIR / f"{key}.json").read_text(encoding="utf-8")))
+    pack = parse_pack(json.loads((PACKS_DIR / f"{key}.json").read_text(encoding="utf-8")))
+    if pack.valuer.kind == "standard":
+        from di.services.modeler.valuers.standard import validate_valuer  # the valuers import this module
+
+        if msgs := validate_valuer(pack):
+            raise PackError(pack.key, pack.version, FIELD_PART["valuer"], PACK_PARTS[FIELD_PART["valuer"]], "; ".join(msgs))
+    return pack

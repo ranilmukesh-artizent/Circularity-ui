@@ -194,3 +194,102 @@ def test_standard_decision_shape_and_rules():
     rule = [{"id": "R-1", "scope": {}, "action": "exclude", "path": "rerent", "text": "no re-rent"}]
     assert standard.decide(dict(FACTS), pack, rule)["best"]["k"] == "refurbish"
     assert copy.deepcopy(FACTS) == FACTS
+
+
+# ---- P9-12.1: division, decay, fact alias, per-route conditions, validation ----
+
+
+def _std(**more: Any):
+    from di.services.modeler.valuers import standard
+
+    return standard, _pack(**more)
+
+
+def _by(vals: list, rid: str) -> dict:
+    return next(v for v in vals if v["k"] == rid)
+
+
+def test_standard_valuer_decay_and_table():
+    pack = _pack()
+    decay = {"decay": {"start": {"mul": [{"const": 1400}, {"const": 0.35}]}, "monthly": {"const": 0.03}, "months": {"const": 4}}}
+    assert round(amount.evaluate(decay, {}, pack), 2) == 433.79
+    assert amount.evaluate({"div": [{"const": 9}, {"const": 4}]}, {}, pack) == 2.25
+    assert amount.evaluate({"fact": "a.b"}, {"a": {"b": 7}}, pack) == 7
+    assert amount.evaluate({"table": "grade_cost", "by": ["grade"]}, {"grade": "C"}, pack) == 40
+    standard, pk = _std(lines=[{"route": "rerent", "type": "v", "label": "Resale", "amount": decay}])
+    assert _by(standard.value_routes({}, pk), "rerent")["gross"] == 433.79  # rounded to cents
+
+
+def test_standard_valuer_div_by_zero_raises():
+    with pytest.raises(AmountError, match="Division by zero"):
+        amount.evaluate({"div": [{"const": 1}, {"const": 0}]}, {}, _pack())
+
+
+def test_standard_valuer_conditions():
+    standard, pk = _std(
+        requires=[],
+        routes=[
+            {
+                "route": "rerent",
+                "eligible_if": {
+                    "all": [
+                        {"fact": "utilisation", "op": "ge", "value": 0.5},
+                        {"not": {"fact": "damaged", "op": "eq", "value": True}},
+                    ]
+                },
+                "ineligible_reason": "Utilisation is low or the unit is damaged",
+            }
+        ],
+    )
+    good = _by(standard.value_routes(dict(FACTS), pk), "rerent")
+    assert good["ok"] is True and good["why"] == ""
+    bad = _by(standard.value_routes(FACTS | {"utilisation": 0.2}, pk), "rerent")
+    assert bad["ok"] is False and bad["why"] == "Utilisation is low or the unit is damaged"
+    anyc = {
+        "routes": [
+            {
+                "route": "rerent",
+                "eligible_if": {"any": [{"fact": "x", "op": "exists"}, {"fact": "rate", "op": "in", "value": [40]}]},
+            }
+        ]
+    }
+    assert _by(standard.value_routes(dict(FACTS), _pack(**anyc)), "rerent")["ok"] is True
+
+
+def test_standard_valuer_missing_fact_reported():
+    line = {"route": "rerent", "type": "v", "label": "Income", "amount": {"fact": "rate"}}
+    standard, pk = _std(lines=[line, {"route": "rerent", "type": "c", "label": "Prep", "amount": {"const": 5}}])
+    v = _by(standard.value_routes({}, pk), "rerent")
+    assert v["misses"] == ["rate"] and v["gross"] == 0 and v["cost"] == 5
+
+
+def test_standard_valuer_validation_errors(tmp_path, monkeypatch):
+    from di.services.modeler import pack as packmod
+    from di.services.modeler.valuers import standard
+
+    doc = _doc()
+    doc["key"] = "bad_std_test"
+    p = doc["valuer"]["params"]
+    p["lines"][0]["amount"] = {"param": "no_such_param"}
+    p["routes"] = [{"route": "rerent", "eligible_if": {"bogus": 1}}, {"route": "nowhere"}]
+    msgs = standard.validate_valuer(parse_pack(doc))
+    assert len(msgs) == 3 and any("no_such_param" in m for m in msgs)
+    assert any("bogus" in m for m in msgs) and any("nowhere" in m for m in msgs)
+    (tmp_path / "bad_std_test.json").write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(packmod, "PACKS_DIR", tmp_path)
+    packmod.load_pack.cache_clear()
+    try:
+        with pytest.raises(PackError):
+            packmod.load_pack("bad_std_test")
+    finally:
+        packmod.load_pack.cache_clear()
+
+
+def test_standard_valuer_has_no_eval():
+    import re
+
+    from di.services.modeler.valuers import standard
+
+    for mod in (standard, amount):
+        src = Path(mod.__file__).read_text(encoding="utf-8")
+        assert not re.search(r"\b(eval|exec|getattr)\(", src.split('"""', 2)[2]), mod.__name__
