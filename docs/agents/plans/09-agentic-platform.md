@@ -350,6 +350,7 @@ writer. A task is about an hour of code; it must not take three hours of checks.
   the spec lists that phase's gate as a dependency. A smoke failure becomes a fix task like any other, never a reason
   to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand: the second failure
   goes to a subagent.
+- **The lead orchestrates only (26 Nov, the user).** The lead dispatches tasks, reads reports and keeps the queue full; an integrator subagent cherry-picks, resolves conflicts, runs the merged tasks' own tests, ticks and pushes. Writers rebase onto the latest `lead-merge` before their final check, so the writer whose change conflicts resolves it.
 
 ### Testing model (26 Nov, the user; overrides the gate tasks' own steps)
 
