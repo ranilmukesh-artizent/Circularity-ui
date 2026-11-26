@@ -42,6 +42,9 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from opentelemetry.trace import StatusCode
+
+from di import telemetry
 from di.core import clock, policy
 from di.mcp import calllog
 from di.mcp.policy import outcome_of
@@ -247,6 +250,8 @@ class Toolbox:
     log: bool = True
     inject: Any = None  # tests: rewrite a tool's data before the model reads it (record text planted in a field)
     used: list[Used] = field(default_factory=list)
+    conversation_id: str | None = None  # plan 5: on the chat spans (gen_ai.conversation.id)
+    trace_context: Any = None  # plan 5: the OpenTelemetry context of the Ask span; tool and chat spans are its children
 
     @property
     def specs(self) -> list[dict]:
@@ -257,6 +262,26 @@ class Toolbox:
 
     def call(self, name: str, arguments: Any) -> dict:
         """Run one tool; returns what the model reads ({ok, data} or {ok: false, error})."""
+        return self.call_with_id(name, arguments, None)
+
+    def call_with_id(self, name: str, arguments: Any, call_id: str | None) -> dict:
+        """`call`, as the provider's tool call `call_id`: one `execute_tool {name}` span (OpenTelemetry GenAI), a child of
+        the Ask span. Arguments and results are on the span only with DI_OTEL_CAPTURE_CONTENT; never otherwise."""
+        attrs: dict[str, Any] = {"gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": name}
+        if call_id:
+            attrs["gen_ai.tool.call.id"] = call_id
+        with telemetry.span(f"execute_tool {name}", attributes=attrs, context=self.trace_context) as sp:
+            res = self._call(name, arguments)
+            if sp is not None:
+                if not res["ok"]:
+                    sp.set_attribute("error.type", str(res["error"]["code"]))
+                    sp.set_status(StatusCode.ERROR)
+                if telemetry.capture_content():
+                    sp.set_attribute("gen_ai.tool.call.arguments", telemetry.clip(json.dumps(arguments, default=str)))
+                    sp.set_attribute("gen_ai.tool.call.result", telemetry.clip(as_text(res)))
+            return res
+
+    def _call(self, name: str, arguments: Any) -> dict:
         t0 = time.monotonic()
         args = arguments
         if isinstance(arguments, str):

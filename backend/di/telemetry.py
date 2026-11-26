@@ -12,9 +12,11 @@ not captured.
 Tests pass `exporter=` (an in-memory one) to switch it on without an endpoint.
 """
 
+import contextlib
 import logging
 import os
 import re
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 from opentelemetry import trace
@@ -31,6 +33,8 @@ _SECRET = re.compile(
     re.IGNORECASE,
 )
 _provider: Any = None
+_meter_provider: Any = None
+_histograms: dict[str, Any] = {}
 
 
 def enabled() -> bool:
@@ -57,8 +61,6 @@ def job_span(kind: str, job_id: int, attempt: int, payload: dict[str, Any]) -> t
     """The worker side: (a context manager that is the job's span, the payload without the trace carrier). The span is a
     CONSUMER span `job {kind}` in a trace of its own, linked to the span that queued the job; an exception through it
     marks it as an error. When tracing is off: a null context and the payload as it is."""
-    import contextlib
-
     if _provider is None:
         return contextlib.nullcontext(), payload
     from opentelemetry import propagate
@@ -115,8 +117,9 @@ def _scrubbed(exporter: Any) -> Any:
     return _ScrubExporter()
 
 
-def setup_telemetry(service_name: str, app: "FastAPI | None" = None, *, exporter: Any = None) -> None:
-    """Switch tracing on for this process (once), or do nothing. `exporter` is for tests."""
+def setup_telemetry(service_name: str, app: "FastAPI | None" = None, *, exporter: Any = None, metric_reader: Any = None) -> None:
+    """Switch tracing (and the GenAI and MCP duration metrics) on for this process, or do nothing. `exporter` and
+    `metric_reader` (in-memory ones) are for tests; a later `metric_reader` replaces the meter provider."""
     global _provider
     if exporter is None and not any(os.environ.get(k) for k in _ENDPOINT_ENVS):
         return
@@ -129,6 +132,7 @@ def setup_telemetry(service_name: str, app: "FastAPI | None" = None, *, exporter
         trace.set_tracer_provider(_provider)
         _instrument_libraries()
         _start_log_export(service_name)
+    _setup_metrics(service_name, metric_reader)
     if exporter is not None:
         _provider.add_span_processor(SimpleSpanProcessor(_scrubbed(exporter)))
     else:
@@ -139,6 +143,56 @@ def setup_telemetry(service_name: str, app: "FastAPI | None" = None, *, exporter
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
         FastAPIInstrumentor.instrument_app(app, tracer_provider=_provider)
+
+
+def _setup_metrics(service_name: str, reader: Any) -> None:
+    """The meter provider behind `record_duration`: an OTLP/HTTP periodic reader when an endpoint is set (the exporter
+    drops data when the collector is down), or the given in-memory reader."""
+    global _meter_provider
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.resources import Resource
+
+    if reader is None:
+        if _meter_provider is not None:
+            return
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+        reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    _meter_provider = MeterProvider(resource=Resource.create({"service.name": service_name}), metric_readers=[reader])
+    _histograms.clear()
+
+
+def record_duration(name: str, seconds: float, attributes: dict[str, Any], description: str = "") -> None:
+    """Record one value (seconds) in the histogram `name`; nothing when telemetry is off."""
+    if _meter_provider is None:
+        return
+    h = _histograms.get(name)
+    if h is None:
+        h = _histograms[name] = _meter_provider.get_meter("di").create_histogram(name, unit="s", description=description)
+    h.record(seconds, attributes)
+
+
+def capture_content() -> bool:
+    """DI_OTEL_CAPTURE_CONTENT: prompts, answers and tool arguments on spans (off by default)."""
+    from di.core.config import get_settings
+
+    return bool(get_settings().otel_capture_content)
+
+
+def clip(value: str, limit: int = 4096) -> str:
+    """A captured value cut to 4 KB."""
+    return value if len(value) <= limit else value[:limit] + "...[truncated]"
+
+
+@contextlib.contextmanager
+def span(name: str, *, kind: Any = None, attributes: dict[str, Any] | None = None, context: Any = None) -> Iterator[Any]:
+    """A current span for the block, or None (and no work) when telemetry is off. Records an exception that passes."""
+    if _provider is None:
+        yield None
+        return
+    with tracer.start_as_current_span(name, kind=kind or trace.SpanKind.INTERNAL, attributes=attributes, context=context) as s:
+        yield s
 
 
 def _instrument_libraries() -> None:
