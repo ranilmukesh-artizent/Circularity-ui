@@ -169,3 +169,33 @@ def test_uc_10_no_lot_history_keeps_a_retail_channel_not_valued():
     v = by_id(used_cars.value_routes(f, PACK, None))
     assert list(v) == ["retail", "auction", "dealer_trade", "salvage"]
     assert (v["retail"]["ok"], v["retail"]["why"]) == (False, "No lot has comparable sales yet")
+
+
+def _compiled(action: str) -> Any:
+    from di.services.modeler.compile import CompiledRule
+
+    return CompiledRule("BR-UC-T", {}, action, "retail", "retail rule")
+
+
+def _routes() -> list[Any]:
+    return to_routes(load_template("used_cars"), used_cars.value_routes(facts_s1(), PACK, None))
+
+
+def test_uc_10_business_rules_on_retail_apply_to_every_lot():
+    from di.services.modeler.apply import apply_rules
+
+    t = load_template("used_cars")
+    routes = _routes()
+    out = apply_rules({}, routes, [_compiled("exclude")], t)
+    assert out.ids == ["BR-UC-T"] and not out.waived
+    assert {r["id"] for r in routes if r["excluded"]} == {
+        "retail:LOT-C",
+        "retail:LOT-N",
+        "retail:LOT-S",
+        "salvage",
+    }  # salvage: not valued
+    routes = _routes()
+    apply_rules({}, routes, [_compiled("require")], t)
+    assert {r["id"] for r in routes if not r["excluded"]} == {"retail:LOT-C", "retail:LOT-N", "retail:LOT-S"}
+    routes = _routes()
+    assert apply_rules({}, routes, [_compiled("prefer")], t).preferred == "retail:LOT-S"  # the lot with the best net

@@ -22,6 +22,11 @@ FLOW_REMOVED = "Path removed from the published process flow"
 KEPT = ("excluded", "failGate", "failReason", "gates")
 
 
+def _on(route: Route, path: str) -> bool:
+    """Whether the route is the rule's path: its id, or its channel's base id (`retail:<lot>` is on `retail`, P9-9.10)."""
+    return route["id"] == path or route["id"].split(":", 1)[0] == path
+
+
 @dataclass
 class RuleOutcome:
     ids: list[str]
@@ -38,7 +43,7 @@ def apply_rules(case: Mapping[str, Any], routes: list[Route], rules: Sequence[Co
     for rule in rules:
         if not in_scope(case, rule.scope, t.dims):
             continue
-        hits = [r for r in routes if r["id"] == rule.path and not r["excluded"]]  # a case may offer a path twice
+        hits = [r for r in routes if _on(r, rule.path) and not r["excluded"]]  # a case may offer a path twice
         if not hits:
             continue
         if rule.action == "exclude":
@@ -50,11 +55,11 @@ def apply_rules(case: Mapping[str, Any], routes: list[Route], rules: Sequence[Co
             p = t.path(rule.path)
             name = (p.name if p else rule.path).lower()
             for r in routes:
-                if r["id"] != rule.path and not r["excluded"]:
+                if not _on(r, rule.path) and not r["excluded"]:
                     fail(r, POLICY, f"Business rule {rule.id} sends this return to {name}")
             ids.append(rule.id)
         elif rule.action == "prefer":
-            preferred = rule.path
+            preferred = max(hits, key=lambda h: h["net"])["id"]  # the best of the lots when the path has several
             ids.append(rule.id)
     if not any(not r["excluded"] for r in routes):
         for r, k in zip(routes, keep, strict=True):
