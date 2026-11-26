@@ -171,10 +171,34 @@ WHERE c.status IN ('open', 'escalated') AND r.stage IN ('none', 'awaiting_approv
 
 
 def test_held_conflicts_are_fewer_than_the_queue():
-    b = client.get("/api/screens/nav", headers=h("admin")).json()["badges"]
-    with engine.connect() as conn:
-        queue = conn.execute(text("SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated')")).scalar()
-    assert 0 < b["sections"]["conf"] < queue
+    """The badge counts open conflicts on the asset of a case still waiting for a decision; the queue counts every open
+    one. A fresh database has no conflicts until a sync runs (the synced stack has hundreds), so the test seeds one on
+    a held case's asset and one on an asset no case has, and removes both."""
+    from di.core.db import SessionLocal
+    from di.repositories.fabric import HELD_STAGES
+    from di.services.cases import store
+
+    with SessionLocal() as s:
+        held_asset = next(c["assetId"] for c in store.all_cases(s) if c["stage"] in HELD_STAGES and c.get("assetId"))
+        ids = [
+            s.execute(
+                text(
+                    'INSERT INTO conflict (model, key, field, "values", status, opened_at) '
+                    "VALUES ('asset', :k, 'x_10_probe', CAST('{}' AS jsonb), 'open', now()) RETURNING id"
+                ),
+                {"k": k},
+            ).scalar_one()
+            for k in (held_asset, "probe-asset-no-case")
+        ]
+        s.commit()
+    try:
+        b = client.get("/api/screens/nav", headers=h("admin")).json()["badges"]
+        with engine.connect() as conn:
+            queue = conn.execute(text("SELECT count(*) FROM conflict WHERE status IN ('open', 'escalated')")).scalar()
+        assert 0 < b["sections"]["conf"] < queue
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM conflict WHERE id = ANY(:ids)"), {"ids": ids})
 
 
 def test_case_scope_map():
