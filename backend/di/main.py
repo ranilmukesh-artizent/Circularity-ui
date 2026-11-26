@@ -33,6 +33,7 @@ import di.services.actions.packs  # registers action handlers (pack.*: pack vers
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.replay  # registers action handlers (replay.*: history batches; plan 9)
 import di.services.actions.service_booking  # registers service.book (rental device service booking; plan 9 P9-11.7)
+import di.services.actions.rollout  # registers action handlers (rollout.*: canary by region and share; plan 9 P9-7.3)
 import di.services.actions.service_desk  # registers serviceDesk.computeAccuracy (held-out repair accuracy; plan 9 P9-4.5)
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
 import di.services.actions.tool_quarantine  # registers recall.release (safety recall quarantine; plan 9)

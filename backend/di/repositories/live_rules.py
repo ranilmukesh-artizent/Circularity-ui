@@ -16,9 +16,10 @@ from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
-from di.repositories.flows import flow_for
+from di.repositories.flows import flow_for, versions
 from di.repositories.overlays import nearest_published
 from di.repositories.packs import published_pack
+from di.repositories.rollouts import version_for
 from di.services.canonical import store as canonical
 from di.services.modeler.compile import CompiledRule, FlowVersion, compile_flow
 from di.services.modeler.facts import FACT_KEYS, TELEMETRY_FIELDS, case_scope_facts
@@ -74,14 +75,31 @@ def refresh_scope_facts(s: Session, case: MutableMapping[str, Any]) -> None:
 
 
 def flow_version(s: Session, case: MutableMapping[str, Any]) -> FlowVersion:
-    """The flow the case's owner decides with (plan 9, P9-1.5): its id, published `ver` and compiled published rules; no
-    flow: no id, no rules, version 0. Refreshes the case's scope facts first."""
+    """The flow the case's owner decides with (plan 9, P9-1.5): its id, the `ver` that decides this case and the compiled rules
+    of that version's graph; no flow: no id, no rules, version 0. Refreshes the case's scope facts first.
+
+    The version is the published one unless a canary runs (P9-7.3, `di.repositories.rollouts.version_for`): a case in the
+    canary arm is decided with the candidate (the flow's draft), a stored assignment is kept for the life of the case. The
+    case's `flowArm` records the arm (`canary`, `control`, `out`); with no rollout it has none."""
     refresh_scope_facts(s, case)
     t = template_of(case, s)
     f = flow_for(s, t.key, case["owner"])
     if f is None:
+        case.pop("flowArm", None)
         return FlowVersion(None, 0, ())
-    return FlowVersion(f.id, f.ver, tuple(compile_flow(t, cast(Flow, f.published))))
+    ver, arm = version_for(s, case, f)
+    if arm == "none":
+        case.pop("flowArm", None)
+    else:
+        case["flowArm"] = arm
+    if ver == f.ver:
+        return FlowVersion(f.id, f.ver, tuple(compile_flow(t, cast(Flow, f.published))))
+    if ver == "draft" and f.draft is not None:
+        return FlowVersion(f.id, f.dver or f.ver + 1, tuple(compile_flow(t, cast(Flow, f.draft))))
+    graph = next((v.graph for v in versions(s, f.id) if v.ver == ver), None)  # an earlier version, kept at its publish
+    if graph is None:  # gone: the published version is the safe one
+        return FlowVersion(f.id, f.ver, tuple(compile_flow(t, cast(Flow, f.published))))
+    return FlowVersion(f.id, int(ver), tuple(compile_flow(t, cast(Flow, graph))))
 
 
 def live_rules(s: Session, case: MutableMapping[str, Any]) -> tuple[Template, list[CompiledRule], int]:

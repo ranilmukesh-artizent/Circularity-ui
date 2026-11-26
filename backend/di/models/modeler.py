@@ -66,3 +66,40 @@ shadow_decision = Table(
     ts("at", now=True),
     Index("ix_shadow_decision_flow", "flow_id", "dver"),
 )
+
+# --- 0051 rollouts (plan 9 P9-7.3, I-17): a candidate version released by region and share, and each case's sticky arm ---
+
+rollout = Table(
+    "rollout",
+    metadata,
+    Column("id", BigInteger, primary_key=True, autoincrement=True),
+    Column("subject_kind", Text, nullable=False),  # flow (P9-7.3) or table (P9-7.7)
+    Column("subject_id", Text, nullable=False),
+    Column("candidate_ver", Integer),
+    Column("base_ver", Integer),
+    Column("stage", Text, nullable=False),
+    Column("region_key", Text, nullable=False, server_default="market"),
+    Column("region", Text),
+    Column("share", Integer, nullable=False, server_default="0"),
+    Column("salt", Text, nullable=False),
+    Column("stop_rules", JSONB, nullable=False, server_default="{}"),
+    Column("replay_run_id", BigInteger, ForeignKey("replay_run.id")),
+    Column("set_by", Text, nullable=False),
+    ts("set_at", now=True),
+    CheckConstraint("subject_kind IN ('flow','table')", name="rollout_subject_kind"),
+    CheckConstraint("stage IN ('replay','shadow','canary','full','paused','rolled_back')", name="rollout_stage"),
+    CheckConstraint("share BETWEEN 0 AND 100", name="rollout_share"),
+    Index("ix_rollout_subject", "subject_kind", "subject_id", "stage"),
+)
+
+rollout_assignment = Table(
+    "rollout_assignment",
+    metadata,
+    Column("rollout_id", BigInteger, ForeignKey("rollout.id", ondelete="CASCADE"), primary_key=True),
+    Column("case_id", Text, primary_key=True),
+    Column("arm", Text, nullable=False),
+    Column("ver", Text, nullable=False),
+    ts("at", now=True),
+    CheckConstraint("arm IN ('canary','control')", name="rollout_assignment_arm"),
+    Index("ix_rollout_assignment_case", "case_id"),
+)

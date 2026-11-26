@@ -20,6 +20,7 @@ import { LifecycleBar } from './LifecycleBar';
 import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
 import { ReplayPanel, showReplay } from './ReplayPanel';
+import { RolloutPanel, showRollout } from './RolloutPanel';
 import { StandingPolicyPanel } from './StandingPolicyPanel';
 import { SuggestionsPanel } from './SuggestionsPanel';
 import { TablesPanel } from './TablesPanel';
@@ -165,6 +166,7 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
         {editable && <button className="btn sm pri" onClick={add}>Add rule</button>}
         {!editable && !s.can.fork && <span className="note">Read only</span>}
       </div>
+      {showRollout(s) && <RolloutPanel s={s} />}
       {composing && <ComposePanel org={s.org} pack={s.template.key} id={composeId} onId={setComposeId} onClose={() => setComposing(false)} />}
       <div className="mdl-main">
         <FlowCanvas

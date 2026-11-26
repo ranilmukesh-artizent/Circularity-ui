@@ -43,7 +43,7 @@ from sqlalchemy import text
 
 from di.core import policy
 from di.repositories import flows as repo
-from di.repositories import market_tables
+from di.repositories import market_tables, rollouts
 from di.repositories.flows import FlowRow
 from di.repositories.orgs import units
 from di.services.actions.modeler_sim import lever_problem, sim_json, simulate_graph, simulate_rules
@@ -179,7 +179,7 @@ def _agent_refusal(ctx: CallContext) -> tuple[str, str] | None:
 
 
 # a draft's history in the journal: these actions make someone a maker; these end the draft
-_MAKES, _ENDS = ("flow.saveDraft", "flow.submit"), ("flow.publish", "flow.discard", "flow.rollback")
+_MAKES, _ENDS = ("flow.saveDraft", "flow.submit"), ("flow.publish", "flow.discard", "flow.rollback", "rollout.full")
 
 
 def makers(ctx: CallContext, f: FlowRow) -> set[str]:
@@ -231,6 +231,8 @@ def save_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     if isinstance(f, tuple):
         return f
     bad = _graph_problem(i["graph"])
+    if not bad and rollouts.active_rollout(ctx.session, f.id):  # P9-7.3: the candidate of a running canary does not change
+        return "conflict", f"{f.name} has a canary running: roll it back or publish it in full before editing the draft."
     return ("validation_error", bad) if bad else None
 
 

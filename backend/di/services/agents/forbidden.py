@@ -39,6 +39,7 @@ FORBIDDEN_ACTIONS = (
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
+    "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
 )  # fmt: skip
 

@@ -47,7 +47,7 @@ from di.models.journal import action_journal, domain_event, stream_event
 from di.models.learning import model_version
 from di.models.llm import llm_budget, llm_model
 from di.models.market_tables import market_table
-from di.models.modeler import decision_flow, decision_flow_version, shadow_decision
+from di.models.modeler import decision_flow, decision_flow_version, rollout, rollout_assignment, shadow_decision
 from di.models.org import org_unit
 from di.models.overlay import customer_overlay
 from di.models.packs import pack_version
@@ -106,6 +106,8 @@ __all__ = [
     "replay_batch",
     "replay_item",
     "replay_run",
+    "rollout",
+    "rollout_assignment",
     "service_ticket",
     "shadow_decision",
     "source_connection",

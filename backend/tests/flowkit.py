@@ -17,6 +17,8 @@ from tests.helpers import call
 def reset_flows() -> None:
     """Only the seeded published defaults on `workspace`, at version 1, with no history or shadow rows."""
     with engine.begin() as conn:
+        if conn.execute(text("SELECT to_regclass('rollout')")).scalar():
+            conn.execute(text("DELETE FROM rollout"))  # plan 9 P9-7.3
         if conn.execute(text("SELECT to_regclass('shadow_decision')")).scalar():
             conn.execute(text("DELETE FROM shadow_decision"))
         conn.execute(text("DELETE FROM decision_flow_version"))
