@@ -63,6 +63,7 @@ S4_PLANTS = {"Warehouse 1": "2010", "Warehouse 2": "2020", "Repair centre": "203
 # G/L accounts per cost line (this deployment's chart): costs to expense accounts, values to income accounts
 GL = {"purchase": "0048100000", "prep": "0051000000", "service": "0051200000", "residual": "0048200000", "lease": "0048300000"}
 GL_OTHER, GL_CLEARING = "0051900000", "0021100000"
+GL_FEE = "0048400000"  # the income account of a non-return fee (P9-3.18)
 CLEARING = "CLEARING"  # AssignmentReference of the balancing item
 
 
@@ -338,6 +339,15 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         items.append(_item(n, GL.get(ln["kind"], GL_OTHER), -ln["act"], ln["label"], ln["kind"], c["assetId"], plant))
     total = sum(ln["act"] for ln in lines)
     items.append(_item(len(lines) + 1, GL_CLEARING, total, f"Decision clearing {c['id']}", CLEARING, None, None))
+    doc, detail = post_journal(s, ins, ref, "Actuals " + c["id"], items)
+    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "lines": lines}}
+    return Sent([call], doc, detail)
+
+
+def post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict]:
+    """Post one journal entry to SAP S/4HANA (SOAP, one message id per instruction key, so a resend is a duplicate): returns the
+    accounting document and its detail (`AccountingDocument`, `CompanyCode`, `FiscalYear`, `duplicate`). The `finance` step and
+    the non-return fee (P9-3.18) both write through it. A refusal by the system is `Refused`."""
     today = clock.now().date().isoformat()
     msg = uuid.uuid5(uuid.NAMESPACE_URL, ins["idem_key"]).hex.upper()  # the same message id on every resend
     xml = (
@@ -348,7 +358,7 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         "<OriginalReferenceDocumentType>BKPFF</OriginalReferenceDocumentType>"
         "<BusinessTransactionType>RFBU</BusinessTransactionType><AccountingDocumentType>SA</AccountingDocumentType>"
         f"<DocumentReferenceID>{escape(ref)}</DocumentReferenceID>"
-        f"<DocumentHeaderText>{escape(('Actuals ' + c['id'])[:25])}</DocumentHeaderText>"
+        f"<DocumentHeaderText>{escape(header[:25])}</DocumentHeaderText>"
         f"<CompanyCode>{S4_COMPANY}</CompanyCode><DocumentDate>{today}</DocumentDate><PostingDate>{today}</PostingDate>"
         + "".join(items)
         + "</JournalEntry></JournalEntryCreateRequest></sfin:JournalEntryBulkCreateRequest></soapenv:Body></soapenv:Envelope>"
@@ -366,9 +376,8 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
     if severity == "3" or not doc or doc == "0000000000":
         notes = "; ".join(e.text or "" for e in root.iter() if e.tag.rsplit("}", 1)[-1] == "Note")
         raise Refused(f"SAP S/4HANA did not post the journal entry: {notes}")
-    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "lines": lines}}
     detail = {"AccountingDocument": doc, "CompanyCode": _find(root, "CompanyCode"), "FiscalYear": _find(root, "FiscalYear")}
-    return Sent([call], doc, detail | {"duplicate": severity == "2"})
+    return doc, detail | {"duplicate": severity == "2"}
 
 
 def _item(n: int, gl: str, usd: float, text_: str, assignment: str, material: str | None, plant: str | None) -> str:
@@ -422,7 +431,9 @@ WRITERS = {
 }
 from di.services.instructions import writers_fleet  # noqa: E402 - it uses Sent, Refused and client, defined above
 
-WRITERS |= {"fleet_issue": writers_fleet.fleet_issue, "parts_issue": writers_fleet.parts_issue}
+WRITERS |= {
+    "fleet_issue": writers_fleet.fleet_issue, "parts_issue": writers_fleet.parts_issue, "nonreturnfee": writers_fleet.fee_post,
+}  # fmt: skip
 
 
 def operations(system: str) -> list[str]:

@@ -2060,6 +2060,12 @@
     "label": "Realised net off the prediction",
     "owner_role": "Finance",
     "action": "Check the posted cost lines against the predicted ones"
+   },
+   {
+    "id": "non_return",
+    "label": "Contract line closed without the tool",
+    "owner_role": "Fleet desk",
+    "action": "Post the contract's non-return fee"
    }
   ],
   "suggestion_rules": [],

@@ -178,3 +178,9 @@ export const toolFleetView = (caseId: string): ToolFleetView => cached<ToolFleet
 /** Release a recalled tool from quarantine after the fix (recall.release, Approver or Admin; a replace or refund recall is never released). */
 export const releaseQuarantine = (caseId: string, note: string): Promise<ActionResult<{ released: boolean }>> =>
   invoke<{ released: boolean }>('recall.release', { case_id: caseId, note });
+
+/** P9-3.18 (TF-14): post the non-return fee of a contract line that closed without the tool (nonReturnFee.post, Admin, Planner or
+ *  Finance). It queues one instruction to the billing system and closes the item; a second post is a duplicate. An agent's call is
+ *  held for a person. `instruction` is null when sending instructions is switched off. */
+export const postNonReturnFee = (lineId: string): Promise<ActionResult<{ line_id: string; serial: string; fee: number; instruction: number | null }>> =>
+  invoke('nonReturnFee.post', { line_id: lineId });

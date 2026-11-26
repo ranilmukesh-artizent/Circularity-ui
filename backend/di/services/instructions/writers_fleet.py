@@ -1,6 +1,9 @@
-"""The tool fleet's two writes to its own systems (plan 9, P9-3.17, story TF-10; registry entries I-6, I-11).
+"""The tool fleet's writes to its own systems (plan 9, P9-3.17 TF-10 and P9-3.18 TF-14; registry entries I-6, I-11).
 
-    fleet_issue   the `lease` step of a re-issue (`release`): PATCH the contract line of the named renewal with the issued serial
+    nonreturnfee  a non-return fee posted by a person (`nonReturnFee.post`): one journal entry to SAP S/4HANA, the fee to the
+                  fee income account against the clearing item, through the same SOAP call as a decision's actuals
+                  (`writers.post_journal`); the key is the line, so a resend is a duplicate and posts nothing twice
+    fleet_issue  the `lease` step of a re-issue (`release`): PATCH the contract line of the named renewal with the issued serial
                   fleet contract system  PATCH /contract-lines/{lineId}  {status: "issued", issuedSerial, issuedKey, issuedFor}
     parts_issue   the `partsxfer` step of a harvest: post each certified part to its open repair order
                   parts and service system  PATCH /repair-orders/open/{roId}
@@ -76,6 +79,23 @@ def fleet_issue(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # no
         [{"call": "PATCH contract-lines/{lineId}", "body": body}], line["lineId"],
         {"lineId": line["lineId"], "renewal": renewal, "contract": ren["contractId"], "serial": serial},
     )  # fmt: skip
+
+
+def fee_post(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """The fee of the instruction's contract line is posted to S/4 (module docstring). The line and the amount come from the
+    instruction's detail, which `instructions.fees.post` wrote from the canonical line when a person posted it."""
+    d = ins.get("detail") or {}
+    line_id, fee = str(d.get("line_id") or ""), float(d.get("fee") or 0)
+    if not line_id or fee <= 0:
+        raise NotApplicable("no fee to post")
+    ref = f"FEE-{line_id}"[:16]
+    items = [
+        writers._item(1, writers.GL_FEE, -fee, f"Non-return fee {line_id}", line_id, None, None),
+        writers._item(2, writers.GL_CLEARING, fee, f"Fee clearing {line_id}", writers.CLEARING, None, None),
+    ]
+    doc, detail = writers.post_journal(s, ins, ref, f"Fee {line_id}", items)
+    call = {"call": "POST JournalEntryCreateRequestConfirmation_In", "body": {"DocumentReferenceID": ref, "fee": fee}}
+    return Sent([call], doc, detail | {"line_id": line_id, "fee": fee})
 
 
 def parts_issue(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)

@@ -874,7 +874,7 @@ each story went.
 - [x] P9-3.15 Threshold approvals and standing policy for returns
 - [x] P9-3.16 Key account returns to account manager review
 - [x] P9-3.17 Follow-through to the executing systems and outcome
-- [ ] P9-3.18 Non-return fees posted from closed lines
+- [x] P9-3.18 Non-return fees posted from closed lines
 - [x] P9-3.19 Batteries valued as their own class
 - [x] P9-3.20 Fit-for-use threshold owned by Quality
 - [ ] P9-3.21 Paths agree and order invariant for tool returns

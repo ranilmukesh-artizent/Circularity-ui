@@ -39,9 +39,10 @@ from di.core.db import SessionLocal
 from di.services.actions.org_pilot import is_pilot
 from di.services.actions.pipeline import SYSTEM, CallContext, invoke
 from di.services.cases import store
-from di.services.instructions import outbound, queue, writers
+from di.services.instructions import fees, outbound, queue, writers
 
 log = logging.getLogger("di.services.instructions")
+OWN_KINDS = ("payout", fees.KIND)  # instructions that belong to no plan step: nothing to acknowledge, done when sent
 
 
 def send(iid: int, resend: bool = False) -> str:
@@ -52,8 +53,9 @@ def send(iid: int, resend: bool = False) -> str:
             return "skipped"
         if not resend and ins["status"] in ("acknowledged", "failed", "sent"):
             return "skipped"  # a duplicate job, or an event got there first
-        c = store.get(s, ins["case_id"])
-        own_ref = ins["kind"] == "payout"  # a payout is sent on its own, outside an approval's plan (P9-6.8)
+        # a payout (P9-6.8) and a non-return fee (P9-3.18) are sent on their own, outside an approval's plan; the fee has no case
+        own_ref = ins["kind"] in OWN_KINDS
+        c = fees.stand_in_case(ins) if ins["kind"] == fees.KIND else store.get(s, ins["case_id"])
         if c is None or (not own_ref and (not c.get("exec") or c["exec"]["ref"] != ins["approval_ref"])):
             _update(s, iid, status="failed", last_error="The approval this instruction belongs to is no longer current")
             s.commit()
@@ -160,7 +162,9 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
-        if ins["kind"] == "payout":  # no plan step to acknowledge: the simulated payout is done when due (P9-6.8)
+        if (
+            ins["kind"] in OWN_KINDS
+        ):  # no plan step to acknowledge: the simulated payout or fee is done when due (P9-6.8, P9-3.18)
             with SessionLocal() as s:
                 _update(s, ins["id"], status="acknowledged")
                 s.commit()

@@ -3,12 +3,13 @@ import { acceptProposal, rejectProposal } from '../../api/agents';
 import { isFraudItem } from '../../api/fraud';
 import { assignItem, draftedBy, draftOwner, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
 import { accounts } from '../../api/session';
+import { postNonReturnFee } from '../../api/toolFleet';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
-import { countsByKind, dueLabel, KIND_LABEL, KINDS, proposalId, sortItems, workId } from './mywork';
+import { countsByKind, dueLabel, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
 
 type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
 
@@ -30,6 +31,10 @@ export function MyWorkPage() {
     if (id === null) return;
     const r = await action.run(() => acceptProposal(id));
     if (r.ok) toast('Done: the action ran as you.');
+  };
+  const postFee = async (line: string) => {
+    const r = await action.run(() => postNonReturnFee(line));
+    if (r.ok) toast('Fee posted.');
   };
   return (
     <div className="frpage" id="mywork">
@@ -78,6 +83,7 @@ export function MyWorkPage() {
                 {workId(i) !== null && <button className="btn sm" disabled={action.pending} onClick={() => setDialog({ kind: 'assign', item: i })}>Assign</button>}
                 {proposalId(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => accept(i)}>Accept</button>}
                 {proposalId(i) !== null && <button className="btn sm" disabled={action.pending} onClick={() => setDialog({ kind: 'reject', item: i })}>Reject</button>}
+                {nonReturnLine(i) !== null && <button className="btn sm pri" disabled={action.pending} onClick={() => postFee(nonReturnLine(i) as string)}>Post the fee</button>}
                 {i.go && <a className="btn sm" href={'#/' + i.go}>Open</a>}
               </span>
             </span>
