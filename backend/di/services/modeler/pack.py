@@ -108,7 +108,6 @@ class PackRoute(_Part):
     # plan 9 P9-13.1 (X-13): what the route does to the fixed asset in the books once it is approved: retired (sold, salvaged,
     # written off) or transferred (redeployed to another site or cost centre). `none`: the asset's book is not touched.
     asset_effect: Literal["retire", "transfer", "none"] = "none"
-    downstream_roles: list[str] = Field(default_factory=list)  # roles told when the route closes (plan 9 phase 13)
 
 
 class PackClose(_Part):
