@@ -39,6 +39,7 @@ from di.services.engine.predictor import FormulaPredictor
 from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
 from di.services.execution.steps import approval_ref, steps_for  # the execution steps (B13 moved them to di.services.execution)
 from di.services.modeler.apply import FLOW_REMOVED
+from di.services.service_desk import follow_through
 
 NOW = iso(AS_OF)  # the demo's asOfNow(), pinned
 
@@ -380,6 +381,7 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
         "approvedAt": NOW,
         "approver": by,
     }
+    follow_through.on_approve(ctx.session, c)  # a service ticket: its market terms and the units its swaps reserve (P9-4.9)
     c["approval"] = {
         "ref": ref, "by": by, "at": NOW, "rationale": i["rationale"], "spend": _spend(i), "terms": i.get("terms") or "",
         "prep": ctx.preparer,

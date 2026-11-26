@@ -963,6 +963,8 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "reeval": (16, "Planner"),
     "holdout": (16, "Finance"),
     "payout": (None, "Customer care"),
+    "takeback": (48, "Fleet desk"),  # plan 9 P9-4.9: a service ticket's old tool comes back, then the credit goes
+    "credit": (16, "Finance"),
 }
 _HOUR_MS = 3_600_000
 

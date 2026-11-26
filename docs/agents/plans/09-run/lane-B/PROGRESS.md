@@ -36,3 +36,4 @@
 | 2026-11-26 | 09 · P9-3.14 cO2e per route and the recycling certificate | this commit | writer wt-check: tf_carbon, carbon_factors ok, lint, tsc, vitest, eslint; lead verify follows | done |
 | 2026-11-26 | 09 · P9-3.15 threshold approvals and standing policy for returns | this commit | writer wt-check: 180 passed, 1 failed (GR-D11 row, fixed by lane A); tf_approvals 14; lint, tsc, vitest; lead verify follows | done |
 | 2026-11-26 | 09 · P9-4.8 decide a batch per tool as one split | this commit | writer wt-check all passed (service_desk_batch, fault, options, valuer_service_desk, po_golden), lint, tsc, vitest, eslint; lead verify follows | done |
+| 2026-11-26 | 09 · P9-4.9 execute the approved option on market terms | this commit | writer wt-check all passed (service_desk_execute, batch, fault, options, valuer_service_desk, po_golden, screens_case, instructions_send, execution, execution_detail), lint, tsc, vitest, eslint; lead verify follows | done |

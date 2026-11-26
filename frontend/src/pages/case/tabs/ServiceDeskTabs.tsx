@@ -117,6 +117,7 @@ export function OptionsTab({ c }: TabProps) {
         );
       })}
       {v.approval && <p className="stpad">{approvalLine(v.approval)}</p>}
+      {c.exec?.terms && <p className="stpad">{termsLine(c.exec.terms)}</p>}{/* the terms of an approved plan (P9-4.9) */}
     </>
   );
 }
@@ -222,7 +223,7 @@ export function CreditLeverTab({ c }: TabProps) {
 const optionName = (k: string) => (k === 'fix' ? 'Fix and return' : k === 'swap' ? 'Covered swap' : 'Upgrade');
 
 // The Batch tab (P9-4.8): its own imports sit with it, so the block stands alone.
-import { batchTotalsLine, splitLine } from '../serviceDesk';
+import { batchTotalsLine, splitLine, termsLine } from '../serviceDesk';
 
 /** The Batch tab of a batch case (P9-4.8, SD-07): the split ("Upgrade 9 · Fix 11 · Covered swap 2"), the totals of the chosen
  * options for the customer and the margin, and a table of the lines with each line's option and reason; a line opens to its

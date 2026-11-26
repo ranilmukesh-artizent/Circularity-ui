@@ -14,7 +14,7 @@ import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import type { DeviceView } from './device';
 import type { Reference } from './reference';
-import type { ServiceDeskView } from './serviceDesk';
+import type { MarketTerms, ServiceDeskView } from './serviceDesk';
 import { fmtDate, fmtDateYear, fmtNumber, money } from './format';
 import { bump, onSessionChange } from './store';
 import type { ActionResult } from './types';
@@ -60,7 +60,7 @@ export interface CaseRec {
   approval?: { ref: string; by: string; at: string; rationale: string; spend?: number | null; terms?: string } | null;
   packet?: { rationale: string; at: string; by: string; prep?: string | null } | null;
   outcome?: { net: number; by?: string; at?: string; order?: string | null; lines: OutcomeLine[] } | null;
-  exec?: { ref: string; decisionId: string; approvedAt?: string; instruction?: number; steps: ExecStep[] } | null;
+  exec?: { ref: string; decisionId: string; approvedAt?: string; instruction?: number; steps: ExecStep[]; terms?: MarketTerms } | null;
   blocked?: { action: string; owner: string; reason: string; gateName?: string } | null;
   requested?: { ref: string; at: string } | null;
   evidence: Evidence[];

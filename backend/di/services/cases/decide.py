@@ -286,6 +286,8 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
     ]  # fmt: skip
     routes = to_routes(t, cast(list[PathValue | ChannelValue], values))
     _decorate(t, routes)
+    for r in routes:  # what each route's plan is made of: the steps and the lines each covers (P9-4.9)
+        r |= service_desk.step_plan(ticket, r["id"], sd.get("site"))
     return _Valued(routes, ticket["best"], ticket=ticket | {"inputs": inputs})
 
 

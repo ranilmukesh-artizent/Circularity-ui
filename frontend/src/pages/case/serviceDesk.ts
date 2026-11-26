@@ -97,3 +97,11 @@ export function splitLine(counts: Partial<Record<OptionKey, number>>): string {
 export function batchTotalsLine(t: { customer_price: number; margin: number; expected_margin: number }, currency: string): string {
   return `Customer pays ${money(t.customer_price, currency)} · margin ${money(t.margin, currency)} · expected margin ${money(t.expected_margin, currency)}`;
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Market terms: US parts prices v2, US labour rates v1, US credit rules v1 · valid until 21 Oct 2026" (P9-4.9, SD-05). */
+export function termsLine(t: { refs: string[]; valid_until: string }): string {
+  const [y, m, d] = t.valid_until.split('-').map(Number);
+  return `Market terms: ${t.refs.join(', ')} · valid until ${d} ${MONTHS[m - 1]} ${y}`;
+}

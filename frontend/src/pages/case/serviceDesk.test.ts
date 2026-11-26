@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TicketOption } from '../../api/serviceDesk';
-import { approvalLine, batchTotalsLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, splitLine, ticketLine } from './serviceDesk';
+import { approvalLine, batchTotalsLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, splitLine, termsLine, ticketLine } from './serviceDesk';
 
 describe('P9-4.4 estimateLine (SD-02)', () => {
   const e = { point: 430, p10: 395, p90: 470, confidence: 0.92, n: 186, currency: 'USD' };
@@ -98,5 +98,13 @@ describe('P9-4.8 splitLine (SD-07)', () => {
   });
   it('says the totals of the chosen options', () => {
     expect(batchTotalsLine({ customer_price: 4120, margin: 1236.5, expected_margin: 1180 }, 'USD')).toBe('Customer pays $4,120 · margin $1,236.50 · expected margin $1,180');
+  });
+});
+
+describe('P9-4.9 termsLine (SD-05)', () => {
+  it('names the table versions and the date the terms are valid until', () => {
+    expect(termsLine({ refs: ['US parts list Oct 2026 v1', 'US labour rates v1', 'US credit rules v1'], valid_until: '2026-10-21' })).toBe(
+      'Market terms: US parts list Oct 2026 v1, US labour rates v1, US credit rules v1 · valid until 21 Oct 2026',
+    );
   });
 });

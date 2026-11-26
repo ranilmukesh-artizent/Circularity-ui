@@ -313,6 +313,31 @@ def batch_ticket(inputs: Mapping[str, Any]) -> TicketDecision:
     }
 
 
+# The steps each option runs, in the order of the execution plan (P9-4.9; execution/steps.py `STEP_TPL` says the same).
+OPTION_KINDS = {
+    "fix": ("repair", "transport", "finance"),
+    "swap": ("reserve", "transport", "takeback", "finance"),
+    "upgrade": ("sale", "transport", "takeback", "credit", "finance"),
+}
+PLAN_ORDER = ("reserve", "repair", "sale", "transport", "takeback", "credit", "finance")  # a split's union is in this order
+
+
+def route_option(ln: Mapping[str, Any], route: str | None) -> str | None:
+    """The option a line takes on the route: its chosen one on `split`, `fix` on `all_fix`, and so on."""
+    return ln["best"] if route == "split" else dict(COMPARE).get(route or "", route)
+
+
+def step_plan(d: Mapping[str, Any], route: str, site: str | None) -> dict[str, Any]:
+    """What the route's execution plan is made of (P9-4.9): `kinds` the step kinds, each once, in `PLAN_ORDER`; `stepLines` per
+    kind the lines it covers (their `n`), so a split has one sale order for its upgrade lines, one service reference for its
+    fix lines and one delivery to `shipTo`, the site."""
+    covers: dict[str, list[int]] = {}
+    for ln in d["lines"]:
+        for kind in OPTION_KINDS.get(route_option(ln, route) or "", ()):
+            covers.setdefault(kind, []).append(ln["n"])
+    return {"kinds": [k for k in PLAN_ORDER if k in covers], "stepLines": covers, "shipTo": site}
+
+
 def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, str]]:
     """What holds the recommendation for a person (I-10 reads `approvalHolds` as guardrail holds; the standing policy of I-11 may
     approve only a case with none): GR-S3 a price from a table that is not the current approved version, GR-S1 an estimate that
@@ -329,7 +354,7 @@ def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, st
     if drafts:
         hold("GR-S1", f"The estimate of {', '.join(drafts)} is a draft: a technician checks it")
     for ln in d["lines"]:
-        k = ln["best"] if route == "split" else dict(COMPARE).get(route or "", route)  # the option this line takes on the route
+        k = route_option(ln, route)  # the option this line takes on the route
         o = next((x for x in ln["options"] if x["k"] == k), None)
         if o is None or not o["eligible"]:
             continue
@@ -341,6 +366,6 @@ def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, st
 
 
 __all__ = [
-    "KEYS", "NAMES", "STALE", "BatchDecision", "TicketDecision",
-    "approval_holds", "batch_ticket", "decide_batch", "decide_ticket", "split_line",
+    "KEYS", "NAMES", "OPTION_KINDS", "STALE", "BatchDecision", "TicketDecision",
+    "approval_holds", "batch_ticket", "decide_batch", "decide_ticket", "route_option", "split_line", "step_plan",
 ]  # fmt: skip

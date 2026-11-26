@@ -34,6 +34,10 @@ export interface BatchSplit {
   lines: { n: number; serial: string; k: OptionKey | null; name: string | null; why: string }[];
 }
 
+/** The market terms an approved plan was priced on: the table versions ("US labour rates v1") and the date the offer is valid until
+ * (P9-4.9, SD-05). Every instruction of the plan carries them. */
+export interface MarketTerms { market: string; refs: string[]; approved_on: string; valid_until: string }
+
 /** One value line of an option and the table it cites. `type` v is value, c is cost. */
 export interface OptionLine { type: 'v' | 'c'; label: string; amt: number; basis: string; cites: string }
 

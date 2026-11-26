@@ -202,6 +202,14 @@ def repair(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
         "ORIGINAL_SOURCE_REFERENCE": c["exec"]["ref"],
         "PROBLEM_DESCRIPTION": f"{_step(c, ins)['label']} for {c['id']} under {c['exec']['ref']}",
     }
+    if isinstance(c.get("serviceDesk"), dict):  # a service ticket's fix (P9-4.9): one service reference for all its fix lines
+        serials = [ln["serial"] for ln in c["serviceDesk"]["lines"] if ln["n"] in (_step(c, ins).get("lines") or [])]
+        rec |= {
+            "SERIAL_NUMBER": serials[0] if serials else c["assetId"],
+            "REPAIR_TYPE": "Repair and Return",
+            "ORIGINAL_SOURCE_REFERENCE": c["id"],
+            "PROBLEM_DESCRIPTION": f"Repair and return of {', '.join(serials)} for {c['id']} under {c['exec']['ref']}",
+        }
     body = {
         "CREATE_REPAIR_ORDER_Input": {
             "RESTHeader": {
