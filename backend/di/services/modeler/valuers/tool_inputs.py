@@ -165,3 +165,19 @@ def valuer_case(
         c["partRul"] = [by.get(pn, life.rul_tool) for pn, _pv in parts]
         c["life"] = dataclasses.asdict(life) | {"range": list(life.range) if life.range else None}  # as JSON keeps it
     return c
+
+
+RUL_MIN = "valuer.rulMin"  # the pack parameter of the fit-for-use threshold (P9-3.20, GR-03): owned by Quality, raise-only
+
+
+def fit_for_use_floor(pack: Any) -> float:
+    """The remaining life, in percent, a harvested part must reach to be certified: the pack's `valuer.rulMin` parameter
+    (the shipped 50, or a customer's raised value once its overlay is approved), else the valuer's own `BASEP["rulMin"]`."""
+    own = pack.customer_layer.params.get(RUL_MIN)
+    return float(own.value) if own is not None else float(tool_fleet.BASEP["rulMin"])
+
+
+def fleet_params(pack: Any) -> dict[str, float]:
+    """The valuer's parameters for a case decided with `pack` (the live pack, overlay laid on): `BASEP` with the threshold
+    of the pack. With no overlay these are `BASEP` itself, so every decision is as before."""
+    return dict(tool_fleet.BASEP) | {"rulMin": fit_for_use_floor(pack)}

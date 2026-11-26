@@ -166,6 +166,17 @@ export interface OverlayGuardrail {
   locked: boolean;
 }
 
+/** A pack parameter a customer may set through an overlay `set_param`, in its range; `raise_only` means never below the pack's value. */
+export interface OverlayParam {
+  path: string;
+  value: number;
+  min: number;
+  max: number;
+  direction: 'raise_only' | null;
+  guardrail: string | null;
+  owner: string | null;
+}
+
 export interface OverlayConflict {
   op_id: string;
   kind: 'target_gone' | 'changed_by_pack' | 'now_skips_compliance';
@@ -204,6 +215,8 @@ export interface OverlayScreen {
     approvers: string[];
     param: { field: string; value: number; stricter: 'lower' | 'higher'; min: number; max: number } | null;
   }[];
+  /** the parameters the pack lets a customer set (`customer_layer.params`), with the pack's own value (P9-3.20) */
+  params: OverlayParam[];
   stages: { key: GuardrailStage; label: string }[];
   routes: { id: string; name: string }[];
   /** the published overlay this org's cases use: its own or inherited */

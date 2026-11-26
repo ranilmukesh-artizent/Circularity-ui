@@ -635,7 +635,16 @@
  },
  "customer_layer": {
   "editable": {},
-  "params": {},
+  "params": {
+   "valuer.rulMin": {
+    "value": 50,
+    "min": 30,
+    "max": 90,
+    "direction": "raise_only",
+    "guardrail": "GR-03",
+    "owner": "Quality"
+   }
+  },
   "sample_diversions": [],
   "merge_rule": "stricter_wins"
  },

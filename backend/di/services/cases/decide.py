@@ -85,6 +85,7 @@ from di.services.modeler.valuers import (
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
+from di.services.modeler.valuers.tool_inputs import fleet_params
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
 GATE_KEYS = ("gates", "gateHold", "requiredSteps")  # the case keys the gates and the diversions set
@@ -254,7 +255,7 @@ def _tool_fleet(
     stamped = [x | {"gateBlocked": sorted(blocked)} if x["id"] == me else x for x in cases] if blocked else cases
 
     def planned(rs: list[dict[str, Any]], gated: bool = False) -> tool_fleet.Plan:
-        return p.plan(stamped if gated else cases, demand, cap, rules=rs, params=tool_fleet.BASEP)
+        return p.plan(stamped if gated else cases, demand, cap, rules=rs, params=fleet_params(pack))  # GR-03 floor
 
     plan = planned(_rule_dicts(rules), True)
     dec: dict[str, Any] = {**plan["res"][me], "indep": plan["indep"][me], "blk": sorted(plan["blk"][me])}
