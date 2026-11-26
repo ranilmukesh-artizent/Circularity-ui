@@ -141,3 +141,19 @@ export interface PackViewData {
 }
 /** The Packs tab: the pack's KPIs, questions and stages over the cases of that pack the account may see ("" picks the first pack with KPIs). */
 export const usePackView = (key: string): PackViewData => cached<PackViewData>(withQuery('/api/screens/analytics/pack', { key }));
+
+// ---------------------------------------------------------------- Contract renewals (plan 9, P9-5.7)
+/** Renewals of a group of contracts: how many ended, how many renewed, the rate (null when none ended). */
+export interface RenewalRate { n: number; renewed: number; rate: number | null }
+/** One like-for-like segment: contracts of a market and a size band, with and without a proposal. */
+export interface RenewalSegment { market: string; size: string; with_proposal: RenewalRate; without_proposal: RenewalRate }
+/** What the proposals predicted against what happened, over the refresh cases that recorded an outcome. */
+export interface RenewalCompared { n: number; predicted_rate: number | null; actual_rate: number | null; fee_error_pct: number | null; swaps_accepted: number }
+/** GET /api/screens/analytics/renewals?since=&until= (backend/di/services/screens/analytics.py). Counts and ratios from the fleet's own contracts. */
+export interface RenewalReport {
+  since: string; until: string; basis: string; caveat: string;
+  with_proposal: RenewalRate; without_proposal: RenewalRate; segments: RenewalSegment[]; compared: RenewalCompared;
+}
+/** The renewal rate with and without a proposal, per segment, and the proposals' predictions against the outcomes. An empty bound is the server's default (the last two years). */
+export const renewalReport = (f: { since: string; until: string }): RenewalReport =>
+  cached<RenewalReport>(withQuery('/api/screens/analytics/renewals', f));

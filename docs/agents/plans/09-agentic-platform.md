@@ -898,7 +898,7 @@ each story went.
 - [x] P9-5.4 Refresh proposal priced with fee and renewal odds
 - [x] P9-5.5 Approved proposal sent, lines drafted, units reserved
 - [ ] P9-5.6 Test-the-proposal levers
-- [ ] P9-5.7 Renewal outcomes recorded and compared
+- [x] P9-5.7 Renewal outcomes recorded and compared
 - [ ] P9-5.8 Paths agree and order invariant for refresh
 - [ ] P9-5.9 Phase 5 gate
 - [x] P9-6.1 Device mocks for registry, lab and market

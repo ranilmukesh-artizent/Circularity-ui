@@ -1,10 +1,12 @@
 """The /api/screens/analytics endpoint. What it serves, and the facade map: di.services.screens.analytics (which also
 registers the read action analytics.models)."""
 
+from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
+from di.core import clock
 from di.core.deps import CurrentPrincipal, DbSession
 from di.services.screens import analytics as svc
 
@@ -26,6 +28,13 @@ def analytics(
 ):
     p.require_page("analytics")
     return svc.page(p, session, tenant, cls, route, from_, to, model, tenant_filter, org)
+
+
+@router.get("/renewals")
+def renewals(p: CurrentPrincipal, session: DbSession, since: date | None = None, until: date | None = None):
+    p.require_page("analytics")
+    end = until or clock.now().date()
+    return svc.renewals(session, p, since or end - timedelta(days=730), end)
 
 
 @router.get("/pack")

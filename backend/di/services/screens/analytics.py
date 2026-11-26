@@ -21,6 +21,11 @@ model versions' accuracy.
                               {key, value} and up to 5 example case ids), `suggestion_rules` (as configured) and `stages`
                               ([{key, label, agent, autonomy}]), over the cases of that pack the account may see. The
                               page's own answer above is unchanged.
+    GET /api/screens/analytics/renewals?since=&until=   plan 9 P9-5.7: "Contract renewals": `with_proposal` and
+                              `without_proposal` ({n, renewed, rate}), `segments` (market and size band, each with both),
+                              `compared` (what the proposals predicted against the recorded outcomes: n, predicted_rate,
+                              actual_rate, fee_error_pct, swaps_accepted), `basis` and the `caveat`, verbatim. Over the
+                              account's org units; no model writes any of it. The facade's renewalReport.
     POST /api/actions/analytics.models   the read action the page's agent answer calls (registered here; it had no
                               handler before B14): the demo's handler, over every reconciled decision
 
@@ -54,6 +59,7 @@ Facade mapping (frontend/src/api/analytics.ts), for the switch-over (B17):
 | kfmt, pct, sum, DEFAULT_FILTER | frontend-only: formatting and the page's default filter                     |
 """
 
+from datetime import date
 from typing import Any
 
 from sqlalchemy import text
@@ -61,6 +67,7 @@ from sqlalchemy.orm import Session
 
 from di.core import orgs, policy
 from di.core.auth import Principal
+from di.repositories import renewals as renewals_repo
 from di.repositories.common import to_fixed
 from di.repositories.constants import MODELS
 from di.repositories.context import call_ctx, visible_cases, visible_rows
@@ -207,6 +214,60 @@ def page(
         "telemetry_unavailable": telemetry_unavailable(session),
         "orgs": actor_units(p),
     }
+
+
+# ---------------------------------------------------------------- Contract renewals (plan 9, P9-5.7)
+RENEWAL_CAVEAT = (
+    "Contracts that got a proposal may differ from those that did not (for example larger or better accounts). "
+    "This comparison is observational; a 20% region publish is the proof."
+)
+RENEWAL_BASIS = (
+    "observed in the fleet contract system's ended contracts and in refresh cases that recorded an outcome (not modelled)"
+)
+
+
+def _rate(rows: list[Any]) -> dict[str, Any]:
+    renewed = sum(1 for r in rows if r.renewed)
+    return {"n": len(rows), "renewed": renewed, "rate": renewed / len(rows) if rows else None}
+
+
+def _compared(rows: list[Any]) -> dict[str, Any]:
+    """What the proposals predicted against what happened, over the recorded cases that had a proposal: the mean predicted renewal
+    likelihood against the share that renewed, the mean difference of the fee a month after renewal from the fee proposed (percent
+    of the proposed fee, over the renewed ones), and the swaps accepted."""
+    cs = [r for r in rows if r.source == "case" and r.had_proposal and r.predicted_likelihood is not None]
+    fees = [(r.fee_after - r.predicted_fee) / r.predicted_fee * 100 for r in cs if r.renewed and r.fee_after and r.predicted_fee]
+    return {
+        "n": len(cs),
+        "predicted_rate": sum(r.predicted_likelihood or 0 for r in cs) / len(cs) if cs else None,
+        "actual_rate": sum(1 for r in cs if r.renewed) / len(cs) if cs else None,
+        "fee_error_pct": sum(fees) / len(fees) if fees else None,
+        "swaps_accepted": sum(r.swaps_accepted for r in cs),
+    }
+
+
+def renewals(session: Session, p: Principal, since: date, until: date) -> dict[str, Any]:
+    """GET /api/screens/analytics/renewals?since=&until=: the renewal rate with and without a proposal, overall and per market and
+    size band (counts with each rate; None where a group is empty), what the proposals predicted against what happened, and the
+    caveat verbatim. Over the ended contracts and the recorded refresh cases in the account's org units (the tenant boundary)."""
+    units = policy.org_units(p.ctx)
+    mine = [u for u in units if policy.tenant_ok(p.account, u, p.ctx)]
+    if not policy.policy(p.account).get("tenantScoped"):
+        mine.append(renewals_repo.WORKSPACE)  # a fleet source bound to no unit is the group's: accounts that see every tenant
+    rows = renewals_repo.outcomes(session, mine, since, until)
+    segments = []
+    for market, size in sorted({(r.market, r.size_band) for r in rows}):
+        seg = [r for r in rows if (r.market, r.size_band) == (market, size)]
+        segments.append(
+            {"market": market, "size": size, "with_proposal": _rate([r for r in seg if r.had_proposal]),
+             "without_proposal": _rate([r for r in seg if not r.had_proposal])}
+        )  # fmt: skip
+    return {
+        "since": since.isoformat(), "until": until.isoformat(), "basis": RENEWAL_BASIS, "caveat": RENEWAL_CAVEAT,
+        "with_proposal": _rate([r for r in rows if r.had_proposal]),
+        "without_proposal": _rate([r for r in rows if not r.had_proposal]),
+        "segments": segments, "compared": _compared(rows),
+    }  # fmt: skip
 
 
 # ---------------------------------------------------------------- the Packs tab (plan 9, P9-1.13)

@@ -239,6 +239,19 @@ await step('5 Refresh: planner.a submits, the Approver approves, the panel shows
   );
   return text.split('\n').filter((l) => /Proposal sent|Contract lines drafted|Units reserved/.test(l)).join('; ');
 });
+// ---------------------------------------------------------------- 7
+await step('7 Analytics: the Contract renewals section shows both rates, the segments and the caveat', async () => {
+  const exec = await as('exec');
+  await exec.goto(`${base}/#/analytics`);
+  await exec.locator('#view').waitFor();
+  await exec.getByRole('radio', { name: 'Packs' }).or(exec.getByRole('button', { name: 'Packs' })).first().click();
+  const sec = exec.locator('[data-testid="renewals"]');
+  await sec.waitFor({ timeout: UI });
+  const text = await sec.innerText();
+  if (!/With a proposal: .*\d/.test(text) || !/Without a proposal: /.test(text)) throw new Error('the section shows no rates: ' + text.slice(0, 200));
+  if (!/This comparison is observational; a 20% region publish is the proof\./.test(text)) throw new Error('the caveat is missing');
+  return text.split('\n').find((l) => /With a proposal/.test(l)) || '';
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
