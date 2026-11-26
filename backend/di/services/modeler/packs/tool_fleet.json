@@ -767,6 +767,7 @@
     }
    },
    "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}, "key_account": {"id": "TF-KEY", "role": "Account manager"}},
+   "follow_through": {"variance_tolerance": {"pct": 10, "usd": 50}, "sla_hours": {"default": 48}},
    "contract_refresh": {
     "flow": "contract_refresh",
     "window_days": 90,
@@ -2009,6 +2010,12 @@
     "label": "Telematics older than the limit",
     "owner_role": "Quality",
     "action": "Check the tool's telematics link or read the tool before it is re-issued or pooled"
+   },
+   {
+    "id": "variance_check",
+    "label": "Realised net off the prediction",
+    "owner_role": "Finance",
+    "action": "Check the posted cost lines against the predicted ones"
    }
   ],
   "suggestion_rules": [],

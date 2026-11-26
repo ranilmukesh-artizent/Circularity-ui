@@ -370,7 +370,7 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
     is_ov = t is not rec
     ref = approval_ref(c["id"]) + (f"-{cyc(c) + 1}" if cyc(c) else "")
     c["chosen"] = copy.deepcopy(t)
-    steps = steps_for(t)
+    steps = steps_for(t, template=c.get("template"))  # a tool-fleet case's steps name the fleet and parts systems (P9-3.17)
     steps[0]["activeAt"] = NOW
     c["exec"] = {
         "ref": ref,

@@ -37,6 +37,16 @@ SYSTEM_OF = {
 }
 
 
+# P9-3.17: the steps a template writes to a source of its own (the tool fleet's re-issue goes to the fleet contract system, its
+# harvest to the parts system); every other step, and every industrial step, goes where SYSTEM_OF says
+TEMPLATE_SYSTEM_OF = {"tool_fleet": {"lease": "fleet", "partsxfer": "parts"}}
+
+
+def template_system(template: str | None, kind: str) -> str | None:
+    """The source a template's step of this kind is written to, or None when the template has none of its own."""
+    return TEMPLATE_SYSTEM_OF.get(template or "", {}).get(kind)
+
+
 def enabled() -> bool:
     return get_settings().instructions
 
@@ -76,7 +86,7 @@ def queue(s: Session, c: store.Case, step: int) -> int | None:
     key = instruction_key(ref, step, kind)
     # a reset reopens cases with their old approval references; their earlier rows no longer mean anything
     s.execute(text("DELETE FROM instruction WHERE approval_ref = :r AND step = :n"), {"r": ref, "n": step})
-    system = SYSTEM_OF.get(kind) or (EX_STEP.get(kind) or {}).get("sys") or st["sys"]
+    system = template_system(c.get("template"), kind) or SYSTEM_OF.get(kind) or (EX_STEP.get(kind) or {}).get("sys") or st["sys"]
     iid = s.execute(
         text(
             "INSERT INTO instruction (case_id, approval_ref, step, kind, system, idem_key, match_refs, queued_at) "

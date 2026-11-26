@@ -109,7 +109,8 @@ SPEC = Spec(
     auth=Auth("api_key", header="x-api-key"),
     paging=Paging("offset", limit_param="limit", offset_param="offset", items_key="items", next_key="next", total_key="total"),
     resources=(
-        Resource("openRepairOrders", "/repair-orders/open", "roId", filters=("toolClass", "partName")),
+        Resource("openRepairOrders", "/repair-orders/open", "roId", filters=("toolClass", "partName"), update=True,
+                 event="parts.repair_order"),  # P9-3.17: a harvest posts its certified part here
         Resource("catalogue", "/catalogue", "partNo", filters=("toolClass", "market")),
         Resource("stock", "/refurbished-units", "unitId", filters=("toolClass", "status", "site")),
         Resource("salesOrders", "/sales-orders", "soId", filters=("toolClass", "site")),

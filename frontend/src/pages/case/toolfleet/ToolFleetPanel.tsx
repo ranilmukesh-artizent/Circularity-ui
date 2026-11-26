@@ -2,6 +2,7 @@ import { toolFleetView } from '../../../api/toolFleet';
 import { Panel } from '../../../components/kit/Panel';
 import { can } from '../../../api/session';
 import { ApprovalSection } from './ApprovalSection';
+import { FollowThroughSection } from './FollowThroughSection';
 import { GatesSection } from './GatesSection';
 import { GradeSection } from './GradeSection';
 import { LifeSection } from './LifeSection';
@@ -20,6 +21,7 @@ export function ToolFleetPanel({ caseId }: { caseId: string }) {
       <PlanSection plan={v.plan} />
       <GatesSection gates={v.gates} />
       <ApprovalSection approval={v.approval ?? null} />
+      <FollowThroughSection followThrough={v.followThrough ?? null} />
       <QuarantineCard caseId={caseId} q={v.quarantine ?? null} mayRelease={can('releaseQuarantine')} />
     </Panel>
   );

@@ -62,7 +62,9 @@ def send(iid: int, resend: bool = False) -> str:
             return _hold(s, ins, resend)
         prev = _earlier(s, ins)
         cfg = outbound.settings(s, ins["system"])  # the target's outbound workflow published here; {}: none (the demo)
-        kind = writers.operation_for(ins["kind"], cfg.get("operation"))
+        kind = writers.write_kind(
+            c, writers.operation_for(ins["kind"], cfg.get("operation"))
+        )  # a template's own writer (P9-3.17)
         writer = writers.WRITERS.get(kind)
         if refusal := _refusal(s, ins["system"], writer is not None):
             _update(s, iid, status="failed", last_error=refusal)

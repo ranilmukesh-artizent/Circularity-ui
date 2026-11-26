@@ -123,6 +123,11 @@ STEP_TPL: dict[str, list[str]] = {
     "all_fix": ["repair", "transport", "finance"],
     "all_upgrade": ["sale", "transport", "takeback", "credit", "finance"],
 }
+# plan 9 P9-3.17: the executing system of a step per template (the other steps keep EX_STEP's). A tool-fleet re-issue goes to the
+# fleet contract system and a harvest to the parts system; an industrial case never reads this
+TEMPLATE_SYS: dict[str, dict[str, str]] = {
+    "tool_fleet": {"lease": "Fleet contract system · re-issue", "partsxfer": "Parts and service system · issue parts"},
+}
 # The demo's ACK_NOTE: notes for steps without a kind (none are created any more; kept for stored plans)
 ACK_NOTE = {
     "Refurbishment work order": "repaired, tested and certified; QMS record updated",
@@ -148,14 +153,16 @@ def ex_kinds(r: dict) -> list[str]:
     return k
 
 
-def steps_for(r: dict, done: int = 0) -> list[dict]:
-    """The demo's stepsFor(r, done): steps before `done` are done, `done` is active (-1: every step still to do)."""
+def steps_for(r: dict, done: int = 0, template: str | None = None) -> list[dict]:
+    """The demo's stepsFor(r, done): steps before `done` are done, `done` is active (-1: every step still to do). A template
+    with its own executing systems (`TEMPLATE_SYS`) names them on its steps."""
+    sys_of = TEMPLATE_SYS.get(template or "") or {}
     lines, to = r.get("stepLines") or {}, r.get("shipTo")  # a service ticket: the lines each step covers, the site (P9-4.9)
     return [
         {
             "k": k,
             "label": EX_STEP[k]["label"],
-            "sys": EX_STEP[k]["sys"],
+            "sys": sys_of.get(k) or EX_STEP[k]["sys"],
             "state": "done" if i < done else "active" if i == done else "todo",
             "ack": None,
             **({"lines": list(lines[k])} if k in lines else {}),
