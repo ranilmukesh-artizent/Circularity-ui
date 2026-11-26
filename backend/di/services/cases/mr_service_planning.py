@@ -70,7 +70,7 @@ def _day(v: Any) -> date | None:
 
 
 def pick_week(forecast: Sequence[Mapping[str, Any]], as_of: date, due: date) -> tuple[date, int] | None:
-    """(start, requests) of the quietest week of the forecast that is not over on `as_of` and starts by `due`; None without one."""
+    """(start, requests) of the quietest forecast week not over on `as_of` and starting by `due`; None without one."""
     weeks = []
     for w in forecast:
         start = _day(w.get("week_start"))
@@ -88,7 +88,9 @@ def _label(d: date) -> str:
 
 def _due(cond: Mapping[str, Any], as_of: date, window_days: int) -> tuple[str, date] | None:
     """The earliest of the two dates that falls in [as_of, as_of + window_days], with its kind."""
-    hits = [(d, k) for k, f in KINDS if (d := _day(cond.get(f))) is not None and as_of <= d <= as_of + timedelta(days=window_days)]
+    hits = [
+        (d, k) for k, f in KINDS if (d := _day(cond.get(f))) is not None and as_of <= d <= as_of + timedelta(days=window_days)
+    ]
     if not hits:
         return None
     d, k = min(hits)

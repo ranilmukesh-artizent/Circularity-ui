@@ -74,7 +74,9 @@ def alerts(units: Iterable[Unit], reqs: Iterable[Req], idle_days_gt: int, role: 
     idle = [u for u in units if u.idle_days > idle_days_gt]
     out: list[Alert] = []
     for req in sorted(reqs, key=lambda r: (r.model, r.region, r.req_id)):
-        here = sorted((u for u in idle if u.model == req.model and u.region != req.region), key=lambda u: (-u.idle_days, u.serial))
+        here = sorted(
+            (u for u in idle if u.model == req.model and u.region != req.region), key=lambda u: (-u.idle_days, u.serial)
+        )
         for region in sorted({u.region for u in here}):
             mine = [u for u in here if u.region == region]
             pool = mine[: max(0, req.quantity)]
@@ -101,7 +103,9 @@ def read(s: Session, orgs: Sequence[str]) -> tuple[list[Unit], list[Req]]:
     for key, d in s.execute(text("SELECT key, data FROM canonical WHERE model = 'asset' AND data ? 'idle_days'")):
         model = d.get("part_number") or d.get("model")
         if _org_match(key, orgs) and d.get("region") and model:
-            units.append(Unit(str(d.get("serial") or key.partition(":")[2]), str(model), str(d["region"]), int(float(d["idle_days"]))))
+            units.append(
+                Unit(str(d.get("serial") or key.partition(":")[2]), str(model), str(d["region"]), int(float(d["idle_days"])))
+            )
     reqs: list[Req] = []
     for key, d in s.execute(text("SELECT key, data FROM canonical WHERE model = 'demand' AND data ? 'requisitions'")):
         if not _org_match(key, orgs):

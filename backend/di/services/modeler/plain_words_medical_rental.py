@@ -2,9 +2,9 @@
 
 The routes by the words a rental fleet director uses, the age of a device as the asset system serves it (`asset.age_years`,
 years from the in-service date) and the words of the work item a retirement approval opens. "Retiring a device younger
-than 5 years needs approval from clinical engineering" becomes the guardrail `AP-MR-RETIRE5`: the retire route, `asset.age_years < 5`, approved by
-`clinical_engineering` (a role of the pack). The roles are the pack's; nothing else is named here. Compliance wording the pack
-holds is reviewed by Kinective's Legal team before it is relied on.
+than 5 years needs approval from clinical engineering" becomes the guardrail `AP-MR-RETIRE5`: the retire route,
+`asset.age_years < 5`, approved by `clinical_engineering` (a role of the pack). The roles are the pack's; nothing else is
+named here. Compliance wording the pack holds is reviewed by Kinective's Legal team before it is relied on.
 
 `history_items` adapts the sample history's items (their facts are text under short names) to what `plain_guardrail.would_change`
 reads (the route taken, the facts as flat dotted numbers).

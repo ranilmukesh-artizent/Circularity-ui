@@ -32,7 +32,7 @@ ACTIONS.setdefault(
     ActionDef(
         id="telecom.crossRegion",
         title="Cross-region transfer alert",
-        desc="Idle units in one region while another buys new, with a transfer per unit and the rule suggestion. Changes nothing.",
+        desc="Idle units in one region while another buys new, a transfer per unit and the rule suggestion. Changes nothing.",
         risk="read",
         perm=None,
         scope="none",

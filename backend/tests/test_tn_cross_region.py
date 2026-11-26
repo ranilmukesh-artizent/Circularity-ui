@@ -34,7 +34,12 @@ def _clean() -> None:
         for p in CELLS:
             conn.execute(text("DELETE FROM provenance WHERE model <> 'part' AND key LIKE :p"), {"p": p})
             conn.execute(text("DELETE FROM canonical WHERE model <> 'part' AND key LIKE :p"), {"p": p})
-        conn.execute(text("DELETE FROM decision_flow_version WHERE flow_id IN (SELECT id FROM decision_flow WHERE template_key = 'telecom_network')"))
+        conn.execute(
+            text(
+                "DELETE FROM decision_flow_version WHERE flow_id IN "
+                "(SELECT id FROM decision_flow WHERE template_key = 'telecom_network')"
+            )
+        )
         conn.execute(text("DELETE FROM decision_flow WHERE template_key = 'telecom_network'"))
 
 
@@ -61,8 +66,14 @@ def _idle(n: int, region: str, days: int = 45, model: str = "PSU-48", tag: str =
 
 
 def _req(region: str, model: str, req_id: str, qty: int, status: str = "open") -> None:
-    _write("requisitions", {"region": region, "model": model,
-                            "requisitions": [{"reqId": req_id, "quantity": qty, "status": status, "createdAt": "2026-09-28"}]})
+    _write(
+        "requisitions",
+        {
+            "region": region,
+            "model": model,
+            "requisitions": [{"reqId": req_id, "quantity": qty, "status": status, "createdAt": "2026-09-28"}],
+        },
+    )
 
 
 def _flow() -> int:
@@ -75,7 +86,8 @@ def _flow() -> int:
             ),
             {"o": ORG, "g": json.dumps(g)},
         ).scalar_one()
-        s.execute(text("INSERT INTO decision_flow_version (flow_id, ver, graph, published_by) VALUES (:f, 1, CAST(:g AS jsonb), 'system')"),
+        s.execute(text("INSERT INTO decision_flow_version (flow_id, ver, graph, published_by) "
+                       "VALUES (:f, 1, CAST(:g AS jsonb), 'system')"),
                   {"f": fid, "g": json.dumps(g)})  # fmt: skip
         s.commit()
     return fid

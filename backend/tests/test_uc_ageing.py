@@ -55,8 +55,10 @@ def stock():
             k = vin_key(ORG, vin(n))
             sale = EV_DAYS if seg == "ev_crossover" else TRUCK_DAYS if seg == "truck" else {"LOT-N": 34, "LOT-C": 21, "LOT-S": 15}
             facts += [
-                store.Fact("asset", k, "lot_id", lot), store.Fact("asset", k, "days_on_lot", days),
-                store.Fact("asset", k, "segment", seg), store.Fact("market", k, "lot_days_to_sale", sale),
+                store.Fact("asset", k, "lot_id", lot),
+                store.Fact("asset", k, "days_on_lot", days),
+                store.Fact("asset", k, "segment", seg),
+                store.Fact("market", k, "lot_days_to_sale", sale),
                 store.Fact("market", k, "lot_avg_price", PRICE),
             ]
         store.apply(s, SID, facts)
@@ -96,7 +98,9 @@ def test_uc_19_alert_one_model_one_lot(stock):
         s.commit()
     assert [(g["title"], g["n"]) for g in groups] == [("EV crossovers ageing at North lot", 5)]
     with SessionLocal() as s:
-        rows = s.execute(text("SELECT title, owner_role, action, kind FROM work_item WHERE type = 'AL-UC-AGEING' AND status = 'open'")).all()
+        rows = s.execute(
+            text("SELECT title, owner_role, action, kind FROM work_item WHERE type = 'AL-UC-AGEING' AND status = 'open'")
+        ).all()
     assert [tuple(r) for r in rows] == [
         ("EV crossovers ageing at North lot", "Planner", "Move cars to the lot where demand is higher", "exception")
     ]

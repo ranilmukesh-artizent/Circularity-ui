@@ -13,7 +13,6 @@ import di.services.actions.connections  # registers action handlers (registry.*,
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
 import di.services.actions.device_learning  # registers action handlers (device.ageingSuggestions; plan 9 P9-6.13)
-import di.services.actions.tn_cross_region  # registers action handlers (telecom.crossRegion; plan 9 P9-10.15)
 import di.services.actions.device_lots  # registers action handlers (lot.build, propose, approve, reject, list; plan 9 P9-6.11)
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.evidence_refresh  # registers evidence.refresh (re-run a recall check; plan 9 P9-9.9)
@@ -40,6 +39,7 @@ import di.services.actions.rollout  # registers action handlers (rollout.*: cana
 import di.services.actions.service_booking  # registers service.book (rental device service booking; plan 9 P9-11.7)
 import di.services.actions.service_desk  # registers serviceDesk.computeAccuracy (held-out repair accuracy; plan 9 P9-4.5)
 import di.services.actions.standing_policy  # registers action handlers (standingPolicy.*, policy approval; plan 9)
+import di.services.actions.tn_cross_region  # registers action handlers (telecom.crossRegion; plan 9 P9-10.15)
 import di.services.actions.tool_quarantine  # registers recall.release (safety recall quarantine; plan 9)
 import di.services.actions.tools  # registers action handlers (tools.find: the tool search; plan 9)
 import di.services.actions.work  # registers action handlers (case.needInfo, work.resolve, work.assign; plan 9)
