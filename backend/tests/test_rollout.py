@@ -150,7 +150,7 @@ def test_x_06_canary_share_and_region():
     canary = {c["id"] for c in fr if assign(c["id"], str(fid), r.salt, "FR", r) == "canary"}
     assert {c["id"] for c, g in zip(fr, got_fr, strict=True) if g == ("draft", "canary")} == canary
     assert all(g in (("draft", "canary"), (1, "control")) for g in got_fr)
-    assert 25 <= len(canary) <= 55 and len(canary) < 200
+    assert 20 <= len(canary) <= 60 and len(canary) < 200  # 20 % of 200, about 40; the salt varies per database (3.5 sd band)
     with SessionLocal() as s:
         counts = rollouts.arm_counts(s, fid)
         stored = s.execute(text("SELECT count(*) FROM rollout_assignment WHERE case_id LIKE 'FR%'")).scalar_one()
