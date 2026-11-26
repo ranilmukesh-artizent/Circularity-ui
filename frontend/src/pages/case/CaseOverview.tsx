@@ -15,6 +15,7 @@ import { ToolFleetPanel } from './toolfleet/ToolFleetPanel';
 import { UsedCarPanel } from './usedcars/UsedCarPanel';
 import { TelecomPanel } from './telecom/TelecomPanel';
 import { isTelecom, type TelecomCase } from './telecom/telecom';
+import { MedicalPanel } from './medical/MedicalPanel';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
@@ -126,6 +127,7 @@ export function Overview({ c }: { c: CaseRec }) {
           {c.template === 'tool_fleet' && ((c as CaseRec & { flow?: string }).flow === 'contract_refresh' ? <RefreshPanel caseId={id} /> : <ToolFleetPanel caseId={id} />)}
           {c.template === 'used_cars' && <UsedCarPanel c={c} />}
           {isTelecom(c) && <TelecomPanel c={c as TelecomCase} />}
+          {c.template === 'medical_rental' && <MedicalPanel c={c} />}
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>

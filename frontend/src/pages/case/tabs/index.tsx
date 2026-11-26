@@ -8,6 +8,7 @@ import * as X from './ExecuteTabs';
 import { CarChannelsTab, VehicleChecksTab } from '../usedcars/UsedCarTabs';
 import { isTelecom, type TelecomCase } from '../telecom/telecom';
 import { TelecomCloseTab, TelecomExportTab, TelecomSparesTab, TelecomUnitTab } from '../telecom/TelecomTabs';
+import { RentalChecksTab, RentalFollowTab } from '../medical/MedicalTabs';
 import { BatchTab, CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
@@ -35,6 +36,8 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
         : [];
       const car: TabDef[] = c.template === 'used_cars' ? [['vehicle', 'Vehicle checks', VehicleChecksTab]] : []; // title, odometer, recall (gap 7)
       return [...car, ...extra, ...early];
+      const rental: TabDef[] = c.template === 'medical_rental' ? [['rentalchecks', 'Rental checks', RentalChecksTab]] : []; // decontamination, certification (gap 7)
+      return [...rental, ...extra, ...early];
     }
     case 6: return [
       ...(c.serviceDesk ? [['ticket', 'Ticket', TicketTab] as TabDef] : []), // a service ticket starts with its Ticket tab (P9-4.3)
@@ -45,6 +48,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ...(c.device?.channels ? [['channels', 'Channels', ChannelsTab] as TabDef] : []), // a device's price per channel (P9-6.10)
       ...(c.template === 'used_cars' ? [['carchannels', 'Channels', CarChannelsTab] as TabDef] : []), // a used car's channels (gap 7)
       ...(isTelecom(c) ? [['tnexport', 'Export control', TelecomExportTab] as TabDef, ['tnspares', 'Spares before new', TelecomSparesTab] as TabDef] : []), // telecom pack
+      ...(c.template === 'medical_rental' ? [['rentalfollow', 'Follow-through', RentalFollowTab] as TabDef] : []), // repair approval, steps, write-off (gap 7)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],
