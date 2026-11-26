@@ -500,6 +500,37 @@
    "fields": [
     "qty"
    ]
+  },
+  {
+   "key": "listChannel",
+   "label": "Listed on",
+   "kind": "set",
+   "values": [
+    "buynow",
+    "offers",
+    "auction"
+   ],
+   "fields": [
+    "valuer.inputs.listing.channel"
+   ]
+  },
+  {
+   "key": "listDaysMin",
+   "label": "Days listed ≥",
+   "kind": "min",
+   "values": [],
+   "fields": [
+    "valuer.inputs.listing.days"
+   ]
+  },
+  {
+   "key": "offersMax",
+   "label": "Offers at most",
+   "kind": "max",
+   "values": [],
+   "fields": [
+    "valuer.inputs.listing.offers_under"
+   ]
   }
  ],
  "actors": [
@@ -549,6 +580,28 @@
    {
     "key": "qtyMin",
     "fmt": "lots of {}+ units",
+    "joiner": "",
+    "words": {}
+   },
+   {
+    "key": "listChannel",
+    "fmt": "listed on {}",
+    "joiner": " or ",
+    "words": {
+     "buynow": "Buy Now",
+     "offers": "Offers",
+     "auction": "Auction"
+    }
+   },
+   {
+    "key": "listDaysMin",
+    "fmt": "{}+ days listed",
+    "joiner": "",
+    "words": {}
+   },
+   {
+    "key": "offersMax",
+    "fmt": "at most {} offers",
     "joiner": "",
     "words": {}
    }
@@ -647,6 +700,16 @@
     "auction",
     "wholesale"
    ],
+   "ageing": {
+    "offers_to_auction_days": 14,
+    "offers_choices": [
+     7,
+     10,
+     14,
+     21
+    ],
+    "buynow_to_offers_days": 21
+   },
    "dcn": {
     "buynow": "Buy Now",
     "offers": "Offers",

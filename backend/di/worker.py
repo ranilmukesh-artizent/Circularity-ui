@@ -335,6 +335,31 @@ def _agent_autostart(payload: dict[str, Any]) -> None:
         s.commit()
 
 
+@handler("device.ageing")
+def _device_ageing(payload: dict[str, Any]) -> None:
+    """The daily ageing pass (plan 9, P9-6.13): the listed devices whose case waits for re-evaluation are valued again with
+    the days they have been listed, as the valuation stage agent (di.services.device.ageing.reevaluate_listed).
+    `payload.today` (an ISO date) is for tests; the day is the workspace clock's."""
+    from di.core import clock
+    from di.services.device import ageing
+
+    today = date.fromisoformat(payload["today"]) if payload.get("today") else clock.now().date()
+    with SessionLocal() as s:
+        done = ageing.reevaluate_listed(s, today, get_settings().autopilot_agent)
+        s.commit()
+    log.info("device ageing %s: %s", today, done or "no listed case waits")
+
+
+def enqueue_device_ageing() -> None:
+    """Queue the day's `device.ageing` job (once per simulated day: the periodic step runs every 30 s; the dedupe key holds)."""
+    from di.core import clock
+
+    today = clock.now().date()
+    with SessionLocal() as s:
+        jobs.enqueue(s, "device.ageing", {}, priority=200, dedupe_key=f"device.ageing:{today.isoformat()}")
+        s.commit()
+
+
 @handler("case.gateRecheck")
 def _gate_recheck(payload: dict[str, Any]) -> None:
     """Gate evidence landed for an asset (a `compliance` fact, canonical.apply): the cases held for it are valued again
@@ -470,6 +495,10 @@ def periodic() -> None:
         enqueue_accuracy()
     except Exception:
         log.exception("queueing the repair accuracy job failed")
+    try:
+        enqueue_device_ageing()
+    except Exception:
+        log.exception("queueing the device ageing job failed")
     tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
     try:
         with SessionLocal() as s:

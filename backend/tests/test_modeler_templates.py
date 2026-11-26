@@ -43,8 +43,11 @@ def test_device_pack_matches_golden():
         (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
     ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
-    assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
-    assert [d.kind for d in t.dims] == ["set", "set", "set", "min", "min"]
+    # the listing dims (listChannel, listDaysMin, offersMax: ageing rules, P9-6.13) are a plan 9 addition, not in the demo
+    ageing = ("listChannel", "listDaysMin", "offersMax")
+    dims = [d for d in t.dims if d.key not in ageing]
+    assert [(d.key, d.label, list(d.values) or None) for d in dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
+    assert [d.kind for d in dims] == ["set", "set", "set", "min", "min"]
     gr_d3 = next(x for x in t.guardrails if x.id == "GR-D3")
     assert {f.path for f in gr_d3.forbids} == {"buynow", "market"}
 

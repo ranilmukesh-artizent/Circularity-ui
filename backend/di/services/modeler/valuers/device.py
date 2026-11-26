@@ -209,7 +209,23 @@ def in_scope(lot: Lot, s: dict[str, Any]) -> bool:  # dIn (2345)
             return False
     if s.get("dohMin") not in (None, "") and lot["doh"] < float(s["dohMin"]):
         return False
-    return not (s.get("qtyMin") not in (None, "") and lot["qty"] < float(s["qtyMin"]))
+    if s.get("qtyMin") not in (None, "") and lot["qty"] < float(s["qtyMin"]):
+        return False
+    return _listing_in_scope(lot, s)
+
+
+def _listing_in_scope(lot: Lot, s: dict[str, Any]) -> bool:
+    """The scope of a listed device (P9-6.13): the channel it is listed on, the days listed (`listDaysMin`, at or above) and
+    the offers (`offersMax`, at most; `offers_under` is the offers less one, so the dim's "below" reads "at most"). A lot with
+    no listing is out of any scope that names one of these."""
+    got = ((lot.get("inputs") or {}).get("listing")) or {}
+    if s.get("listChannel") and got.get("channel") not in s["listChannel"]:
+        return False
+    if s.get("listDaysMin") not in (None, "") and (got.get("days") is None or got["days"] < float(s["listDaysMin"])):
+        return False
+    if s.get("offersMax") in (None, ""):
+        return True
+    return got.get("offers_under") is not None and got["offers_under"] < float(s["offersMax"])
 
 
 def channels_for(lot: Lot) -> list[str]:

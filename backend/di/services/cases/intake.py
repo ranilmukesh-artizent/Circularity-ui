@@ -609,6 +609,7 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             device_verify.refresh(s, c)
             device_lock.refresh(s, c, pack)  # and the registry check, its date and age (P9-6.6)
             device_wipe.refresh(s, c)  # and the wipe certificate (P9-6.7)
+            device_inputs.refresh_listing(s, c, clock.now().date())  # and the days the device is listed (P9-6.13)
     decide.write_back(c, decide.decide_case(c, pack, fv, session=s))
     if pack.key != "industrial":  # custody and the system of record (plan 9, P9-1.10)
         if was_held and c.get("gateHold") is None:
