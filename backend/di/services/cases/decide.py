@@ -26,7 +26,11 @@ without named demand), `device` the channel scores, `standard` the pack's own va
 I-21, where a code plug-in registers too). The valuers read the case as it was before a hold set its stage.
 
 A case is a stored case (a `str` id, loaded with the session) or a Mapping: a case document, or a valuer-shaped sample
-(the Modeler's sample queue). The case given is never changed; callers set the result on their own copy with `write_back`.
+(the Modeler's sample queue). A plug-in that holds a decision for a person (`APPROVALS`, P9-11.9: AP-MR-REPAIR) gives
+failed approval checks in `Decision.approvals`; `write_back` sets them as the case's `approvalHolds`, which the hold
+policy (I-10, through the stage context) and the standing policy (I-11) read. A shortcut to a channel (`rerent`) takes its
+best eligible route (`rerent:<id>`).
+The case given is never changed; callers set the result on their own copy with `write_back`.
 Never does: write a database row, approve anything, or move a stage.
 """
 
@@ -65,7 +69,7 @@ from di.services.modeler.gates import (
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
-from di.services.modeler.valuers import VALUERS, device, fleet_evidence, kind_of, service_desk, tool_fleet, used_cars
+from di.services.modeler.valuers import APPROVALS, VALUERS, device, fleet_evidence, kind_of, service_desk, tool_fleet, used_cars
 from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
@@ -105,6 +109,11 @@ class Decision:
     ticket: Mapping[str, Any] | None = None  # a service ticket's options, holds and inputs (P9-4.6)
     approvals: list[dict[str, Any]] = field(default_factory=list)  # the pack's approval limits on the case (P9-9.11)
     evidence: list[str] = field(default_factory=list)  # the plain facts behind the recommendation (P9-9.11)
+
+    @property
+    def approval_holds(self) -> list[dict[str, Any]]:
+        """The approval checks that hold the decision for a person (a used car's recon limit, AP-MR-REPAIR, P9-11.9)."""
+        return [a for a in self.approvals if not a.get("passed", True)]
 
 
 class WhatIfPlanner:
@@ -321,9 +330,11 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     routes = to_routes(t, values)
     _decorate(t, routes)
     best = best_of(values)
-    if kind != "used_cars":
-        return _Valued(routes, best["k"] if best else None)
-    return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
+    if kind == "used_cars":
+        return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
+    approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
+    holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)
+    return _Valued(routes, best["k"] if best else None, approvals=[dict(h) | {"passed": False} for h in holds], facts=facts)
 
 
 def _unit_pack(
@@ -353,9 +364,15 @@ def _industrial(c: dict[str, Any], session: Session | None) -> list[Route]:
 
 
 def _shortcut(diversions: Sequence[Diversion], routes: list[Route]) -> str | None:
-    """The route of the first shortcut whose route is still eligible."""
-    open_ids = {r["id"] for r in routes if not r["excluded"]}
-    return next((d.to for d in diversions if d.kind == "shortcut" and d.to in open_ids), None)
+    """The route of the first shortcut whose route is still eligible. A shortcut to a channel (`rerent`) takes the best eligible
+    route of it (`rerent:<request>`, `retail:<lot>`), as a business rule on the channel does (P9-11.9)."""
+    open_ids = [r["id"] for r in routes if not r["excluded"]]
+    for d in diversions:
+        if d.kind == "shortcut":
+            hit = next((i for i in open_ids if i == d.to or i.split(":", 1)[0] == d.to), None)
+            if hit is not None:
+                return hit
+    return None
 
 
 LOW_LIFE_HELD = frozenset({"release", "redeploy"})  # re-issue and pool: a Low life confidence leaves them to a person (P9-3.9)

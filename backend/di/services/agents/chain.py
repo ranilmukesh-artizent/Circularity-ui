@@ -140,6 +140,7 @@ def stage_context(defn: StageDef, mod: StageModule, st: dict[str, Any], case: Ma
     return StageContext(
         stage=defn.id, autonomy=defn.autonomy, confidence=mod.confidence(st, case), threshold=defn.threshold,
         value=case_value(case), value_limit=defn.value_limit, bulk_limit=defn.bulk_limit,
+        guardrail_holds=[str(h["id"]) for h in case.get("approvalHolds") or [] if isinstance(h, Mapping)],  # P9-11.9
         model_concerns=[t for texts in (st.get("concerns") or {}).values() for t in texts],
         value_holds=[
             str(h["reason"]) for h in case.get("approvalHolds") or [] if isinstance(h, Mapping) and h.get("kind") == "value"

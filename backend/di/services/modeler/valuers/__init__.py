@@ -7,7 +7,7 @@ Plan 9 (registry entry I-21): a pack whose routes need code registers a plug-in 
 standard valuer (`standard.py`, the pack's own value lines, no code) is `VALUERS["standard"]`.
 """
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
@@ -17,12 +17,18 @@ from di.services.modeler.valuers.tool_fleet import PathValue
 
 ValuerFn = Callable[[Mapping[str, Any], Pack, datetime | None], list[PathValue]]
 
+ApprovalFn = Callable[[Mapping[str, Any], Pack, Sequence[PathValue]], list[dict[str, Any]]]
+
 VALUERS: dict[str, ValuerFn] = {
     "standard": standard.value_routes,
     "used_cars": used_cars.value_routes,
     "telecom_network": telecom_network.value_routes,
     "medical_rental": medical_rental.value_routes,
 }
+
+# A plug-in that holds a decision for a person registers its guardrail check here (P9-11.9): given the facts, the pack and the
+# values it priced, the approval items (`{id, owner, reason, ...}`) the decision is held with. `decide_case` reads this table.
+APPROVALS: dict[str, ApprovalFn] = {"medical_rental": medical_rental.approval_holds}
 
 
 def kind_of(pack: Pack) -> str:
