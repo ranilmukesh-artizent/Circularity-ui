@@ -70,7 +70,7 @@ function ModelerNode({ data, selected }: NodeProps) {
   const cls = ['mdl-node', 't-' + n.t, selected && 'sel', bad && 'bad', proposed && 'prop rev', resolved && 'rev-done'];
   return (
     <div className={cls.filter(Boolean).join(' ')} data-node={n.id} title={returned ? 'Returned: ' + returned : undefined}
-      role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => e.key === 'Enter' && pick(n.id)}>
+      role="button" tabIndex={0} aria-pressed={!!selected} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(n.id); } }}>
       {n.t !== 'trigger' && <Handle type="target" position={Position.Left} className="port in mdl-port" />}
       <Handle type="source" position={Position.Right} className="port out mdl-port" />
       {(proposed || resolved) && (
@@ -163,9 +163,9 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, revision = null,
 
   return (
     <div className="mdl-canvas" role="group" aria-label="Decision flow canvas">
-      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap
+      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap minimapSize={[160, 100]} gap={24} openZoom={1}
         nodeColor={(id) => (by.get(id)?.lock ? 'var(--muted)' : 'var(--ink2)')}
-        label="Decision flow canvas. Select a step, then use arrow keys to move it or Delete to remove it."
+        label="Decision flow canvas. Tab to a step and press Enter or Space to select it, then use arrow keys to move it or Delete to remove it."
         onSelect={select} onDelete={remove} onConnect={onConnect} onMove={moveTo}
         onNudge={(id, dx, dy) => { const n = by.get(id); if (n) moveTo(id, n.x + dx, n.y + dy); }} />
     </div>

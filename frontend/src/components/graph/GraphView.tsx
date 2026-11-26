@@ -9,7 +9,7 @@ import '@xyflow/react/dist/base.css';
 import './graph.css';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
-  Background, BackgroundVariant, Controls, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow,
+  Background, BackgroundVariant, ControlButton, Controls, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow,
   type NodeChange, type NodePositionChange, type NodeTypes,
 } from '@xyflow/react';
 import { toRfEdges, toRfNodes, type GEdge, type GNode } from './rfModel';
@@ -39,6 +39,15 @@ export interface GraphViewProps {
   onBlocked?: (id: string) => void;
   readOnly?: boolean;
   minimap?: boolean;
+  /** The minimap's size in px (default 200 x 150). */
+  minimapSize?: [number, number];
+  /** Dot grid spacing in px (default 20; the Modeler uses 24). */
+  gap?: number;
+  /**
+   * The lowest zoom the first view may open at (default: none, the whole graph is fitted). When the whole graph would
+   * need less, it opens at this zoom from the top left instead, so labels stay legible; the fit control still shows all.
+   */
+  openZoom?: number;
   nodeColor?: (id: string) => string;
   apiRef?: MutableRefObject<GraphApi | null>;
   label: string;
@@ -51,6 +60,7 @@ function Inner(p: GraphViewProps) {
   const box = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<Record<string, { x: number; y: number }>>({}); // positions while a drag is in progress
   const blocked = useRef(false);
+  const [mapOpen, setMapOpen] = useState(true);
   const latest = useRef(p);
   latest.current = p;
 
@@ -82,6 +92,37 @@ function Inner(p: GraphViewProps) {
     return () => document.removeEventListener('keydown', key);
   }, []);
 
+  // Enter or Space on a focused node selects it (the node's own div is the tab stop; a click does the same)
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    function nodeKey(e: KeyboardEvent) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const t = e.target as Element;
+      if (t.getAttribute('role') !== 'button') return;
+      const id = t.closest('.react-flow__node')?.getAttribute('data-id');
+      if (!id) return;
+      e.preventDefault();
+      latest.current.onSelect({ t: 'n', id });
+    }
+    el.addEventListener('keydown', nodeKey);
+    return () => el.removeEventListener('keydown', nodeKey);
+  }, []);
+
+  /** Open at `openZoom` at least: fit when the graph fits there, else anchor its top left (padding 24) at that zoom. */
+  function openView() {
+    const z = p.openZoom;
+    const list = rf.getNodes();
+    if (!z || !list.length) return;
+    const b = rf.getNodesBounds(list);
+    const el = box.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const fit = Math.min((width - 48) / b.width, (height - 48) / b.height);
+    if (fit >= z) { void rf.fitView({ padding: 0.08, maxZoom: 1 }); return; }
+    void rf.setViewport({ x: 24 - b.x * z, y: 24 - b.y * z, zoom: z });
+  }
+
   const nodes = toRfNodes(p.nodes, live, !!p.readOnly);
   const edges = toRfEdges(p.edges);
   const by = new Map(p.nodes.map((n) => [n.id, n]));
@@ -101,12 +142,18 @@ function Inner(p: GraphViewProps) {
         onConnect={(c) => { if (c.source && c.target) p.onConnect(c.source, c.target); }}
         nodesDraggable={!p.readOnly} nodesConnectable={!p.readOnly} nodesFocusable={false} edgesFocusable={false}
         deleteKeyCode={null} disableKeyboardA11y selectionKeyCode={null}
-        fitView fitViewOptions={{ padding: 0.15, maxZoom: 1 }} minZoom={0.2} maxZoom={1.6} zoomOnDoubleClick={false}
+        fitView={!p.openZoom} onInit={p.openZoom ? openView : undefined} fitViewOptions={{ padding: p.openZoom ? 0.08 : 0.15, maxZoom: 1 }} minZoom={0.2} maxZoom={1.6} zoomOnDoubleClick={false}
         aria-label={p.label}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--line)" />
-        <Controls showInteractive={false} position="bottom-left" />
-        {p.minimap && <MiniMap pannable zoomable nodeBorderRadius={8} nodeColor={(n) => p.nodeColor?.(n.id) ?? 'var(--mv-line)'} />}
+        <Background variant={BackgroundVariant.Dots} gap={p.gap ?? 20} size={1} color="var(--line)" />
+        <Controls showInteractive={false} position="bottom-left">
+          {p.minimap && p.minimapSize && (
+            <ControlButton onClick={() => setMapOpen((o) => !o)} aria-label={mapOpen ? 'Hide the minimap' : 'Show the minimap'} aria-pressed={mapOpen} title={mapOpen ? 'Hide the minimap' : 'Show the minimap'}>
+              <svg viewBox="0 0 24 24" style={{ fill: 'none' }} stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="12" y="12" width="6" height="6" /></svg>
+            </ControlButton>
+          )}
+        </Controls>
+        {p.minimap && mapOpen && <MiniMap pannable zoomable nodeBorderRadius={4} style={p.minimapSize ? { width: p.minimapSize[0], height: p.minimapSize[1] } : undefined} nodeColor={(n) => p.nodeColor?.(n.id) ?? 'var(--mv-line)'} />}
       </ReactFlow>
     </div>
   );
