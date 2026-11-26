@@ -21,6 +21,11 @@ history; Low with no telematics or a reading 7 days old or more (GR-13 failed); 
 confidence limits, `table_version`, `rule_version`): illustrative numbers owned by Quality, changed only through the overlay.
 The result records its inputs, so a replay (phase 7) runs the same numbers.
 
+`disagreement(grade, life, damage_code)` (P9-3.11, TF-11) compares the wear index with the workbench grade: grade A or B
+with WTI >= 60, or grade D with WTI <= 20 and no damage code, is a disagreement naming each component whose
+consumed share is >= 60% (A or B) or <= 20% (D).
+An estimated grade never triggers it. The text is computed from those numbers, never written by a model.
+
 Never does: read the database or the clock (the caller passes the facts and the age of the reading), learn (P9-3.10 adds the
 model behind it) or write text: no model step, so no AgentLoop. Implements no registry entry.
 """
@@ -28,7 +33,10 @@ model behind it) or write text: no model step, so no AgentLoop. Implements no re
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from di.services.modeler.valuers.tool_inputs import GradeView
 
 Confidence = Literal["High", "Medium", "Low"]
 
@@ -217,3 +225,42 @@ def evaluate(inp: LifeInputs, params: Mapping[str, Any]) -> LifeResult:
         table_version=str(params.get("table_version") or ""),
         rule_version=str(params.get("rule_version") or ""),
     )
+
+
+# ---------------------------------------------------------------- telematics against the workbench grade (P9-3.11)
+WTI_HIGH = 60  # a grade A or B tool at or above this wear index disagrees with its telematics
+WTI_LOW = 20  # a grade D tool at or below this wear index (and no damage code) disagrees
+COMPONENT_HIGH = 60  # consumed share (%) that names a component in the A or B case
+COMPONENT_LOW = 20  # consumed share (%) that names a component in the D case
+
+
+@dataclass(frozen=True)
+class Disagreement:
+    text: str
+    components: list[str]
+
+
+def life_from_dict(d: Mapping[str, Any]) -> LifeResult:
+    """A `LifeResult` from its dict form (what the case keeps in `life`: `dataclasses.asdict`, range as a list)."""
+    rng = d.get("range")
+    return LifeResult(
+        wti=int(d["wti"]), rul_tool=int(d["rul_tool"]), rul_tool_hours=float(d["rul_tool_hours"]), weakest=str(d["weakest"]),
+        per_component=[ComponentLife(**c) for c in d.get("per_component") or []], confidence=d["confidence"],
+        range=(int(rng[0]), int(rng[1])) if rng else None, inputs=dict(d.get("inputs") or {}),
+        table_version=str(d.get("table_version") or ""), rule_version=str(d.get("rule_version") or ""),
+    )  # fmt: skip
+
+
+def disagreement(grade: "GradeView", life: LifeResult, damage_code: bool) -> Disagreement | None:
+    """The workbench grade and the wear index disagree (module docstring), else None. An estimated grade never does."""
+    if grade.source != "workbench":
+        return None
+    if grade.grade in ("A", "B") and life.wti >= WTI_HIGH:
+        named = [c for c in life.per_component if c.consumed_pct >= COMPONENT_HIGH]
+    elif grade.grade == "D" and life.wti <= WTI_LOW and not damage_code:
+        named = [c for c in life.per_component if c.consumed_pct <= COMPONENT_LOW]
+    else:
+        return None
+    parts = ", ".join(f"{c.name} {c.consumed_pct}%" for c in named)
+    text = f"Telematics and inspection disagree: grade {grade.grade}, WTI {life.wti}" + (f" ({parts})" if parts else "")
+    return Disagreement(text, [c.name for c in named])

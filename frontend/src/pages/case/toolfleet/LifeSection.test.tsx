@@ -58,4 +58,15 @@ describe('LifeSection', () => {
   it('renders nothing for a case with no life result', () => {
     expect(render(null).innerHTML).toBe('');
   });
+  it('says when the telematics and the inspection disagree, naming the components', () => {
+    const text = 'Telematics and inspection disagree: grade A, WTI 65 (Motor armature 79%, Gearbox 63%, Piston and seal kit 61%)';
+    act(() => root.render(<LifeSection life={life()} disagreement={{ text, components: ['Motor armature', 'Gearbox', 'Piston and seal kit'] }} />));
+    const line = host.querySelector('[data-testid="tf-disagreement"]');
+    expect(line?.textContent).toContain(text);
+    expect(line?.textContent).toContain('Quality');
+  });
+  it('shows no disagreement line when they agree', () => {
+    act(() => root.render(<LifeSection life={life()} disagreement={null} />));
+    expect(host.querySelector('[data-testid="tf-disagreement"]')).toBeNull();
+  });
 });

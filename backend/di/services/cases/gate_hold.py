@@ -75,6 +75,7 @@ EXCEPTION_OF = {
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
+DISAGREEMENT_ITEM = "grade_wear_disagreement"  # the item a telematics-against-grade disagreement keeps open for Quality (P9-3.11)
 ADVISORY = {
     "G-TOOL-TEL": "stale_telematics",
     "G-MED-SVC": "EX-MR-CERT",
@@ -294,6 +295,7 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack, routes: Sequence[
     sync_quarantine(s, case, pack)
     _sync_advisory(s, case, pack)
     export_approval.sync(s, case, pack, routes)
+    sync_disagreement(s, case, pack)
     open_id = s.execute(
         text("SELECT id, type FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
         {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},
@@ -350,6 +352,34 @@ def sync_quarantine(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
         s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=QUARANTINE_ITEM,
         title=f"{cid} is quarantined: {failed['reason']}", cause=failed["reason"], action=action,
         owner_role=pack.roles.get(owner, owner), due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+    )  # fmt: skip
+
+
+def sync_disagreement(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
+    """One open `grade_wear_disagreement` item for Quality while the case has a `disagreement` (the workbench grade against the
+    wear index, `regrade.apply`, P9-3.11), none after: it closes with the outcome "released" when the two agree again. The text
+    is computed (the item's cause); the exception assistant words the draft for a person. Never resolves it. In the caller's
+    transaction."""
+    from di.services.cases import process
+
+    cid = str(case["id"])
+    dis = case.get("disagreement")
+    open_id = s.execute(
+        text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open' ORDER BY id LIMIT 1"),
+        {"c": cid, "t": DISAGREEMENT_ITEM},
+    ).scalar()
+    if not isinstance(dis, dict):
+        if open_id is not None:
+            process.close_item(s, int(open_id), "released", "system")
+        return
+    kind = next((t for t in pack.runtime.exception_types if t.id == DISAGREEMENT_ITEM), None)
+    if open_id is not None or kind is None:
+        return
+    process.open_item(
+        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=DISAGREEMENT_ITEM,
+        title=f"{cid}: {dis['text']}", cause=dis["text"], action=kind.action,
+        owner_role=pack.roles.get(kind.owner_role, kind.owner_role),
+        due_hours=pack.runtime.sla_hours.get("exception"), by="system",
     )  # fmt: skip
 
 

@@ -6,7 +6,8 @@
 
 The evidence is a mapping of evidence type to the newest record on file, or None (`workbench_grade`, from the repair log's
 `condition` record of the serial, di.services.cases.regrade; `life_inputs`, di.services.cases.life_evidence). Later tasks
-extend `valuer_case` (demand).
+extend `valuer_case`.
+    merge_demand(base, extra) -> dict                           a valuer `dem` with named orders added (P9-3.12)
 
 - **Life.** With telematics hours or a contract duration on file, `rul` and `partRul` are computed (`tool_life`, the pack's
   `valuer.params.life` table, PLM's rated life first) and replace the case's input values; the result is `life`. Without
@@ -89,6 +90,25 @@ def life_of(evidence: Mapping[str, Evidence | None], cls: str, now: datetime | N
         repair_history_complete=bool(v.get("repair_history_complete", True)), components=comps,
     )  # fmt: skip
     return tool_life.evaluate(inp, LIFE_PARAMS)
+
+
+def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str, Any]:
+    """`base` (a valuer `dem`: lease, so, bid lists, proj one or None, wo part -> list) with the named orders of `extra` added
+    (P9-3.12, the live named demand, `di.repositories.tool_demand`): one order for each id, the base's own first; a base `proj`
+    stays; `rcq` stays. Neither argument is changed."""
+    out = copy.deepcopy(dict(base))
+    for kind in ("lease", "so", "bid"):
+        have = out.setdefault(kind, [])
+        seen = {d["id"] for d in have}
+        have += [copy.deepcopy(d) for d in extra.get(kind) or [] if d["id"] not in seen]
+    if extra.get("proj") and not out.get("proj"):
+        out["proj"] = copy.deepcopy(extra["proj"])
+    wo = out.setdefault("wo", {})
+    for part, orders in (extra.get("wo") or {}).items():
+        have = wo.setdefault(part, [])
+        seen = {d["id"] for d in have}
+        have += [copy.deepcopy(d) for d in orders if d["id"] not in seen]
+    return out
 
 
 def valuer_case(base: Mapping[str, Any], evidence: Mapping[str, Evidence | None], now: datetime | None = None) -> dict[str, Any]:

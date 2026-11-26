@@ -1,13 +1,13 @@
 /** The Ticket tab of a service-desk case (P9-4.3, SD-01): ticket number, account code, market, site, loaner promised and one row
  * per tool (serial, family, age, fault or "unclear", cover) with the result of the contract right and recall checks. Starts
  * stage 6 of a service-desk case (tabs/index.tsx). */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { can } from '../../../api/session';
-import { FAULT_CODES, postFault, serviceDeskView } from '../../../api/serviceDesk';
+import { FAULT_CODES, postFault, serviceDeskView, serviceDeskWhatIf, type WhatIfResult } from '../../../api/serviceDesk';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { approvalLine, estimateLine, estimateStatus, expectedLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, ticketLine } from '../serviceDesk';
+import { approvalLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, ticketLine } from '../serviceDesk';
 import type { TabProps } from './index';
 
 export function TicketTab({ c }: TabProps) {
@@ -148,3 +148,75 @@ function PostFaultForm({ caseId, line, serial }: { caseId: string; line: number;
     </div>
   );
 }
+
+/** The Credit lever tab (P9-4.10, SD-09): sliders for the credit, the take-up, the repair cost and the wait; the options run again on the
+ * server with them (serviceDesk.whatIf, a read), and the expected margin of the upgrade is shown over credits from 0 to 40%, where it
+ * peaks and where the recommendation flips. Nothing is stored or sent; the numbers are the server's, never a model's. */
+export function CreditLeverTab({ c }: TabProps) {
+  const v = serviceDeskView(c);
+  const [credit, setCredit] = useState(10);
+  const [takeUp, setTakeUp] = useState<number | null>(null);
+  const [cost, setCost] = useState(100);
+  const [wait, setWait] = useState(0);
+  const [line, setLine] = useState(v?.lines[0]?.n ?? 1);
+  const [res, setRes] = useState<WhatIfResult | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    let live = true;
+    const t = setTimeout(() => {
+      serviceDeskWhatIf(c.id, { line, credit_pct: credit / 100, repair_cost_pct: cost, wait_days: wait, ...(takeUp === null ? {} : { take_up: takeUp / 100 }) }).then((r) => {
+        if (!live) return;
+        if (r.ok) { setRes(r.output); setErr(''); } else setErr(r.error.message);
+      });
+    }, 250);
+    return () => { live = false; clearTimeout(t); };
+  }, [c.id, line, credit, takeUp, cost, wait]);
+  if (!v) return null;
+  const r = res?.lines[0];
+  const slider = (label: string, value: number, set: (n: number) => void, min: number, max: number, unit: string) => (
+    <label style={{ display: 'block' }}>{label}: {value}{unit}{' '}
+      <input type="range" min={min} max={max} value={value} aria-label={label} onChange={(ev) => set(Number(ev.target.value))} />
+    </label>
+  );
+  return (
+    <div className="stpad" aria-label="Credit lever">
+      <p>Test a credit before offering it. Nothing is sent: this only recalculates the options.</p>
+      {v.lines.length > 1 && (
+        <label>Tool <select value={line} onChange={(ev) => setLine(Number(ev.target.value))} aria-label="Tool to test">
+          {v.lines.map((l) => <option key={l.n} value={l.n}>{l.n}. {l.serial}</option>)}
+        </select></label>
+      )}
+      {slider('Credit', credit, setCredit, 0, 40, '%')}
+      <label style={{ display: 'block' }}>
+        <input type="checkbox" checked={takeUp === null} onChange={(ev) => setTakeUp(ev.target.checked ? null : 50)} /> Use the take-up curve
+      </label>
+      {takeUp !== null && slider('Take-up', takeUp, setTakeUp, 0, 100, '%')}
+      {slider('Repair cost', cost, setCost, 80, 150, '% of the estimate')}
+      {slider('Extra wait', wait, setWait, 0, 30, ' days')}
+      {err && <p style={{ color: 'var(--bad)' }}>{err}</p>}
+      {r && (
+        <>
+          <p><b>{flipLine(r)}.</b> {r.flips ? 'This differs from the recommendation the case holds.' : 'The recommendation stays as the case holds it.'}</p>
+          <p>{peakLine(r)}</p>
+          {res && res.gr_c1.length > 0 && <p>{res.gr_c1[0].reason} A person must approve it.</p>}
+          <table aria-label={`Expected margin by credit for ${r.serial}`}>
+            <thead><tr><th>Credit</th><th>Take-up</th><th>Upgrade, expected margin</th><th>Fix and return</th><th>Best</th></tr></thead>
+            <tbody>
+              {r.curve.map((p) => (
+                <tr key={p.credit_pct} style={r.peak?.credit_pct === p.credit_pct ? { fontWeight: 600 } : undefined}>
+                  <td>{Math.round(p.credit_pct * 100)}%</td>
+                  <td>{p.take_up === null ? 'n/a' : `${Math.round(p.take_up * 100)}%`}</td>
+                  <td>{p.upgrade === null ? 'Not offered' : money(p.upgrade, r.currency)}</td>
+                  <td>{p.fix === null ? 'n/a' : money(p.fix, r.currency)}</td>
+                  <td>{p.best ? optionName(p.best) : 'None'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  );
+}
+
+const optionName = (k: string) => (k === 'fix' ? 'Fix and return' : k === 'swap' ? 'Covered swap' : 'Upgrade');

@@ -25,12 +25,27 @@ export interface RefreshLine {
   months: number | null;
 }
 
+/** One tool's choice for the next term (P9-5.2, CR-02): keep, like-life swap or upgrade, with its reason. */
+export interface RefreshTool {
+  serial: string;
+  cls: string;
+  action: 'keep' | 'swap' | 'upgrade';
+  reason: string;
+  rul_pct: number;
+  confidence: string;
+  flag: string | null;
+  end_of_parts: string | null;
+  successor: string | null;
+}
+
 export interface RefreshView {
   case_id: string;
   contract: RefreshContract;
   window: { opens: string | null; basis: 'end' | 'notice' };
   lines: RefreshLine[];
-  tools: unknown[];
+  tools: RefreshTool[];
+  tools_totals: { keep: number; swap: number; upgrade: number };
+  tools_hold: 'confidence' | null;
   match: unknown[];
   pricing: unknown | null;
   approval: unknown | null;

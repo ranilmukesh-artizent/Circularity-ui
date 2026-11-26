@@ -1653,6 +1653,134 @@
         }
        ]
       }
+     },
+     {
+      "name": "refresh_tool_action",
+      "title": "refresh tool action",
+      "kind": "decision_table",
+      "inputs": [
+       "market",
+       "rul_pct",
+       "parts_end_before_term",
+       "cover_type"
+      ],
+      "body": {
+       "nodes": [
+        {
+         "id": "n_in",
+         "type": "inputNode",
+         "name": "Request",
+         "position": {
+          "x": 100,
+          "y": 100
+         }
+        },
+        {
+         "id": "n_tbl",
+         "type": "decisionTableNode",
+         "name": "Table",
+         "position": {
+          "x": 360,
+          "y": 100
+         },
+         "content": {
+          "hitPolicy": "first",
+          "inputs": [
+           {
+            "id": "in_market",
+            "name": "market",
+            "field": "market",
+            "type": "expression"
+           },
+           {
+            "id": "in_rul_pct",
+            "name": "rul_pct",
+            "field": "rul_pct",
+            "type": "expression"
+           },
+           {
+            "id": "in_parts_end_before_term",
+            "name": "parts_end_before_term",
+            "field": "parts_end_before_term",
+            "type": "expression"
+           },
+           {
+            "id": "in_cover_type",
+            "name": "cover_type",
+            "field": "cover_type",
+            "type": "expression"
+           }
+          ],
+          "outputs": [
+           {
+            "id": "out_action",
+            "name": "action",
+            "field": "action",
+            "type": "expression"
+           },
+           {
+            "id": "out_reason",
+            "name": "reason",
+            "field": "reason",
+            "type": "expression"
+           }
+          ],
+          "rules": [
+           {
+            "_id": "r1",
+            "in_market": "",
+            "in_rul_pct": "",
+            "in_parts_end_before_term": "true",
+            "in_cover_type": "",
+            "out_action": "\"upgrade\"",
+            "out_reason": "\"Parts for {class} end {eop}, before the next term ends {term_end}: upgrade to {successor}\""
+           },
+           {
+            "_id": "r2",
+            "in_market": "",
+            "in_rul_pct": "< 25",
+            "in_parts_end_before_term": "",
+            "in_cover_type": "",
+            "out_action": "\"swap\"",
+            "out_reason": "\"Life left {rul}% is under 25%: like-life swap\""
+           },
+           {
+            "_id": "r3",
+            "in_market": "",
+            "in_rul_pct": "",
+            "in_parts_end_before_term": "",
+            "in_cover_type": "",
+            "out_action": "\"keep\"",
+            "out_reason": "\"Life left {rul}%: keep\""
+           }
+          ]
+         }
+        },
+        {
+         "id": "n_out",
+         "type": "outputNode",
+         "name": "Response",
+         "position": {
+          "x": 620,
+          "y": 100
+         }
+        }
+       ],
+       "edges": [
+        {
+         "id": "e1",
+         "sourceId": "n_in",
+         "targetId": "n_tbl",
+         "type": "edge"
+        },
+        {
+         "id": "e2",
+         "sourceId": "n_tbl",
+         "targetId": "n_out",
+         "type": "edge"
+        }
+       ]
+      }
      }
     ]
    }
@@ -1699,10 +1827,10 @@
     "action": "Post the fault for the tool"
    },
    {
-    "id": "grade_wear_disagree",
+    "id": "grade_wear_disagreement",
     "label": "Telematics and inspection disagree",
-    "owner_role": "Engineer",
-    "action": "Re-inspect the tool"
+    "owner_role": "Quality",
+    "action": "Re-inspect the tool, or confirm the grade with the telematics"
    },
    {
     "id": "repair_over_limit",

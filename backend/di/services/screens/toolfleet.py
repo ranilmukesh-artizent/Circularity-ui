@@ -13,6 +13,12 @@ GET /api/screens/toolfleet/{case_id}
     rul_tool, rul_tool_hours, weakest, per_component: [{name, used_hours, consumed_pct, rul_pct, source}], confidence (High,
     Medium, Low), range ([low, high] RUL_tool without telematics, else null), inputs, table_version, rule_version}`; null
     for a case with neither telematics hours nor months on contract (it keeps its own inputs).
+    `disagreement` (P9-3.11) is `{text, components}` when the workbench grade and the wear index disagree (an exception item for
+    Quality is open and the decision waits for a person), else null.
+    `paths` (P9-3.12) are the six valued paths in the pack's order, `{k, name, ok, net, gross, cost, hold, why, lines: [{type,
+    label, basis, amt}], dest}` (`dest` the named order it fills: a fleet renewal, sales order, bid, pool request or repair
+    orders), against the org's live named demand (`di.repositories.tool_demand`); `best` is the recommended path, `second`
+    the next eligible by net, `standard` the default path of the tool's function and `uplift` best net minus standard net.
     `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
     (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
 
@@ -38,9 +44,9 @@ from di.core import clock
 from di.core.auth import Principal
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
-from di.services.cases import regrade
+from di.services.cases import intake, regrade
 from di.services.modeler import gates as gate_catalogue
-from di.services.modeler.valuers import fleet_evidence, tool_inputs
+from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
 
@@ -57,6 +63,40 @@ def _gate(row: dict[str, Any], now: datetime, params: dict[str, Any]) -> dict[st
             "max_age_days": params.get("max_age_days", fleet_evidence.MAX_AGE_DAYS),
         }
     return out
+
+
+PATH_KEYS = ("k", "name", "ok", "net", "gross", "cost", "hold", "why", "lines", "dest")
+
+
+def _paths(s: Session, c: dict[str, Any]) -> dict[str, Any]:
+    """The six paths of the case (P9-3.12): the valuer's rows in the org's queue plan against the live named demand (the same
+    plan the decision was made in), `ok` and `why` as the decision left them (a gate or a rule can exclude a path the valuer
+    allows); `best` the recommended path, `second` the next eligible by net, `standard` the default path of the tool's
+    function (`tool_fleet._default_path`) and `uplift` the best net over the standard's."""
+    v = intake.valuer_input(c, "tool_fleet")
+    if parts := fleet_evidence.blocked_parts(c):
+        v["recallParts"] = sorted(parts)
+    dec = intake.tool_plan(intake.tool_queue(s, c["owner"], v), intake.case_rules(s, c))["res"][v["id"]]
+    routes = {r["id"]: r for r in c.get("routes") or []}
+    rows: list[dict[str, Any]] = []
+    for x in dec["all"]:
+        r = routes.get(x["k"])
+        row = {k: v for k, v in dict(x).items() if k in PATH_KEYS}
+        row["name"] = r["plan"] if r else tool_fleet.PATHS[x["k"]]["name"]
+        if r:
+            row |= {"ok": not r["excluded"], "why": r["failReason"] if r["excluded"] else x["why"]}
+        rows.append(row)
+    best = (c.get("recommendation") or {}).get("id")
+    eligible = sorted((r for r in rows if r["ok"] and r["k"] != best), key=lambda r: -r["net"])
+    net = {r["k"]: r["net"] for r in rows}
+    standard = dec["dk"]
+    return {
+        "paths": rows,
+        "best": best,
+        "second": eligible[0]["k"] if best and eligible else None,
+        "standard": standard,
+        "uplift": round(net[best] - net[standard], 2) if best else None,
+    }
 
 
 def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
@@ -78,7 +118,8 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "quarantine": fleet_evidence.quarantine_of(c),
         "gates": [_gate(g, now, params) for g in c.get("gates") or []],
         "life": c.get("life"),
-        "paths": [],
+        "disagreement": c.get("disagreement"),
+        **_paths(s, c),
         "plan": None,
         "approval": None,
         "followThrough": None,

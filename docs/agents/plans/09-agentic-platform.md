@@ -867,8 +867,8 @@ each story went.
 - [x] P9-3.8 Stale telematics guardrail GR-13
 - [x] P9-3.9 Wear index and remaining life per component
 - [ ] P9-3.10 Remaining life model and teardown calibration
-- [ ] P9-3.11 Telematics and inspection disagreement exception
-- [ ] P9-3.12 Six paths valued against live named demand
+- [x] P9-3.11 Telematics and inspection disagreement exception
+- [x] P9-3.12 Six paths valued against live named demand
 - [ ] P9-3.13 Live queue plan for open tool returns
 - [ ] P9-3.14 CO2e per route and the recycling certificate
 - [ ] P9-3.15 Threshold approvals and standing policy for returns
@@ -888,12 +888,12 @@ each story went.
 - [x] P9-4.7 Re-run options when the fault is posted
 - [ ] P9-4.8 Decide a batch per tool as one split
 - [ ] P9-4.9 Execute the approved option on market terms
-- [ ] P9-4.10 Test a credit before offering it
+- [x] P9-4.10 Test a credit before offering it
 - [ ] P9-4.11 Take-up model learned from past offers
 - [ ] P9-4.12 Service desk browser smoke
 - [ ] P9-4.13 Phase 4 gate
 - [x] P9-5.1 Refresh case per contract entering the window
-- [ ] P9-5.2 Keep, like-life swap or upgrade per tool
+- [x] P9-5.2 Keep, like-life swap or upgrade per tool
 - [ ] P9-5.3 Like-life units matched and reserved once
 - [ ] P9-5.4 Refresh proposal priced with fee and renewal odds
 - [ ] P9-5.5 Approved proposal sent, lines drafted, units reserved

@@ -5,7 +5,7 @@ import * as D from './DecideTabs';
 import { ComplianceTab, DeviceTab, PayoutTab, QuoteTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
-import { EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
+import { CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
 export type TabDef = [key: string, label: string, View: (p: TabProps) => ReactNode];
@@ -34,6 +34,7 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ...(c.serviceDesk ? [['ticket', 'Ticket', TicketTab] as TabDef] : []), // a service ticket starts with its Ticket tab (P9-4.3)
       ...(c.serviceDesk ? [['estimate', 'Estimate', EstimateTab] as TabDef] : []), // the estimate from similar past repairs (P9-4.4)
       ...(c.serviceDesk ? [['options', 'Options', OptionsTab] as TabDef] : []), // fix, covered swap, upgrade (P9-4.6)
+      ...(c.serviceDesk ? [['credit', 'Credit lever', CreditLeverTab] as TabDef] : []), // test a credit before offering it (P9-4.10)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],

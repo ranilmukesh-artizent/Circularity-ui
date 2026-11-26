@@ -173,11 +173,11 @@ def test_runtime_and_kpis_of_the_two_packs():
     # stale_telematics (Quality, last)
     assert [e.id for e in tf.runtime.exception_types] == [
         "not_in_system_of_record", "expected_return_missing", "no_active_contract", "recall_quarantine", "technician_check",
-        "grade_wear_disagree", "repair_over_limit", "writeoff_under_24m", "inspection_backlog", "refresh_late",
+        "grade_wear_disagreement", "repair_over_limit", "writeoff_under_24m", "inspection_backlog", "refresh_late",
         "stale_telematics",
     ]  # fmt: skip
     assert [e.owner_role for e in tf.runtime.exception_types] == [
-        "Planner", "Planner", "Fleet desk", "Quality", "Engineer", "Engineer", "Approver", "Planner", "Planner", "Fleet desk",
+        "Planner", "Planner", "Fleet desk", "Quality", "Engineer", "Quality", "Approver", "Planner", "Planner", "Fleet desk",
         "Quality",
     ]  # fmt: skip
     assert len(dv.runtime.exception_types) == 10 and len(dv.kpis) == 6  # P9-6.5 quote_mismatch, P9-6.6 blacklist_hit

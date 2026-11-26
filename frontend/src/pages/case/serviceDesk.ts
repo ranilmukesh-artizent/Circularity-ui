@@ -74,3 +74,15 @@ export function expectedLine(o: TicketOption, currency: string): string {
 export function approvalLine(a: Pick<Approval, 'owner' | 'holds'>): string {
   return a.holds.length ? `Approval: ${a.owner} (${a.holds.map((h) => h.id).join(', ')}). ${a.holds[0].reason}` : `Approval: ${a.owner}`;
 }
+const NAMES: Record<OptionKey, string> = { fix: 'Fix and return', swap: 'Covered swap', upgrade: 'Upgrade' };
+
+/** "Fix and return beats Upgrade with credit above 28% credit" where the best option changes; else which stays best (P9-4.10, SD-09). */
+export function flipLine(r: { from: OptionKey | null; crossing: { from: OptionKey; to: OptionKey; credit_pct: number } | null }): string {
+  if (r.crossing) return `${NAMES[r.crossing.to]} beats ${NAMES[r.crossing.from]} with credit above ${Math.round(r.crossing.credit_pct * 100)}% credit`;
+  return r.from ? `${NAMES[r.from]} stays best at every credit up to 40%` : 'No option can be offered yet';
+}
+
+/** "Expected margin peaks at 20% credit: $97.10". */
+export function peakLine(r: { peak: { credit_pct: number; upgrade: number } | null; currency: string }): string {
+  return r.peak ? `Expected margin of the upgrade peaks at ${Math.round(r.peak.credit_pct * 100)}% credit: ${money(r.peak.upgrade, r.currency)}` : 'The upgrade cannot be offered to this tool';
+}

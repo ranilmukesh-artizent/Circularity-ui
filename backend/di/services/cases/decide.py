@@ -325,13 +325,21 @@ LOW_LIFE_HELD = frozenset({"release", "redeploy"})  # re-issue and pool: a Low l
 
 
 def _not_held_for_person(
-    rec: Route | None, routes: Sequence[Route], results: Sequence[GateResult], life: Mapping[str, Any] | None = None
+    rec: Route | None,
+    routes: Sequence[Route],
+    results: Sequence[GateResult],
+    life: Mapping[str, Any] | None = None,
+    disagreement: Mapping[str, Any] | None = None,
 ) -> Route | None:
     """GR-13 (P9-3.8): the routes a failed stale-telematics gate leaves to a person (re-issue, pool) are valued and shown but
     are never the recommendation: the best of the other eligible routes is. Choosing one goes to a person (the hold policy).
-    A Low life confidence (P9-3.9: no telematics, or a reading a week old) holds the same two routes, whatever the gate says."""
+    A Low life confidence (P9-3.9: no telematics, or a reading a week old) holds the same two routes, whatever the gate says.
+    So does a telematics and inspection disagreement (P9-3.11): Quality settles it first,
+    so neither of those two paths is the recommendation."""
     person = {i for r in results if r.gate_id == fleet_evidence.TEL_GATE and not r.passed for i in r.effect.routes}
     if (life or {}).get("confidence") == "Low":
+        person |= LOW_LIFE_HELD
+    if disagreement:
         person |= LOW_LIFE_HELD
     if rec is None or rec["id"] not in person:
         return rec
@@ -417,7 +425,7 @@ def decide_case(
     eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
-    rec = _not_held_for_person(rec, routes, results, c.get("life"))
+    rec = _not_held_for_person(rec, routes, results, c.get("life"), c.get("disagreement"))
     return Decision(
         case_id=str(c.get("id")), pack_key=pack.key, pack_version=pack.version, flow_ver=flow_ver.ver,
         route=rec["id"] if rec else None, net=float(rec["net"]) if rec else 0.0, routes=routes, recommendation=rec,

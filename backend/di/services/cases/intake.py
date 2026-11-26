@@ -21,7 +21,9 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
 - **Queue plan** (plan 9, P9-1.4). A tool-fleet case is planned within its org's open tool-fleet cases (not closed;
   an approved or executing one keeps its order) with the named demand of the canonical store, through the pack's
   queue planner (di.services.engine.queue); `open_case` then queues `case.replan` so the org's other open cases are
-  planned again (di.services.cases.replan).
+  planned again (di.services.cases.replan). The named demand is the tagged canonical orders and, since P9-3.12 (TF-07),
+  the live demand of the org's `fleet` and `parts` sources (di.repositories.tool_demand): the tool fleet no longer decides
+  "in a queue of its own (no sample orders)".
 - **Gates** (plan 9, P9-1.2). A template case carries the asset's compliance records (`evidenceRecords`); the pack's
   gates are evaluated and applied to the routes before the business rules (inside `decide_case`), and a gate that holds
   leaves the case at stage `none` with `gateHold` until the evidence arrives (di.services.cases.gate_hold).
@@ -88,7 +90,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock, jobs
 from di.core.config import get_settings
-from di.repositories import plm
+from di.repositories import plm, tool_demand
 from di.repositories.live_rules import flow_version, live_pack
 from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
@@ -110,7 +112,7 @@ from di.services.modeler.compile import FlowVersion
 from di.services.modeler.evidence import parse_time
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS
-from di.services.modeler.valuers import amount, device, tool_fleet
+from di.services.modeler.valuers import amount, device, tool_fleet, tool_inputs
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
@@ -472,7 +474,7 @@ def tool_input(doc: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
-    """The documents of the org's tool-fleet cases that are not closed, by id."""
+    """The documents of the org's tool-fleet cases that are not closed, in case id order."""
     rows = s.execute(
         text(
             "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
@@ -480,15 +482,27 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
         ),
         {"o": org_unit_id, "f": REFRESH_FLOW},
     ).scalars()
-    return list(rows)
+    return sorted(rows, key=lambda d: str(d["id"]))
 
 
 def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
     """The queue for the valuer input `v` of a case of the org: its open tool-fleet cases plus `v`, with the named
-    demand of their classes (named_demand.for_queue)."""
-    cases = [tool_input(d) for d in open_tool_cases(s, org_unit_id) if d["id"] != v["id"]] + [v | {"status": "new"}]
-    named = named_demand.for_queue(s, org_unit_id, sorted({c["cls"] for c in cases}))
-    return ToolQueue(cases, {c["id"]: named[c["cls"]] for c in cases})
+    demand of their classes: the queue's tagged orders (named_demand.for_queue) and the live named demand of the org's
+    sources, in days from now (tool_demand.named_demand, P9-3.12; the orders an approved decision holds are not offered)."""
+    others = [tool_input(d) for d in open_tool_cases(s, org_unit_id) if d["id"] != v["id"]]
+    # in case id order, as `tool_queue.open_queue` reads them: two returns that value the same are told apart by their
+    # place in the queue, so every case must see it in one order (else each of two equal returns finds itself last)
+    return queue_of(s, org_unit_id, sorted([*others, v | {"status": "new"}], key=lambda c: str(c["id"])))
+
+
+def queue_of(s: Session, org_unit_id: str, cases: list[dict[str, Any]]) -> ToolQueue:
+    """The queue of the given valuer inputs of the org with the named demand of their classes (`tool_queue` and
+    `tool_queue.open_queue`, P9-3.13)."""
+    classes = sorted({c["cls"] for c in cases})
+    named = named_demand.for_queue(s, org_unit_id, classes)
+    now = clock.now()
+    live = {k: tool_demand.named_demand(s, org_unit_id, k, now) for k in classes}
+    return ToolQueue(cases, {c["id"]: tool_inputs.merge_demand(named[c["cls"]], live[c["cls"]]) for c in cases})
 
 
 def case_rules(s: Session, c: Mapping[str, Any]) -> list[Any]:

@@ -19,7 +19,7 @@ const view = (over: Partial<RefreshView>): RefreshView => ({
   contract: { id: 'FC-30121', customer: 'Brightline Mechanical', market: 'US', start: '2024-07-01', end: '2027-06-30', notice: '2027-01-05', term_months: 36, status: 'active' },
   window: { opens: '2026-10-07', basis: 'notice' },
   lines: [LINE, { ...LINE, serial: 'CMH-2' }],
-  tools: [], match: [], pricing: null, approval: null, execution: null, outcome: null,
+  tools: [], tools_totals: { keep: 0, swap: 0, upgrade: 0 }, tools_hold: null, match: [], pricing: null, approval: null, execution: null, outcome: null,
   ...over,
 });
 const BY_END = view({ contract: { ...view({}).contract, notice: null }, window: { opens: '2027-04-01', basis: 'end' } });
