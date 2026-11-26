@@ -53,6 +53,7 @@ from di.models.overlay import customer_overlay
 from di.models.packs import pack_version
 from di.models.policy import standing_policy, standing_policy_version
 from di.models.reference import fx_rate
+from di.models.replay import replay_batch, replay_item
 from di.models.service_desk import refurb_unit, repair_accuracy, repair_history, service_ticket, upgrade_offer
 from di.models.work import work_item
 from di.models.workspace import state_item, state_seed
@@ -102,6 +103,8 @@ __all__ = [
     "refurb_unit",
     "repair_accuracy",
     "repair_history",
+    "replay_batch",
+    "replay_item",
     "service_ticket",
     "shadow_decision",
     "source_connection",

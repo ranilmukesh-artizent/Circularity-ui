@@ -152,3 +152,10 @@ unattended". Times are local (IST).
 | 26 Nov 05:11 | P9-9.4 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
 | 26 Nov 05:11 | P9-9.5 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
 | 26 Nov 05:11 | P9-9.6 merged. Merged in the vehicle-mock batch with lane B P9-3.9/4.7; additive registry and fields conflicts kept both. |
+| 26 Nov 06:26 | P9-9.7 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-10.2 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-11.2 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-7.1 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-9.8 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-11.3 merged. Merged in batches b4-b5. |
+| 26 Nov 06:26 | P9-11.4 merged. Merged in batches b4-b5. |

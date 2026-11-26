@@ -52,7 +52,16 @@ from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.engine.routes import Route, rank_routes
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
-from di.services.modeler.gates import Cond, GateDef, GateEffectDef, GateResult, GateTrigger, apply_gate_results, triggered
+from di.services.modeler.gates import (
+    Cond,
+    GateDef,
+    GateEffectDef,
+    GateResult,
+    GateTrigger,
+    apply_disclosures,
+    apply_gate_results,
+    triggered,
+)
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack
 from di.services.modeler.templates import Template, template_of_pack
@@ -381,6 +390,7 @@ def decide_case(
         raise ValueError(f"No valuer for the {kind} pack {pack.key}")
     routes = valued.routes
     apply_gate_results(routes, results)  # the gates' results fail the routes they block
+    apply_disclosures(routes, results)  # a title brand is disclosed on every route (P9-9.8)
     # (compliance: `rules` above are the compiled rules that break no locked guardrail)
     diversions = [d for d in pack.diversions if _matches(d, c, pack)]  # 4. diversions, then the business rules
     steps = [

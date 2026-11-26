@@ -10,7 +10,8 @@ catalogue order), `apply_gate_results` (fails the blocked routes at the policy g
 the `CHECKS` table for a gate that needs logic of its own.
 Never does: read a session, the clock or the canonical store (the case carries its evidence records; `gate_hold.py` in
 `di.services.cases` attaches them and holds a case), or write a case. `require_approval` is enforced by the hold policy
-(P9-2.4) and `close_block` by the close stage (Phase 13); here they are evaluated and shown only.
+(P9-2.4) and `close_block` by the close stage (Phase 13); here they are evaluated and shown only. `disclose` (P9-9.8) blocks
+nothing: its texts go on every route's `disclosures` (`apply_disclosures`).
 
 Facts of a trigger resolve as dotted paths on the case (`vehicle.odometer_exempt` reads `case["vehicle"]["odometer_exempt"]`);
 `class.<attr>` reads the attribute of the pack class of `case["cls"]`. A fact the case lacks fails every operator
@@ -31,7 +32,7 @@ from di.services.modeler.evidence import evidence_of, label_of
 from di.services.modeler.pack import PACKS_DIR, Pack, RouteClass
 from di.services.modeler.stages import GuardType, StageKey
 
-GateKind = Literal["block", "require_step", "require_approval", "close_block"]
+GateKind = Literal["block", "require_step", "require_approval", "close_block", "disclose"]
 Op = Literal["eq", "ne", "in", "gte", "lte", "exists"]
 
 
@@ -102,6 +103,7 @@ class GateResult:
     effect: GateEffect
     evidence_missing: tuple[str, ...]
     reason: str
+    disclosures: tuple[str, ...] = ()  # texts every route of the decision carries (effect `disclose`, `apply_disclosures`)
 
 
 Check = Callable[[Mapping[str, Any], Pack, GateDef], GateResult | None]
@@ -212,5 +214,16 @@ def apply_gate_results(routes: list[Route], results: Sequence[GateResult]) -> No
                 fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {res.reason}")
 
 
+def apply_disclosures(routes: list[Route], results: Sequence[GateResult]) -> None:
+    """Every text a result of effect `disclose` (or a result that blocks and also discloses) carries is added to the
+    `disclosures` list of every route, in gate order, once each (P9-9.8: a title brand is disclosed on every route). A
+    decision with no disclosure leaves the routes as they are. A disclosure never excludes or ranks a route."""
+    texts = list(dict.fromkeys(t for res in results for t in res.disclosures))
+    if texts:
+        for r in routes:
+            r["disclosures"] = list(texts)
+
+
 # a gate whose logic lives in a valuer module registers its check on import (`CHECKS`); that module imports this one
+from di.services.modeler.gate_checks import vehicle as _vehicle  # noqa: E402,F401
 from di.services.modeler.valuers import fleet_evidence as _fleet_evidence  # noqa: E402,F401

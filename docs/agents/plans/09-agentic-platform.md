@@ -922,7 +922,7 @@ each story went.
 - [ ] P9-6.19 Undercut and parts declaration checks
 - [ ] P9-6.20 Device recommerce browser smoke
 - [ ] P9-6.21 Phase 6 gate
-- [ ] P9-7.1 Import a history batch with checks
+- [x] P9-7.1 Import a history batch with checks
 - [ ] P9-7.2 As-of replay with the four measures
 - [ ] P9-7.3 Publish in steps with canary by region and share
 - [ ] P9-7.4 Canary report and automatic pause
@@ -960,8 +960,8 @@ each story went.
 - [x] P9-9.4 Vehicle inspection app mock
 - [x] P9-9.5 Vehicle recall database mock
 - [x] P9-9.6 Vehicle auction and pricing guide mocks
-- [ ] P9-9.7 One case per VIN with the inspection read
-- [ ] P9-9.8 Title finance and title brand gates
+- [x] P9-9.7 One case per VIN with the inspection read
+- [x] P9-9.8 Title finance and title brand gates
 - [ ] P9-9.9 Odometer and open recall gates
 - [ ] P9-9.10 Used-car channel valuer net of costs
 - [ ] P9-9.11 Lot choice and recon approval
@@ -977,7 +977,7 @@ each story went.
 - [ ] P9-9.21 Used-car demo smoke
 - [ ] P9-9.22 Phase 9 gate
 - [x] P9-10.1 Telecom network pack data file
-- [ ] P9-10.2 Network inventory and decommission tracker mocks
+- [x] P9-10.2 Network inventory and decommission tracker mocks
 - [ ] P9-10.3 Test bench mock with wipe and firmware
 - [ ] P9-10.4 Spares planning mock with requisitions
 - [ ] P9-10.5 Broker marketplace and recycler portal mocks
@@ -996,9 +996,9 @@ each story went.
 - [ ] P9-10.18 Telecom demo smoke
 - [ ] P9-10.19 Phase 10 gate
 - [x] P9-11.1 Medical rental pack data file
-- [ ] P9-11.2 Rental system and asset management mocks
-- [ ] P9-11.3 Decontamination log mock
-- [ ] P9-11.4 Biomedical service system mock
+- [x] P9-11.2 Rental system and asset management mocks
+- [x] P9-11.3 Decontamination log mock
+- [x] P9-11.4 Biomedical service system mock
 - [ ] P9-11.5 Parts supplier portal and disposal partner mocks
 - [ ] P9-11.6 One case per tag with decontamination gate
 - [ ] P9-11.7 Service in date and safety notice gates

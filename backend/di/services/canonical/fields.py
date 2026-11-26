@@ -22,6 +22,16 @@ seller_fleet_size, lot_id, days_on_lot; on `condition` odometer_statement_ref, o
 and dealer_bid. The title fields (P9-9.3) are written by uc_title on `condition`: title_status, lien_open,
 lien_release_ref, title_brand, title_checked_at.
 
+The medical rental fields (plan 9, P9-11.2) are written by the extra adapters mr_rental and mr_assets, keyed by `tag_key`: on
+`asset` tag, device_class, serial, in_service_date, age_years, has_patient_data, depot, checked_in_at, hospital, ward_type,
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast. The decontamination fields
+(P9-11.3) are written by mr_decon on `condition`: decon_started_at, decon_ended_at, decon_record_ref, decon_enhanced,
+decon_result.
+turnaround; on `market` residual_sale_value; on `demand` rental_requests and region_forecast.
+The biomedical service fields (P9-11.4) are written by mr_biomed, keyed by `tag_key`: on `condition` pm_due, pm_code,
+certification_expiry, functional_test, electrical_safety, notes, correction_open, correction_ref, servicing_assessment; on
+`intervention` repair_estimate.
+
 A field a connector starts to write must be added here (with its type), or its facts are held as failed records.
 Types: text, ref (a reference string), date (ISO 8601 date or timestamp string), number, bool, list, object, any.
 """
@@ -173,6 +183,18 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "work_order_state": "text",
         "work_order_status": "text",
         "work_order_type": "text",
+        # plan 9, P9-11.2: the rental system and asset management (keyed by tag_key)
+        "tag": "text",
+        "device_class": "text",
+        "serial": "text",
+        "in_service_date": "date",
+        "age_years": "number",
+        "has_patient_data": "bool",
+        "depot": "text",
+        "checked_in_at": "date",
+        "hospital": "text",
+        "ward_type": "text",
+        "turnaround": "object",
     },
     "condition": {
         "assessed_at": "date",
@@ -275,6 +297,22 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "recall_campaigns": "list",
         "recall_checked_at": "date",
         "recall_remedy_ref": "ref",
+        # plan 9 P9-11.3, the decontamination log (extra adapter mr_decon), keyed by tag_key
+        "decon_started_at": "date",
+        "decon_ended_at": "date",
+        "decon_record_ref": "ref",
+        "decon_enhanced": "bool",
+        "decon_result": "text",
+        # plan 9 P9-11.4, the biomedical service system (extra adapter mr_biomed), keyed by tag_key
+        "pm_due": "date",
+        "pm_code": "text",
+        "certification_expiry": "date",
+        "functional_test": "object",
+        "electrical_safety": "object",
+        "notes": "list",
+        "correction_open": "bool",
+        "correction_ref": "ref",
+        "servicing_assessment": "text",
     },
     "demand": {
         "accepts_refurbished": "bool",
@@ -341,6 +379,9 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "term_months": "number",
         "tool_class": "text",
         "unit_price": "number",
+        # plan 9, P9-11.2: open rental requests with their distance, and the region's weekly forecast
+        "rental_requests": "list",
+        "region_forecast": "list",
     },
     "intervention": {
         "cost": "number",
@@ -359,6 +400,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "scope": "text",
         "tasks": "list",
         "tasks_complete": "text",
+        "repair_estimate": "number",  # plan 9, P9-11.4: the biomedical service system
     },
     "market": {
         "buyer_demand": "number",
@@ -411,6 +453,7 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "auction_transport": "number",
         "salvage_bid": "number",
         "salvage_buyer": "text",
+        "residual_sale_value": "number",  # plan 9, P9-11.2: asset management
     },
     "outcome": {
         "accounting_document": "text",
@@ -608,3 +651,23 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "unit_id": "text",
     },
 }
+
+# Telecom network equipment (plan 9, P9-10.2), written by the extra adapters tn_inv and tn_decom: on `asset`, keyed by
+# `serial_key`, the unit's identity (serial, part_number, hw_revision, firmware, site_kind, region), its inventory_status,
+# the export class the source confirmed (export_class) apart from the one inferred from the part number
+# (export_class_inferred), and the removal (removal_job, removed_at, programme); on `demand`, site_demand (an object).
+CONNECTOR_FIELDS["asset"] |= {
+    "export_class": "text",
+    "export_class_inferred": "text",
+    "firmware": "text",
+    "hw_revision": "text",
+    "inventory_status": "text",
+    "part_number": "text",
+    "programme": "text",
+    "region": "text",
+    "removal_job": "ref",
+    "removed_at": "date",
+    "serial": "text",
+    "site_kind": "text",
+}
+CONNECTOR_FIELDS["demand"] |= {"site_demand": "object"}

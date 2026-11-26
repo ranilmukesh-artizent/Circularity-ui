@@ -41,10 +41,24 @@ export const ST_SYS: Record<string, string> = {
   'TMS / 3PL': 'tms', WMS: 'wms', 'Repair orders': 'repair', Repair: 'repair', MRO: 'repair', OMS: 'oms', TMS: 'tms', Inspection: 'insp', PLM: 'plm', EAM: 'eam', Remarketing: 'dlr',
 };
 /** A fact's provenance: retrieved from a connected source (with its freshness), rules, a model, or recorded (stProv). */
-export function StProv({ k, sys, src }: { k: string; sys: string; src: Record<string, Source> }) {
+export function StProv({ k, sys, src, estimate }: { k: string; sys: string; src: Record<string, Source>; estimate?: boolean }) {
   if (k === 'rec') return <span className="aszb rec" data-prov="rec" data-tip="Recorded in Circularity when it happened: who acted and when.">Recorded · Circularity</span>;
   const s = src[ST_SYS[sys] || sys];
-  return <ProvB k={k} sys={s ? s.vendor + (k === 'ret' && s.freshMin != null ? ' · ' + srcAge(s.freshMin) + (s.freshMin < 1 ? '' : ' ago') : '') : sys} />;
+  return (
+    <>
+      <ProvB k={k} sys={s ? s.vendor + (k === 'ret' && s.freshMin != null ? ' · ' + srcAge(s.freshMin) + (s.freshMin < 1 ? '' : ' ago') : '') : sys} />
+      {estimate && <EstimateBadge />}
+    </>
+  );
+}
+/** A fact that is an estimate, not a read (a car's grade without a completed inspection, P9-9.7). */
+export const EstimateBadge = () => (
+  <span className="aszb mod" data-prov="estimate" data-tip="An estimate, not a recorded read: the inspection is missing or not done yet. The decision is held until a person confirms it.">estimate</span>
+);
+/** What a route must disclose to a buyer, from the gates (a title brand, P9-9.8): one line per route, nothing when none. */
+export function Disclosures({ r }: { r: { disclosures?: string[] } }) {
+  if (!r.disclosures?.length) return null;
+  return <p className="note" data-disclosures="route"><b>Disclose:</b> {r.disclosures.join('; ')}</p>;
 }
 /** Retrieved / Model / Rules / Draft / Prepared by agent (afBadge). */
 export function AfBadge({ k }: { k: string }) {

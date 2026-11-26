@@ -49,6 +49,16 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   contract id, `facts` the flow `contract_refresh`, `term_end`, `market`, `lines`: kept as `refresh`); `dedupe_as` names
   the dedupe key's asset (`<contractId>@<endDate>`, once per term). It is valued by no valuer yet (no routes, stage
   `none`), has no system-of-record match and stays out of the tool queue.
+- **One case per car** (plan 9, P9-9.7, UC-05, UC-09). A `used_cars` case is keyed by the car (`asset_key` is
+  `schema.vin_key(org, vin)`, the reasons `lease_end` and `trade_in`). Its facts (`vin`, `mileage`, `return_date`,
+  `source`) are kept as the list `vehicle.facts` ({fact, value, source, at, ageDays}), each with its source and age
+  (the canonical provenance of the event's source
+  when it wrote the field, else the event's own source and time). A second event for the same car, whatever its reason,
+  joins the open case under the intake lock: it adds its facts with its own source and age, is listed in
+  `intake.joined` (so a replay of it is a `duplicate`) and values the case again; no second case. The grade is the
+  inspection read, never computed here: `condition.read_grade` (the pack's grade mapping) makes the `grade` evidence
+  record, kept in `vehicle.inspection` with its source and age; without a complete inspection it is an estimate with
+  confidence 0.70, which holds the decision for `confidence`.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -87,6 +97,7 @@ from di.services.engine.predictor import CLASSES, GRADE_F, BomPartsPredictor, Fo
 from di.services.engine.queue import Capacity, Dem, planner_for
 from di.services.engine.routes import Route
 from di.services.modeler.compile import FlowVersion
+from di.services.modeler.evidence import parse_time
 from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import TEMPLATE_KEYS
 from di.services.modeler.valuers import amount, device, tool_fleet, tool_inputs
@@ -163,12 +174,88 @@ def tool_return_facts(facts: Mapping[str, Any], asset_key: str, reason: str) -> 
 
 
 def existing(s: Session, asset_key: str, reason: str) -> str | None:
-    """The case already opened for this asset and reason, if any."""
+    """The case already opened for this asset and reason, if any (or one a later event for the car joined, P9-9.7)."""
+    k = intake_key(asset_key, reason)
     row = s.execute(
-        text("SELECT id FROM case_record WHERE data->'intake'->>'key' = :k ORDER BY id LIMIT 1"),
-        {"k": intake_key(asset_key, reason)},
+        text(
+            "SELECT id FROM case_record WHERE data->'intake'->>'key' = :k "
+            "OR data->'intake'->'joined' @> CAST(:j AS jsonb) ORDER BY id LIMIT 1"
+        ),
+        {"k": k, "j": json.dumps([{"key": k}])},
     ).first()
     return row[0] if row else None
+
+
+# ---------------------------------------------------------------- used cars (P9-9.7)
+CAR_TEMPLATE = "used_cars"
+CAR_SOURCE = {"lease_end": "uc_lease", "trade_in": "uc_dms"}  # the source an event's facts come from unless it names one
+CAR_FIELDS = {"vin": "vin", "mileage": "mileage_at_return"}  # a case fact -> the `asset` field that gives its source and age
+OPEN_STAGES = ("none", "awaiting_approval")  # a joined event values the case again only while no one has acted on it
+
+
+def _newest(rec: Mapping[str, Any] | None, field: str, source: str) -> datetime | None:
+    """The time `source` last wrote the field of the canonical record, or None."""
+    rows = [r for r in ((rec or {}).get("provenance") or {}).get(field) or [] if r["source_id"] == source]
+    return max(r["fetched_at"] for r in rows) if rows else None
+
+
+def car_known(s: Session, key: str) -> dict[str, Any]:
+    """The used-car facts the canonical `asset` of the car holds (`vin`, `mileage`)."""
+    data = (canonical.get(s, "asset", key) or {}).get("data") or {}
+    return {n: data[f] for n, f in CAR_FIELDS.items() if data.get(f) is not None}
+
+
+def car_event(i: Mapping[str, Any], facts: Mapping[str, Any]) -> tuple[str, datetime]:
+    """The source and time of an event for a car: what the input names, else the reason's source and now."""
+    at = parse_time(i.get("at")) or clock.now()
+    return str(i.get("source") or facts.get("source") or CAR_SOURCE.get(i["reason"], "")), at
+
+
+def _age_days(at: datetime) -> float:
+    return round(max(0.0, (clock.now() - at).total_seconds()) / 86400, 1)
+
+
+def car_facts(s: Session, key: str, facts: Mapping[str, Any], source: str, at: datetime) -> list[dict[str, Any]]:
+    """Each fact with its source and age (in days, at the clock): when the event's source wrote the fact's canonical field,
+    that write's time; else the event's."""
+    asset = canonical.get(s, "asset", key)
+    out: list[dict[str, Any]] = []
+    for name, value in facts.items():
+        when = (_newest(asset, CAR_FIELDS[name], source) if name in CAR_FIELDS else None) or at
+        out.append({"fact": name, "value": value, "source": source, "at": when.isoformat(), "ageDays": _age_days(when)})
+    return out
+
+
+def car_read(s: Session, c: store.Case, pack: Pack) -> None:
+    """The inspection read of a car as the case's `grade` evidence (the stage `condition` reads it): the canonical
+    `condition` record's score, status and time with the inspection source, through the pack's grade mapping
+    (`condition.read_grade`). Sets `vehicle.inspection` and the case's `grade`; the case's `evidenceRecords` gain the
+    record. Run on opening and on every valuation, so a late inspection reaches the case on its re-evaluation."""
+    from di.services.agents.stages import condition  # the agents' stage owns the mapping; imported late (no cycle)
+
+    rec = canonical.get(s, "condition", str(c["assetId"]))
+    data = (rec or {}).get("data") or {}
+    insp: dict[str, Any] | None = None
+    if rec is not None and data.get("inspection_status") is not None:
+        rows = rec["provenance"].get("inspection_status") or []
+        src = max(rows, key=lambda r: r["fetched_at"])["source_id"] if rows else ""
+        at = parse_time(data.get("inspection_at")) or (_newest(rec, "inspection_status", src) if src else None)
+        insp = {"status": data["inspection_status"], "score": data.get("condition_score"),
+                "at": at.isoformat() if at else None, "source": src}  # fmt: skip
+    vehicle = c.setdefault("vehicle", {"vin": amount.lookup(c.get("valuer") or {}, "vin"), "facts": []})
+    mileage = next((f["value"] for f in reversed(vehicle["facts"]) if f["fact"] == "mileage"), None) or amount.lookup(
+        c.get("valuer") or {}, "mileage"
+    )
+    grade = condition.read_grade(pack.grades.map_from, insp, mileage, clock.now())
+    value = grade["value"]
+    c.setdefault("evidenceRecords", []).append(grade)
+    at = parse_time(grade["at"])
+    vehicle["inspection"] = {
+        "status": (insp or {}).get("status") or "none", "score": (insp or {}).get("score"), "grade": value["grade"],
+        "estimate": value["estimate"], "source": grade["source"], "at": grade["at"],
+        "ageDays": _age_days(at) if at else None,
+    }  # fmt: skip
+    c["grade"] = value["grade"]
 
 
 # ---------------------------------------------------------------- base fields
@@ -415,6 +502,8 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     was_held = isinstance(c.get("gateHold"), dict)
     if pack.key != "industrial":
         gate_hold.attach_evidence(s, c)  # the gates read the asset's compliance records (plan 9, P9-1.2)
+        if pack.key == CAR_TEMPLATE:
+            car_read(s, c, pack)  # the inspection read, or an estimate, as the grade evidence (P9-9.7)
         if facts or not c.get("routes"):
             _snapshot(c, facts, pack.valuer.kind, s)
         if pack.valuer.kind == "tool_fleet" and regrade.apply(s, c):  # the workbench grade, else the estimate (P9-3.5)
@@ -438,6 +527,44 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
 
+def car_case(s: Session, asset_key: str) -> str | None:
+    """The open (not closed) used-car case of the car, if any."""
+    row = s.execute(
+        text(
+            "SELECT id FROM case_record WHERE stage <> 'closed' AND data ->> 'template' = :t AND data ->> 'assetId' = :a "
+            "ORDER BY id LIMIT 1"
+        ),
+        {"t": CAR_TEMPLATE, "a": asset_key},
+    ).first()
+    return row[0] if row else None
+
+
+def _join_car(s: Session, case_id: str, i: dict[str, Any], facts: dict[str, Any], at: datetime, actor: str) -> store.Case:
+    """A second event for a car joins its open case (P9-9.7): its facts are added with their own source and age, the event
+    is listed in `intake.joined`, the case is valued again while no one has acted on it, and the stage log says so."""
+    c = store.get(s, case_id, for_update=True)
+    if c is None:  # not reached: car_case just found it under the same lock
+        raise ActionError("not_found", f"No case {case_id}.")
+    by = i.get("by") or actor
+    c.setdefault("vehicle", {"vin": facts.get("vin"), "facts": []})["facts"] += car_facts(
+        s, i["asset_key"], facts, facts["source"], at
+    )  # appended: the car's facts from each source stay, the newest last
+    c["intake"].setdefault("joined", []).append(
+        {"key": intake_key(i.get("dedupe_as") or i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
+         "source": facts["source"], "at": at.astimezone(UTC).isoformat()}
+    )  # fmt: skip
+    if isinstance(c.get("valuer"), dict):
+        c["valuer"] |= {k: v for k, v in facts.items() if k != "source"}
+    if c["stage"] in OPEN_STAGES:
+        revalue(s, c)
+    store.save(s, c)
+    s.execute(
+        text("INSERT INTO case_stage_log (case_id, from_stage, to_stage, reason, actor) VALUES (:c, :st, :st, :r, :a)"),
+        {"c": case_id, "st": c["stage"], "r": f"Joined by {i['reason']} from {facts['source']}", "a": actor},
+    )
+    return c
+
+
 # ---------------------------------------------------------------- open
 def _next_id(s: Session) -> str:
     top = s.execute(text("SELECT max(CAST(substring(id FROM 4) AS integer)) FROM case_record WHERE id ~ '^RT-[0-9]+$'")).scalar()
@@ -456,6 +583,12 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if dup := existing(s, i.get("dedupe_as") or i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
+    car = i["template_key"] == CAR_TEMPLATE
+    if car:
+        source, at = car_event(i, facts)
+        if joined := car_case(s, i["asset_key"]):
+            return _join_car(s, joined, i, facts | {"source": source}, at, actor)
+        facts = car_known(s, i["asset_key"]) | facts | {"source": source}
     case_id = _next_id(s)
     if i["template_key"] == "tool_fleet":
         facts = tool_return_facts(facts, i["asset_key"], i["reason"])
@@ -465,6 +598,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     c = _base(case_id, i, known, i.get("by") or actor)
+    if car:
+        c["vehicle"] = {"vin": facts.get("vin"), "facts": car_facts(s, i["asset_key"], facts, source, at)}
     kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
     c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):

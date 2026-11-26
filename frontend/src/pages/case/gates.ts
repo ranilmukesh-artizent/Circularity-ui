@@ -28,8 +28,9 @@ export function clauseLine(g: GateRow): string | null {
 export function gateLine(g: GateRow): string {
   const clause = clauseLine(g);
   if (clause) return `${clause}. ${g.passed ? g.reason : `Blocks ${list(g.routeNames.length ? g.routeNames : g.routes)}: ${g.reason}`}`;
+  if (g.kind === 'disclose') return `Disclosed: ${g.reason}`;
   if (g.passed) {
-    const on = g.evidence.map((e) => `${e.label} from ${e.source || 'a source'}, ${gateTime(e.at)}`);
+    const on =g.evidence.map((e) => `${e.label} from ${e.source || 'a source'}, ${gateTime(e.at)}`);
     return 'Passed: ' + (on.length ? list(on) : g.reason);
   }
   if (g.kind === 'block') return `Blocks ${list(g.routeNames.length ? g.routeNames : g.routes)}: ${g.reason}`;

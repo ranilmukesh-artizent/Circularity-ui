@@ -1102,6 +1102,12 @@ mcp-types==2.3.0 \
     --hash=sha256:968efdbdaedfab06adae40d378a34395f1090c5921d4be3c9cde283aaf76d91d \
     --hash=sha256:d1e46549edb35ee19a94940fcee6d1addd7e589ab7ea92dda83f5d84781fc362
     # via mcp
+mypy-extensions==1.1.0 \
+    --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505 \
+    --hash=sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558
+    # via
+    #   -r requirements.in
+    #   typing-inspect
 narwhals==2.29.0 \
     --hash=sha256:1c69b3dc30240f6e848c5a673cafc86affa44184ecce721e25b7194663ad10dc \
     --hash=sha256:eb19c877d9a705300bcc9414499a07b32a52db703369414e57e474ca5fc63c42
@@ -1185,6 +1191,7 @@ numpy==2.5.5 \
     #   mapie
     #   matplotlib
     #   pandas
+    #   pandera
     #   scikit-learn
     #   scipy
 opentelemetry-api==1.45.2 \
@@ -1196,7 +1203,9 @@ opentelemetry-api==1.45.2 \
 packaging==26.4 \
     --hash=sha256:81383611a09c1bc0b08b76e0fd5829d7c6824c65b27a6aee339da133f4233ea2 \
     --hash=sha256:c4b671c41ddb9bf26e543c37723610d28fb6bf7affc4da17cf048d419d2c062a
-    # via matplotlib
+    # via
+    #   matplotlib
+    #   pandera
 pandas==2.3.3 \
     --hash=sha256:0242fe9a49aa8b4d78a4fa03acb397a58833ef6199e9aa40a95f027bb3a1b6e7 \
     --hash=sha256:1611aedd912e1ff81ff41c745822980c49ce4a7907537be8692c8dbc31924593 \
@@ -1257,6 +1266,11 @@ pandas==2.3.3 \
     #   -r requirements.in
     #   formulaic
     #   lifelines
+    #   pandera
+pandera==0.36.0 \
+    --hash=sha256:70194c6c9c8e3e950d62d9018d1fa6ba2b4371d1abc62c124574173f71432d80 \
+    --hash=sha256:f9ed1191fde25467813cde0ab3f279707c6e05fbb6c61649cfc5b646d1b2a783
+    # via -r requirements.in
 paramiko==3.5.0 \
     --hash=sha256:1fedf06b085359051cd7d0d270cebe19e755a8a921cc2ddbfa647fb0cd7d68f9 \
     --hash=sha256:ad11e540da4f55cedda52931f1a3f812a8238a7af7f62a60de538cd80bb28124
@@ -1433,6 +1447,7 @@ pydantic==2.14.4 \
     #   groq
     #   mcp
     #   mcp-types
+    #   pandera
     #   pydantic-ai-slim
     #   pydantic-graph
     #   pydantic-settings
@@ -2169,6 +2184,10 @@ truststore==0.10.5 \
     # via
     #   httpcore2
     #   httpx2
+typeguard==4.6.1 \
+    --hash=sha256:aca1f365124873d5325b18aad1a3689d62f7184abe32d899413562cf51729d02 \
+    --hash=sha256:d94fd3552c5feb6bada6e8bb1167d9916c08d7442141aeb041b847ba9bd1afb1
+    # via pandera
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
     --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
@@ -2182,12 +2201,19 @@ typing-extensions==4.16.0 \
     #   mcp
     #   mcp-types
     #   opentelemetry-api
+    #   pandera
     #   psycopg
     #   pydantic
     #   pydantic-core
     #   referencing
     #   sqlalchemy
+    #   typeguard
+    #   typing-inspect
     #   typing-inspection
+typing-inspect==0.9.0 \
+    --hash=sha256:9ee6fc59062311ef8547596ab6b955e1b8aa46242d854bfc78f4f6b0eff35f9f \
+    --hash=sha256:b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78
+    # via pandera
 typing-inspection==0.4.5 \
     --hash=sha256:7f16c411e7930dc79596d42ab44672a3fe5f60eb34b781a1647e7872363120c7 \
     --hash=sha256:bc210535442b39e1bf2805e0c7a17dfd6a4ace760c84c7f7d16245d23a6b1c39

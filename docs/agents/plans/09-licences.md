@@ -18,7 +18,9 @@ that adds a library fills in its pinned version.
 | pydantic-evals | PyPI | MIT | 2.73.0 (dev lock only) | P9-2.15 | agent evals in CI with an injection corpus | pending |
 | authlib | PyPI | BSD-3-Clause | 1.9.5 (+ joserfc 1.8.0) | P9-8.9 | OIDC sign-in beside the demo sign-in | pending |
 | scim2-models | PyPI | Apache-2.0 | set by the adding task | P9-8.11 | SCIM provisioning and directory sync | pending |
-| pandera | PyPI | MIT | set by the adding task | P9-7.1 | checks on imported history batches | pending |
+| pandera | PyPI | MIT | 0.36.0 (`pandera[pandas]`, `backend/requirements.in`; also locks typeguard 4.6.1 (MIT), typing-inspect 0.9.0 (MIT) and mypy-extensions 1.1.0 (MIT), held below 1.2.0 as it is under two weeks old) | P9-7.1 | checks on imported history batches | pending |
+| pandas | PyPI | BSD-3-Clause | 2.3.3 (pinned below 3 in `backend/requirements.in`; lifelines needs 2.x; pandera's dependency) | P9-7.1 (first use in the api image beyond lifelines) | data frames pandera checks; a heavy dependency in the api image (image weight, not a container) | pending |
+| numpy | PyPI | BSD-3-Clause | 2.5.5 (locked; pandas' dependency) | P9-7.1 | pandas' array library | pending |
 | @xyflow/react | npm | MIT | 12.12.1 | P9-8.13 | Studio and Modeler canvas | pending |
 | @dagrejs/dagre | npm | MIT | 3.1.3 | P9-8.13 | auto-layout of imported flows | pending |
 | @gorules/jdm-editor | npm | MIT | set by the adding task | P9-8.16 | decision table editor in the Modeler | not added by P9-8.16 (native grid editor instead: the library pulls antd 5, monaco and exceljs and needs the shared web_node_modules volume); lead decides |

@@ -98,6 +98,16 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     # Plan 9 P9-9.6: the wholesale auction platform and the pricing guide, synthetic vendor mocks
     System("uc_auction", "Vehicle auction platform (synthetic)", "vehicle_auction", "vendor", "/vehicle-auction"),
     System("uc_price", "Vehicle pricing guide (synthetic)", "vehicle_pricing", "vendor", "/vehicle-pricing"),
+    # Plan 9 P9-10.2: the telecom segment's network inventory and decommission tracker, synthetic vendor mocks
+    System("tn_inv", "Network inventory (synthetic)", "network_inventory", "vendor", "/network-inventory"),
+    System("tn_decom", "Decommission tracker (synthetic)", "decommission_tracker", "vendor", "/decommission"),
+    # Plan 9 P9-11.2: the medical-device rental segment's rental system and asset management, synthetic vendor mocks
+    System("mr_rental", "Rental system (synthetic)", "medical_rental_system", "vendor", "/rental-system"),
+    System("mr_assets", "Asset management (synthetic)", "medical_asset_mgmt", "vendor", "/asset-management"),
+    # Plan 9 P9-11.3: the decontamination log (cleaning cycles by device tag), a synthetic vendor mock
+    System("mr_decon", "Decontamination log (synthetic)", "decon_log", "vendor", "/decon-log"),
+    # Plan 9 P9-11.4: the biomedical service system (PM, certification, tests, field safety notices), a synthetic vendor mock
+    System("mr_biomed", "Biomedical service system (synthetic)", "biomed_service", "vendor", "/biomed-service"),
 )
 EXTRA_BY_ID = {s.source_id: s for s in EXTRA_SYSTEMS}
 

@@ -27,6 +27,7 @@ export interface Route {
   id: string; plan: string; net: number; p10: number; p90: number; why?: string; target?: string; unc?: string;
   excluded?: boolean; failReason?: string; failGate?: number; terms: CostTerm[]; gates: string[]; gateNotes?: string[];
   co2?: number | null; co2Prov?: Co2Prov | null;
+  disclosures?: string[];
   demandStatus?: string; demandLabel?: string; variant?: string; vendor?: string; refurbDelta?: number | null; poolNet?: number;
   hold?: { forecast: number; holding: number; headline: number; sellNow: number; opp: string; review: string; days: number; fallback: number };
   components?: { n: string; dest: string; ref: string; v: number }[];
@@ -39,7 +40,7 @@ export interface OutcomeLine { label: string; kind: string; pred: number; act: n
 export interface GateEvidenceOnFile { type: string; label: string; source: string; at: string; value?: Record<string, unknown> }
 export interface GateRow {
   id: string; name: string; type: string; stage: string; stageLabel: string; passed: boolean;
-  kind: 'block' | 'require_step' | 'require_approval' | 'close_block'; routes: string[]; routeNames: string[]; hold: boolean;
+  kind: 'block' | 'require_step' | 'require_approval' | 'close_block' | 'disclose'; routes: string[]; routeNames: string[]; hold: boolean;
   step: string | null; owner: string; evidence: GateEvidenceOnFile[]; missing: string[]; reason: string; locked: boolean;
 }
 /** A case held until evidence arrives; `batch` names the lot batch it was opened in. */
@@ -78,7 +79,7 @@ export interface Run { stage: number; stages: RunStage[]; done?: boolean }
 export type TagKind = 'done' | 'todo' | 'block' | 'wait' | 'cur';
 export interface StageTag { k: TagKind; icon: string; word: string; who?: string; since?: string | null; why?: string }
 /** A fact of a stage, with the kind of provenance (ret, mod, rul, rec) and the system behind it. */
-export interface Fact { l: string; v: string; k: string; sys: string }
+export interface Fact { l: string; v: string; k: string; sys: string; estimate?: boolean }
 export interface StageData { res: string; facts: Fact[]; docs: string[]; mean: string; when?: string | null; who: string }
 export interface NextStep { kind: 'act' | 'ack' | 'approve' | 'wait' | 'blocked' | 'done'; n: number; label: string; action?: string; input?: Record<string, unknown>; role?: string }
 export interface Clock { level?: number; lim?: string; to?: string | null; due?: string; due2?: string }

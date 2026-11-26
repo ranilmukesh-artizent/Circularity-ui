@@ -39,6 +39,7 @@ EVIDENCE_TYPES: dict[str, str] = {
     "export_classification": "Export classification and screening",
     "field_safety_status": "Field safety notice status",
     "inventory_match": "Network inventory match",
+    "lien_release": "Lien release",
     "market_duties_record": "Market duties, UDI and service record",
     "odometer_statement": "Odometer statement",
     "product_passport": "Product passport",

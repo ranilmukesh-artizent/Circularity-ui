@@ -215,7 +215,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
               <dl className="stfacts">
                 {d.facts.map((f) => (
                   <div key={f.l} className={String(f.v).length > 34 ? 'wide' : undefined}>
-                    <dt>{f.l}</dt><dd>{f.v}</dd><span className="stpv"><StProv k={f.k} sys={f.sys} src={sources(c)} /></span>
+                    <dt>{f.l}</dt><dd>{f.v}</dd><span className="stpv"><StProv k={f.k} sys={f.sys} src={sources(c)} estimate={f.estimate} /></span>
                   </div>
                 ))}
               </dl>
