@@ -180,3 +180,33 @@ def test_order_invariant_used_cars_shortcut_runs_after_the_gates():
     d = _decide(recalled["id"], _flow(PREFER_RETAIL))
     assert next(r for r in d.routes if r["id"] == "retail:LOT-S")["excluded"] and d.route == "auction"
     assert d.rules_applied == [] or all(not r["excluded"] for r in d.routes if r["id"] == "auction")
+
+
+def _with_ev_step(pack: Pack) -> Pack:
+    d = Diversion(op_id="DV-UC-EV", stage="condition", kind="step", step="battery_assessment", owner_role="inspection_lead",
+                  when=[{"fact": "asset.powertrain", "op": "eq", "value": "ev"}])  # fmt: skip
+    return pack.model_copy(update={"diversions": [d]})
+
+
+def test_order_invariant_used_cars_assessment_sits_between_the_gates_and_valuation():
+    """P9-9.14: with DV-UC-EV in force the gates of stages 2 and 3 run first, the assessment step is listed at the Condition
+    stage, and no channel is valued until the assessment's result is on file."""
+    c = uc.open_car(6)  # UC-S6: an EV
+    with SessionLocal() as s:
+        stored = store.get(s, c["id"])
+        assert stored is not None
+        d = decide_case(c["id"], _with_ev_step(live_pack(s, stored)), _flow(), session=s)
+    assert d.trace == TRACE  # gates, valuation, queue plan, rules, rank
+    assert [g.gate_id for g in d.gates][:3] == ["G-VEH-TITLE", "G-VEH-ODO", "G-VEH-RECALL"] and all(g.passed for g in d.gates)
+    assert [(x["gate"], x["step"], x["stage"]) for x in d.required_steps] == [("DV-UC-EV", "battery_assessment", "condition")]
+    assert d.diversions == ["DV-UC-EV"] and d.route is None and d.recommendation is None
+    assert d.hold is not None and d.hold["gates"] == ["battery_assessment"]
+    assert all(r["excluded"] for r in d.routes) and any("battery assessment" in r["failReason"] for r in d.routes)
+    done = {"assessmentId": "BA-0001", "vin": uc.vin(6), "status": "complete", "batterySoh": 74,
+            "result": "pack_replacement_needed"}  # fmt: skip
+    uc.write("uc_insp", "battery_assessments", done | {"org_unit_id": uc.ORG})
+    with SessionLocal() as s:
+        stored = store.get(s, c["id"])
+        assert stored is not None
+        d = decide_case(c["id"], _with_ev_step(live_pack(s, stored)), _flow(), session=s)
+    assert d.hold is None and d.recommendation is not None and any(not r["excluded"] for r in d.routes)  # priced on its own

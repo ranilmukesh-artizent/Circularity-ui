@@ -46,14 +46,14 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import car_facts, gate_hold, store, telecom_facts, unit_plan
+from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
 from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
-from di.services.engine.routes import Route, rank_routes
+from di.services.engine.routes import POLICY, Route, fail, rank_routes
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
 from di.services.modeler.gates import (
@@ -399,6 +399,16 @@ def _shortcut(diversions: Sequence[Diversion], routes: list[Route]) -> str | Non
     return None
 
 
+def _only(diversions: Sequence[Diversion], routes: list[Route], go: str) -> None:
+    """A used car's shortcut to a channel (DV-UC-MILES: over 120,000 miles goes to the wholesale auction) values only that
+    channel: the others fail with the diversion's id. The gates ran before this (R20), and a channel they blocked stays
+    blocked with its own reason (P9-9.14)."""
+    d = next(x for x in diversions if x.kind == "shortcut" and go.split(":", 1)[0] == x.to)
+    for r in routes:
+        if not r["excluded"] and r["id"] != go:
+            fail(r, POLICY, f"Diversion {d.op_id}: only {d.to} is valued for this car")
+
+
 LOW_LIFE_HELD = frozenset({"release", "redeploy"})  # re-issue and pool: a Low life confidence leaves them to a person (P9-3.9)
 
 
@@ -495,10 +505,14 @@ def decide_case(
         c["requiredSteps"] = [*kept, *steps]
     else:
         c.pop("requiredSteps", None)
+    if wait := battery_wait.waiting(c, diversions):  # an EV waits for its battery assessment: no channel is valued (P9-9.14)
+        battery_wait.hold(c, routes, wait)
     apply_business(c, routes, rules, t)
-    go = _shortcut(diversions, routes)
+    go = None if wait else _shortcut(diversions, routes)
     if go:
         c["preferred"] = go
+        if kind == "used_cars":
+            _only(diversions, routes, go)
     eligible = {r["id"] for r in routes if not r["excluded"]}  # 5. rank
     chosen = go or (valued.best if valued.best in eligible else c.get("preferred"))
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)

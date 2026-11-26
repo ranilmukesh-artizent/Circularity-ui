@@ -158,6 +158,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
     # a car's title (P9-9.8), a rental device's decontamination (P9-11.6), a telecom unit's inventory record (P9-10.6)
     for model, fields, template in (
         ("condition", TITLE_FIELDS, "used_cars"),
+        ("condition", ("battery_assessment_result",), "used_cars"),  # an EV's assessment releases its hold (P9-9.14)
         ("condition", DECON_FIELDS, "medical_rental"),
         ("asset", INVENTORY_FIELDS, "telecom_network"),
         ("condition", BENCH_FIELDS, "telecom_network"),  # the wipe re-run on the bench (P9-10.7)

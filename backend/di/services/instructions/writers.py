@@ -628,7 +628,28 @@ def enhanced_decon(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  #
     return Sent([{"call": "POST cycles", "body": body}], cycle, {"cycleId": cycle, "enhanced": True})
 
 
+def battery_assessment(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """The vehicle inspection app (uc_insp): POST /battery-assessments {vin}, the traction battery assessment of an EV under
+    the used-car pack's diversion DV-UC-EV (P9-9.14). Idempotent on the instruction key (header Idempotency-Key): sending it
+    again gives the first assessment, never a second one. The assessment's result comes back as the fact
+    `condition.battery_assessment_result` (the adapter reads it), which releases the case's hold."""
+    vin = str((c.get("vehicle") or {}).get("vin") or str(c.get("assetId") or "").rpartition(":")[2])
+    if not vin:
+        raise NotApplicable("no VIN to assess the battery of")
+    body = {"vin": vin}
+    cl = client(s, "uc_insp")
+    try:
+        r = cl.request("POST", "/battery-assessments", json=body, headers={"Idempotency-Key": ins["idem_key"]})
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    ref = r.json().get("assessmentId")
+    return Sent([{"call": "POST battery-assessments", "body": body}], ref, {"assessmentId": ref, "vin": vin})
+
+
 WRITERS = {
+    "battery_assessment": battery_assessment,
     "enhanced_decon": enhanced_decon,
     "security_inspection": security_inspection,
     "firmware_upgrade": firmware_upgrade,

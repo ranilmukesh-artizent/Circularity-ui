@@ -124,6 +124,9 @@ class RebaseResult(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+_LOCKED = "{id} is a compliance guardrail locked by the pack: only tightening and extra approvers are allowed."
+
+
 def _n(x: float) -> str:
     return f"{x:g}"
 
@@ -192,8 +195,7 @@ def _tighten(pack: Pack, op: Tighten) -> Pack:
     param = g.param
     if param is None or op.field != param.field:  # only a field with a direction (`param.stricter`) can be tightened
         if g.locked:
-            msg = f"{g.id} is a compliance guardrail locked by the pack: only tightening and extra approvers are allowed."
-            raise OverlayError(op.id, "locked", msg)
+            raise OverlayError(op.id, "locked", _LOCKED.format(id=g.id))
         raise OverlayError(op.id, "not_editable", f"{op.field} of {g.id} is not editable in this pack.")
     stricter = op.value > param.value if param.stricter == "higher" else op.value < param.value
     if not stricter:
@@ -217,6 +219,9 @@ def _set_param(pack: Pack, op: SetParam) -> Pack:
     layer = pack.customer_layer
     rng = layer.params.get(op.path)
     if rng is None:
+        locked = _guardrail(pack, op.path.partition(".")[0])
+        if locked is not None and locked.locked:  # a parameter of a locked guardrail is never the customer's (UC-17)
+            raise OverlayError(op.id, "locked", _LOCKED.format(id=locked.id))
         raise _unknown(op.id, op.path, pack)
     if not rng.min <= op.value <= rng.max:
         raise OverlayError(op.id, "out_of_range", f"{op.path} must be between {_n(rng.min)} and {_n(rng.max)}.")
