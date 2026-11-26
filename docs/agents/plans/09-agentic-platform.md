@@ -1074,7 +1074,7 @@ each story went.
 - [ ] P9-12.11 Industrial pack in the full pack format
 - [ ] P9-12.12 Next-segments demo smoke
 - [ ] P9-12.13 Phase 12 gate
-- [ ] P9-13.1 Fixed-asset retirement and transfer instructions
+- [x] P9-13.1 Fixed-asset retirement and transfer instructions
 - [ ] P9-13.2 Lease residual gain or loss on the case
 - [x] P9-13.3 Downstream vendor qualification with certificate dates
 - [ ] P9-13.4 Customer credit settlement with ERP match

@@ -328,6 +328,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-12.1 extend the standard valuer with conditions and decay | this commit | wt-check 9 test_standard_valuer, test_pack_format: 28 passed; 1 failed (test_device_template_equals_po_golden, lane B 6.13 scope dims, not 12.1); lint ok | done |
 | 2026-11-26 | 09 · P9-13.3 downstream vendor qualification with certificate dates | this commit | wt-check 9 own tests + pack_format, standard_valuer, tn_follow_through: passed except test_device_template_equals_po_golden (lane B 6.13, known); lint ok | done |
 | 2026-11-26 | 09 · P9-13.7 calibration and model candidates across all packs | this commit | wt-check 9 own tests + pack_format, standard_valuer, tn_follow_through: passed except test_device_template_equals_po_golden (lane B 6.13, known); lint ok | done |
+| 2026-11-26 | 09 · P9-13.1 fixed-asset retirement and transfer instructions | this commit | writer: test_x13_asset_retirement + full wt-check ok; source-sim test_s4_assets 6 passed (private db); lead: uc/tn/mr follow-through fixed in fa5cbc5e (wt-check 2: all passed) | done |
 
 ## Decisions taken without the user (to review)
 
