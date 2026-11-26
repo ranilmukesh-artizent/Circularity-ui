@@ -41,6 +41,8 @@ export interface GraphViewProps {
   minimap?: boolean;
   /** The minimap's size in px (default 200 x 150). */
   minimapSize?: [number, number];
+  /** The minimap starts hidden when the canvas is narrower than this many px (the toggle still shows it). */
+  minimapMinWidth?: number;
   /** Dot grid spacing in px (default 20; the Modeler uses 24). */
   gap?: number;
   /**
@@ -62,6 +64,11 @@ function Inner(p: GraphViewProps) {
   const [live, setLive] = useState<Record<string, { x: number; y: number }>>({}); // positions while a drag is in progress
   const blocked = useRef(false);
   const [mapOpen, setMapOpen] = useState(true);
+  useEffect(() => {
+    const w = box.current?.getBoundingClientRect().width ?? 0;
+    if (p.minimapMinWidth && w < p.minimapMinWidth) setMapOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the canvas's width when it opens decides
+  }, []);
   const latest = useRef(p);
   latest.current = p;
 
@@ -119,9 +126,17 @@ function Inner(p: GraphViewProps) {
     const el = box.current;
     if (!el) return;
     const { width, height } = el.getBoundingClientRect();
-    const fit = Math.min((width - 48) / b.width, (height - 48) / b.height);
-    if (fit >= z) { void rf.fitView({ padding: 0.08, maxZoom: 1 }); return; }
-    void rf.setViewport({ x: 24 - b.x * z, y: height / 2 - (b.y + b.height / 2) * z, zoom: z });
+    const pad = 16, top = pad;
+    const availW = width - 2 * pad, availH = height - top - pad;
+    const fit = Math.min(availW / b.width, availH / b.height);
+    if (fit >= z) {
+      const zz = Math.min(fit, 1);
+      void rf.setViewport({ x: pad + (availW - b.width * zz) / 2 - b.x * zz, y: top + (availH - b.height * zz) / 2 - b.y * zz, zoom: zz });
+      return;
+    }
+    // too big at `z`: anchor the left edge; centre vertically when it fits that way, else start at the top
+    const y = b.height * z <= availH ? top + (availH - b.height * z) / 2 - b.y * z : top - b.y * z;
+    void rf.setViewport({ x: pad - b.x * z, y, zoom: z });
   }
 
   const nodes = toRfNodes(p.nodes, live, !!p.readOnly);
