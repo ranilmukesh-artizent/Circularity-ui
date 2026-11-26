@@ -429,6 +429,23 @@ await step('10 Queue plan: two CMH returns that both want FC-30117-R share it, t
   if (!/is planned for RT-\d+, where it adds more across the queue/.test(shown) || !/first come, first served/.test(shown)) throw new Error('the Overview reads: ' + shown);
   return shown;
 });
+// ---------------------------------------------------------------- 13
+await step('13 Key account: CRH-44120 (contract FC-30140, Westmark Supply) waits for the account manager', async () => {
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'CRH-44120', limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for CRH-44120');
+  const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
+  const key = ((v.approval || {}).holds || []).find((x) => x.id === 'TF-KEY');
+  if (!key || !/Westmark Supply/.test(key.reason) || key.owner !== 'Account manager') throw new Error('no key-account hold: ' + JSON.stringify(v.approval));
+  if (v.approval.kind !== 'person') throw new Error('a key account must wait for a person: ' + JSON.stringify(v.approval));
+  await admin.goto(`${base}/#/product/${row.id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-approval-key"]').first().waitFor({ timeout: UI });
+  const shown = (await admin.locator('[data-testid="tf-approval"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/Westmark Supply/.test(shown)) throw new Error('the Overview reads: ' + shown);
+  return shown;
+});
 await browser.close();
 if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));

@@ -537,6 +537,18 @@
    "fields": [
     "rul"
    ]
+  },
+  {
+   "key": "keyAccount",
+   "label": "Key account",
+   "kind": "set",
+   "values": [
+    "Yes",
+    "No"
+   ],
+   "fields": [
+    "keyAccount"
+   ]
   }
  ],
  "actors": [
@@ -601,6 +613,15 @@
     "fmt": "{}%+ life",
     "joiner": "",
     "words": {}
+   },
+   {
+    "key": "keyAccount",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "Yes": "key account returns",
+     "No": "other accounts' returns"
+    }
    }
   ],
   "path_names": {
@@ -745,7 +766,7 @@
       {"name": "Receiver", "rated_hours": 3000, "weight": 0.2, "critical": false, "alpha": 0}]}
     }
    },
-   "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}},
+   "approval": {"confidence_by_life": {"High": 0.90, "Medium": 0.78, "Low": 0.50}, "key_account": {"id": "TF-KEY", "role": "Account manager"}},
    "contract_refresh": {
     "flow": "contract_refresh",
     "window_days": 90,

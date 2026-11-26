@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal
 
-from di.services.modeler.evidence import Evidence
+from di.services.modeler.evidence import Evidence, evidence_of
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_life
 from di.services.models.rul import RulModel
@@ -98,6 +98,16 @@ def life_of(
     if rul_model and any(c.source == "model" for c in comps):
         return dataclasses.replace(res, table_version=rul_model.version)
     return res
+
+
+def key_account(case: Mapping[str, Any]) -> tuple[bool, str | None]:
+    """(whether the case's customer is a key account, the customer's name) from the case's `contract_line` evidence record
+    (P9-3.16, TF-12): the fleet contract's `key_account` flag and `customer`, as `fleet_evidence.line_value` copies them.
+    No record or no flag is (False, None or the name): a missing flag never holds a case."""
+    e = evidence_of(case, fleet_evidence.CONTRACT_LINE)
+    v = e.value if e is not None else {}
+    name = v.get("customer")
+    return v.get("keyAccount") is True, str(name) if name else None
 
 
 def merge_demand(base: Mapping[str, Any], extra: Mapping[str, Any]) -> dict[str, Any]:

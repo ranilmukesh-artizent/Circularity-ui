@@ -87,6 +87,8 @@ def line_value(line: Mapping[str, Any], contract: Mapping[str, Any] | None = Non
     out = {to: line.get(src) for src, to in FIELDS.items()}
     out["serial"] = line.get("serial")
     out["ownerOrg"] = (contract or {}).get("owner_org")
+    out["customer"] = (contract or {}).get("customer")  # P9-3.16: the key-account review names the customer
+    out["keyAccount"] = (contract or {}).get("key_account")
     return out
 
 
