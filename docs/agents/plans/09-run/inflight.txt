@@ -4,6 +4,5 @@ lead-merge (worktree ../lead-merge) is ahead of feature/plan-09-recover: lane B 
   combined verify (parallel suite + sim + serial connectors/open_case/screens_home), then tick 9.14, 9.15, 10.13, 11.13.
 P9-9.21 w1 done 9446f84 (smoke-p9-9.mjs), smoke being stabilised on a private stack (w8)
 P9-8.22 w5 done cad505f (smoke-p9-8.mjs), smoke being stabilised on a private stack (w8)
-P9-9.16 w2 parked: needs the generic add_approver op from 10.14 merged into lead-merge, then resume w2
 smokes w8 sonnet (smoke-p9-8 and smoke-p9-9 on project circsmoke)
 Blocked on lane B phase 6: 9.18, 9.19, 10.15+, 11.15+, 12.x (DV-08 at 6.13, DV-13 at 6.17).

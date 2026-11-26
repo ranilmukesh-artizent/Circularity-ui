@@ -316,6 +316,10 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-9.15 used-car replay data and 20 percent publish | this commit | impacted tests on di_w9 (writer files + importers of the changed modules): replays 11 files green; batch 12 27 files green; ruff, mypy, lint-imports green after 1863ee5; vitest 635/636 (noEngine load timeout) | done |
 | 2026-11-26 | 09 · P9-10.14 current-generation resale guardrail in plain words | this commit | impacted tests on di_w9 (writer files + importers of the changed modules): replays 11 files green; batch 12 27 files green; ruff, mypy, lint-imports green after 1863ee5; vitest 635/636 (noEngine load timeout) | done |
 | 2026-11-26 | 09 · P9-11.14 retire under 5 years guardrail in plain words | this commit | impacted tests on di_w9 (writer files + importers of the changed modules): replays 11 files green; batch 12 27 files green; ruff, mypy, lint-imports green after 1863ee5; vitest 635/636 (noEngine load timeout) | done |
+| 2026-11-26 | 09 · P9-9.16 auction under 40000 miles guardrail in plain words | this commit | batch 15 impacted run on di_w9 (11 files incl. DV-08, suggest_proposal, mr_service_gates, catalog_hygiene) green in 144 s; ruff, mypy, lint-imports green after cb5fd3d | done |
+| 2026-11-26 | 09 · P9-9.18 lot ageing flag alert and suggestion | this commit | batch 15 impacted run on di_w9 (11 files incl. DV-08, suggest_proposal, mr_service_gates, catalog_hygiene) green in 144 s; ruff, mypy, lint-imports green after cb5fd3d | done |
+| 2026-11-26 | 09 · P9-10.15 cross-region transfer alert and suggestion | this commit | batch 15 impacted run on di_w9 (11 files incl. DV-08, suggest_proposal, mr_service_gates, catalog_hygiene) green in 144 s; ruff, mypy, lint-imports green after cb5fd3d | done |
+| 2026-11-26 | 09 · P9-11.15 service planning around regional demand | this commit | batch 15 impacted run on di_w9 (11 files incl. DV-08, suggest_proposal, mr_service_gates, catalog_hygiene) green in 144 s; ruff, mypy, lint-imports green after cb5fd3d | done |
 
 ## Decisions taken without the user (to review)
 
