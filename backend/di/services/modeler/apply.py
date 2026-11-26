@@ -59,7 +59,7 @@ def apply_rules(case: Mapping[str, Any], routes: list[Route], rules: Sequence[Co
                     fail(r, POLICY, f"Business rule {rule.id} sends this return to {name}")
             ids.append(rule.id)
         elif rule.action == "prefer":
-            preferred = max(hits, key=lambda h: h["net"])["id"]  # the best of the lots when the path has several
+            preferred = max(hits, key=lambda h: h.get("net", 0))["id"]  # the best of the lots when the path has several
             ids.append(rule.id)
     if not any(not r["excluded"] for r in routes):
         for r, k in zip(routes, keep, strict=True):
