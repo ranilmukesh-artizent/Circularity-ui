@@ -109,7 +109,9 @@ def test_x_02_matches_pack_for_sample_prompts():
 
 
 def test_x_02_unknown_industry_nearest_and_question():
-    packs = _with_prompts()
+    packs = [
+        p for p in _with_prompts() if p.clarify
+    ]  # the packs that carry a clarifying question (the later packs may have none)
     m = match_pack(read_text(UNKNOWN), UNKNOWN, packs)
     assert m.nearest_only is True and m.key in {p.key for p in packs}
     cs = draft_change_set(UNKNOWN, "Customer A", packs=packs, answer=None)

@@ -132,7 +132,7 @@ def test_screen_lists_the_stage_agents_under_each_pack():
     """Gap 14: the 12 stage agents per pack with the autonomy the pack gives each stage (read; set through Compose)."""
     out = _get("admin").json()
     packs = {p["key"]: p for p in out["packs"]}
-    assert set(packs) == {"industrial", "tool_fleet", "device"}
+    assert {"industrial", "tool_fleet", "device"} <= set(packs)  # every pack is listed (packs as templates)
     ind = packs["industrial"]
     assert ind["name"] == "Industrial returns"
     assert [s["stage"] for s in ind["stages"]] == list(chain.AGENT_IDS)
