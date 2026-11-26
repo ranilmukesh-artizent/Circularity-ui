@@ -609,6 +609,22 @@
  "valuer": {
   "kind": "tool_fleet",
   "params": {
+   "co2": {
+    "version": "tf-co2-2026.1",
+    "source": "sample factors",
+    "year": 2026,
+    "basis": "sample",
+    "legal_review": "pending",
+    "note": "Synthetic factors per tool class. Replace with the customer's set, and have Kinective's Legal team review the recycling certificate text, before any report.",
+    "classes": {
+     "CMH": {"embodied_new_kg": 85, "mass_kg": 12, "prep_kg": 1.5, "refurb_kg": 6, "teardown_kg": 2, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.4, "road_kg_per_tkm": 0.1, "lane_km": 400},
+     "BRK": {"embodied_new_kg": 120, "mass_kg": 18, "prep_kg": 2, "refurb_kg": 9, "teardown_kg": 3, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.6, "road_kg_per_tkm": 0.1, "lane_km": 400},
+     "DCD": {"embodied_new_kg": 190, "mass_kg": 28, "prep_kg": 3, "refurb_kg": 14, "teardown_kg": 4, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.9, "road_kg_per_tkm": 0.1, "lane_km": 400},
+     "CRH": {"embodied_new_kg": 40, "mass_kg": 5, "prep_kg": 1, "refurb_kg": 3, "teardown_kg": 1, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.2, "road_kg_per_tkm": 0.1, "lane_km": 400},
+     "AGR": {"embodied_new_kg": 18, "mass_kg": 2.5, "prep_kg": 0.5, "refurb_kg": 1.5, "teardown_kg": 0.5, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.1, "road_kg_per_tkm": 0.1, "lane_km": 400},
+     "LSR": {"embodied_new_kg": 50, "mass_kg": 4, "prep_kg": 1, "refurb_kg": 4, "teardown_kg": 1, "recycle_credit_kg_per_kg": 1.8, "treat_kg": 0.2, "road_kg_per_tkm": 0.1, "lane_km": 400}
+    }
+   },
    "life": {
     "rule_version": "tf-life-1",
     "table_version": "tf-life-table-1",

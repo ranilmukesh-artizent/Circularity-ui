@@ -112,3 +112,4 @@ One line per event, newest last, times from `date`.
 | 26 Nov 03:44 | P9-3.10 merged. RulModel on lifelines, model kind in migration 0042; regrade.py and tool_life.py merged with P9-3.11 (both kept); smoke-p9-3 now 9 steps |
 | 2026-11-26 09:14 | RESUMED after the pause. Network to GitHub was flaky for a few minutes (retried, ok). Merged lane A (29 commits, clean). Committed P9-3.10 (501a7c4; regrade.py and tool_life.py conflicts with P9-3.11 resolved by keeping both; smoke-p9-3 is 9 steps). Lane A reports it already merged 3.11, 3.12, 4.10, 5.2 and fixed test_pack_versions and the two evals. Dispatch P9-6.9 to w2. Testing by impact from now on (full suite only at gates), as agreed with lane A. |
 | 26 Nov 03:53 | P9-3.13 merged. queue read in case-id order (ties no longer lose both); tool_queue.py; R8 note in 09-diffs |
+| 26 Nov 03:53 | P9-3.14 merged. mass-based CO2e table tf-co2-2026.1 (legal review pending); review item: two CO2 factor sets |

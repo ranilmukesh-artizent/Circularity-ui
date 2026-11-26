@@ -19,6 +19,10 @@ export const netLine = (p: PathView): string => (p.ok ? `Net ${money(p.net)}` : 
 export const lineText = (l: PathView['lines'][number]): string =>
   `${l.type === 'v' ? 'Value' : l.type === 'c' ? 'Cost' : 'Holding'} ${l.label}: ${l.type === 'v' ? '' : '−'}${money(l.amt)}`;
 
+/** "CO2e avoided 83.5 kg · sample factors tf-co2-2026.1" (P9-3.14, TF-13), or null for a path without a factor. */
+export const co2Text = (p: PathView): string | null =>
+  p.co2 == null ? null : `CO2e avoided ${p.co2} kg${p.co2Source ? ` · ${p.co2Source}` : ''}`;
+
 /** The six paths valued against the live named demand (plan 9, P9-3.12, TF-07): net and value lines, blocked ones with their reason, and the uplift of the best over the standard route. */
 export function PathsSection({ paths, best, second, standard, uplift }: { paths: PathView[] } & Marks) {
   if (!paths.length) return null;
@@ -40,6 +44,11 @@ export function PathsSection({ paths, best, second, standard, uplift }: { paths:
             {!p.ok && <span className="chip bad">Blocked</span>}
           </summary>
           {p.ok && <p style={{ margin: '4px 0' }}>{p.why}</p>}
+          {p.ok && co2Text(p) && (
+            <p className="muted" style={{ margin: '4px 0' }} title={p.co2Formula ?? undefined} data-testid={`tf-path-${p.k}-co2`}>
+              {co2Text(p)}
+            </p>
+          )}
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {p.lines.map((l, i) => (
               <li key={i} title={l.basis} data-testid={`tf-path-${p.k}-line`}>

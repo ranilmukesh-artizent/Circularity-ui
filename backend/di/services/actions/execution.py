@@ -35,6 +35,22 @@ def _active(c: store.Case) -> int:
 
 
 # ---------------------------------------------------------------- outcome.confirm
+# Compliance text: pending review by Kinective's Legal team.
+RECYCLING_TEXT = "Recycling needs the recycler's certificate before the case closes (GR-06)"
+
+
+def recycling_refusal(c: store.Case) -> str | None:
+    """P9-3.14 (GR-06): a tool-fleet case closed on `exit` needs a custody step the recycler acknowledged with its own
+    certificate reference (not a simulated acknowledgement); the refusal text, or None when nothing is missing."""
+    if c.get("template") != "tool_fleet" or ((c.get("chosen") or c.get("recommendation") or {}).get("id")) != "exit":
+        return None
+    for s in (c.get("exec") or {}).get("steps") or []:
+        a = s.get("ack")
+        if s.get("k") == "custody" and a and a.get("ref") and not a.get("sim"):
+            return None
+    return RECYCLING_TEXT
+
+
 @guard("outcome.confirm")
 def confirm_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
@@ -42,6 +58,8 @@ def confirm_guard(i: dict[str, Any], ctx: CallContext):
         return "duplicate", "The outcome is already confirmed"
     if c["stage"] != "closed":
         return "conflict", f"The outcome has not been reported yet; {c['id']} is still with the enterprise systems."
+    if refusal := recycling_refusal(c):
+        return "conflict", refusal
     return None
 
 

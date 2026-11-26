@@ -80,6 +80,10 @@ export interface PathLine {
 
 /** One of the six paths valued against the live named demand (P9-3.12, TF-07); `dest` is the named order it fills. */
 export interface PathView {
+  /** kg CO2e avoided against buying new (P9-3.14, TF-13), its formula and the factor set it used; null without a factor. Information only: never in `net`. */
+  co2?: number | null;
+  co2Formula?: string | null;
+  co2Source?: string | null;
   k: string;
   name: string;
   ok: boolean;

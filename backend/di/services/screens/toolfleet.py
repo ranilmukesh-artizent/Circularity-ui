@@ -19,6 +19,8 @@ GET /api/screens/toolfleet/{case_id}
     label, basis, amt}], dest}` (`dest` the named order it fills: a fleet renewal, sales order, bid, pool request or repair
     orders), against the org's live named demand (`di.repositories.tool_demand`); `best` is the recommended path, `second`
     the next eligible by net, `standard` the default path of the tool's function and `uplift` best net minus standard net.
+    `co2` (P9-3.14) is the provenance of the CO2e factor table `{version, source, year, basis, legal_review}`; each path row
+    also has `co2` (kg avoided, `tool_carbon`, information only), `co2Formula` and `co2Source` ("sample factors tf-co2-2026.1").
     `quarantine` (P9-3.7) is the recall quarantine of the tool, `{recall_id, remedy, blocked, affected_parts, released}`
     (`released`: `{by, at, note}` once Quality released a repair recall), or null when no active recall names its serial.
 
@@ -46,7 +48,7 @@ from di.repositories.context import load_case
 from di.repositories.packs import active_pack
 from di.services.cases import intake, regrade, replan, tool_queue
 from di.services.modeler import gates as gate_catalogue
-from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_inputs
+from di.services.modeler.valuers import fleet_evidence, tool_carbon, tool_fleet, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
 
@@ -126,6 +128,32 @@ def _plan(s: Session, c: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _carbon(c: dict[str, Any], pack: Any, paths: dict[str, Any]) -> dict[str, Any] | None:
+    """CO2e avoided per path (P9-3.14, TF-13): each row gets `co2` (kg, from `tool_carbon`, null without a factor), `co2Formula`
+    and `co2Source` ("sample factors tf-co2-2026.1"); returns the table's provenance `{version, source, year, basis,
+    legal_review}` (null without a table). Information only: never touches `net`."""
+    table = pack.valuer.params.get("co2")
+    v = c.get("valuer") or {}
+    for row in paths["paths"]:
+        dest = row.get("dest")
+        line = (
+            tool_carbon.co2_avoided(
+                row["k"],
+                v.get("cls") or c.get("cls") or "",
+                {**dest, "other_site": bool(dest.get("site")) and dest["site"] != v.get("site")} if dest else None,
+                len((dest or {}).get("wos") or []),
+                table,
+            )
+            if table
+            else None
+        )
+        row["co2"] = line.kg if line else None
+        row["co2Formula"] = line.formula if line else None
+        row["co2Source"] = f"{line.source} {line.version}" if line else None
+    keys = ("version", "source", "year", "basis", "legal_review")
+    return {k: table.get(k) for k in keys} if table else None
+
+
 def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
     """The panel's read for one tool-fleet case (module docstring)."""
     c = load_case(principal, s, case_id, "product", "case")
@@ -137,8 +165,10 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
     params = next((g.params for g in gate_catalogue.pack_gates(pack) if g.id == fleet_evidence.TEL_GATE), {})
     now = clock.now()
     grade = tool_inputs.grade_of(regrade.workbench_evidence(s, c.get("serial") or c["assetId"]), est, now=now)
+    paths = _paths(s, c)
     return {
         "case_id": case_id,
+        "co2": _carbon(c, pack, paths),
         "pack_version": pack.version,
         "flow": c.get("flow") or "returns",
         "grade": dataclasses.asdict(grade),
@@ -146,7 +176,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "gates": [_gate(g, now, params) for g in c.get("gates") or []],
         "life": c.get("life"),
         "disagreement": c.get("disagreement"),
-        **_paths(s, c),
+        **paths,
         "plan": _plan(s, c),
         "approval": None,
         "followThrough": None,
