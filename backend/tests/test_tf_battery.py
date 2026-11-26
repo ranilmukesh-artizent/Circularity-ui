@@ -14,8 +14,25 @@ from di.services.modeler.valuers import battery, tool_fleet, tool_inputs
 
 AS_OF = datetime(2026, 11, 2, tzinfo=UTC)
 PARAMS = load_pack("tool_fleet").valuer.params["battery"]
-POOL = {"kind": "proj", "id": "TPR-9", "who": "Houston service center", "site": "Houston", "need": 14, "rental": 140, "quote": "PR-9"}
-LEASE = {"kind": "lease", "id": "FC-BAT-1", "who": "Brightline Mechanical", "site": "Houston", "need": 20, "rate": 11, "term": 12, "renew": False}
+POOL = {
+    "kind": "proj",
+    "id": "TPR-9",
+    "who": "Houston service center",
+    "site": "Houston",
+    "need": 14,
+    "rental": 140,
+    "quote": "PR-9",
+}
+LEASE = {
+    "kind": "lease",
+    "id": "FC-BAT-1",
+    "who": "Brightline Mechanical",
+    "site": "Houston",
+    "need": 20,
+    "rate": 11,
+    "term": 12,
+    "renew": False,
+}
 
 
 def _case(soh: float | None, *, damaged: bool = False, lease: bool = False, pool: bool = False) -> dict:
@@ -70,7 +87,12 @@ def test_tf_16_gates_apply_to_a_battery_case_only():
 
 
 def test_tf_16_decide_case_sends_bat_to_the_battery_valuer():
-    d = decide_case(_case(76, pool=True) | {"evidenceRecords": battery.sample_evidence(76, AS_OF)}, load_pack("tool_fleet"), FlowVersion(None, 1, ()), AS_OF)
+    d = decide_case(
+        _case(76, pool=True) | {"evidenceRecords": battery.sample_evidence(76, AS_OF)},
+        load_pack("tool_fleet"),
+        FlowVersion(None, 1, ()),
+        AS_OF,
+    )
     assert d.route == "redeploy" and [r["id"] for r in d.routes] == ["release", "redeploy", "resell", "exit"]
     assert next(r for r in d.routes if r["id"] == "exit")["plan"] == "Take-back recycling"
     no_permit = decide_case(_case(76, pool=True), load_pack("tool_fleet"), FlowVersion(None, 1, ()), AS_OF)
