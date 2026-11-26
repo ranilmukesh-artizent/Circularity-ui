@@ -169,7 +169,10 @@ def test_stages_are_the_seven():
 def test_route_classes_and_guardrail_types():
     classes = {k: {r.id: list(r.classes) for r in load_pack(k).routes} for k in TEMPLATE_KEYS}
     assert classes["tool_fleet"]["exit"] == ["recycle", "exit"]
-    assert classes["device"] == {c: ["sale"] for c in ("buynow", "offers", "auction", "market", "wholesale")}
+    # repair_sell, parts and recycle are the Recover routes of a received device (P9-6.15)
+    assert classes["device"] == {c: ["sale"] for c in ("buynow", "offers", "auction", "market", "wholesale")} | {
+        "repair_sell": ["sale"], "parts": ["parts"], "recycle": ["recycle"],
+    }  # fmt: skip
     assert classes["industrial"]["extparts"] == ["parts", "sale"]
     d2 = next(g for g in load_pack("device").guardrails if g.id == "GR-D2")
     assert d2.param is not None and (d2.param.field, d2.param.value, d2.param.stricter) == ("floor", 0.55, "higher")

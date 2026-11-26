@@ -159,3 +159,5 @@ One line per event, newest last, times from `date`.
 | 26 Nov 16:43 | P9-6.18 merged. Shadow count and refit job; promote refused under 30 shadow cases |
 | 26 Nov 16:44 | P9-6.15 merged. repair_sell, parts and recycle recover-only routes; GR-D9 reason shown first on listing channels |
 | 26 Nov 16:44 | P9-6.19 merged. GR-D5 undercut and GR-D9 parts declaration |
+| 26 Nov 22:50 | Phases 3+4 check, tests: parallel suite 784 + 2742 passed in shards 1 and 4, shards 2 and 3 failed only on items since fixed or fresh-database (pack format golden dims, young write-off age, test_tf_07 needs the synced fleet, lane A's auction sale days); serial-only files 38 + 155 + 598 passed; source-sim 478 passed; lint, mypy, import-linter clean. Reviews: `09-work/review-phase-3.md`, `review-phase-4.md`; the High and Medium findings fixed (2ccafc2a, d2eab8df). Browser smokes (pages, RT-1048, p9-3, p9-4) are deferred to the final check by the lead's decision, and the plan boxes 3.22 and 4.13 stay open until they run. |
+| 26 Nov 22:50 | Phase 4 gate green (tests), ready to merge. Lane B head includes lane A recover 77d5b53a. |
