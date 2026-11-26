@@ -270,7 +270,9 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
         inputs = sd.get("inputs")  # a replay or a simulation without a session: the snapshot the case holds
     if inputs is None:
         return None
-    ticket = service_desk.decide_ticket(inputs)
+    ticket = (
+        service_desk.batch_ticket(inputs) if sd.get("batch") else service_desk.decide_ticket(inputs)
+    )  # a batch per tool (P9-4.8)
     if (
         ticket["best"] is None
     ):  # nothing priced yet (a draft, no estimate): the return is valued as before, a technician checks first
@@ -491,5 +493,11 @@ def write_back(case: MutableMapping[str, Any], d: Decision) -> None:
         by_n = {ln["n"]: ln for ln in d.ticket["lines"]}
         for line in sd["lines"]:
             line["options"], line["best"] = by_n[line["n"]]["options"], by_n[line["n"]]["best"]
+        if "batch" in d.ticket:  # a batch: the split, its totals and each line's chosen option (P9-4.8)
+            sd["split"] = {
+                "counts": d.ticket["batch"]["split"],
+                "totals": d.ticket["batch"]["totals"],
+                "lines": d.ticket["batch"]["lines"],
+            }
         if d.ticket["holds"]:
             case["approvalHolds"] = d.ticket["holds"]

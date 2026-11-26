@@ -23,6 +23,17 @@ export interface LineEstimate {
 /** The three ways to settle a line: fix it, a covered swap, an upgrade offer (P9-4.6, SD-04). */
 export type OptionKey = 'fix' | 'swap' | 'upgrade';
 
+/** The routes of a batch case: the split (recommended) and the two comparisons (P9-4.8, SD-07). */
+export type BatchRouteKey = 'split' | 'all_fix' | 'all_upgrade';
+
+/** The split of a batch decided per tool: the lines per chosen option, the totals of the chosen options (the customer's price
+ * and the margins) and each line's chosen option with the reason. Computed by the server. */
+export interface BatchSplit {
+  counts: Record<OptionKey, number>;
+  totals: { customer_price: number; margin: number; expected_margin: number };
+  lines: { n: number; serial: string; k: OptionKey | null; name: string | null; why: string }[];
+}
+
 /** One value line of an option and the table it cites. `type` v is value, c is cost. */
 export interface OptionLine { type: 'v' | 'c'; label: string; amt: number; basis: string; cites: string }
 
@@ -30,7 +41,7 @@ export interface OptionLine { type: 'v' | 'c'; label: string; amt: number; basis
  * stock and the past offers; never written by a model. An ineligible option has only its `why`. `takeUp` is the chance the
  * customer accepts an upgrade. */
 export interface TicketOption {
-  k: OptionKey; name: string; eligible: boolean; why: string; customer_price: number | null; margin: number | null;
+  k: OptionKey | BatchRouteKey; name: string; eligible: boolean; why: string; customer_price: number | null; margin: number | null;
   expected_margin: number | null; days: number | null; take_up: number | null; credit: number | null; cost: number | null; lines: OptionLine[];
 }
 
@@ -48,6 +59,7 @@ export interface TicketLine {
 export interface ServiceDeskView {
   ticket: string; account: string | null; market: string | null; site: string | null; batch: boolean; batchId: string | null;
   loanerPromised: boolean; requesterRole: string | null; lines: TicketLine[]; options?: TicketOption[]; approval?: Approval | null;
+  split?: BatchSplit | null;
 }
 
 /** The service-desk block of a case, or null for a case that is not opened from a ticket (the industrial book, a return). */

@@ -2,6 +2,9 @@
 
     decide_ticket(inputs) -> TicketDecision        per line the three options with their value lines, the best, and the case's
                                                    options (the sum over the lines); pure
+    decide_batch(inputs) -> BatchDecision          a batch decided per tool (P9-4.8, SD-07): each line alone, the swaps taking
+                                                   the stock in line order, the split and its totals; `batch_ticket` is the
+                                                   case's view of it (options split, all_fix, all_upgrade)
     approval_holds(decision, route) -> [hold]      the holds of the route the case recommends: GR-S3, GR-S1, GR-14, GR-C1
 
 `inputs` is `di.services.service_desk.inputs.gather`'s snapshot (JSON types): per line the estimate (P9-4.4) and the outputs
@@ -18,6 +21,7 @@ is computed, R16), write, approve or release anything (a person approves through
 
 import math
 from collections.abc import Mapping
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
@@ -27,7 +31,16 @@ from di.services.modeler.valuers.tool_fleet import CLS
 D = Decimal
 CENT = D("0.01")
 KEYS = ("fix", "swap", "upgrade")
-NAMES = {"fix": "Fix it", "swap": "Covered swap", "upgrade": "Upgrade offer"}
+NAMES = {
+    "fix": "Fix it", "swap": "Covered swap", "upgrade": "Upgrade offer",
+    "split": "Batch split", "all_fix": "Fix every tool", "all_upgrade": "Upgrade every tool",
+}  # fmt: skip
+COMPARE = (
+    ("all_fix", "fix"),
+    ("all_upgrade", "upgrade"),
+)  # a batch case's comparison routes and the option each takes on every line
+SPLIT_LABELS = (("upgrade", "Upgrade"), ("fix", "Fix"), ("swap", "Covered swap"))
+STOCK_USED = "Refurbished stock used by earlier lines of this batch"
 STALE = "Prices must come from the market's current approved table (GR-S3)"
 
 
@@ -177,8 +190,10 @@ def _best(options: list[dict[str, Any]]) -> str | None:
     return max(ok, key=lambda o: (o["expected_margin"], -KEYS.index(o["k"])))["k"] if ok else None
 
 
-def _case_option(k: str, lines: list[dict[str, Any]]) -> dict[str, Any]:
-    opts = [next(o for o in ln["options"] if o["k"] == k) for ln in lines]
+def _case_option(k: str, lines: list[dict[str, Any]], of: str | None = None) -> dict[str, Any]:
+    """The case's option `k`: the sum over the lines of the option `of` (default `k`), open only when open to every line."""
+    of = of or k
+    opts = [next(o for o in ln["options"] if o["k"] == of) for ln in lines]
     bad = next((o for o in opts if not o["eligible"]), None)
     if bad is not None:
         return _option(k, False, bad["why"])
@@ -186,7 +201,7 @@ def _case_option(k: str, lines: list[dict[str, Any]]) -> dict[str, Any]:
     return _option(
         k,
         True,
-        opts[0]["why"] if len(opts) == 1 else f"{NAMES[k]} for all {len(opts)} tools",
+        opts[0]["why"] if len(opts) == 1 else f"{NAMES[of]} for all {len(opts)} tools",
         customer_price=_f(sum((_d(o["customer_price"]) for o in opts), D(0))),
         margin=_f(sum((_d(o["margin"]) for o in opts), D(0))),
         expected_margin=_f(sum((_d(o["expected_margin"]) for o in opts), D(0))),
@@ -224,6 +239,80 @@ def decide_ticket(inputs: Mapping[str, Any]) -> TicketDecision:
     }
 
 
+@dataclass(frozen=True)
+class BatchDecision:
+    """`lines` each decided alone (`decide_ticket`) with the stock shared in line order, so a line's `best` is its chosen
+    option; `split` the lines per chosen option; `totals` the customer's price and the margins of the chosen options."""
+
+    lines: list[dict[str, Any]]
+    split: dict[str, int]
+    totals: dict[str, Decimal]
+
+
+def split_line(split: Mapping[str, int]) -> str:
+    """ "Upgrade 9 · Fix 11 · Covered swap 2": the lines per chosen option, an option no line took left out."""
+    return " · ".join(f"{label} {split[k]}" for k, label in SPLIT_LABELS if split.get(k))
+
+
+def _allocate(d: TicketDecision, inputs: Mapping[str, Any]) -> BatchDecision:
+    """Each line keeps what `decide_ticket` chose for it, except that swaps take the class's refurbished units in line order: a
+    line that finds none left loses its swap (with the stated reason) and takes its next best option."""
+    left: dict[str, int] = {}
+    lines: list[dict[str, Any]] = []
+    for ln, src in zip(d["lines"], inputs["lines"], strict=True):
+        cls = str(src["model_class"])
+        left.setdefault(cls, int(src["refurb_stock"]))
+        if ln["best"] == "swap":
+            if left[cls] < 1:
+                options = [_option("swap", False, STOCK_USED) if o["k"] == "swap" else o for o in ln["options"]]
+                ln = ln | {"options": options, "best": _best(options)}
+            else:
+                left[cls] -= 1
+        lines.append(ln)
+    chosen = [next(o for o in ln["options"] if o["k"] == ln["best"]) for ln in lines if ln["best"]]
+    return BatchDecision(
+        lines=lines,
+        split={k: sum(1 for ln in lines if ln["best"] == k) for k, _ in SPLIT_LABELS},
+        totals={k: sum((_d(o[k]) for o in chosen), D(0)).quantize(CENT, ROUND_HALF_UP)
+                for k in ("customer_price", "margin", "expected_margin")},
+    )  # fmt: skip
+
+
+def decide_batch(inputs: Mapping[str, Any]) -> BatchDecision:
+    """A batch decided per tool (module docstring, SD-07): the split and its totals."""
+    return _allocate(decide_ticket(inputs), inputs)
+
+
+def batch_ticket(inputs: Mapping[str, Any]) -> TicketDecision:
+    """The batch as the ticket decision `decide_case` reads: the lines as `decide_batch` chose them, and the case's options
+    `split` (the sum of the chosen options, the best) then `all_fix` and `all_upgrade` to compare, each open only when open to
+    every line. `batch` holds what the page shows: the split, the totals and each line's chosen option with its reason."""
+    d = decide_ticket(inputs)
+    b = _allocate(d, inputs)
+    unpriced = next((ln for ln in b.lines if ln["best"] is None), None)
+    if unpriced is not None:
+        split = _option("split", False, unpriced["options"][0]["why"])
+    else:
+        days = [o["days"] for ln in b.lines for o in ln["options"] if o["k"] == ln["best"] and o["days"] is not None]
+        split = _option(
+            "split", True, split_line(b.split),
+            customer_price=_f(b.totals["customer_price"]), margin=_f(b.totals["margin"]),
+            expected_margin=_f(b.totals["expected_margin"]), days=max(days) if days else None,
+        )  # fmt: skip
+    options = [split, *(_case_option(k, d["lines"], of) for k, of in COMPARE)]
+    rows = []
+    for ln in b.lines:
+        o = next((x for x in ln["options"] if x["k"] == ln["best"]), None)
+        rows.append({"n": ln["n"], "serial": ln["serial"], "k": ln["best"], "name": o["name"] if o else None,
+                     "why": o["why"] if o else ln["options"][0]["why"]})  # fmt: skip
+    return d | {
+        "lines": b.lines,
+        "options": options,
+        "best": "split" if split["eligible"] else None,
+        "batch": {"split": b.split, "totals": {k: float(v) for k, v in b.totals.items()}, "lines": rows},
+    }
+
+
 def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, str]]:
     """What holds the recommendation for a person (I-10 reads `approvalHolds` as guardrail holds; the standing policy of I-11 may
     approve only a case with none): GR-S3 a price from a table that is not the current approved version, GR-S1 an estimate that
@@ -240,14 +329,18 @@ def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, st
     if drafts:
         hold("GR-S1", f"The estimate of {', '.join(drafts)} is a draft: a technician checks it")
     for ln in d["lines"]:
-        o = next((x for x in ln["options"] if x["k"] == route), None)
+        k = ln["best"] if route == "split" else dict(COMPARE).get(route or "", route)  # the option this line takes on the route
+        o = next((x for x in ln["options"] if x["k"] == k), None)
         if o is None or not o["eligible"]:
             continue
-        if route == "fix" and _d(o["cost"]) / fx > GR_14_USD:
+        if k == "fix" and _d(o["cost"]) / fx > GR_14_USD:
             hold("GR-14", f"The repair of {ln['serial']} costs over ${GR_14_USD}: the fleet manager approves (GR-14)")
-        if route == "upgrade" and _d(o["credit"]) / fx > GR_C1_USD:
+        if k == "upgrade" and _d(o["credit"]) / fx > GR_C1_USD:
             hold("GR-C1", f"The credit on {ln['serial']} is over ${GR_C1_USD}: sales approves (GR-C1)")
     return out
 
 
-__all__ = ["KEYS", "NAMES", "STALE", "TicketDecision", "approval_holds", "decide_ticket"]
+__all__ = [
+    "KEYS", "NAMES", "STALE", "BatchDecision", "TicketDecision",
+    "approval_holds", "batch_ticket", "decide_batch", "decide_ticket", "split_line",
+]  # fmt: skip

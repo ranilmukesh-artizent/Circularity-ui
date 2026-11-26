@@ -653,7 +653,7 @@ def case_page(session: Session, p: Principal, case_id: str) -> dict:
     if (dev := device_block(c, session)) is not None:  # a received device or a bulk lot (plan 9, P9-6.4)
         rec["device"] = dev
     if (sd := service_desk_view(session, c)) is not None:  # a service ticket or batch (plan 9, P9-4.3)
-        rec["serviceDesk"] = sd
+        rec["serviceDesk"] = sd | {"split": (c.get("serviceDesk") or {}).get("split")}  # a batch's split (P9-4.8)
     return {
         "case": rec,
         "model": as_model(c),

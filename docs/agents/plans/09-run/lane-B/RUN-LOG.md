@@ -114,3 +114,4 @@ One line per event, newest last, times from `date`.
 | 26 Nov 03:53 | P9-3.13 merged. queue read in case-id order (ties no longer lose both); tool_queue.py; R8 note in 09-diffs |
 | 26 Nov 03:53 | P9-3.14 merged. mass-based CO2e table tf-co2-2026.1 (legal review pending); review item: two CO2 factor sets |
 | 26 Nov 03:53 | P9-3.15 merged. GR-14 and GR-15 approval guardrails in the pack; reuses I-10 and I-11; no new approval path |
+| 26 Nov 03:53 | P9-4.8 merged. batch decided per tool as one split; one-set-of-orders test is in P9-4.9 |

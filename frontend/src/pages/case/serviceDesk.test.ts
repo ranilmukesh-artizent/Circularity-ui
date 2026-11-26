@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TicketOption } from '../../api/serviceDesk';
-import { approvalLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, ticketLine } from './serviceDesk';
+import { approvalLine, batchTotalsLine, estimateLine, estimateStatus, expectedLine, flipLine, gateLine, keyUsed, lineProblem, lineSummary, money, optionOrder, optionSummary, peakLine, splitLine, ticketLine } from './serviceDesk';
 
 describe('P9-4.4 estimateLine (SD-02)', () => {
   const e = { point: 430, p10: 395, p90: 470, confidence: 0.92, n: 186, currency: 'USD' };
@@ -86,5 +86,17 @@ describe('P9-4.10 flipLine (SD-09)', () => {
   });
   it('names where the expected margin peaks', () => {
     expect(peakLine({ peak: { credit_pct: 0.2, upgrade: 97.1 }, currency: 'USD' })).toBe('Expected margin of the upgrade peaks at 20% credit: $97.10');
+  });
+});
+
+describe('P9-4.8 splitLine (SD-07)', () => {
+  it('says the lines per chosen option', () => {
+    expect(splitLine({ upgrade: 9, fix: 11, swap: 2 })).toBe('Upgrade 9 · Fix 11 · Covered swap 2');
+  });
+  it('leaves out an option no line took', () => {
+    expect(splitLine({ upgrade: 0, fix: 4, swap: 0 })).toBe('Fix 4');
+  });
+  it('says the totals of the chosen options', () => {
+    expect(batchTotalsLine({ customer_price: 4120, margin: 1236.5, expected_margin: 1180 }, 'USD')).toBe('Customer pays $4,120 · margin $1,236.50 · expected margin $1,180');
   });
 });

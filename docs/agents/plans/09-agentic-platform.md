@@ -886,7 +886,7 @@ each story went.
 - [x] P9-4.5 Estimate accuracy on held-out repairs
 - [x] P9-4.6 Price fix, covered swap and upgrade options
 - [x] P9-4.7 Re-run options when the fault is posted
-- [ ] P9-4.8 Decide a batch per tool as one split
+- [x] P9-4.8 Decide a batch per tool as one split
 - [ ] P9-4.9 Execute the approved option on market terms
 - [x] P9-4.10 Test a credit before offering it
 - [ ] P9-4.11 Take-up model learned from past offers
