@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CaseRec } from './case';
 import { actionScope } from './invalidation';
-import { postFault, serviceDeskView, type ServiceDeskView } from './serviceDesk';
+import { postFault, serviceDeskView, tablesLine, type ServiceDeskView } from './serviceDesk';
 
 const m = vi.hoisted(() => ({ invoke: vi.fn(async (): Promise<unknown> => ({ ok: true, output: {}, key: null, action: 'x' })) }));
 vi.mock('./actions', () => ({ invoke: m.invoke }));
@@ -36,5 +36,16 @@ describe('P9-4.7 postFault (SD-06)', () => {
   });
   it('refreshes the case and the work lists', () => {
     expect(actionScope('serviceDesk.postFault')).toEqual(expect.arrayContaining(['case', 'modeler']));
+  });
+});
+
+describe('P9-7.7 tablesLine (SD-10)', () => {
+  it('names the pilot tables of a canary ticket and the standard quote of its control', () => {
+    expect(tablesLine({ inputs: { tables: { market: 'FR', arm: 'canary', label: 'Pilot FR (new tables)' } } })).toBe('Priced from Pilot FR (new tables): FR tables');
+    expect(tablesLine({ inputs: { tables: { market: 'DE', arm: 'control', label: 'Standard quote' } } })).toBe('Priced from Standard quote: DE tables');
+  });
+  it('is empty outside a table rollout', () => {
+    expect(tablesLine({})).toBe('');
+    expect(tablesLine({ inputs: { tables: { market: 'DE', arm: 'out', label: null } } })).toBe('');
   });
 });

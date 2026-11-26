@@ -88,5 +88,9 @@ def _retired_compute(_s: Session, _scope: Scope | None, _as_of: date) -> Answer:
     return retired_earliest(replay.rows())
 
 
-analytics.register(WorkedQuestion(mt.QUESTION_ID, "Why did turnaround slip at the East depot?", "bar", _turnaround_compute))
-analytics.register(WorkedQuestion("retired_earliest", "Which device models are retired earliest?", "bar", _retired_compute))
+analytics.register(
+    WorkedQuestion(mt.QUESTION_ID, "Why did turnaround slip at the East depot?", "bar", _turnaround_compute, "medical_rental")
+)
+analytics.register(
+    WorkedQuestion("retired_earliest", "Which device models are retired earliest?", "bar", _retired_compute, "medical_rental")
+)

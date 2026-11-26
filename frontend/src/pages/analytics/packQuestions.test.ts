@@ -1,12 +1,11 @@
 // P9-6.17 (DV-13): the helpers of the device pack's worked questions.
 import { describe, expect, it } from 'vitest';
-import { answerTitle, DEVICE_QUESTIONS, plot, topShare } from './packQuestions';
+import { answerTitle, plot, topShare } from './packQuestions';
 
 describe('P9-6.17 packQuestions', () => {
   it('answerTitle gives the question text', () => {
     expect(answerTitle({ question_id: 'price_after_launch', question: 'Why did price realised drop?' })).toBe('Why did price realised drop?');
-    expect(answerTitle({ question_id: 'disputes_by_partner', question: '' })).toBe('Who causes grading disputes?');
-    expect(DEVICE_QUESTIONS.map((q) => q.id)).toEqual(['price_after_launch', 'disputes_by_partner']);
+    expect(answerTitle({ question_id: 'wq_uc_1', question: '' })).toBe('wq_uc_1');
   });
   it('topShare of the dispute series is 58%', () => {
     const series = [['P02', 15], ['P04', 14], ['P01', 8], ['P03', 7], ['P05', 6]].map(([x, y]) => ({ x: String(x), y: Number(y) }));

@@ -15,8 +15,10 @@ model versions' accuracy.
                               first, with their depth); `org=<unit>` narrows rows and metrics to the unit's subtree
                               (the group roll-up: `workspace` is every case). No `org`: the demo's answer.
     GET /api/screens/analytics/pack?key=   plan 9 P9-1.13: the "Packs" tab, from the pack's own data (`pack_view`):
-                              `key` (the pack shown; empty: the first pack that has KPIs), `name`, `packs` ([{key,
-                              name}] to pick from), `kpis` (id, label, definition, value, unit, trend, error: see
+                              `key` (the pack shown; empty: the first pack with KPIs and visible cases, else industrial), `name`,
+                              `cases` (how many of its cases the account sees), `worked_questions` ([{id, question}], asked
+                              through `device.question`), `renewals` (the pack has contract renewals), `packs` ([{key,
+                              name}] to pick from, industrial first), `kpis` (id, label, value, unit, trend, error; see
                               di.services.modeler.kpis), `questions` (the pack's analytics questions answered: rows of
                               {key, value} and up to 5 example case ids), `suggestion_rules` (as configured) and `stages`
                               ([{key, label, agent, autonomy}]), over the cases of that pack the account may see. The
@@ -73,11 +75,13 @@ from di.repositories.constants import MODELS
 from di.repositories.context import call_ctx, visible_cases, visible_rows
 from di.repositories.decisions import model_stats, reconciled
 from di.repositories.packs import active_pack, published_keys
+from di.services import questions  # noqa: F401  (registers every pack's worked questions)
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import implement
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.modeler import kpis
 from di.services.modeler.pack import Pack, pack_keys
+from di.services.questions import worked_questions
 
 # ---------------------------------------------------------------- the closed decisions (the demo's ROWS)
 
@@ -280,14 +284,20 @@ def pack_view(session: Session, p: Principal, key: str = "") -> dict[str, Any]:
     """GET /api/screens/analytics/pack: the pack's KPIs and questions computed from its data over the cases of that pack the
     account may see. KeyError for a pack that is neither a file nor published (the route answers 404)."""
     ctx = call_ctx(p, session)
-    packs = {k: active_pack(session, k, None) for k in sorted({*pack_keys(), *published_keys(session)})}
-    if not key:
-        key = next((k for k, v in packs.items() if v.kpis), next(iter(packs)))
+    keys = sorted({*pack_keys(), *published_keys(session)}, key=lambda k: (k != "industrial", k))  # the primary pack first
+    packs = {k: active_pack(session, k, None) for k in keys}
+    if (
+        not key
+    ):  # the first pack with computed KPIs (not the demo's industrial valuer) and cases the account sees, else industrial
+        key = next((k for k, v in packs.items() if v.kpis and v.valuer.kind != "industrial" and pack_cases(ctx, v)), keys[0])
     pack = packs[key]
     cases = pack_cases(ctx, pack)
     return {
         "key": key,
         "name": pack.name,
+        "cases": len(cases),
+        "worked_questions": worked_questions(key),
+        "renewals": key == "tool_fleet",  # contract refresh is the tool fleet's
         "packs": [{"key": k, "name": v.name} for k, v in packs.items()],
         "kpis": kpis.kpi_rows(pack, cases),
         "questions": kpis.question_rows(pack, cases),

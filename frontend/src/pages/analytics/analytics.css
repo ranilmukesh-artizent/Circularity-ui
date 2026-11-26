@@ -1,0 +1,29 @@
+/* Analytics charts. Route series colours: a categorical set that flips with the theme. Every colour is at least 3:1 against
+   the card (--panel) in both themes (light #FFFFFF: 3.8 to 6.9; dark #181816: 6.6 to 13.2), and the seven differ in hue and
+   lightness so they stay apart for colour-blind readers; the legend names every series. The server's route colours (the
+   demo's: #141414 for Redeploy) are the fallback only. */
+:root {
+  --rt-redeploy: #1F5FA8;
+  --rt-resale: #A87C00;
+  --rt-intparts: #0B7A6B;
+  --rt-relase: #7A3FA3;
+  --rt-material: #C2501A;
+  --rt-extparts: #B8457A;
+  --rt-exit: #6B6560;
+}
+:root[data-theme="dark"] {
+  --rt-redeploy: #6FA8E8;
+  --rt-resale: #FFDD00;
+  --rt-intparts: #3FC4AE;
+  --rt-relase: #B58CE0;
+  --rt-material: #F08A55;
+  --rt-extparts: #E67FAE;
+  --rt-exit: #A9A39B;
+}
+
+/* The waterfall's viewBox is 720 wide in a column of 600 to 700px: 14 user units render at 11.6 to 13px. */
+.ch.big text { font-size: 14px; }
+.ch.pool text { font-size: 12px; } /* the pool card is half width: its viewBox is 500 wide, so 12 renders at 11 to 13px */
+
+/* Pipeline bars: the baseline grey in light mode (solid ink looked heavier than the rest); dark mode keeps the global rule. */
+.an-funnel .bar > i { background: var(--chart5); }

@@ -137,9 +137,15 @@ export interface PackStage { key: string; label: string; agent: string; autonomy
 /** GET /api/screens/analytics/pack?key= */
 export interface PackViewData {
   key: string; name: string; packs: { key: string; name: string }[]; kpis: PackKpi[]; questions: PackQuestion[];
+  /** how many of the pack's cases the account sees (0: the pack has no data for it yet) */
+  cases: number;
+  /** the pack's own worked questions (asked with `device.question`), empty for a pack with none */
+  worked_questions: { id: string; question: string }[];
+  /** the pack has contract renewals to report */
+  renewals: boolean;
   suggestion_rules: Record<string, unknown>[]; stages: PackStage[];
 }
-/** The Packs tab: the pack's KPIs, questions and stages over the cases of that pack the account may see ("" picks the first pack with KPIs). */
+/** The Packs tab: the pack's KPIs, questions and stages over the cases of that pack the account may see ("" picks the first pack with KPIs and cases, else industrial). */
 export const usePackView = (key: string): PackViewData => cached<PackViewData>(withQuery('/api/screens/analytics/pack', { key }));
 
 // ---------------------------------------------------------------- Contract renewals (plan 9, P9-5.7)

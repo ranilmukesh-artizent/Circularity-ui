@@ -29,6 +29,43 @@ def _insert(s: Session, sid: str, base: str, org_unit_id: str | None) -> None:
     )
 
 
+# The pack each extra system serves (a pack file's key, di.services.modeler.pack.pack_keys). A system lists under the one
+# pack whose story reads it; the Connection Fabric shows them grouped by pack (`pack_systems`). A new extra adapter is
+# added here too: tests/test_fabric_pack_systems.py fails for one that has no pack.
+PACK_OF: dict[str, str] = {
+    "plm_wc": "industrial",
+    "dvreg": "device", "dvlab": "device", "dvmkt": "device",
+    "tooltel": "tool_fleet", "sdesk": "tool_fleet", "fleet": "tool_fleet", "parts": "tool_fleet", "rephist": "tool_fleet",
+    "repairlog": "tool_fleet", "recall": "tool_fleet",
+    "uc_dms": "used_cars", "uc_auction": "used_cars", "uc_insp": "used_cars", "uc_lease": "used_cars",
+    "uc_price": "used_cars", "uc_recall": "used_cars", "uc_title": "used_cars",
+    "tn_inv": "telecom_network", "tn_decom": "telecom_network", "tn_bench": "telecom_network",
+    "tn_spares": "telecom_network", "tn_recycler": "telecom_network", "tn_broker": "telecom_network",
+    "mr_rental": "medical_rental", "mr_assets": "medical_rental", "mr_biomed": "medical_rental",
+    "mr_decon": "medical_rental", "mr_parts": "medical_rental", "mr_disposal": "medical_rental",
+    "it_cmdb": "itad", "it_logistics": "itad",
+    "rf_rental": "rental_fleet", "bat_bms": "battery", "core_ret": "auto_core", "mc_tradein": "medical_capital",
+    "cpe_bss": "telecom_cpe", "b2c_ret": "b2c_serial",
+}  # fmt: skip
+
+
+def label_of(base: str) -> str:
+    """A readable name: the adapter's vendor label without its "(synthetic)" mark ("Dealer management system")."""
+    return str(getattr(ADAPTERS[base], "vendor", base)).removesuffix(" (synthetic)")
+
+
+def systems(s: Session) -> list[dict[str, Any]]:
+    """Every extra system: id, name, vendor (the adapter's label), type, pack (key, "" when unmapped) and whether a source
+    with its id is registered. Sorted by pack, then name. A read: it registers nothing."""
+    taken = set(s.execute(text("SELECT id FROM source_system")).scalars())
+    rows = [
+        {"id": b, "name": label_of(b), "vendor": str(getattr(a, "vendor", b)), "type": str(getattr(a, "source_type", "")),
+         "pack": PACK_OF.get(b, ""), "registered": b in taken}
+        for b, a in ADAPTERS.items() if is_extra(b)
+    ]  # fmt: skip
+    return sorted(rows, key=lambda r: (r["pack"], r["name"]))
+
+
 def is_extra(base: str) -> bool:
     return bool(getattr(ADAPTERS.get(base), "extra", False))
 

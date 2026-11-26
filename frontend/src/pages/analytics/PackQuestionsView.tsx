@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { packQuestion, type PackAnswer } from '../../api/analytics';
+import { packQuestion, type PackAnswer, type PackViewData } from '../../api/analytics';
 import { Panel } from '../../components/kit/Panel';
-import { answerTitle, DEVICE_QUESTIONS, plot } from './packQuestions';
+import { answerTitle, plot } from './packQuestions';
 
 const W = 520, H = 150, PAD = 24;
 
@@ -50,7 +50,9 @@ export function QuestionAnswer({ a }: { a: PackAnswer }) {
   const cols = a.examples[0] ? Object.keys(a.examples[0]) : [];
   return (
     <div data-question={a.question_id}>
-      {a.chart.kind === 'line' ? <LineChart a={a} /> : <BarChart a={a} />}
+      {a.chart.series.some((s) => s.points.length > 0) && (
+        <div style={{ maxWidth: 640 }}>{a.chart.kind === 'line' ? <LineChart a={a} /> : <BarChart a={a} />}</div>
+      )}
       <p data-k="sentence"><b>{a.sentence}</b></p>
       {a.examples.length > 0 && (
         <table className="t static tight" aria-label="Example records">
@@ -66,14 +68,16 @@ function Chosen({ id }: { id: string }) {
   return <QuestionAnswer a={packQuestion(id)} />;
 }
 
-/** Analytics › Packs, "Questions": the device pack's worked questions; choosing one asks `device.question` for it. */
-export function PackQuestions() {
+/** Analytics › Packs, "Questions": the selected pack's worked questions; choosing one asks `device.question` for it.
+ *  Nothing is drawn for a pack with none. Remount per pack (key) so a chosen question never outlives its pack. */
+export function PackQuestions({ pack }: { pack: Pick<PackViewData, 'name' | 'worked_questions'> }) {
   const [id, setId] = useState('');
+  if (pack.worked_questions.length === 0) return null;
   return (
     <section className="sect" aria-label="Questions" data-testid="pack-questions">
-      <Panel title="Questions" sub="Device data: answered from sales, the price feed, launches and disputes you may see">
-        <div className="row" style={{ gap: 8, marginBottom: 12 }}>
-          {DEVICE_QUESTIONS.map((q) => (
+      <Panel title="Questions" sub={`${pack.name}: answered from the records you may see`}>
+        <div className="row" style={{ gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          {pack.worked_questions.map((q) => (
             <button key={q.id} type="button" className={'btn' + (q.id === id ? ' pri' : '')} aria-pressed={q.id === id} onClick={() => setId(q.id)}>{q.question}</button>
           ))}
         </div>

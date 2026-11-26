@@ -20,6 +20,7 @@ import { WorkflowStudio } from '../workflows/WorkflowStudio';
 import { ConnectFlow, type CxStart } from './ConnectFlow';
 import { FlowDiagram } from './FlowDiagram';
 import { Monitor } from './Monitor';
+import { PackSystems } from './PackSystems';
 import { Overview } from './FabricOverview';
 import { Conflicts, EventDrawer, Events, Import, Models } from './Records';
 import { SourceDrawer, type DrawerRef } from './SourceDrawer';
@@ -203,6 +204,7 @@ function NewIntegration({ onClose, onPick, onBlank }: { onClose: () => void; onP
           <span><b>Another system</b><span className="note">Set up a connection by hand</span></span>
         </button>
       </div>
+      <PackSystems onDone={onClose} />
     </Modal>
   );
 }

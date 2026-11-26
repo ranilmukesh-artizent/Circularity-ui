@@ -3,6 +3,8 @@ import { usePackView, type PackKpi, type PackQuestion, type PackStage, type Pack
 import { money } from '../../api/format';
 import { Kpi } from '../../components/kit/Kpi';
 import { Panel } from '../../components/kit/Panel';
+import { PackQuestions } from './PackQuestionsView';
+import { RenewalSection } from './RenewalReport';
 
 const AUTONOMY: Record<PackStage['autonomy'], string> = { recommend: 'recommends only', limits: 'within limits', alone: 'acts alone' };
 const NO_DATA = 'No data yet';
@@ -51,13 +53,33 @@ function Question({ q }: { q: PackQuestion }) {
   );
 }
 
+/** A pack with no cases for this account: one short statement instead of empty tiles. */
+export function NoPackData({ view }: { view: PackViewData }) {
+  const industrial = view.key === 'industrial';
+  return (
+    <section className="panel" data-testid="pack-empty" aria-label={view.name + ' has no data yet'}>
+      <div className="pb">
+        <div className="empty" style={{ padding: '24px 16px' }}>
+          <b>{industrial ? 'Industrial returns is measured on the Decisions tab' : view.kpis.length === 0 ? `${view.name} defines no KPIs` : `No ${view.name} cases yet`}</b>
+          {industrial
+            ? 'Its recovery, route mix and model accuracy come from the closed decisions there. This tab adds the KPIs of packs that define their own.'
+            : view.kpis.length === 0
+              ? 'Add a KPI to the pack in the Modeler and it appears here with its trend.'
+              : 'The KPIs and questions of this pack appear here once cases are opened on its flow. Cases come from the connected source systems it reads, or are opened by hand in My work. Until then only its stage agents and rules are shown.'}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /** A pack's view, drawn from the data it carries: KPI tiles, its questions with example cases, the suggestion rules as configured
  *  and the stage agents. No page code per pack: it renders whatever KPI ids and labels it is given. */
 export function PackView({ view }: { view: PackViewData }) {
+  const noData = view.kpis.length === 0 || (view.cases === 0 && view.kpis.every((k) => k.value === null));
   return (
     <div data-pack={view.key}>
-      <PackKpiTiles kpis={view.kpis} />
-      {view.questions.length > 0 && (
+      {noData ? <NoPackData view={view} /> : <PackKpiTiles kpis={view.kpis} />}
+      {!noData && view.questions.length > 0 && (
         <div className="grid g2 sect">{view.questions.map((q) => <Question key={q.question} q={q} />)}</div>
       )}
       <div className="grid g2 sect">
@@ -80,19 +102,22 @@ export function PackView({ view }: { view: PackViewData }) {
   );
 }
 
-/** Analytics › Packs: a pack select, then the pack's view (the first pack with KPIs until one is picked). */
+/** Analytics › Packs: a pack select, then the pack's view, its worked questions and, for a pack with contracts, the renewals.
+ *  The server picks the first pack until one is chosen (the first with cases and KPIs, else industrial). */
 export function PacksTab() {
   const [key, setKey] = useState('');
   const view = usePackView(key);
   return (
     <>
       <div className="filters" style={{ border: 0, marginBottom: 12 }}>
-        <select className="sel" aria-label="Pack" value={view.key} onChange={(e) => setKey(e.target.value)}>
+        <select className="sel" style={{ maxWidth: 'none', width: 'min(100%, 400px)' }} aria-label="Pack" value={view.key} onChange={(e) => setKey(e.target.value)}>
           {view.packs.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
         </select>
         <span className="note">KPIs and questions come from the pack&apos;s own data, over the cases you may see.</span>
       </div>
       <PackView view={view} />
+      <PackQuestions key={view.key} pack={view} />
+      {view.renewals && <RenewalSection />}
     </>
   );
 }

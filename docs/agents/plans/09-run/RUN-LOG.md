@@ -222,3 +222,10 @@ unattended". Times are local (IST).
 | 27 Nov 00:02 | P9-12.7 merged. G-BAT-1/2/3/5 battery-only; dangerous-goods lane as required step dg_lane; SoH floors 80/60/50 (synthetic); compliance text (passport, dangerous goods) needs Legal review. tn_follow_through/uc_customer_layer not run after merge (deferred to the final gate) |
 | 27 Nov 00:02 | P9-12.8 merged. credit via core_credit (in the gate reason, not stored); fraud hold held for a person. pack-looping suites (config_agent, mr_compose, tn_compose, x13, x16) deferred to the final gate |
 | 27 Nov 00:02 | P9-13.6 merged. deposit x core share; zero credit posts nothing; mismatch resolved by Finance (13.4) |
+| 27 Nov 00:27 | P9-12.9 merged. no button opens the assessment form yet in the writer's note; wt33 adds the Record assessment button and modal |
+| 27 Nov 00:27 | P9-12.5 merged. damage charge held for Finance as a proposal; no ERP customer-charge writer yet; charging a renter needs Legal review |
+| 27 Nov 00:27 | P9-12.6 merged. lines held without a reset record; a record queues case.gateRecheck; carbon factors synthetic placeholders |
+| 27 Nov 00:27 | P9-12.10 merged. standard pack with plug-in b2c_serial over device.decide; destruction-ban exception names are pack data for Legal to review; tests adapted to lane B's 9-route device pack (b2c keeps the 5 sale channels plus donate, recycle, exit) |
+| 27 Nov 00:28 | P9-12.11 merged. industrial pack in the full format; parity pinned to tests/fixtures/industrial_decisions.json; P9-12.12 stays open |
+| 27 Nov 00:28 | P9-7.7 merged. FR market canary for service desk tables |
+| 27 Nov 00:28 | P9-7.8 merged. FR market canary smoke |

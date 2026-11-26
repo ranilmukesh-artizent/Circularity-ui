@@ -440,8 +440,9 @@ def recheck(s: Session, asset_key: str, *, pack_of: PackOf | None = None) -> lis
     again, `intake.revalue`). A case that clears is released: `gateHold` is None, it moves on from `none` and a stage
     log row by `system` says why. A case still missing evidence stays held. Returns the released case ids. In the
     caller's transaction."""
-    from di.services.cases import intake  # intake imports this module
+    from di.services.cases import cpe_lot, intake  # intake imports this module
 
+    cpe_lot.recheck(s, asset_key)  # a telecom CPE lot holding a line for a reset record that has arrived (P9-12.6)
     held = s.execute(
         text(
             "SELECT id FROM case_record WHERE data ->> 'assetId' = :a AND stage <> 'closed' "

@@ -1,14 +1,8 @@
-/** The device pack's worked questions (plan 9, P9-6.17, DV-13): the ids `device.question` answers and small pure helpers for the view. */
+/** Worked pack questions (plan 9, P9-6.17, DV-13): small pure helpers for the view. The list of questions per pack comes from the server (`worked_questions` of the pack view). */
 import type { PackAnswer, QuestionPoint } from '../../api/analytics';
 
-export const DEVICE_QUESTIONS: { id: string; question: string }[] = [
-  { id: 'price_after_launch', question: 'Why did price realised drop?' },
-  { id: 'disputes_by_partner', question: 'Who causes grading disputes?' },
-];
-
-/** The title of an answer: the question text the server sent, else the pack's own text for its id. */
-export const answerTitle = (a: Pick<PackAnswer, 'question_id' | 'question'>): string =>
-  a.question || DEVICE_QUESTIONS.find((q) => q.id === a.question_id)?.question || a.question_id;
+/** The title of an answer: the question text the server sent, else its id. */
+export const answerTitle = (a: Pick<PackAnswer, 'question_id' | 'question'>): string => a.question || a.question_id;
 
 /** The share of the total that the top `n` points of a bar series make, as "58%" (the same rounding the server uses). */
 export function topShare(series: { x: string; y: number | null }[], n = 2): string {

@@ -1,0 +1,813 @@
+{
+ "key": "telecom_cpe",
+ "name": "Telecom CPE · home routers and set-top boxes",
+ "version": "1.0.0",
+ "unit": "devices",
+ "author_role": "cpe_operations_lead",
+ "prefix": "CPE",
+ "industry": "Telecom CPE",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "cpe_returns",
+   "name": "Subscriber CPE returns, decided per lot"
+  }
+ ],
+ "prompts": [
+  "Subscriber CPE returns: home routers and set-top boxes come back in lots of one model and grade per week. Check every device has a factory-reset record, then refurbish and redeploy to new subscribers, sell to a broker, harvest parts or recycle. Lots under $20,000 are approved by policy.",
+  "Decide per lot, not per device",
+  "Redeploy only devices with a reset record"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "router",
+   "name": "Home router",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 95
+  },
+  {
+   "id": "set_top_box",
+   "name": "Set-top box",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 140
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "like new",
+   "B": "light wear",
+   "C": "heavy wear",
+   "D": "faulty"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Subscriber return",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Build the lot",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Reset and test",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "refurbish_redeploy",
+   "name": "Refurbish and redeploy to new subscribers",
+   "app": "cpe_bss",
+   "owner": "cpe_operations_lead",
+   "lead_days": 7,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "broker",
+   "name": "Sell to a broker",
+   "app": "erp",
+   "owner": "cpe_operations_lead",
+   "lead_days": 10,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest parts",
+   "app": "cpe_bss",
+   "owner": "warehouse_lead",
+   "lead_days": 5,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "cpe_bss",
+   "owner": "compliance",
+   "lead_days": 10,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-DATA-1",
+   "text": "Every device has a factory-reset record before it is redeployed to a new subscriber",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DS-1",
+   "text": "Recycle or harvest only through a certified vendor",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-WEEE-2",
+   "text": "EU recycling only through an authorised treatment facility",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-DATA-1",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "routes": [
+     "refurbish_redeploy"
+    ],
+    "accept_methods_for_redeploy": [
+     "clear"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DS-1",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "recycle",
+     "harvest"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-WEEE-2",
+   "params": {
+    "stage": 6,
+    "regions": [
+     "EU"
+    ],
+    "routes": [
+     "recycle"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Device class",
+   "kind": "set",
+   "values": [
+    "router",
+    "set_top_box"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Region",
+   "kind": "set",
+   "values": [
+    "US",
+    "EU"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "cpeops",
+   "CPE operations lead",
+   "CPE operations lead"
+  ],
+  [
+   "cpewh",
+   "Warehouse lead",
+   "Warehouse lead"
+  ],
+  [
+   "cpecomp",
+   "Compliance",
+   "Compliance"
+  ]
+ ],
+ "wording": {
+  "every": "every device",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "router": "routers",
+     "set_top_box": "set-top boxes"
+    }
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "refurbish_redeploy": "Refurbish and redeploy to new subscribers",
+   "broker": "Sell to a broker",
+   "harvest": "Harvest parts",
+   "recycle": "Recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-DS-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-WEEE-2": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "cpe_bss",
+    "name": "Subscriber returns and CPE refurbishment",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Subscriber return",
+    "canonical": "asset"
+   },
+   {
+    "name": "Factory-reset record",
+    "canonical": "condition.factory_reset"
+   },
+   {
+    "name": "Lot of one model and grade",
+    "canonical": "asset.lot_serials"
+   },
+   {
+    "name": "New-subscriber forecast",
+    "canonical": "demand.new_subscriber_forecast"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "cpe_bss",
+    "resource": "lot_grades",
+    "when": null,
+    "reason": "rma",
+    "key": "lot"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "sanitisation_record",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "factory_reset"
+    ],
+    "source": "cpe_bss"
+   }
+  ],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cpe_gsma_2025",
+   "d_rule": "demand"
+  },
+  "params": {
+   "params": {
+    "plugin": "telecom_cpe",
+    "decision_unit": "lot",
+    "lot_per": "one model and grade per week",
+    "refurb_cost": 19,
+    "ship_per_unit": 8,
+    "broker_ship_per_unit": 4,
+    "broker_fee_pct": 0.1,
+    "teardown_per_unit": 4,
+    "recycle_fee_per_unit": 2,
+    "parts_per_unit": 9,
+    "scrap_per_unit": 1.5,
+    "carbon_d": {
+     "refurbish_redeploy": 1,
+     "against": "the new-subscriber forecast"
+    }
+   },
+   "tables": {
+    "redeploy_value": {
+     "A": 66,
+     "B": 58,
+     "C": 44,
+     "D": 20
+    },
+    "broker_price": {
+     "A": 34,
+     "B": 26,
+     "C": 18,
+     "D": 8
+    }
+   },
+   "requires": [
+    {
+     "route": "refurbish_redeploy",
+     "requires": [
+      {
+       "fact": "lot.released",
+       "op": "gte",
+       "value": 1
+      }
+     ],
+     "why": "No device of the lot has a reset record yet"
+    }
+   ],
+   "lines": [
+    {
+     "route": "refurbish_redeploy",
+     "type": "v",
+     "label": "Resale to new subscribers",
+     "basis": "released devices x value by grade",
+     "amount": {
+      "mul": [
+       {
+        "field": "lot.released"
+       },
+       {
+        "table": "redeploy_value",
+        "by": [
+         "grade"
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "route": "refurbish_redeploy",
+     "type": "c",
+     "label": "Refurbish",
+     "basis": "released devices x refurbish cost",
+     "amount": {
+      "mul": [
+       {
+        "field": "lot.released"
+       },
+       {
+        "param": "refurb_cost"
+       }
+      ]
+     }
+    },
+    {
+     "route": "refurbish_redeploy",
+     "type": "c",
+     "label": "Ship to the new subscriber",
+     "basis": "released devices x shipping",
+     "amount": {
+      "mul": [
+       {
+        "field": "lot.released"
+       },
+       {
+        "param": "ship_per_unit"
+       }
+      ]
+     }
+    },
+    {
+     "route": "broker",
+     "type": "v",
+     "label": "Broker price",
+     "basis": "devices x price by grade",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "table": "broker_price",
+        "by": [
+         "grade"
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "route": "broker",
+     "type": "h",
+     "label": "Broker fee",
+     "basis": "fee share of the price",
+     "kind": "fees",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "table": "broker_price",
+        "by": [
+         "grade"
+        ]
+       },
+       {
+        "param": "broker_fee_pct"
+       }
+      ]
+     }
+    },
+    {
+     "route": "broker",
+     "type": "c",
+     "label": "Ship to the broker",
+     "basis": "devices x shipping",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "param": "ship_per_unit"
+       }
+      ]
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "v",
+     "label": "Parts value",
+     "basis": "devices x parts value",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "param": "parts_per_unit"
+       }
+      ]
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "c",
+     "label": "Teardown",
+     "basis": "devices x teardown",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "param": "teardown_per_unit"
+       }
+      ]
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "v",
+     "label": "Scrap value",
+     "basis": "devices x scrap value",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "param": "scrap_per_unit"
+       }
+      ]
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "c",
+     "label": "Recycling fee",
+     "basis": "devices x fee",
+     "amount": {
+      "mul": [
+       {
+        "field": "qty"
+       },
+       {
+        "param": "recycle_fee_per_unit"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": "telecom_cpe",
+  "example": {
+   "case": "CPE-S1",
+   "legal_review_note": "Data sanitisation (NIST SP 800-88 Rev. 2), downstream-vendor (R2v3, e-Stewards) and WEEE rules summarised. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "devices": 90000,
+    "straight_through_pct": 64,
+    "approvals_per_day": 6,
+    "exceptions_per_day": 3,
+    "recovery_per_device": 31
+   },
+   "required_facts": [
+    "asset.lot_serials",
+    "condition.factory_reset",
+    "condition.grade"
+   ],
+   "standing_policy": {
+    "text": "lots under $20,000 are approved by policy",
+    "max_value": 20000,
+    "min_confidence": 0.75,
+    "routes": [
+     "refurbish_redeploy"
+    ],
+    "owner_role": "cpe_operations_lead"
+   },
+   "samples": [
+    {
+     "id": "CPE-S1",
+     "title": "500 routers, grade B, all reset",
+     "lot": "LOT-R7-B-W47",
+     "facts": {
+      "asset.lot_id": "LOT",
+      "condition.grade": "B",
+      "asset.qty": 500,
+      "lot.released": 500,
+      "lot.held": 0
+     }
+    },
+    {
+     "id": "CPE-S2",
+     "title": "900 routers, grade B, all reset (over the policy)",
+     "lot": "LOT-R7-B-W48",
+     "facts": {
+      "asset.lot_id": "LOT",
+      "condition.grade": "B",
+      "asset.qty": 900,
+      "lot.released": 900,
+      "lot.held": 0
+     }
+    },
+    {
+     "id": "CPE-S3",
+     "title": "500 routers, three without a reset record",
+     "lot": "LOT-R7-B-W47-GAP",
+     "facts": {
+      "asset.lot_id": "LOT",
+      "condition.grade": "B",
+      "asset.qty": 500,
+      "lot.released": 497,
+      "lot.held": 3
+     }
+    },
+    {
+     "id": "CPE-S4",
+     "title": "400 routers, grade C",
+     "lot": "LOT-R7-C-W47",
+     "facts": {
+      "asset.lot_id": "LOT",
+      "condition.grade": "C",
+      "asset.qty": 400,
+      "lot.released": 400,
+      "lot.held": 0
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "cpe_operations_lead": "Planner",
+  "warehouse_lead": "Warehouse Manager",
+  "compliance": "Approver"
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_device",
+   "label": "Recovery per device",
+   "definition": "realised net after route costs / devices",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "redeploy_rate",
+   "label": "Redeploy rate",
+   "definition": "devices redeployed to new subscribers / devices",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "lots approved by policy / lots",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "reset_gap",
+   "label": "Devices without a reset record",
+   "definition": "held lines / lines",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_decide",
+   "label": "Days to decide a lot",
+   "definition": "lot built to decision",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "avoided_carbon",
+   "label": "Avoided CO2e",
+   "definition": "kg avoided against new, not inventory",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which return reasons give the most redeployable devices?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.return_reason",
+    "measure": {
+     "kind": "count",
+     "where": []
+    }
+   }
+  },
+  {
+   "question": "How many devices lack a reset record, by lot?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.lot_id",
+    "measure": {
+     "kind": "count",
+     "where": []
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-CPE-01",
+  "NS-CPE-02",
+  "NS-CPE-03"
+ ]
+}

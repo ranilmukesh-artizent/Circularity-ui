@@ -36,6 +36,7 @@ from sqlalchemy.orm import Session
 
 from di.repositories import market_tables as tables_repo
 from di.repositories import repair_accuracy as accuracy_repo
+from di.repositories import rollouts
 from di.repositories.repair_accuracy import AccuracyRow
 from di.repositories.repair_history import RepairRow, similar
 from di.services.cases import process
@@ -114,7 +115,8 @@ def estimate_line(
     market = str((case.get("serviceDesk") or {}).get("market") or "")
     org = case.get("owner")
     cls, fault = str(line["model_class"]), line.get("fault_code") or None
-    cards = _cards(s, org, market, as_of) if market else None
+    read = rollouts.table_version_for(s, case)[0] if market else market  # the market whose tables price it (P9-7.7: FR canary)
+    cards = _cards(s, org, read, as_of) if market else None
     if cards is None:
         why = f"No rate cards for market {market or 'unknown'} on {as_of.isoformat()}: draft, a technician checks"
         spec = market_spec(PACK)

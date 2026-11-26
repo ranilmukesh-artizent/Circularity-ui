@@ -3,7 +3,10 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { caseById, caseRefusal, enterCase, landing, stageHref, stageState, stageTitle, type CaseRec } from '../../api/case';
 import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../components/Overlay';
-import { ApprovalModal, DeclineModal, ExplainView } from './CaseModals';
+import { can } from '../../api/session';
+import { AssessmentBar } from './AssessmentBar';
+import { assessable } from './assessment';
+import { ApprovalModal, DeclineModal, ExplainView, RecordAssessmentModal } from './CaseModals';
 import { FullAnalysis } from './FullAnalysis';
 import { Overview } from './CaseOverview';
 import { StageBar, StageFoot, StagePage, stageDo, type CaseView } from './StagePage';
@@ -68,6 +71,7 @@ function EnteredCase({ caseId, query }: CasePageProps) {
   const [decline, setDecline] = useState<string | null>(null);
   const [explain, setExplain] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalSpec | null>(null);
+  const [assessing, setAssessing] = useState(false);
   const closeExplain = useMemo(() => () => setExplain(null), []);
   // useNavigate() returns a new function after every navigation; the case UI and the key handler call the latest one
   // through this ref so they stay stable (a new `ui` would re-render every consumer of the context)
@@ -130,6 +134,7 @@ function EnteredCase({ caseId, query }: CasePageProps) {
     <CaseUiContext.Provider value={ui}>
       <div className="cspage">
         <div id="jmount"><StageBar c={c} view={v} /></div>
+        {assessable(c) && <AssessmentBar c={c} canRecord={can('recordAssessment')} onRecord={() => setAssessing(true)} />}
         {v.kind === 'stage' ? <StagePage key={c.id + v.n} c={c} n={v.n} tab={v.tab} />
           : v.kind === 'overview' ? <Overview c={c} />
           : <FullAnalysis c={c} />}
@@ -137,6 +142,7 @@ function EnteredCase({ caseId, query }: CasePageProps) {
       </div>
       {ap && ap.recommendation && <ApprovalModal c={ap} mode={approval!.mode} onClose={() => setApproval(null)} />}
       {dc && <DeclineModal c={dc} onClose={() => setDecline(null)} />}
+      {assessing && <RecordAssessmentModal c={c} onClose={() => setAssessing(false)} />}
       {explain && caseById(explain)?.recommendation && <ExplainView caseId={explain} onClose={closeExplain} />}
       {modal && (modal.drawer
         ? <Drawer title={modal.title} sub={modal.sub} wide={modal.wide} foot={modal.foot} onClose={() => setModal(null)}>{modal.body}</Drawer>

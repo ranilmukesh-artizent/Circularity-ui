@@ -5,6 +5,7 @@ vi.mock('../../api/actions', () => ({ invoke: vi.fn() }));
 import { importSummary, templateColumnsNote, validateCsv } from './importCsv';
 
 const F = ['Warehouse 1', 'Warehouse 2'], T = ['Customer A'];
+const COLS = { tool_fleet: ['cls', 'ft', 'site', 'rul'], device: ['brand', 'model', 'band', 'ref', 'doh'] };
 const HEAD = 'asset_id,qty,condition_grade,location,owner,received';
 
 describe('validateCsv (manual import, by template)', () => {
@@ -24,15 +25,15 @@ describe('validateCsv (manual import, by template)', () => {
   });
 
   it("keeps the template's columns of each row, valid or rejected", () => {
-    const tf = validateCsv(HEAD + ',cls,ft,site,rul\nT-1,1,B,Warehouse 1,Customer A,2026-10-05,core_drill,rental,Site 3,40\nT-2,0,B,Warehouse 1,Customer A,2026-10-05,saw,rental,,', 'tool_fleet', F, T);
+    const tf = validateCsv(HEAD + ',cls,ft,site,rul\nT-1,1,B,Warehouse 1,Customer A,2026-10-05,core_drill,rental,Site 3,40\nT-2,0,B,Warehouse 1,Customer A,2026-10-05,saw,rental,,', 'tool_fleet', F, T, COLS);
     if (typeof tf === 'string') throw new Error(tf);
     expect(tf.rows[0]).toMatchObject({ cls: 'core_drill', ft: 'rental', site: 'Site 3', rul: '40' });
     expect(tf.rows[1]).toMatchObject({ cls: 'saw', ft: 'rental', site: '', rul: '' });
     expect(tf.rows[1].errors).toEqual(['qty must be a positive whole number']);
-    const dv = validateCsv(HEAD + ',brand,model,band,ref,doh\nD-77,2,A,Warehouse 2,Customer A,2026-10-05,Acme,X1,mid,320,12', 'device', F, T);
+    const dv = validateCsv(HEAD + ',brand,model,band,ref,doh\nD-77,2,A,Warehouse 2,Customer A,2026-10-05,Acme,X1,mid,320,12', 'device', F, T, COLS);
     if (typeof dv === 'string') throw new Error(dv);
     expect(dv.rows[0]).toMatchObject({ brand: 'Acme', model: 'X1', band: 'mid', ref: '320', doh: '12' });
-    const ind = validateCsv(HEAD + ',cls\nMTR-3101,1,B,Warehouse 1,Customer A,2026-10-05,motor', 'industrial', F, T);
+    const ind = validateCsv(HEAD + ',cls\nMTR-3101,1,B,Warehouse 1,Customer A,2026-10-05,motor', 'industrial', F, T, COLS);
     if (typeof ind === 'string') throw new Error(ind);
     expect(ind.rows[0]).not.toHaveProperty('cls');
   });
@@ -43,10 +44,11 @@ describe('validateCsv (manual import, by template)', () => {
 });
 
 describe('the import help and the result', () => {
-  it('lists the columns a template reads', () => {
-    expect(templateColumnsNote('industrial')).toBe('');
-    expect(templateColumnsNote('tool_fleet')).toBe('Tool fleet cases also read: cls, ft, site, rul (grade from condition_grade).');
-    expect(templateColumnsNote('device')).toBe('Device cases also read: brand, model, band, ref, doh (grade from condition_grade, qty from qty).');
+  it('lists the columns a template reads, from the server', () => {
+    expect(templateColumnsNote('used_cars', COLS, 'Used cars')).toBe('');
+    expect(templateColumnsNote('industrial', COLS)).toBe('');
+    expect(templateColumnsNote('tool_fleet', COLS, 'Tool fleet')).toBe('Tool fleet cases also read: cls, ft, site, rul (grade from condition_grade).');
+    expect(templateColumnsNote('device', COLS, 'Device')).toBe('Device cases also read: brand, model, band, ref, doh (grade from condition_grade, qty from qty).');
   });
 
   it('says how many cases opened, were already open or did not open, with the reasons', () => {

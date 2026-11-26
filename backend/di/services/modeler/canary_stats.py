@@ -114,3 +114,26 @@ def sample_note(canary: Mapping[str, Any], control: Mapping[str, Any], needed: i
     """TOO_FEW while either arm is below the cases the comparison needs (or the stop rules' minimum), else None."""
     floor = max(needed, int(rules.get("min_cases", DEFAULT_RULES["min_cases"])))
     return TOO_FEW if canary["n"] < floor or control["n"] < floor else None
+
+
+# ---------------------------------------------------------------- service-desk measures (P9-7.7, story SD-10)
+SD_OPTIONS = ("fix", "swap", "upgrade")
+
+
+def sd_measures(tickets: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """What a table canary compares per arm, over its tickets. A ticket is {lines: [{best, margin, take_up, days}]}: the line's
+    best option, its expected margin, the take-up of an upgrade and the days the option quotes. `option_mix` is the share of
+    lines per best option; `margin_per_ticket` the mean over tickets of the sum of their lines' margins; `upgrade_take_up` the
+    mean take-up over the upgrade lines; `days_to_option` the mean days over the lines with a best option (None: no values)."""
+    lines = [ln for t in tickets for ln in t.get("lines") or [] if ln.get("best")]
+    mix = {k: (sum(1 for ln in lines if ln["best"] == k) / len(lines) if lines else 0.0) for k in SD_OPTIONS}
+    margins = [sum(float(ln.get("margin") or 0.0) for ln in t.get("lines") or [] if ln.get("best")) for t in tickets]
+    take = [float(ln["take_up"]) for ln in lines if ln["best"] == "upgrade" and ln.get("take_up") is not None]
+    days = [float(ln["days"]) for ln in lines if ln.get("days") is not None]
+    return {
+        "tickets": len(tickets),
+        "option_mix": mix,
+        "margin_per_ticket": _mean(margins),
+        "upgrade_take_up": _mean(take),
+        "days_to_option": _mean(days),
+    }

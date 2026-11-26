@@ -22,6 +22,7 @@ const view: PackViewData = {
     { id: 'units_in', label: 'Units in', definition: 'cases', value: null, unit: '', trend: [], error: null },
   ],
   questions: [{ question: 'Where do units go?', chart: 'bar', rows: [{ key: 'rerent', value: 3 }, { key: 'dispose', value: 1 }], examples: ['RT-2001'] }],
+  cases: 4, worked_questions: [], renewals: false,
   suggestion_rules: [],
   stages: [{ key: 'receive', label: 'Return and receive', agent: 'Intake', autonomy: 'alone' }],
 };
@@ -42,6 +43,13 @@ describe('P9-1.13 PackView (X-09)', () => {
     expect(host.querySelector('a[href="#/product/RT-2001"]')?.textContent).toBe('RT-2001');
     expect(host.textContent).toContain('Return and receive: Intake (acts alone)');
     expect(host.textContent).toContain('This pack has no suggestion rules.');
+  });
+
+  it('shows one short empty state, not empty tiles, for a pack with no cases', () => {
+    act(() => root.render(<PackView view={{ ...view, cases: 0, kpis: view.kpis.map((k) => ({ ...k, value: null })), questions: [] }} />));
+    expect(host.querySelector('[data-testid="pack-empty"]')?.textContent).toContain('No New pack cases yet');
+    expect(host.querySelector('[data-k="units_in"]')).toBeNull();
+    expect(host.textContent).toContain('Return and receive: Intake');
   });
 
   it('formats a value by its unit', () => {

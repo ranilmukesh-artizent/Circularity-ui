@@ -976,8 +976,8 @@ each story went.
 - [x] P9-7.4 Canary report and automatic pause
 - [x] P9-7.5 Replay honours queue capacity by date
 - [x] P9-7.6 Back-test report page with PDF export
-- [ ] P9-7.7 FR market canary for service desk tables
-- [ ] P9-7.8 Phase 7 demo smoke script
+- [x] P9-7.7 FR market canary for service desk tables
+- [x] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
 - [x] P9-8.1 Adapter registry with environments and owner approval
 - [x] P9-8.2 Field mapping suggestions with calibrated confidence
@@ -1066,13 +1066,13 @@ each story went.
 - [x] P9-12.2 ITAD pack with manifest reconciliation
 - [x] P9-12.3 ITAD sanitisation per serial and residual decay
 - [x] P9-12.4 Rental fleet pack with re-rent rebuild or sell
-- [ ] P9-12.5 Rental fleet damage recovery and branch transfer
-- [ ] P9-12.6 Telecom CPE pack with lot decisions
+- [x] P9-12.5 Rental fleet damage recovery and branch transfer
+- [x] P9-12.6 Telecom CPE pack with lot decisions
 - [x] P9-12.7 Battery pack with passport and safe lanes
 - [x] P9-12.8 Automotive cores pack with acceptance and fraud hold
-- [ ] P9-12.9 Medical capital pack with regulatory assessment
-- [ ] P9-12.10 Serialised retail returns pack
-- [ ] P9-12.11 Industrial pack in the full pack format
+- [x] P9-12.9 Medical capital pack with regulatory assessment
+- [x] P9-12.10 Serialised retail returns pack
+- [x] P9-12.11 Industrial pack in the full pack format
 - [ ] P9-12.12 Next-segments demo smoke
 - [ ] P9-12.13 Phase 12 gate
 - [x] P9-13.1 Fixed-asset retirement and transfer instructions

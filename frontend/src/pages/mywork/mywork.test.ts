@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkItem } from '../../api/mywork';
-import { countsByKind, dueLabel, nonReturnLine, sortItems } from './mywork';
+import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, nonReturnLine, sortItems } from './mywork';
 
 const item = (o: Partial<WorkItem>): WorkItem => ({
   id: 'w:1', kind: 'exception', case_id: null, title: 't', cause: null, action: null, owner: 'Planner', due: null, overdue: false, priority: 100, go: null, ...o,
@@ -35,5 +35,26 @@ describe('My work (plan 9 P9-1.7, I-20)', () => {
     expect(nonReturnLine(item({ kind: 'task', title: 'Non-return fee FL-30128-04' }))).toBeNull();
     expect(nonReturnLine(item({ title: 'Check the variance on RT-1' }))).toBeNull();
     expect(nonReturnLine(item({ title: 'Non-return fee ' }))).toBeNull();
+  });
+});
+
+describe('My work conflict grouping (UI audit gap 20)', () => {
+  const rows = [
+    item({ id: 'c:1', kind: 'conflict', go: 'integration/conflicts' }),
+    item({ id: 'a:1', kind: 'approval' }),
+    item({ id: 'c:2', kind: 'conflict', go: 'integration/conflicts' }),
+    item({ id: 'p:1', kind: 'proposal' }),
+  ];
+  it('moves the conflicts into one group and keeps every other row in order', () => {
+    const g = groupConflicts(rows);
+    expect(g.rows.map((r) => r.id)).toEqual(['a:1', 'p:1']);
+    expect(g.conflicts.map((r) => r.id)).toEqual(['c:1', 'c:2']);
+  });
+  it('words the group row with the count', () => {
+    expect(conflictGroupTitle(154)).toBe('154 data conflicts');
+    expect(conflictGroupTitle(1)).toBe('1 data conflict');
+  });
+  it('has no group without conflicts', () => {
+    expect(groupConflicts([item({ id: 'a:1', kind: 'approval' })]).conflicts).toEqual([]);
   });
 });

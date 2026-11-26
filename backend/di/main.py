@@ -6,6 +6,7 @@ import di.repositories.cases  # registers action handlers
 import di.repositories.workspace  # registers action handlers
 import di.services.actions.access  # registers action handlers
 import di.services.actions.agents  # registers action handlers (agent.register, agent.update; plan 8)
+import di.services.actions.assessments  # registers assessment.record (medical device regulatory assessment; plan 9 P9-12.9)
 import di.services.actions.cases_intake  # registers action handlers (case.open; plan 8)
 import di.services.actions.compose  # registers action handlers (compose.*: the composition object; plan 9 P9-8.17)
 import di.services.actions.config_agent  # registers action handlers (config.read, config.draft: the configuration agent; plan 9)
@@ -52,6 +53,7 @@ import di.services.actions.workflow_drafts  # registers action handlers (workflo
 import di.services.actions.workflow_read  # registers action handlers (workflow.list, get, runs, runGet: reads for Ask; P9-2.23)
 import di.services.actions.workflows  # registers action handlers
 import di.services.cases.close_medical_rental  # registers ( rental.close and rental.writeOff; plan 9 P9-11.17)
+import di.services.cases.close_rental_fleet  # registers rentalFleet.chargeDamage (plan 9 P9-12.5)
 import di.services.cases.close_used_cars  # noqa: F401  (registers usedCar.close and usedCar.post; plan 9 P9-9.20)
 from di.core.errors import register as register_error_handlers
 from di.core.gzip import GzipExceptStreams

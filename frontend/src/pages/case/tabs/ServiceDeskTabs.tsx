@@ -3,7 +3,7 @@
  * stage 6 of a service-desk case (tabs/index.tsx). */
 import { useEffect, useState } from 'react';
 import { can } from '../../../api/session';
-import { FAULT_CODES, postFault, serviceDeskView, serviceDeskWhatIf, type WhatIfResult } from '../../../api/serviceDesk';
+import { FAULT_CODES, postFault, serviceDeskView, serviceDeskWhatIf, tablesLine, type WhatIfResult } from '../../../api/serviceDesk';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
@@ -116,6 +116,7 @@ export function OptionsTab({ c }: TabProps) {
           </div>
         );
       })}
+      {tablesLine(v) && <p className="stpad" data-sd-tables>{tablesLine(v)}</p>}
       {v.approval && <p className="stpad">{approvalLine(v.approval)}</p>}
       {c.exec?.terms && <p className="stpad">{termsLine(c.exec.terms)}</p>}{/* the terms of an approved plan (P9-4.9) */}
     </>

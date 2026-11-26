@@ -17,6 +17,7 @@ import { StatusChip } from '../../components/kit/StatusChip';
 import { VendorLogo, vendorHue } from '../../components/kit/VendorLogo';
 import { TestSteps } from './ConnectionTests';
 import { canMgr, NOMGR, useInt } from './FabricContext';
+import { PackSystems } from './PackSystems';
 import { fmtN, sum, when } from './fabricFormat';
 import { FabricStatus } from './FabricStatus';
 import { SourceMenu } from './SourceMenu';
@@ -449,6 +450,7 @@ function TileGrid() {
           );
         })}
       </div>
+      {canMgr() && !filt && <PackSystems openOnly />}
       {!!dep.length && (
         <div className="callout bad" style={{ marginTop: 14 }}>
           <b>Integration dependencies.</b>{' '}

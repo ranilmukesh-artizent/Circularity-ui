@@ -4,7 +4,7 @@
  * class pattern; a tool-fleet or device case may carry any id-shaped asset id, and its template columns travel with
  * each row (backend/di/connectors/manual.py TEMPLATE_COLUMNS).
  */
-import { TEMPLATE_IMPORT_COLUMNS, type ImportResult, type ImportRow } from '../../api/integration';
+import type { ImportResult, ImportRow } from '../../api/integration';
 
 export type Row = ImportRow & { warn: string[] };
 export type Csv = { rows: Row[]; ok: number; err: number; committed?: boolean };
@@ -13,19 +13,21 @@ const NEED = ['asset_id', 'qty', 'condition_grade', 'location', 'owner', 'receiv
 const ID_ANY = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const ID_INDUSTRIAL = /^(MTR|PMP|CTL|DRL|BAT|ITE)-\d{4}$/;
 
-const columnsOf = (template: string): readonly string[] => TEMPLATE_IMPORT_COLUMNS[template as keyof typeof TEMPLATE_IMPORT_COLUMNS] ?? [];
+/** The template's own columns, from the server's `template_columns` (none for industrial). */
+export type TemplateColumns = Record<string, readonly string[]>;
+const columnsOf = (columns: TemplateColumns, template: string): readonly string[] => columns[template] ?? [];
 
 /** Validate pasted CSV for the template the cases open with (industrial when no case is opened); a message when the header is wrong. */
-export function validateCsv(t: string, template: string, facilities: readonly string[], tenants: readonly string[]): Csv | string {
+export function validateCsv(t: string, template: string, facilities: readonly string[], tenants: readonly string[], columns: TemplateColumns = {}): Csv | string {
   const lines = t.split(/\r?\n/).filter(Boolean), hd = lines[0].split(',').map((x) => x.trim().toLowerCase());
   const miss = NEED.filter((n) => !hd.includes(n));
   if (miss.length) return 'Missing required column: ' + miss.join(', ');
-  const extra = columnsOf(template);
+  const extra = columnsOf(columns, template);
   const rows = lines.slice(1).map((l): Row => {
     const c = l.split(',').map((x) => x.trim()), o: Record<string, string> = {};
     hd.forEach((h, i) => { o[h] = c[i] || ''; });
     const errors: string[] = [], warn: string[] = [];
-    if (extra.length) {
+    if (template !== 'industrial') {
       if (!ID_ANY.test(o.asset_id)) errors.push("asset_id is required (letters, digits, '.', '_' or '-')");
     } else if (!ID_INDUSTRIAL.test(o.asset_id)) errors.push('asset_id does not match a known class pattern');
     if (!/^[1-9]\d*$/.test(o.qty)) errors.push('qty must be a positive whole number');
@@ -41,11 +43,10 @@ export function validateCsv(t: string, template: string, facilities: readonly st
   return { rows, ok: rows.filter((r) => !r.errors.length).length, err: rows.filter((r) => r.errors.length).length };
 } // prettier-ignore
 
-/** The help line under the required columns: what a tool-fleet or device case also reads; empty for industrial. */
-export function templateColumnsNote(template: string): string {
-  const extra = columnsOf(template);
+/** The help line under the required columns: what a template's case also reads, `name` being the template's name; empty for none. */
+export function templateColumnsNote(template: string, columns: TemplateColumns = {}, name = template): string {
+  const extra = columnsOf(columns, template);
   if (!extra.length) return '';
-  const name = template === 'device' ? 'Device' : 'Tool fleet';
   return `${name} cases also read: ${extra.join(', ')} (grade from condition_grade${template === 'device' ? ', qty from qty' : ''}).`;
 }
 

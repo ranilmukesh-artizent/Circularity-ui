@@ -19,11 +19,23 @@
   }
  ],
  "prompts": [
-  "",
-  "",
-  ""
+  "Industrial assets come back from the field and from leases. Decide the route for each: redeploy, resale, internal parts use, re-lease, material recovery, external parts sale or exit. A person approves every decision before it runs.",
+  "Value every route for a returned motor, pump, drill, control unit, tool batch or IT asset",
+  "Never release an asset without its erasure certificate or its safety recertification"
  ],
- "clarify": null,
+ "clarify": {
+  "question": "When a decision waits for approval longer than the SLA, who steps in?",
+  "options": [
+   {
+    "label": "The approver's delegate decides",
+    "adds": "[{\"id\": \"op-1\", \"op\": \"add_approver\", \"target\": \"GR-I5\", \"role\": \"Approver\"}]"
+   },
+   {
+    "label": "The decision stays with the named owner",
+    "adds": "Keeps the pack's approval rule as it is."
+   }
+  ]
+ },
  "classes": [],
  "grades": {
   "scale": [],
@@ -359,15 +371,154 @@
   }
  },
  "customer_layer": {
-  "editable": {},
+  "editable": {
+   "Condition & life": [],
+   "Post-intervention": [],
+   "Policy & certification": [],
+   "Demand fit": [],
+   "Economics": [],
+   "Sustainability": []
+  },
   "params": {},
   "sample_diversions": [],
   "merge_rule": "stricter_wins"
  },
  "diversions": [],
  "data": {
-  "systems": [],
-  "entities": [],
+  "systems": [
+   {
+    "type": "crm",
+    "name": "CRM",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "lease",
+    "name": "Lease management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "oms",
+    "name": "Order management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "proc",
+    "name": "Procurement",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "eam",
+    "name": "EAM",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "fsm",
+    "name": "FSM",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "plm",
+    "name": "PLM",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "bom",
+    "name": "BOM management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "qms",
+    "name": "QMS",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "eng",
+    "name": "Engineering",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "wms",
+    "name": "WMS",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "tms",
+    "name": "Transport management",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "rl",
+    "name": "Reverse logistics",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "insp",
+    "name": "Inspection",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "repair",
+    "name": "MRO and workshop",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "iot",
+    "name": "Device telemetry",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "mkt",
+    "name": "Market pricing",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "dlr",
+    "name": "Dealer network",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "rcy",
+    "name": "Recycler partner",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "esg",
+    "name": "ESG & carbon",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Returned asset",
+    "canonical": "asset"
+   }
+  ],
   "mappings": [],
   "min_fields": [],
   "record_match": null
@@ -382,10 +533,76 @@
  },
  "replay": {
   "dataset": null,
-  "example": null
+  "example": {
+   "samples": [
+    {
+     "case": "RT-1048",
+     "title": "motor RT-1048, the hero case"
+    },
+    {
+     "case": "RT-1001",
+     "title": "motor RT-1001"
+    },
+    {
+     "case": "RT-1002",
+     "title": "pump RT-1002"
+    },
+    {
+     "case": "RT-1004",
+     "title": "drill RT-1004"
+    },
+    {
+     "case": "RT-1006",
+     "title": "control RT-1006"
+    },
+    {
+     "case": "RT-1027",
+     "title": "motor RT-1027"
+    },
+    {
+     "case": "RT-1033",
+     "title": "control RT-1033"
+    },
+    {
+     "case": "RT-1104",
+     "title": "it RT-1104"
+    }
+   ]
+  }
  },
  "runtime": {
-  "exception_types": [],
+  "exception_types": [
+   {
+    "id": "condition_deterioration",
+    "label": "Condition deterioration",
+    "owner_role": "Engineer",
+    "action": "Re-inspect the asset and update its grade before the decision runs"
+   },
+   {
+    "id": "delayed_approval",
+    "label": "Delayed approval",
+    "owner_role": "Approver",
+    "action": "Approve, decline or delegate the decision before the SLA ends"
+   },
+   {
+    "id": "market_price_decline",
+    "label": "Market price decline",
+    "owner_role": "Planner",
+    "action": "Re-run the valuation on the new market price and choose the route again"
+   },
+   {
+    "id": "capacity_constraints",
+    "label": "Capacity constraints",
+    "owner_role": "Warehouse Manager",
+    "action": "Free capacity at the site or move the asset to another site"
+   },
+   {
+    "id": "missing_evidence",
+    "label": "Missing evidence",
+    "owner_role": "Planner",
+    "action": "Ask the source system for the missing record or certificate"
+   }
+  ],
   "suggestion_rules": [],
   "sla_hours": {
    "exception": 24,
@@ -393,7 +610,74 @@
   },
   "escalate_to": "Approver"
  },
- "kpis": [],
- "analytics": [],
- "stories": []
+ "kpis": [
+  {
+   "id": "uplift",
+   "label": "Recovery uplift",
+   "definition": "realised value minus the baseline route's value",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "avoided",
+   "label": "Value avoided",
+   "definition": "cost of the routes not taken that the decision avoided",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_decision",
+   "label": "Days to decision",
+   "definition": "receipt to approved decision",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "pending_approvals",
+   "label": "Pending approvals",
+   "definition": "decisions waiting for an owner",
+   "measure": null,
+   "trend": "weekly"
+  },
+  {
+   "id": "expired_approvals",
+   "label": "Expired approvals",
+   "definition": "decisions that passed their approval deadline",
+   "measure": null,
+   "trend": "weekly"
+  },
+  {
+   "id": "cancelled_decisions",
+   "label": "Cancelled decisions",
+   "definition": "decisions cancelled before execution / decisions",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which route do returned assets go to?",
+   "chart": "bar",
+   "query": {
+    "group_by": "recommendation.id",
+    "measure": {
+     "kind": "count"
+    }
+   }
+  },
+  {
+   "question": "How much is recovered per asset class?",
+   "chart": "bar",
+   "query": {
+    "group_by": "cls",
+    "measure": {
+     "kind": "avg",
+     "of": "recommendation.net"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-IND-01"
+ ]
 }

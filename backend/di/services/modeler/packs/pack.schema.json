@@ -717,6 +717,18 @@
      "title": "Credit Table",
      "type": "object"
     },
+    "damage_charge_min": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Damage Charge Min"
+    },
     "reporting": {
      "items": {
       "type": "string"
@@ -941,13 +953,6 @@
      ],
      "title": "Asset Effect",
      "type": "string"
-    },
-    "downstream_roles": {
-     "items": {
-      "type": "string"
-     },
-     "title": "Downstream Roles",
-     "type": "array"
     }
    },
    "required": [

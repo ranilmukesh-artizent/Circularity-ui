@@ -23,6 +23,15 @@ export function countsByKind(items: WorkItem[]): Record<WorkKind, number> {
   return out;
 }
 
+/** The conflict rows apart from the rest (UI audit gap 20): one group row stands for them so approvals, proposals and
+ *  questions come first. Nothing is dropped; the order of both lists is the input's. */
+export function groupConflicts(items: WorkItem[]): { rows: WorkItem[]; conflicts: WorkItem[] } {
+  return { rows: items.filter((i) => i.kind !== 'conflict'), conflicts: items.filter((i) => i.kind === 'conflict') };
+}
+
+/** "154 data conflicts" / "1 data conflict". */
+export const conflictGroupTitle = (n: number): string => `${n} data conflict${n === 1 ? '' : 's'}`;
+
 /** "Due 2026-10-08 09:00 UTC", "Overdue since …", or '' without a due time. */
 export function dueLabel(i: WorkItem): string {
   if (!i.due) return '';

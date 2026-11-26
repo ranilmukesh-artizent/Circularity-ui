@@ -28,7 +28,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.repositories import market_tables as tables_repo
-from di.repositories import model_versions, refurb_stock
+from di.repositories import model_versions, refurb_stock, rollouts
 from di.repositories.repair_history import similar
 from di.repositories.upgrade_offers import offers
 from di.services.cases import recall_evidence
@@ -46,6 +46,14 @@ WINDOW_MONTHS = 24
 
 def _ref(row: Any) -> str:
     return str(TableRef(PACK, FLOW, row.market, row.name, row.version))
+
+
+def _label(market: str, read: str, arm: str) -> str | None:
+    """How the case page names the tables a ticket was priced from, outside a normal market: the pilot's new tables, or the
+    standard quote (a control ticket, or a new ticket while the pilot is paused or rolled back)."""
+    if arm == "canary":
+        return f"Pilot {market} (new tables)"
+    return "Standard quote" if arm == "control" or read != market else None
 
 
 def _logit(p: float) -> float:
@@ -126,7 +134,8 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date, decided_on: date | 
         return None
     org, market = case.get("owner"), str(base["market"])
     tables_repo.ensure_seeded(s, PACK)
-    rows = {n: tables_repo.effective(s, org, PACK, FLOW, market, n, as_of) for n in CARDS}
+    read, arm = rollouts.table_version_for(s, case)  # the market whose tables price the ticket (P9-7.7: a table canary)
+    rows = {n: tables_repo.effective(s, org, PACK, FLOW, read, n, as_of) for n in CARDS}
     if any(r is None for r in rows.values()):
         return None
     now = max(decided_on or as_of, as_of)
@@ -194,5 +203,6 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date, decided_on: date | 
         "as_of": as_of.isoformat(),
         "take_up": take_up_of(s, account_shift(s, org, base.get("account"), market, as_of), market),
         "approved": sorted(_ref(r) for r in current.values() if r is not None),
+        "tables": {"market": read, "arm": arm, "label": _label(market, read, arm)},
         "lines": lines,
     }

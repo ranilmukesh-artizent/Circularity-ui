@@ -341,6 +341,13 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-27 | 09 · P9-12.7 battery pack with passport and safe lanes | this commit | pack_battery, ns_bat, battery_paths, gates, pack_format green; sim test_battery_bms 9 (with core_returns) pass; lint green | done |
 | 2026-11-27 | 09 · P9-12.8 automotive cores pack with acceptance and fraud hold | this commit | pack_auto_core, ns_core, auto_core_paths, gates, pack_format green; sim test_core_returns pass; lint green | done |
 | 2026-11-27 | 09 · P9-13.6 core credit settlement with ERP match | this commit | ns_core_credit, x16_credit_settlement, ns_core, auto_core_paths, pack_auto_core green; lint green | done |
+| 2026-11-27 | 09 · P9-12.9 medical capital pack with regulatory assessment | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-12.5 rental fleet damage recovery and branch transfer | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-12.6 telecom CPE pack with lot decisions | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-12.10 serialised retail returns pack | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-12.11 industrial pack in the full pack format | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-7.7 fR market canary for service desk tables | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
+| 2026-11-27 | 09 · P9-7.8 phase 7 demo smoke script | this commit | smoke-p9-7.mjs node --check only; the smoke itself runs in the final pass | done |
 
 ## Decisions taken without the user (to review)
 

@@ -778,3 +778,34 @@ CONNECTOR_FIELDS["condition"] |= {"expected_life_years": "number", "soh_pct": "n
 CONNECTOR_FIELDS["asset"] |= {"dealer_id": "text", "declared_part_number": "text", "observed_part_number": "text"}
 CONNECTOR_FIELDS["condition"] |= {"core_checks": "object", "dealer_rejects": "object"}
 CONNECTOR_FIELDS["market"] |= {"core_deposit": "number"}
+
+# Medical capital equipment (plan 9, P9-12.9), written by the extra adapter mc_tradein, keyed by `tag_key`: on `asset`, the
+# trade-in register's UDI, single-use label, markets (where it came from, where it is to be sold), service record reference and
+# whether its recalls are closed. device_class, model, tag and has_patient_data are the rental pack's.
+CONNECTOR_FIELDS["asset"] |= {
+    "origin_market": "text",
+    "recalls_closed": "bool",
+    "service_record_ref": "ref",
+    "single_use": "bool",
+    "target_market": "text",
+    "udi": "text",
+}
+
+# Telecom CPE (plan 9, P9-12.6), written by the extra adapter cpe_bss: on `asset`, a returned device keyed by `serial_key`
+# (subscriber_ref: a code, never a name; returned_at) and a lot keyed by its id the same way (lot_serials: the list of the lot's
+# serials, lot_week); on `condition`, factory_reset ({method, firmwareRefreshed, at}); on `demand`, the new-subscriber forecast
+# of a model (new_subscriber_forecast: units for the week).
+CONNECTOR_FIELDS["asset"] |= {"lot_serials": "list", "lot_week": "text", "returned_at": "text", "subscriber_ref": "text"}
+CONNECTOR_FIELDS["condition"] |= {"factory_reset": "object"}
+CONNECTOR_FIELDS["demand"] |= {"new_subscriber_forecast": "number"}
+
+# Serialised retail returns (plan 9, P9-12.10), written by the extra adapter b2c_ret, keyed by `serial_key`: on `asset`, the
+# portal's item (item_id, item_class phone, tablet, apparel or footwear, sku, unsold, exception_evidence: an object
+# {exception, ref} or null); `imei` and `serial` are the existing ones.
+CONNECTOR_FIELDS["asset"] |= {
+    "exception_evidence": "object",
+    "item_class": "text",
+    "item_id": "text",
+    "sku": "text",
+    "unsold": "bool",
+}

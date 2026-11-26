@@ -108,5 +108,9 @@ def _wq2(s: Session, scope: Scope | None, _as_of: date) -> Answer:
     return idle_spares_by_region(xr.read(s, orgs)[0], _prices(s, orgs))
 
 
-register(WorkedQuestion("wq_tn_1", "Why are we still buying new power units when returns are coming in?", "bar", _wq1))
-register(WorkedQuestion("wq_tn_2", "Where are our idle spares?", "bar", _wq2))
+register(
+    WorkedQuestion(
+        "wq_tn_1", "Why are we still buying new power units when returns are coming in?", "bar", _wq1, "telecom_network"
+    )
+)
+register(WorkedQuestion("wq_tn_2", "Where are our idle spares?", "bar", _wq2, "telecom_network"))
