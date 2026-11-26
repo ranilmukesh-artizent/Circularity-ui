@@ -58,6 +58,7 @@ from di.services.engine.routes import POLICY, Route, fail, rank_routes
 from di.services.modeler import plain_guardrail
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
+from di.services.modeler.gate_checks.data import media_facts
 from di.services.modeler.gates import (
     Cond,
     GateDef,
@@ -69,7 +70,6 @@ from di.services.modeler.gates import (
     pack_gates,
     triggered,
 )
-from di.services.modeler.gate_checks.data import media_facts
 from di.services.modeler.guard import rule_breaks
 from di.services.modeler.pack import Diversion, Pack, close_kinds
 from di.services.modeler.templates import Template, template_of_pack

@@ -54,7 +54,7 @@ def test_order_invariant_itad():
     rule = CompiledRule("BR-9", {}, "require", "resell", "Resell everything")
     d = decide_case(itkit.case("IT-S2"), itkit.pack(), FlowVersion(None, 1, (rule,)))
     assert d.trace == ORDER
-    assert [g.gate_id for g in d.gates if not g.passed][0] == "G-DATA-1"  # the sanitisation gate speaks first
+    assert next(g.gate_id for g in d.gates if not g.passed) == "G-DATA-1"  # the sanitisation gate speaks first
     resell = itkit.route(d, "resell")
     assert resell["excluded"] and "MS-S-1" in resell["failReason"]  # the rule never brings back what the gate excluded
     assert d.route != "resell"

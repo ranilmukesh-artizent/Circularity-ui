@@ -129,7 +129,9 @@ def check_media_sanitised(case: Mapping[str, Any], pack: Pack, gate: GateDef) ->
         if why:
             reasons.append((rid, why))
     if not reasons:
-        return GateResult(gate.id, True, GateEffect("block", (), False, None), (), "Sanitisation record on file for every media serial")
+        return GateResult(
+            gate.id, True, GateEffect("block", (), False, None), (), "Sanitisation record on file for every media serial"
+        )
     return GateResult(
         gate.id, False, GateEffect("block", tuple(r for r, _ in reasons), False, None), (), reasons[0][1],
         route_reasons=tuple(reasons),
