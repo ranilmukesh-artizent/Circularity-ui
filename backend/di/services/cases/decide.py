@@ -46,7 +46,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan, vendor_facts
+from di.services.cases import battery_wait, capital_facts, car_facts, gate_hold, store, telecom_facts, unit_plan, vendor_facts
 from di.services.device import diversions as device_diversions
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
@@ -538,6 +538,8 @@ def decide_case(
                 c[model] = data
     if sane := media_facts(c, pack):  # an ITAD asset's media: G-DATA-2 triggers on `media.sanitisable` (P9-12.3)
         c["media"] = {**(c.get("media") or {}), **sane}
+    if pack.key == capital_facts.PACK:  # the device, market and work facts the medical capital gates read (P9-12.9)
+        capital_facts.lay(c)
     roled = [r for r in pack.routes if r.downstream_roles]
     own_vendors = "vendors" not in c and bool(roled) and session is not None and any(g.id == "G-DS-1" for g in pack_gates(pack))
     if own_vendors:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
