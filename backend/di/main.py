@@ -36,6 +36,7 @@ import di.services.actions.packs  # registers action handlers (pack.*: pack vers
 import di.services.actions.proposals  # registers action handlers (proposal.accept, proposal.reject; plan 8)
 import di.services.actions.refresh_whatif  # registers refresh.whatIf (test a refresh proposal's levers; plan 9 P9-5.6)
 import di.services.actions.replay  # registers action handlers (replay.*: history batches; plan 9)
+import di.services.actions.requisitions  # registers action handlers (requisition.reduce; plan 9 P9-10.16)
 import di.services.actions.rollout  # registers action handlers (rollout.*: canary by region and share; plan 9 P9-7.3)
 import di.services.actions.service_booking  # registers service.book (rental device service booking; plan 9 P9-11.7)
 import di.services.actions.service_desk  # registers serviceDesk.computeAccuracy (held-out repair accuracy; plan 9 P9-4.5)

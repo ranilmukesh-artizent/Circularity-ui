@@ -61,6 +61,7 @@ HELD_FOR_PERSON = (
     "nonReturnFee.post",  # P9-3.18: a fee posted to the billing system is a person's; an agent may prepare it
     "lot.propose",  # P9-6.11: picking a buyer for a lot is proposed by an agent and held; a person accepts it
     "service.book",  # P9-11.7: a service order for a rental device is booked by a person
+    "requisition.reduce",  # P9-10.16: cutting a purchase requisition is a person's; the follow-through agent prepares it
     "usedCar.post",  # P9-9.20: the residual gain or loss and the lessee's charges of a sold car are posted by Finance
 )  # a policy draft is a person's (P9-2.5)
 

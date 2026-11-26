@@ -127,6 +127,25 @@ EX_STEP: dict[str, dict[str, Any]] = {
     # plan 9 P9-6.12: a received device on a listing channel is listed on the device market (di.services.device.settle)
     "list": _s("List on the channel", "Marketplace · listing", ("LST", "Listing"), "Channel ops", 8, "listing.posted", 21,
                "listing live on the channel", "Channel ops owns what is offered for sale and at what price"),
+    # plan 9 P9-10.16: the telecom pack's follow-through (inventory, test bench, broker marketplace, recycler portal)
+    "firmware_upgrade": _s("Firmware upgrade", "Test bench · firmware", ("RF", "Refurb order"), "Test bench lead", 8,
+                           "workorder.created", 13, "firmware upgrade ordered at the bench",
+                           "The test bench lead upgrades the unit to the demand's firmware"),
+    "site_transfer": _s("Transfer to the site", "Network inventory · transfer order", ("TO", "Transfer order"),
+                        "Network asset manager", 8, "movement.confirmed", 26, "transfer order created in the network inventory",
+                        "The network asset manager moves the unit to the site that needs it"),
+    "spares_transfer": _s("Transfer to the spares pool", "Network inventory · transfer order", ("TO", "Transfer order"),
+                          "Spares planner", 8, "movement.confirmed", 26, "unit transferred to its region's spares pool",
+                          "The spares planner holds the unit in its region's pool"),
+    "refurb_order": _s("Refurbishment order", "Test bench · refurb order", ("RF", "Refurb order"), "Spares planner", 8,
+                       "workorder.created", 13, "refurb order accepted by the test bench",
+                       "The spares planner has the unit refurbished at the bench"),
+    "broker_listing": _s("Broker listing", "Broker marketplace · listing", ("LS", "Listing"), "Network asset manager", 8,
+                         "sale.recorded", 39, "unit listed against the highest bid",
+                         "The network asset manager lists the unit on the highest bid"),
+    "recycler_pickup": _s("Recycler pickup", "Recycler portal · pickup", ("PU", "Pickup"), "Sustainability lead", 24,
+                          "collection.confirmed", 13, "pickup scheduled with the certified recycler",
+                          "The sustainability lead sends the unit to a recycler whose certificate is valid"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is
@@ -170,6 +189,7 @@ STEP_TPL: dict[str, list[str]] = {
 # fleet contract system and a harvest to the parts system; an industrial case never reads this
 TEMPLATE_SYS: dict[str, dict[str, str]] = {
     "tool_fleet": {"lease": "Fleet contract system · re-issue", "partsxfer": "Parts and service system · issue parts"},
+    "telecom_network": {"teardown": "Test bench · teardown"},  # P9-10.16
 }
 # The demo's ACK_NOTE: notes for steps without a kind (none are created any more; kept for stored plans)
 ACK_NOTE = {

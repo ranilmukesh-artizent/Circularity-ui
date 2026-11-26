@@ -18,6 +18,10 @@ class ChainModel:
     def __init__(self, models: Sequence[AskModel]):
         self.models: list[AskModel] = list(models)  # a list the router may reorder
         self.model = self.models[0].model if self.models else ""
+        # the provider Ask reports: "groq" for a chain of Groq models (26 Nov: migration 0063 made Ask's chain three Groq
+        # models and the answer said "chain"); "chain" only when the providers differ
+        names = {m.name for m in self.models}
+        self.name = names.pop() if len(names) == 1 else "chain"
 
     def answer(self, request: AskRequest, tools: Toolbox) -> Iterator[Event]:
         last: ModelUnavailable | None = None

@@ -970,6 +970,12 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "consignment": (8, "Remarketing manager"),
     "dealer_trade": (8, "Remarketing manager"),
     "salvage_sale": (8, "Remarketing manager"),
+    "firmware_upgrade": (8, "Test bench lead"),  # plan 9 P9-10.16: the telecom pack's follow-through
+    "site_transfer": (8, "Network asset manager"),
+    "spares_transfer": (8, "Spares planner"),
+    "refurb_order": (8, "Spares planner"),
+    "broker_listing": (8, "Network asset manager"),
+    "recycler_pickup": (24, "Sustainability lead"),
     "list": (8, "Channel ops"),  # plan 9 P9-6.12: a received device is listed on its channel
     "takeback": (48, "Fleet desk"),  # plan 9 P9-4.9: a service ticket's old tool comes back, then the credit goes
     "credit": (16, "Finance"),

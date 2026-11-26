@@ -137,7 +137,19 @@ def test_complete_json_used_by_modeler_read_and_workflow_plan(monkeypatch):
     assert [c["max_tokens"] for c in calls] == [200, 300]
 
 
-def test_empty_chain_is_todays_single_model(monkeypatch):
+@pytest.fixture
+def only_default_model():
+    """The router's Ask chain is the one default row: migration 0063 adds two Groq fallback rows, off here, on again after."""
+    with SessionLocal() as s:
+        s.execute(text("UPDATE llm_model SET enabled = false WHERE id IN ('groq-qwen3-27b', 'groq-oss-20b')"))
+        s.commit()
+    yield
+    with SessionLocal() as s:
+        s.execute(text("UPDATE llm_model SET enabled = true WHERE id IN ('groq-qwen3-27b', 'groq-oss-20b')"))
+        s.commit()
+
+
+def test_empty_chain_is_todays_single_model(monkeypatch, only_default_model):
     monkeypatch.setenv("GROQ_API_KEY", "test-key-not-real")
     monkeypatch.delenv("ASK_MODEL_CHAIN", raising=False)
     get_settings.cache_clear()
@@ -146,7 +158,7 @@ def test_empty_chain_is_todays_single_model(monkeypatch):
     get_settings.cache_clear()
 
 
-def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_env, monkeypatch):
+def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_env, monkeypatch, only_default_model):
     # plan 9 P9-2.3: Ask's models are the router's rows (llm_model), no longer ASK_MODEL_CHAIN
     with SessionLocal() as s:
         s.execute(text("UPDATE llm_model SET model = 'm1' WHERE id = 'groq-default'"))
@@ -169,3 +181,13 @@ def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_
     monkeypatch.setenv("ASK_MODEL_CHAIN", "other:x, groq:m3")
     get_settings.cache_clear()
     assert model_chain(get_settings()) == [("groq", "m3")]
+
+
+def test_chain_of_one_provider_reports_that_provider():
+    """26 Nov: three Groq models in the router made Ask report provider "chain"; a one-provider chain reports the provider."""
+
+    class Other(FakeModel):
+        name = "other"
+
+    assert ChainModel([FakeModel("m1"), FakeModel("m2")]).name == "fake"
+    assert ChainModel([FakeModel("m1"), Other("m2")]).name == "chain"

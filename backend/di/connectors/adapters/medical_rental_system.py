@@ -19,7 +19,8 @@ Resources and facts (snake case of the source's camelCase fields)
                                     region_forecast: the depot's region, {week_start, requests} per week
     turnaround   asset.<tag key>    turnaround, an object for the device's depot over the last 14 days: depot, window_days,
                                     returns, avg_days, by_cause_avg_days {decon_queue, service, transport}, and the device's
-                                    own own_days and own_waiting_days (only a device returned in the window has it)
+                                    own own_days and own_waiting_days (only a device returned in the window has it),
+                                    decon_lines (the depot's decontamination lines, when the source gives them)
 One record per return for each resource (a device returned twice would keep the later one). `ward` and
 `previousRentalEnd` stay in the raw record: no fact.
 """
@@ -117,7 +118,10 @@ class MedicalRentalSystemAdapter(GenericAdapter):
         for depot in self._list(client, "/depots"):
             rows = self._list(client, "/turnaround", depot=depot["depotId"], days=WINDOW_DAYS)
             for row in rows:
-                payload = {"tag": row["tag"], "depot": depot["depotId"], "days": WINDOW_DAYS, "own": row, "rows": rows}
+                payload = {
+                    "tag": row["tag"], "depot": depot["depotId"], "days": WINDOW_DAYS, "own": row, "rows": rows,
+                    "decon_lines": depot.get("deconLines"),
+                }  # fmt: skip
                 yield Record("turnaround", str(row["returnId"]), payload | {"org_unit_id": org}, client.url("/turnaround"))
 
     # ------------------------------------------------------------- mapping
@@ -166,6 +170,8 @@ class MedicalRentalSystemAdapter(GenericAdapter):
             "by_cause_avg_days": {c: _mean([r["waitingDays"][c] for r in rows]) for c in CAUSES},
             "own_days": own["totalDays"], "own_waiting_days": own["waitingDays"],
         }  # fmt: skip
+        if p.get("decon_lines") is not None:
+            value["decon_lines"] = int(p["decon_lines"])  # the depot's decontamination lines (P9-11.16)
         rule = "Depot averages over the window and the device's own wait"
         return [Fact("asset", key, "turnaround", value, "turnaround", rows, rule)]
 
