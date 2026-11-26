@@ -40,6 +40,8 @@ from di.services.cases import (
     bench_evidence,
     contract_line,
     decon_evidence,
+    export_approval,
+    export_evidence,
     inventory_evidence,
     lifecycle,
     recall_evidence,
@@ -135,6 +137,9 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
     if case.get("template") == "telecom_network":  # the inventory's record (G-NET-INV, P9-10.6), the bench's (G-NET-CFG, P9-10.7)
         recs[:] = [r for r in recs if r["type"] != bench_evidence.WIPE]  # only the bench's own read is a certificate
         recs.extend(inventory_evidence.evidence(s, case.get("assetId")))
+        recs[:] = [r for r in recs if r["type"] != export_evidence.EXPORT_EVIDENCE]  # a class is the inventory's, never typed
+        model = ((case.get("network") or {}).get("model")) or None
+        recs.extend(export_evidence.evidence(export_evidence.read(s, case.get("assetId"), model)))  # G-NET-EXP (P9-10.8)
         read = bench_evidence.read(s, case.get("assetId"))
         recs.extend(bench_evidence.evidence(read))
         if read:
@@ -169,6 +174,7 @@ def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as
     out = []
     for r in results:
         g = cat[r.gate_id]
+        notes = {"routeNotes": dict(r.route_notes)} if r.route_notes else {}
         on_file = [
             {"type": t, "label": label_of(t), "source": e.source, "at": e.at.isoformat(), "value": dict(e.value)}
             for t in (["contract_clause"] if g.id == CONTRACT_GATE else []) + g.evidence
@@ -181,7 +187,7 @@ def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as
             "owner": g.owner, "evidence": on_file, "missing": [label_of(t) for t in r.evidence_missing],
             "missingTypes": list(r.evidence_missing), "reason": r.reason,
             "locked": g.locked, "guardrail": g.params.get("guardrail"),
-        })  # fmt: skip
+        } | notes)  # fmt: skip
     return out
 
 
@@ -234,7 +240,7 @@ def apply(
     case["gates"] = _rows(case, pack, results, as_of)
     hold(case, results)
     if bound is not None and bound[1] == str(case.get("id")):
-        sync_item(bound[0], case, pack)
+        sync_item(bound[0], case, pack, routes)
     return results
 
 
@@ -278,7 +284,7 @@ def _contract(case: Mapping[str, Any], pack: Pack, results: list[GateResult], as
 
 
 # ---------------------------------------------------------------- the exception item of a hold (P9-1.7)
-def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
+def sync_item(s: Session, case: Mapping[str, Any], pack: Pack, routes: Sequence[Route] = ()) -> None:
     """One open exception item (type `evidence_missing`) while the case is held, none after: a hold opens it for the owner
     of the pack's exception type of that id, else the role of the failed gate's owner, with the pack's `exception` SLA; a
     release closes it with the outcome "released". A case already held keeps its item. In the caller's transaction."""
@@ -287,6 +293,7 @@ def sync_item(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
     cid = str(case["id"])
     sync_quarantine(s, case, pack)
     _sync_advisory(s, case, pack)
+    export_approval.sync(s, case, pack, routes)
     open_id = s.execute(
         text("SELECT id, type FROM work_item WHERE case_id = :c AND type = ANY(:t) AND status = 'open' ORDER BY id LIMIT 1"),
         {"c": cid, "t": [EVIDENCE_MISSING, *EXCEPTION_OF.values()]},

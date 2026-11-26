@@ -105,6 +105,7 @@ class GateResult:
     reason: str
     disclosures: tuple[str, ...] = ()  # texts every route of the decision carries (effect `disclose`, `apply_disclosures`)
     route_reasons: tuple[tuple[str, str], ...] = ()  # (route id, reason) where a route fails with its own text (P9-10.7)
+    route_notes: tuple[tuple[str, str], ...] = ()  # (route id, note) where a route is not affected and says why (P9-10.8)
 
 
 Check = Callable[[Mapping[str, Any], Pack, GateDef], GateResult | None]

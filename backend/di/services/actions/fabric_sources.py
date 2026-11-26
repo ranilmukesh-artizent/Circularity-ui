@@ -1071,6 +1071,8 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
         for p, prop in zip(profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank), strict=True):
             rows.append(prop.as_dict() | {"resource": res, "samples": p.top_values})
+            if choices := mapping_suggest.allowed_choices(sid, p.name):
+                rows[-1]["allowed_choices"] = choices  # a pack hint offers only these (P9-10.8)
     live = {(d["resource"] or "", d["src"]): d for d in mapping_decisions.of_source(s, sid)}
     for r in rows:
         d = live.get((r["resource"], r["field"])) or live.get(("", r["field"]))
@@ -1136,6 +1138,15 @@ def _check_choice(i: dict[str, Any]) -> None:
         rule = mapping.parse_rule(i.get("rule"))
         if rule is None or rule == mapping.CODE:
             raise ActionError("validation_error", f"No conversion rule '{i.get('rule') or ''}'.")
+
+
+def _check_hint(sid: str, src: str, decision: str, target: str | None) -> None:
+    """A pack hint that restricts the choices for a field (P9-10.8: an export class inferred from a part number is never
+    accepted as the class) is honoured here, whoever chooses: the server refuses what the page does not offer."""
+    from di.connectors import mapping_suggest
+
+    if why := mapping_suggest.refused_choice(sid, src, decision, target):
+        raise ActionError("validation_error", why)
 
 
 def _sample_values(s: Any, sid: str, src: str, resource: str | None) -> list[Any]:
@@ -1208,7 +1219,9 @@ def _record_choice(
 def mapping_decide_guard(i: dict[str, Any], ctx: CallContext):
     if bad := _refused(_current, ctx, i["source_id"]):
         return bad
-    return _refused(_check_choice, i)
+    if bad := _refused(_check_choice, i):
+        return bad
+    return _refused(_check_hint, str(i["source_id"]), str(i["src"]), str(i["decision"]), str(i.get("target") or "") or None)
 
 
 @implement("mapping.decide")
@@ -1323,6 +1336,9 @@ def mapping_apply_guard(i: dict[str, Any], ctx: CallContext):
         cur, _ = _current(ctx, i["source_id"])
         if not isinstance(i["rows"], list) or not i["rows"]:
             raise ActionError("validation_error", "Accept at least one mapping.")
+        for r in i["rows"]:  # a row that puts a restricted field into the hint's own target is refused (P9-10.8)
+            if isinstance(r, dict) and r.get("src"):
+                _check_hint(cur["id"], str(r["src"]), "replaced", str(r.get("target") or "") or None)
         maps = _apply_maps(cur["maps"], i["rows"])
         _check_maps(cur["id"], maps)
     except ActionError as e:

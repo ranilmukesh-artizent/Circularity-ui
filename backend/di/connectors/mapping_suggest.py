@@ -264,6 +264,49 @@ def canonical_fields(models: Sequence[str] | None = None) -> list[CanonicalField
     ]
 
 
+# ---------------------------------------------------------------- a pack's hint limits the choices (P9-10.8, TN-03)
+ASK_OWNER, CONFIRMED_FIELD = "ask_system_owner", "confirmed_source_field"
+
+
+@cache
+def _pack_hints() -> tuple[dict[str, Any], ...]:
+    """The `hint` mappings of the shipped packs (a pack's `data.mappings` rows of kind `hint`): source, field, canonical, ..."""
+    from di.services.modeler.pack import load_pack, pack_keys
+
+    return tuple(m for k in pack_keys() for m in load_pack(k).data.mappings if m.get("kind") == "hint")
+
+
+def hint_of(source_id: str, field: str) -> dict[str, Any] | None:
+    """The pack hint for a source field of the source (a second source of the same system, `tn_inv_2`, shares its hints)."""
+    base = re.sub(r"_\d+$", "", source_id)
+    return next((h for h in _pack_hints() if h.get("source") in (source_id, base) and h.get("field") == field), None)
+
+
+def allowed_choices(source_id: str, field: str) -> list[str] | None:
+    """The only choices a pack's hint offers for the field (`allowed_choices`: "ask_system_owner", "confirmed_source_field"),
+    or None when the hint restricts none or there is no hint. The export class inferred from a part number is the case."""
+    h = hint_of(source_id, field)
+    return list(h["allowed_choices"]) if h and h.get("allowed_choices") else None
+
+
+def refused_choice(source_id: str, field: str, decision: str, target: str | None) -> str | None:
+    """Why a person's choice for the field is refused, or None. Where a hint restricts the choices, the one choice that
+    records is "choose another field" (`replaced`: the source's confirmed field, kept apart from the hint's own target);
+    accepting the hint, converting it or marking it not needed is refused, and so is moving it into the hint's target by
+    another name. Asking the system owner is `mapping.askOwner`, which this never refuses."""
+    choices = allowed_choices(source_id, field)
+    if choices is None:
+        return None
+    h = hint_of(source_id, field)
+    assert h is not None  # noqa: S101 - allowed_choices found it
+    if decision == "replaced" and CONFIRMED_FIELD in choices and target and target != h.get("canonical"):
+        return None
+    return (
+        f"{field} is inferred, never accepted as {h.get('canonical')}: ask the system owner, or choose the source's "
+        f"confirmed field."
+    )
+
+
 # ---------------------------------------------------------------- candidates
 def _words(name: str) -> list[str]:
     parts = [p for p in re.split(r"[^a-z0-9]+", re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name).lower()) if p]

@@ -232,6 +232,16 @@ def _may_see(a: policy.Account, pctx: policy.Context | None, org_unit_id: str | 
     return org_unit_id is None or policy.tenant_ok(a, org_unit_id, pctx)
 
 
+APPROVAL_PREFIX = "AP-"  # a work item whose type starts so is an approval of a pack (P9-10.8: AP-TN-EXP), stored as an exception
+
+
+def _view_kind(row: Any) -> str:
+    """The kind My work shows for a work item: an approval of a pack (type `AP-…`) is an approval, a step a task."""
+    if str(row["type"]).startswith(APPROVAL_PREFIX):
+        return "approval"
+    return "task" if row["kind"] == "step" else str(row["kind"])
+
+
 def _work_rows(s: Session, a: policy.Account, pctx: policy.Context | None, now: datetime) -> list[WorkView]:
     rows = s.execute(
         text(
@@ -249,7 +259,7 @@ def _work_rows(s: Session, a: policy.Account, pctx: policy.Context | None, now: 
         due = r["due_at"]
         out.append(
             WorkView(
-                id=f"w:{r['id']}", kind="task" if r["kind"] == "step" else r["kind"], case_id=r["case_id"], title=r["title"],
+                id=f"w:{r['id']}", kind=_view_kind(r), case_id=r["case_id"], title=r["title"],
                 cause=r["cause"], action=r["action"], owner=r["owner_account"] or r["owner_role"],
                 due=due.isoformat() if due else None, overdue=bool(due and due < now), priority=r["priority"],
                 go=f"product/{r['case_id']}" if r["case_id"] else None,
