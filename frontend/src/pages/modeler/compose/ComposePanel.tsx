@@ -1,15 +1,19 @@
 import { Suspense, useState } from 'react';
 import { useComposition, type Composition, type CompositionStep } from '../../../api/compose';
 import { Segmented } from '../../../components/kit/Segmented';
+import { AgentsStep } from './AgentsStep';
+import { ApproveStep } from './ApproveStep';
 import { DescribeStep } from './DescribeStep';
 import { MappingStep } from './MappingStep';
+import { PublishStep } from './PublishStep';
 import { STEP_ITEMS, stateLine } from './composeView';
 import './compose.css';
 
 /**
- * Compose (plan 9, P9-8.18, story X-10): the five steps of one composition as tabs. This task builds Describe and Adapter mapping;
- * the other tabs show their state (and the reason, when the approver sent a step back). `id` is null before the first draft.
- * Nothing here approves, publishes or deletes: those are a different person's actions.
+ * Compose (plan 9, P9-8.18 and P9-8.20, story X-10): the five steps of one composition as tabs: Describe, Adapter mapping, Agents,
+ * Approve and Publish (with the version history). Each tab shows its state, and the reason when the approver sent a step back.
+ * `id` is null before the first draft. Approve and Publish are a different person's clicks, refused by the server for the maker
+ * and for any agent; the panel only shows why a button is off.
  */
 export function ComposePanel({ org, pack, id, onId, onClose }: {
   org: string;
@@ -52,7 +56,9 @@ function Body({ org, pack, c, onId }: { org: string; pack: string; c: Compositio
       {c?.steps[shown]?.note?.node_id && <p className="note">About: {c.steps[shown].note?.node_id}</p>}
       {shown === 'describe' && <DescribeStep org={org} pack={pack} composition={c} onStarted={onId} />}
       {shown === 'mapping' && c && <MappingStep c={c} />}
-      {(shown === 'agents' || shown === 'approve' || shown === 'publish') && <p className="note cmp-step">This step is not available yet.</p>}
+      {shown === 'agents' && c && <AgentsStep c={c} />}
+      {shown === 'approve' && c && <ApproveStep c={c} />}
+      {shown === 'publish' && c && <PublishStep c={c} />}
     </>
   );
 }

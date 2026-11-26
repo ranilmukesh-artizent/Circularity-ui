@@ -1,3 +1,4 @@
+# ruff: noqa: E501 - long lines in the docstring table and the action declarations
 """Composition actions (plan 9, P9-8.17; G C8, C12; R21): one approvable object made of the description's change set, the
 mapping rows the owner accepted and the stage-agent settings, with maker-checker.
 
@@ -12,8 +13,15 @@ mapping rows the owner accepted and the stage-agent settings, with maker-checker
     compose.testRun        read    {id, limit?, batch_id?}          (P9-8.19) past items through the draft: where
                                                                     cases stopped, by stage and reason; writes nothing
     compose.submit         act     {id}                             refused with the blocking list; else a snapshot
+    compose.setStageAgents act     {id, stages, threshold}          (P9-8.20) the stage-agent settings: `stageAgent.set` operations
+                                                                    and one `param.set confidence_threshold`, beside the overlay's
     compose.sendBack       act     {id, step, reason, node_id?}     approve.packs: the reason (15+ characters) on the step
     compose.approve        commit  {id}                             approve.packs: applies the parts as one, or none of them
+    compose.publish        commit  {id, region, share?}             (P9-8.20) approve.packs: starts the canary of P9-7.3 as this
+                                                                    person (`rollout.startCanary`, through the pipeline); needs
+                                                                    the flow in shadow and its replay report
+    compose.history        read    {id}                             versions, journal rows, what publishing needs, and the stage
+                                                                    rows the agents step shows
 
 `managePacks` makes and submits, `approve.packs` sends back and approves (di.core.policy.EXTRA_PERMS); the composition's org
 unit must be in the person's tenants. The maker is never the checker: whoever created, edited or submitted a composition cannot
@@ -25,6 +33,14 @@ the approved snapshot; any failure undoes all of it. Mapping rows come from `ste
 filled by P9-8.18); the stage settings from `steps.agents.settings` (`{stage, autonomy, threshold}`). The stage chain reads its
 autonomy and threshold from the pack's stages today, so the settings are recorded and range-checked here and applied when the
 `stageAgent.set` operation (I-13, F section 8c) exists.
+
+P9-8.20: the agents step is written by `compose.setStageAgents` into `steps.agents.settings` (stage, agent_id, autonomy, limits,
+threshold) and, as typed records for the audit and the approver's view, into `change_set.stage_ops` (`stageAgent.set` and one
+`param.set`): not into `change_set.ops`, which stay the overlay's five operations (I-4; the overlay validator and `parse_ops` do
+not know the stage operations). `with_stage_settings` applies the settings to a pack's stages (pure) for whoever builds the stage
+chain from a published composition. Publishing is a person's commit on an approved composition; it never writes rollout rows
+itself: `rollout.startCanary` does, run through `invoke` as the same person, so its own maker-checker and replay checks apply.
+The one wording, the summary of the replay report, goes through `stop_explainer` (AgentLoop) with `stop_reasons.check_text`.
 """
 
 import json
@@ -37,16 +53,20 @@ from sqlalchemy import text
 from di.connectors import lifecycle, mapping
 from di.connectors.registry import ADAPTERS
 from di.core import policy
+from di.core.orgs import subtree
 from di.repositories import adapter_registry as adapter_repo
 from di.repositories import compositions as repo
+from di.repositories import flows as flow_repo
 from di.repositories import mapping_decisions
 from di.repositories import overlays as overlay_repo
 from di.repositories import replay as replay_repo
+from di.repositories import rollouts as rollout_repo
 from di.repositories.orgs import units
 from di.repositories.packs import active_pack
 from di.services.actions import overlays
+from di.services.actions import rollout as rollout_actions
 from di.services.actions.modeler import _boundary, _org_ok
-from di.services.actions.pipeline import CallContext
+from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError, draft_change_set, read_text
 from di.services.agents.playbooks import pack_author, stop_explainer
@@ -57,6 +77,7 @@ from di.services.modeler.compile import FlowVersion
 from di.services.modeler.gates import catalogue
 from di.services.modeler.overlay import OverlayError, apply_overlay, ops_json, parse_ops
 from di.services.modeler.pack import Pack, load_pack, pack_keys
+from di.services.modeler.stages import STAGE_KEYS, STAGE_LABELS
 from di.services.policy_standing import decide_threshold
 from di.services.replay import history
 from di.services.replay import run as replay_run
@@ -91,6 +112,12 @@ _DECLARED: tuple[tuple[str, str, str, Risk, dict[str, dict[str, Any]], str | Non
      {**_ID, "limit": {"t": "number"}, "batch_id": {"t": "number"}}, _MANAGE),
     ("compose.submit", "Submit a composition", "Send a finished composition to a different person for approval.", "act",
      _ID, _MANAGE),
+    ("compose.setStageAgents", "Set a composition's stage agents", "Set each stage's agent and autonomy, and the confidence threshold.",
+     "act", {**_ID, "stages": _OPS, "threshold": {"req": True, "t": "number"}}, _MANAGE),
+    ("compose.publish", "Publish a composition", "Start the canary of an approved composition in a region at a share of its cases.",
+     "commit", {**_ID, "region": _STR, "share": {"t": "number"}}, _APPROVE),
+    ("compose.history", "Read a composition's history", "The versions of a composition, its journal rows, and what publishing needs.",
+     "read", _ID, None),
     ("compose.sendBack", "Send a composition back", "Send a submitted composition back to its maker, with the step and a reason.",
      "act", {**_ID, "step": _STR, "node_id": {"t": "string"}, "reason": _REASON}, _APPROVE),
     ("compose.approve", "Approve a composition", "Approve a submitted composition: changes, mapping and settings apply as one.",
@@ -217,7 +244,8 @@ guard("compose.answer")(_editable_guard)
 def answer(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     row = _row(i, ctx, for_update=True)
     cs = _draft(row["text"], row["org_unit_id"], [_pack(row, ctx)], i["answer"], ctx)
-    _save(ctx, row["id"], change_set=cs.model_dump(mode="json"), editors=_editors(row, ctx))
+    kept = {"stage_ops": row["change_set"]["stage_ops"]} if "stage_ops" in row["change_set"] else {}  # the agents step stays
+    _save(ctx, row["id"], change_set=cs.model_dump(mode="json") | kept, editors=_editors(row, ctx))
     return _out(_row(i, ctx)) | {"log": f"Answered the question of composition {row['id']}"}
 
 
@@ -656,4 +684,246 @@ def approve(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     return {
         "id": row["id"], "status": "approved", "version": ver, "mapping_sources": sources,
         "log": f"Approved composition {row['id']} (v{ver}): changes, mapping and stage settings apply together",
+    }  # fmt: skip
+
+
+# ---------------------------------------------------------------- stage agents (P9-8.20)
+LEVELS = ("recommend", "limits", "alone")  # the Autonomy of I-7
+BOUNDS = "The confidence threshold is between 65 % and 85 %."
+DEFAULT_SHARE = 20
+DEFAULT_THRESHOLD = 0.75
+NEEDS_REPORT = "Run the replay before publishing."
+_LIMIT_KEYS = ("value_limit", "bulk_limit")
+
+
+def _num(v: Any) -> bool:
+    return isinstance(v, int | float) and not isinstance(v, bool)
+
+
+def _stage_keys(row: dict[str, Any], ctx: CallContext) -> list[str]:
+    return [st.key for st in _pack(row, ctx).stages] or list(STAGE_KEYS)
+
+
+def _stage_problem(stages: Any, keys: list[str]) -> str | None:
+    """The first thing wrong with the stage rows, in the person's words; None when they are fine."""
+    if not isinstance(stages, list) or not stages:
+        return "Name at least one stage."
+    seen: set[str] = set()
+    for r in stages:
+        if not isinstance(r, dict):
+            return "Each stage is a row with a stage, an agent and an autonomy."
+        key = str(r.get("stage"))
+        if key not in keys:
+            return f"The {key} stage is not one of {', '.join(keys)}."
+        if key in seen:
+            return f"The {key} stage is set twice."
+        seen.add(key)
+        if r.get("autonomy") not in LEVELS:
+            return f"The autonomy of the {key} stage is one of {', '.join(LEVELS)}."
+        agent = r.get("agent_id")
+        if not isinstance(agent, str) or not agent.strip() or len(agent) > 80:
+            return f"The {key} stage needs an agent."
+        limits = r.get("limits")
+        if limits is None:
+            continue
+        if r["autonomy"] != "limits":
+            return f"The {key} stage has limits, which apply only to Act within limits."
+        if not isinstance(limits, dict) or set(limits) - set(_LIMIT_KEYS) or any(not _num(v) or v < 0 for v in limits.values()):
+            return f"The limits of the {key} stage are a value limit and a bulk limit, each zero or more."
+    return None
+
+
+@guard("compose.setStageAgents")
+def stage_agents_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if bad := _editable_guard(i, ctx):
+        return bad
+    t, (lo, hi) = i["threshold"], core.THRESHOLD_RANGE
+    if not _num(t) or not lo <= t <= hi:
+        return "validation_error", BOUNDS
+    problem = _stage_problem(i["stages"], _stage_keys(_row(i, ctx), ctx))
+    return ("validation_error", problem) if problem else None
+
+
+@implement("compose.setStageAgents")
+def set_stage_agents(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    row = _row(i, ctx, for_update=True)
+    th = float(i["threshold"])
+    settings, ops = [], []
+    for n, r in enumerate(i["stages"], 1):
+        limits = {k: r["limits"][k] for k in _LIMIT_KEYS if k in r["limits"]} if r.get("limits") else None
+        base = {
+            "stage": r["stage"],
+            "agent_id": r["agent_id"].strip(),
+            "autonomy": r["autonomy"],
+            **({"limits": limits} if limits else {}),
+        }
+        settings.append({**base, "threshold": th})
+        ops.append({"id": f"sa-{n}", "op": "stageAgent.set", **base})
+    ops.append({"id": f"sa-{len(ops) + 1}", "op": "param.set", "path": "confidence_threshold", "value": th})
+    steps = {**row["steps"], "agents": {**row["steps"].get("agents", {}), "settings": settings}}
+    _save(ctx, row["id"], change_set={**row["change_set"], "stage_ops": ops}, steps=steps, editors=_editors(row, ctx))
+    return _out(_row(i, ctx)) | {"threshold": th, "log": f"Set the agents of {len(settings)} stages of composition {row['id']}"}
+
+
+def with_stage_settings(pack: Pack, settings: Sequence[dict[str, Any]]) -> Pack:
+    """The pack with the composition's stage settings on its stages (agent, autonomy and confidence threshold): what the stage
+    chain reads (`chain.stage_defs`). A stage the settings do not name is as the pack has it. Pure."""
+    by = {str(x["stage"]): x for x in settings}
+    stages = [
+        st.model_copy(update={
+            "agent": by[st.key].get("agent_id") or st.agent,
+            "autonomy": by[st.key].get("autonomy") or st.autonomy,
+            "confidence": by[st.key].get("threshold") if _num(by[st.key].get("threshold")) else st.confidence,
+        }) if st.key in by else st
+        for st in pack.stages
+    ]  # fmt: skip
+    return pack.model_copy(update={"stages": stages})
+
+
+# ---------------------------------------------------------------- publish (P9-8.20)
+def _flow(row: dict[str, Any], ctx: CallContext) -> Any:
+    return flow_repo.flow_for(ctx.session, row["pack_key"], row["org_unit_id"])
+
+
+def _report(f: Any, ctx: CallContext) -> dict[str, Any] | None:
+    """The replay report of the flow's draft (I-16 `ReplayReport` as stored), or None before a replay is done."""
+    run = rollout_repo.done_replay(ctx.session, f.id, f.dver)
+    got = replay_repo.get_run(ctx.session, run) if run is not None else None
+    return dict(got["report"]) if got and got["report"] else None
+
+
+def _share(i: dict[str, Any]) -> tuple[str, str] | None:
+    sh = i.get("share")
+    if sh is None:
+        return None
+    if not _num(sh) or int(sh) != sh or not 1 <= sh <= 99:
+        return "validation_error", "The share is a whole number from 1 to 99 (the canary widens in the Modeler)."
+    return None
+
+
+def _region(i: dict[str, Any], row: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    region = str(i.get("region") or "").strip()
+    if not region:
+        return "validation_error", "Name the region the canary runs in."
+    every = units(ctx.session)
+    # an org unit: inside the composition's own subtree, and one this person sees
+    if region in every and (region not in subtree(every, row["org_unit_id"]) or not _org_ok(ctx, region)):
+        return _boundary(region)
+    return None  # anything else is a market, a case fact
+
+
+@guard("compose.publish")
+def publish_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if ctx.preparer:
+        return "approval_required", "A composition is published only by a person."
+    if bad := _reach(i, ctx):
+        return bad
+    row = _row(i, ctx)
+    if bad := _wanted(row, ("approved",), "Only an approved composition is published, and only once."):
+        return bad
+    if bad := _share(i) or _region(i, row, ctx):
+        return bad
+    f = _flow(row, ctx)
+    if f is None or f.status != "shadow":
+        return "conflict", f"Approve the {row['pack_key']} decision flow of {row['org_unit_id']} into shadow before publishing."
+    if _report(f, ctx) is None:
+        return "conflict", NEEDS_REPORT
+    body = {"flow_id": f.id, "region": str(i["region"]).strip(), "share": int(i.get("share") or DEFAULT_SHARE)}
+    return rollout_actions.start_guard(body, ctx)  # the rollout's own refusals (its maker-checker) before anything is written
+
+
+def _pct(x: Any) -> str:
+    return f"{float(x):+.1f} %"
+
+
+def _report_line(rep: dict[str, Any]) -> str:
+    up = rep.get("uplift") or {}
+    lo, hi = up.get("band80") or (0, 0)
+    return (
+        f"Replay of {rep.get('n_items', 0)} past items over {rep.get('days', 0)} days: "
+        f"{rep.get('straight_through_pct', 0):g} % went straight through, {rep.get('approvals_per_day', 0):g} approvals and "
+        f"{rep.get('exceptions_per_day', 0):g} exceptions a day; modelled uplift {_pct(up.get('conservative', 0))} "
+        f"(80 % band {_pct(lo)} to {_pct(hi)})."
+    )
+
+
+def _report_facts(rep: dict[str, Any]) -> str:
+    mix = "\n".join(f"{m['route']}: actual {m['actual_pct']:g} %, flow {m['flow_pct']:g} %" for m in rep.get("route_mix") or [])
+    return _report_line(rep) + ("\nRoute mix:\n" + mix if mix else "")
+
+
+_REPORT_KEYS = (
+    "run_id", "n_items", "n_decided", "days", "route_mix", "straight_through_pct", "approvals_per_day", "exceptions_per_day", "uplift",
+)  # fmt: skip
+
+
+@implement("compose.publish")
+def publish(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    row = _row(i, ctx, for_update=True)
+    if row["status"] != "approved":  # published by someone else between the guard and this lock
+        raise ActionError("conflict", "Only an approved composition is published, and only once.")
+    f = _flow(row, ctx)
+    rep = _report(f, ctx) if f is not None else None
+    if f is None or rep is None:
+        raise ActionError("conflict", NEEDS_REPORT)
+    body = {"flow_id": f.id, "region": str(i["region"]).strip(), "share": int(i.get("share") or DEFAULT_SHARE)}
+    as_me = CallContext(
+        actor=ctx.actor, session=ctx.session, confirmed=ctx.confirmed, now=ctx.now
+    )  # the pattern of proposal.accept
+    r = invoke("rollout.startCanary", body, as_me)
+    if not r["ok"]:
+        e = r["error"]
+        raise ActionError(e["code"], e["message"], {k: v for k, v in e.items() if k not in ("code", "message")} or None)
+    facts = _report_facts(rep)
+    words = stop_explainer.explain(ctx, facts, lambda t: stop_reasons.check_text(t, facts))
+    steps = {**row["steps"], "publish": {"state": "done"}}
+    ver = _version(ctx, row, "published", steps=steps, published_by=ctx.actor.id)
+    return {
+        "id": row["id"], "status": "published", "version": ver, "rollout": r["output"], "report": {k: rep.get(k) for k in _REPORT_KEYS},
+        "text": words or _report_line(rep), "by_model": words is not None,
+        "log": f"Published composition {row['id']} (v{ver}): canary in {body['region']} at {body['share']} %",
+    }  # fmt: skip
+
+
+# ---------------------------------------------------------------- history (P9-8.20)
+guard("compose.history")(get_guard)
+
+
+@implement("compose.history")
+def history_of(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    row, s = _row(i, ctx), ctx.session
+    versions = [
+        {"version": v.version, "status": v.status, "by": v.by, "at": v.at.isoformat() if v.at else None}
+        for v in s.execute(
+            text('SELECT version, status, "by", "at" FROM composition_version WHERE composition_id = :c ORDER BY version'),
+            {"c": row["id"]},
+        )
+    ]  # fmt: skip
+    f = _flow(row, ctx)
+    rows = s.execute(
+        text(
+            "SELECT seq, action, actor, at FROM action_journal WHERE NOT undone AND ("
+            "(action LIKE 'compose.%' AND (input->>'id' = :c OR output_ref->>'id' = :c)) "
+            "OR (CAST(:f AS text) IS NOT NULL AND action LIKE 'rollout.%' AND input->>'flow_id' = CAST(:f AS text))) ORDER BY seq"
+        ),
+        {"c": str(row["id"]), "f": str(f.id) if f is not None else None},
+    )
+    journal = [{"seq": r.seq, "action": r.action, "actor": r.actor, "at": r.at.isoformat() if r.at else None} for r in rows]
+    rep = _report(f, ctx) if f is not None else None
+    live = [rollout_actions._view(r) for r in rollout_repo.rollouts_of(s, f.id, ("canary", "paused"))] if f is not None else []
+    publish_info = {
+        "flow_id": f.id if f is not None else None, "flow_status": f.status if f is not None else None,
+        "flow_stage": rollout_actions.current_stage(s, f) if f is not None else None,
+        "report": {k: rep.get(k) for k in _REPORT_KEYS} if rep else None, "rollouts": live,
+    }  # fmt: skip
+    saved = {str(x["stage"]): x for x in core.stage_settings(row["steps"])}
+    stages = [
+        {"stage": st.key, "label": STAGE_LABELS[st.key], "agent_id": saved.get(st.key, {}).get("agent_id", st.agent),
+         "autonomy": saved.get(st.key, {}).get("autonomy", st.autonomy), "limits": saved.get(st.key, {}).get("limits")}
+        for st in _pack(row, ctx).stages
+    ]  # fmt: skip
+    threshold = next((x["threshold"] for x in saved.values() if _num(x.get("threshold"))), DEFAULT_THRESHOLD)
+    return {
+        "id": row["id"], "status": row["status"], "versions": versions, "journal": journal, "publish": publish_info,
+        "stages": stages, "threshold": threshold,
     }  # fmt: skip
