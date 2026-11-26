@@ -99,6 +99,9 @@ def owner_active(s: Session, owner: str, issued_at: int | None = None) -> bool:
     ctx = auth.load_context(s)
     if policy.account(owner, ctx) is None:
         return False
+    gone = state.get(s, "account_revoked", owner) or {}
+    if gone.get("active") is False:  # SCIM deactivated: refused until reactivated, however long ago
+        return False
     return not auth.revoked(s, owner, issued_at if issued_at is not None else int(datetime.now(UTC).timestamp()))
 
 

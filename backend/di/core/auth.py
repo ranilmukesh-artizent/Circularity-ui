@@ -104,7 +104,14 @@ def _check_agent_token(session: Session, claims: dict[str, object], agent_id: st
         .first()
     )
     off = state.get(session, "access_settings", "agents_off") or {}  # the kill switch beside agent_identity.enabled
-    if cred is None or off.get(agent_id) or cred["agent_id"] != agent_id or cred["owner"] != claims.get("own"):
+    gone = state.get(session, "account_revoked", str(claims.get("own", ""))) or {}
+    if (
+        cred is None
+        or off.get(agent_id)
+        or gone.get("active") is False
+        or cred["agent_id"] != agent_id
+        or cred["owner"] != claims.get("own")
+    ):
         raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
 
 
