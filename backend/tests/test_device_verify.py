@@ -121,7 +121,7 @@ def test_dv_02_mismatch_opens_exception_with_both_values():
     assert item["status"] == "open" and item["owner_role"] == "Planner"
     assert line in item["title"] and line in item["cause"] and "Customer care" in item["action"]
     # the listing channels may carry GR-D9 first (P9-6.19); repair, parts and recycle are the Recover routes (P9-6.15)
-    routes = [r for r in c["routes"] if r["id"] not in ("repair_sell", "parts", "recycle")]
+    routes = [r for r in c["routes"] if r["id"] not in ("repair_sell", "parts", "recycle", "replacement")]
     assert routes and all(
         r["excluded"] and (r["failReason"] == f"Quote match: {line}" or "(GR-D9)" in r["failReason"]) for r in routes
     )

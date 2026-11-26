@@ -82,7 +82,7 @@ def test_dv_11_parts_and_recycle_values():
     by = _by(_lot(grade="B", a=360))
     assert by["parts"]["cash"] == pytest.approx(0.18 * 360 - 6) and by["parts"]["ok"]
     assert by["recycle"]["cash"] == pytest.approx(2.5 - 1.0) and by["recycle"]["ok"]
-    assert list(by) == device.channels_for(_lot()) and list(by)[-3:] == ["repair_sell", "parts", "recycle"]
+    assert list(by) == device.channels_for(_lot()) and list(by)[-4:] == ["repair_sell", "parts", "recycle", "replacement"]
     # without a grade-A feed price: the reference value scaled to grade A
     assert _by(_lot(grade="B", ref=340, a=None))["parts"]["cash"] == pytest.approx(0.18 * 340 / 0.85 - 6)
 
@@ -92,7 +92,7 @@ def test_dv_11_routes_carry_their_steps_and_names():
     assert STEP_TPL["parts"] == ["teardown", "partsput", "partsxfer", "finance"]
     assert STEP_TPL["recycle"] == ["release", "collect", "process", "cert"]
     assert all(k in EX_STEP for r in ("repair_sell", "parts", "recycle") for k in ex_kinds({"id": r}))
-    assert {device.DCN[k] for k in device.EXTRA} == {"Repair then sell", "Parts", "Recycle"}
+    assert {device.DCN[k] for k in device.EXTRA} == {"Repair then sell", "Parts", "Recycle", "Replacement stock"}
 
 
 def test_dv_11_po_lots_have_no_new_routes():
@@ -103,7 +103,7 @@ def test_dv_11_po_lots_have_no_new_routes():
 
 def test_dv_11_pack_routes_are_recover_only():
     pack = load_pack("device")
-    assert {r.id for r in pack.routes if r.recover_only} == {"wholesale", "repair_sell", "parts", "recycle"}
+    assert {r.id for r in pack.routes if r.recover_only} == {"wholesale", "repair_sell", "parts", "recycle", "replacement"}
     assert [p.id for p in template_of_pack(pack).paths] == [
         "buynow",
         "offers",

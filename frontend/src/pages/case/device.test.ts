@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView, PayoutView } from '../../api/device';
 import type { ChannelView, QuoteCheck, RegistryView, SettlementView, WipeView } from '../../api/device';
-import { channelRow, deviceLine, diversionLine, evidenceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
+import { channelRow, demandLine, deviceLine, diversionLine, evidenceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, replacementLine, replacementRow, settlementLine, wipeLine, wipeState } from './device';
 
 const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
 
@@ -146,6 +146,20 @@ describe('P9-6.15 evidenceLine (DV-11)', () => {
     const q = { repair: 'Battery swap', cost: 24, priceUplift: 28, days: 5 };
     const v: ChannelView = { k: 'repair_sell', name: 'Repair then sell', cash: 301, days: 17, p10: null, p90: null, feedWeek: null, modelId: null, ok: true, why: evidenceLine(q), repair: q };
     expect(channelRow(v)).toBe('Repair then sell · $301 net · 17.0 days');
+  });
+});
+
+describe('P9-6.16 replacementLine (DV-12)', () => {
+  const r = { demandId: 'RD-1', unitCost: 340, open: 5 };
+  it('says the purchase the device avoids and the units still wanted', () => {
+    expect(replacementLine(r)).toBe('Replacement stock · avoids $340 purchase');
+    expect(replacementLine({ ...r, unitCost: 339.5 })).toBe('Replacement stock · avoids $339.50 purchase');
+    expect(demandLine(r)).toBe('5 units wanted');
+    expect(demandLine({ ...r, open: 1 })).toBe('1 unit wanted');
+  });
+  it('shows the route on the Channels tab with its net and days', () => {
+    const v: ChannelView = { k: 'replacement', name: 'Replacement stock', cash: 325, days: 3, p10: null, p90: null, feedWeek: null, modelId: null, ok: true, why: 'Avoids buying a replacement: $340', replacement: r };
+    expect(replacementRow({ ...v, replacement: r })).toBe('Replacement stock · avoids $340 purchase · 5 units wanted · $325 net · 3.0 days');
   });
 });
 

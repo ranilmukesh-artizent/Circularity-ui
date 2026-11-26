@@ -157,7 +157,12 @@ export interface ChannelView {
   why: string;
   /** the repair quote a Repair then sell route rests on (P9-6.15); only on that route */
   repair?: RepairQuote | null;
+  /** the demand unit a Replacement stock route fills (P9-6.16); only on that route, and only while it is eligible */
+  replacement?: ReplacementView | null;
 }
+
+/** The open replacement demand a device would fill: its id, what buying the replacement would cost, and the units still open (P9-6.16). */
+export interface ReplacementView { demandId: string; unitCost: number; open: number }
 
 /** The lab's repair quote on a device: what is done, its cost, the price it adds and the days it takes (P9-6.15). */
 export interface RepairQuote { repair: string; cost: number; priceUplift: number; days: number }

@@ -81,6 +81,9 @@ def channels_view(lot: Mapping[str, Any]) -> list[dict[str, Any]]:
             **(
                 {"repair": _repair_view(v["repair"])} if "repair" in v else {}
             ),  # the quote a Repair then sell route rests on (P9-6.15)
+            **(
+                {"replacement": _replacement_view(v["replacement"])} if "replacement" in v else {}
+            ),  # the demand unit a Replacement stock route fills (P9-6.16)
         }  # fmt: skip
         for v in sorted(values, key=lambda v: order[v["k"]])
     ]
@@ -88,6 +91,10 @@ def channels_view(lot: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 def _repair_view(q: Mapping[str, Any]) -> dict[str, Any]:
     return {"repair": q["repair"], "cost": q["cost"], "priceUplift": q["price_uplift"], "days": q["days"]}
+
+
+def _replacement_view(r: Mapping[str, Any]) -> dict[str, Any]:
+    return {"demandId": r["demand_id"], "unitCost": r["unit_cost"], "open": r["open"]}
 
 
 def usd(v: float) -> str:

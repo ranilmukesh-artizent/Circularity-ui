@@ -964,7 +964,7 @@ each story went.
 - [x] P9-6.13 Ageing suggestions accepted into rules
 - [x] P9-6.14 Device customer diversions
 - [x] P9-6.15 Repair then sell, parts and recycle routes
-- [ ] P9-6.16 Replacement stock as a device channel
+- [x] P9-6.16 Replacement stock as a device channel
 - [x] P9-6.17 Two worked device analytics questions
 - [x] P9-6.18 Retrained price model with shadow and promotion
 - [x] P9-6.19 Undercut and parts declaration checks

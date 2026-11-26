@@ -204,6 +204,8 @@ STEP_TPL: dict[str, list[str]] = {
     "repair_sell": ["repair", "reserve", "list", "ship", "fulfil", "receipt"],
     "parts": ["teardown", "partsput", "partsxfer", "finance"],
     "recycle": ["release", "collect", "process", "cert"],
+    # plan 9 P9-6.16: a received device kept as replacement stock for an open demand (the unit is reserved at approval)
+    "replacement": ["reserve", "move", "finance"],
     # a service ticket's options (P9-4.9; the valuer's OPTION_KINDS says the same, tests/test_service_desk_execute.py): a batch's
     # `split` has no plan of its own, the route carries the union of its lines' kinds (`kinds`, below)
     "fix": ["repair", "transport", "finance"],

@@ -104,7 +104,7 @@ def _rechecks() -> int:
 def _sale(c: dict) -> list[dict]:
     """The routes the wipe gate blocks: not recycle (the gate keeps it, P9-6.15) and not repair then sell without a quote (the
     valuer's own reason comes first)."""
-    return [r for r in c["routes"] if r["id"] not in ("recycle", "repair_sell")]
+    return [r for r in c["routes"] if r["id"] not in ("recycle", "repair_sell", "replacement")]
 
 
 def test_dv_04_no_listing_without_certificate():

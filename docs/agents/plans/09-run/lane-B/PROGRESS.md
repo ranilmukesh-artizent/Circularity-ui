@@ -61,3 +61,4 @@
 | 2026-11-26 | 09 · P9-6.18 retrained price model with shadow and promotion | this commit | test_price_model_shadow, price_model, model_promote ok on main; wt-check passed | done |
 | 2026-11-26 | 09 · P9-6.15 repair then sell, parts and recycle routes | this commit | device test files (routes_more, wipe/lock gate, intake, channels, payout, lots, sources, market, verify, analytics, diversions, settle, ageing, paths_agree, valuer) 117 passed on main | done |
 | 2026-11-26 | 09 · P9-6.19 undercut and parts declaration checks | this commit | test_device_checks_p2 and device set green on main | done |
+| 2026-11-26 | 09 · P9-6.16 replacement stock as a device channel | this commit | device test files (replacement, settle, lots, routes_more, intake, gates, verify, channels, payout, checks_p2, diversions, ageing, execution_detail, pack_format, po_golden) 171 passed on main; ruff, mypy, import-linter ok; writer tsc/vitest/eslint ok | done |

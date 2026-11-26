@@ -82,7 +82,7 @@ def _items(cid: str, type: str = "blacklist_hit") -> list[dict]:
 def _blocked(c: dict) -> list[dict]:
     """The routes a hit blocks: every one but the gate's locked routes, parts and recycle (P9-6.15); repair then sell, with no
     quote, carries the valuer's own reason."""
-    return [r for r in c["routes"] if r["id"] not in ("parts", "recycle", "repair_sell")]
+    return [r for r in c["routes"] if r["id"] not in ("parts", "recycle", "repair_sell", "replacement")]
 
 
 def test_dv_03_blacklist_blocks_sale_channels():
@@ -164,7 +164,7 @@ def test_dv_03_stale_check_waits():
     assert all(
         r["excluded"] and ("Evidence stale" in r["failReason"] or "(GR-D9)" in r["failReason"])
         for r in c["routes"]
-        if r["id"] != "repair_sell"
+        if r["id"] not in ("repair_sell", "replacement")
     )
     assert _items(c["id"]) == []  # a stale check is not a hit
     assert len(_items(c["id"], "evidence_missing")) == 1
@@ -177,7 +177,7 @@ def test_dv_03_no_check_waits_and_a_fresh_one_releases():
     assert all(
         ("No registry check on file" in r["failReason"] or "(GR-D9)" in r["failReason"])
         for r in c["routes"]
-        if r["id"] != "repair_sell"
+        if r["id"] not in ("repair_sell", "replacement")
     )
     seed_registry(IMEI, days_ago=1)
     from di.services.cases import gate_hold

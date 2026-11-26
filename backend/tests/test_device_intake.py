@@ -117,6 +117,7 @@ def test_dv_01_one_case_per_imei():
         "repair_sell",
         "parts",
         "recycle",
+        "replacement",
     ]  # the Recover channels (pack list)
     assert c["recommendation"] is not None
     with SessionLocal() as s:
@@ -252,7 +253,7 @@ def test_device_po_lots_unchanged():
 def test_decide_scores_only_the_channels_of_the_lot():
     lot = device.sample_lots()[0] | {"imei": IMEI}
     d = device.decide(lot)
-    assert [v["k"] for v in d["all"]] == device.channels_for(lot) and len(d["all"]) == 7
+    assert [v["k"] for v in d["all"]] == device.channels_for(lot) and len(d["all"]) == 8
 
 
 def test_dv_01_gather_reads_the_feed_and_the_evidence_as_of():

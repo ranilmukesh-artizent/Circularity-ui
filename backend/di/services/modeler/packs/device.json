@@ -205,6 +205,18 @@
    ],
    "instructions": [],
    "recover_only": true
+  },
+  {
+   "id": "replacement",
+   "name": "Replacement stock",
+   "app": "Replacement stock for an open demand · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": [],
+   "recover_only": true
   }
  ],
  "guardrails": [
@@ -800,7 +812,8 @@
     "wholesale",
     "repair_sell",
     "parts",
-    "recycle"
+    "recycle",
+    "replacement"
    ],
    "price_shadow": {
     "min_shadow": 30
@@ -824,6 +837,19 @@
      "fee": 1,
      "days": 10,
      "lot": 1000
+    },
+    "replacement": {
+     "prep": 9,
+     "logistics": 6,
+     "grades": [
+      "A",
+      "B"
+     ],
+     "bands": [
+      "0-24m"
+     ],
+     "days": 3,
+     "lot": 1
     }
    },
    "ageing": {
@@ -844,7 +870,8 @@
     "wholesale": "Wholesale lot",
     "repair_sell": "Repair then sell",
     "parts": "Parts",
-    "recycle": "Recycle"
+    "recycle": "Recycle",
+    "replacement": "Replacement stock"
    },
    "wholesale_index": {
     "A": 0.72,

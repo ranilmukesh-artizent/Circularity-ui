@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, RepairQuote, SettlementView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, RepairQuote, ReplacementView, SettlementView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -123,6 +123,21 @@ export function channelRow(v: ChannelView): string {
 export function evidenceLine(q: RepairQuote): string {
   const n = (v: number) => String(Number(v.toFixed(2)));
   return `${q.repair.toLowerCase()} +$${n(q.priceUplift)} price, −$${n(q.cost)} cost, +${n(q.days)} days`;
+}
+
+/** "Replacement stock · avoids $340 purchase" (P9-6.16, DV-12): the purchase this device saves by filling an open demand. */
+export function replacementLine(r: ReplacementView): string {
+  return `Replacement stock · avoids ${usd(r.unitCost)} purchase`;
+}
+
+/** "5 units wanted" or "1 unit wanted": the demand units still open (not yet reserved by another case). */
+export function demandLine(r: ReplacementView): string {
+  return `${r.open} ${r.open === 1 ? 'unit' : 'units'} wanted`;
+}
+
+/** The Channels tab's line of the Replacement stock route: "Replacement stock · avoids $340 purchase · 5 units wanted · $325 net · 3.0 days". */
+export function replacementRow(v: ChannelView & { replacement: ReplacementView }): string {
+  return [replacementLine(v.replacement), demandLine(v.replacement), `${money(v.cash)} net`, `${v.days.toFixed(1)} days`].join(' · ');
 }
 
 /** "98.6%" for a sale at 0.986 of the forecast, "90%" at 0.9 (one decimal, no trailing zero). */

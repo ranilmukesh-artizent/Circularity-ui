@@ -13,7 +13,8 @@ diversion reads (grade C of a model over 36 months goes to wholesale). P9-6.18 k
 case (`priceShadow`, `record_price_shadow`; it decides nothing).
 P9-6.15 adds `repair_quote` (the lab's newest repair quote on the device, read from its raw records: the lab adapter makes no fact
 of it) and `feed_price_a` (the grade-A feed price of the SKU, which `parts` is valued on).
-P9-6.19 adds `live_buynow` and `parts_status` (the GR-D5 and GR-D9 checks). Later tasks add replacement demand.
+P9-6.19 adds `live_buynow` and `parts_status` (the GR-D5 and GR-D9 checks). P9-6.16 adds `replacement`: the open replacement
+demand of the device's SKU that its grade meets (`refresh_listing` reads it on every valuation, so a taken unit is gone).
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -66,6 +67,8 @@ class DeviceInputs:
     live_buynow: float | None = None
     # the lab's parts declaration: genuine, non_genuine, unknown or None (P9-6.19, GR-D9)
     parts_status: str | None = None
+    # the open replacement demand the device could fill, {demand_id, unit_cost, open} (P9-6.16); None when there is none
+    replacement: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -83,6 +86,19 @@ def listing_view(s: Session, imei: str | None, as_of: date) -> dict[str, Any]:
         "listing_id": row.listing_id, "channel": names.get(row.channel.lower(), row.channel.lower()),
         "days": max(0, (as_of - row.listed_at.date()).days), "offers": row.offers, "offers_under": row.offers - 1,
     }  # fmt: skip
+
+
+def replacement_view(s: Session, sku_key: str | None, grade: str | None, case_id: str | None) -> dict[str, Any] | None:
+    """The replacement demand unit a device of `grade` could fill (P9-6.16): the earliest-needed open demand of its SKU that its
+    grade meets, as `{demand_id, unit_cost, open}` (`open` the units still unreserved), or the one the case already holds a unit
+    of. None without a SKU or grade, or without demand: the valuer then says "No open replacement demand"."""
+    if not sku_key or not grade:
+        return None
+    rows = device_market.open_replacement(s, sku_key, grade, case_id)
+    if not rows:
+        return None
+    mine = next((d for d in rows if case_id is not None and case_id in d.reserved), rows[0])
+    return {"demand_id": mine.id, "unit_cost": mine.unit_cost, "open": mine.open}
 
 
 def live_buynow(s: Session, sku_key: str | None, grade: str | None, as_of: date) -> float | None:
@@ -108,6 +124,8 @@ def refresh_listing(s: Session, case: dict[str, Any], as_of: date) -> None:
     lot = case.get("valuer")
     if isinstance(lot, dict) and lot.get("imei") and isinstance(lot.get("inputs"), dict):
         lot["inputs"]["listing"] = listing_view(s, str(lot["imei"]), as_of)
+        # and the replacement demand left for it (P9-6.16): a unit another case took is gone from this valuation
+        lot["inputs"]["replacement"] = replacement_view(s, lot.get("sku_key"), lot.get("grade"), str(case.get("id") or ""))
     record_price_shadow(s, case, as_of)  # a proposed price candidate's band, beside the active model's (P9-6.18)
 
 
@@ -271,4 +289,5 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         feed_price_a=feed_a.price if feed_a else None,
         live_buynow=live_buynow(s, case.get("sku_key"), case.get("grade"), as_of),
         parts_status=cond.get("parts_status") if imei else None,
+        replacement=replacement_view(s, case.get("sku_key"), case.get("grade"), case.get("id")) if imei else None,
     )

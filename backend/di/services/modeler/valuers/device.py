@@ -9,6 +9,8 @@ of `fSim`, 2411-2413).
 - P9-6.15 (story DV-11), a received device only: `repair_sell` (a repair quote, then the best listing channel), `parts` (a
   teardown into service stock) and `recycle` (a certified recycler's material value less its fee). Their settings are the pack's
   `valuer.params.more_routes`; a PO lot never has them (`channels_for`). The prototype has no such routes.
+- P9-6.16 (story DV-12), a received device only: `replacement`, the avoided purchase of an open replacement demand less prep and
+  logistics (`_replacement`); the demand is read by `device.inputs` and reserved at approval by `device.replacement`.
 
 The prototype's TPL has no device entry, so it gives the template no name; it is "Device recommerce" (fixtures/golden/
 po/README.md). Pure code: no Session, no I/O. Lots and rules are the prototype's JSON shapes, as in the goldens.
@@ -92,6 +94,8 @@ class ChannelValue(TypedDict):
     # `repair_sell` (P9-6.15): the channel the repaired device sells on, and the repair quote it rests on
     via: NotRequired[str]
     repair: NotRequired[dict[str, Any]]
+    # `replacement` (P9-6.16): the demand unit it fills, {demand_id, unit_cost, open}
+    replacement: NotRequired[dict[str, Any]]
 
 
 class Decision(TypedDict):
@@ -201,6 +205,29 @@ def _parts_base(lot: Lot) -> float:
     return float(a) if a is not None else float(lot["ref"]) / GRADE_MULT[lot["grade"]]
 
 
+def _plain(x: float) -> str:
+    return f"${x:,.0f}" if round(x, 2) == int(round(x, 2)) else f"${x:,.2f}"
+
+
+def _replacement(lot: Lot) -> tuple[float, float, bool, str, dict[str, Any]]:
+    """(cash, days, ok, why, extra) a unit filling an open replacement demand (P9-6.16, DV-12): the avoided purchase (the demand's
+    `unit_cost`, `inputs.replacement`) less the pack's prep and logistics cost; "Avoids buying a replacement: $340". Only a
+    single device of the pack's grades and age band with a demand unit left is eligible; the reason says which is missing. The
+    demand unit itself is reserved at the decision's approval (`device.replacement`)."""
+    p = MORE["replacement"]
+    demand = (lot.get("inputs") or {}).get("replacement")
+    if lot["grade"] not in p["grades"]:
+        return 0.0, p["days"], False, f"Replacement stock takes grade {' or '.join(p['grades'])}", {}
+    if lot["band"] not in p["bands"]:
+        return 0.0, p["days"], False, f"Replacement stock is for the {' or '.join(p['bands'])} age band", {}
+    if not demand or lot["qty"] > p["lot"]:
+        return 0.0, p["days"], False, "No open replacement demand", {}
+    cost = float(demand["unit_cost"])
+    view = {"demand_id": demand["demand_id"], "unit_cost": cost, "open": demand["open"]}
+    why = f"Avoids buying a replacement: {_plain(cost)}"
+    return cost - p["prep"] - p["logistics"], p["days"], True, why, {"replacement": view}
+
+
 def _more(lot: Lot, channel: str, bands: Mapping[str, PriceBand]) -> tuple[float, float, bool, str, dict[str, Any]]:
     """(cash, days, ok, why, extra) a unit on `repair_sell`, `parts` or `recycle` (P9-6.15). Parts: the pack's share of the
     grade-A feed price less the teardown cost. Recycle: the material value less the recycler's fee (a certified recycler, with a
@@ -210,6 +237,8 @@ def _more(lot: Lot, channel: str, bands: Mapping[str, PriceBand]) -> tuple[float
         cash, days, ok, why, via = _repair_sell(lot, bands)
         extra: dict[str, Any] = {"via": via, "repair": dict(lot["inputs"]["repair_quote"])} if via else {}
         return cash, days, ok, why, extra
+    if channel == "replacement":
+        return _replacement(lot)
     ok = lot["qty"] <= p["lot"]
     if channel == "parts":
         return p["value_share"] * _parts_base(lot) - p["teardown"], p["days"], ok, "", {}

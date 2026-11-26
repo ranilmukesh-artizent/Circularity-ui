@@ -34,6 +34,7 @@ from di.services import instructions, refresh_decision
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 from di.services.cases import intake, lifecycle, store
+from di.services.device import replacement as device_replacement
 from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
 from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
@@ -381,6 +382,8 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
     is_ov = t is not rec
     ref = approval_ref(c["id"]) + (f"-{cyc(c) + 1}" if cyc(c) else "")
     c["chosen"] = copy.deepcopy(t)
+    if refused := device_replacement.on_approve(ctx.session, c):  # a device's replacement stock: its demand unit (P9-6.16)
+        raise ActionError("conflict", refused)
     steps = steps_for(t, template=c.get("template"))  # a tool-fleet case's steps name the fleet and parts systems (P9-3.17)
     steps[0]["activeAt"] = NOW
     c["exec"] = {
@@ -501,6 +504,8 @@ def decline(i: dict[str, Any], ctx: CallContext):
     c["reevalReason"] = f"Declined by {by}: {i['reason']}"
     c["submitted"] = None
     c["cycle"] = cyc(c) + 1  # a new decision cycle: new keys for submit, approve and decline
+    if device_replacement.on_decline(ctx.session, c):  # a device's replacement unit goes back to the demand (P9-6.16)
+        c.pop("replacement", None)
     push_event(
         ctx,
         {
