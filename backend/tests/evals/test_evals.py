@@ -109,7 +109,9 @@ def test_eval_gates_are_not_vacuous():
 def test_router_drops_model_on_eval_drop():
     """A model whose eval score fell by more than 10 points since the last run leaves the chain for a role."""
     with SessionLocal() as s:
-        s.execute(text("UPDATE llm_model SET enabled = false WHERE id = :i"), {"i": SEED})
+        # every real provider row off, not only the seed: with a key set, migration 0063's fallback rows join the chain
+        was_on = list(s.execute(text("SELECT id FROM llm_model WHERE enabled AND provider <> 'test'")).scalars())
+        s.execute(text("UPDATE llm_model SET enabled = false WHERE provider <> 'test'"))
         for mid, prev, score, prio in (("ev-dropped", 90, 75, 1), ("ev-steady", 90, 85, 2), ("ev-new", None, None, 3)):
             s.execute(
                 text(
@@ -125,5 +127,5 @@ def test_router_drops_model_on_eval_drop():
     finally:
         with SessionLocal() as s:
             s.execute(text("DELETE FROM llm_model WHERE id LIKE 'ev-%'"))
-            s.execute(text("UPDATE llm_model SET enabled = true WHERE id = :i"), {"i": SEED})
+            s.execute(text("UPDATE llm_model SET enabled = true WHERE id = ANY(:ids)"), {"ids": was_on or [SEED]})
             s.commit()
