@@ -732,3 +732,19 @@ CONNECTOR_FIELDS["asset"] |= {"idle_days": "number"}
 CONNECTOR_FIELDS["market"] |= {"broker_bids": "list", "cleared_price": "number"}
 CONNECTOR_FIELDS["vendor"] |= {"recycler_certificate": "object", "dg_lane": "bool"}
 CONNECTOR_FIELDS["condition"] |= {"disposal_record_ref": "ref"}
+
+# IT asset disposition (plan 9, P9-12.2), written by the extra adapters it_cmdb and it_logistics, keyed by `serial_key`: on
+# `asset`, the CMDB's identity and lease terms (asset_class, owner_org, security_level, lessor_return_required,
+# consent_to_resell, media: the list of {mediaSerial, type}) and the logistics' manifest and custody (pickup, custody: the
+# list of {event, at, by}); on `condition`, erasures (the list of the media erasure records).
+CONNECTOR_FIELDS["asset"] |= {
+    "asset_class": "text",
+    "consent_to_resell": "bool",
+    "custody": "list",
+    "lessor_return_required": "bool",
+    "media": "list",
+    "owner_org": "text",
+    "pickup": "text",
+    "security_level": "text",
+}
+CONNECTOR_FIELDS["condition"] |= {"erasures": "list"}
