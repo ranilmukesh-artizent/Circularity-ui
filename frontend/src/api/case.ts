@@ -57,7 +57,38 @@ export function fixedAssetLine(c: { finance?: { asset?: FixedAsset } | null }): 
   const usd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
   return `Fixed-asset retirement · ${a.doc} · proceeds ${usd(a.proceeds ?? 0)} · book value ${usd(a.book_value ?? 0)} · ${a.gain_loss >= 0 ? 'gain' : 'loss'} ${usd(a.gain_loss)} (from the ERP)`;
 }
-  finance?: { asset?: FixedAsset; residual?: LeaseResidual; credit?: CreditMemo } | null;
+/** The lease residual against the ERP's proceeds, kept on the case when its lease states one (P9-13.2). */
+export interface LeaseResidual { contract_ref: string; residual: number; proceeds: number; gain_loss: number; currency?: string }
+/** The close block's lease residual line, or null when the case has none. */
+export function leaseResidualLine(c: { finance?: { residual?: LeaseResidual } | null }): string | null {
+  const r = c.finance?.residual;
+  if (!r) return null;
+  const usd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
+  return `Lease residual · contract ${r.contract_ref} · residual ${usd(r.residual)} · proceeds ${usd(r.proceeds)} · ${r.gain_loss >= 0 ? 'gain' : 'loss'} against residual ${usd(r.gain_loss)}`;
+}
+/** A customer credit memo as the ERP answered it, matched against what the case decided (P9-13.4, X-16). */
+export interface CreditMemo {
+  memo: string; amount: number; erp_amount: number; currency?: string; basis: 'requote' | 'grade_table';
+  grade_declared?: string | null; grade_received?: string | null; quote?: number | null; percent?: number | null;
+  status?: 'matched' | 'mismatch' | 'accepted'; realised?: number | null;
+}
+const usd2 = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+/** The line the close block shows for the case's customer credit, or null: "Customer credit · CM-… · $160.00 (grade B at 80 % of the $200.00 quote)". */
+export function creditLine(c: { finance?: { credit?: CreditMemo } | null }): string | null {
+  const k = c.finance?.credit;
+  if (!k) return null;
+  const of = k.quote != null ? ` of the ${usd2(k.quote)} quote` : '';
+  const why = k.basis === 'requote' ? `payout adjusted${k.quote != null ? ` from the ${usd2(k.quote)} quote` : ''}` : `grade ${k.grade_received ?? '?'}${k.percent != null ? ` at ${k.percent} %` : ''}${of}`;
+  return `Customer credit · ${k.memo} · ${usd2(k.realised ?? k.amount)} (${why})`;
+}
+/** The card Finance sees when the ERP posted another credit than the case says, or null: "The ERP posted $150.00; the case says $160.00". */
+export function creditMismatch(c: { finance?: { credit?: CreditMemo } | null }): string | null {
+  const k = c.finance?.credit;
+  return k?.status === 'mismatch' ? `The ERP posted ${usd2(k.erp_amount)}; the case says ${usd2(k.amount)}` : null;
+}
+/** Finance's answer to a credit the ERP posted differently: accept the ERP's amount, or send the credit again (a note of 15 characters or more). */
+export const resolveSettlement = (caseId: string, resolution: 'accept_erp' | 'resend', note: string) =>
+  invoke<{ case_id: string; resolution: string; realised: number | null }>('settlement.resolve', { case_id: caseId, resolution, note });
 export interface GateHold { gates: string[]; since: string; batch: string | null }
 export interface RequiredStep { gate: string; step: string; owner: string }
 export interface BatchStatus { ref: string; total: number; held: number; released: number }
