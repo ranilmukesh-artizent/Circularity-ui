@@ -4,8 +4,8 @@ import { Link } from 'react-router';
 import { fmtDate } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
 import {
-  ackKind, canon, canonExample, CASE_REASONS, CASE_TEMPLATES, caseExists, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
-  sampleCsv, sources, tenantList, type Conflict, type ConflictChoice, type StreamEvent,
+  ackKind, canon, canonExample, CASE_REASONS, caseExists, caseTemplates, commitImport, conflictPage, escalateConflict, events, facilities, mappings, pct, rbPath, resolveConflict,
+  sampleCsv, sources, templateImportColumns, tenantList, type Conflict, type ConflictChoice, type StreamEvent,
 } from '../../api/integration';
 import { can } from '../../api/session';
 import { sessionScoped } from '../../api/view';
@@ -245,6 +245,7 @@ const impKept = sessionScoped<{ text: string; csv: Csv | null; cases: { on: bool
   text: '', csv: null, cases: { on: false, template: 'industrial', reason: 'lease_end' },
 }));
 /** The template the rows are checked for: the cases' template when cases are opened, else industrial. */
+const templateName = (key: string) => caseTemplates().find((x) => x.key === key)?.name ?? key;
 const importTemplate = (c: { on: boolean; template: string }) => (c.on ? c.template : 'industrial');
 
 export function Import() {
@@ -257,14 +258,14 @@ export function Import() {
   const validate = () => {
     const t = imp.text.trim();
     if (!t) return toast('Add a CSV file or rows first.');
-    const r = validateCsv(t, importTemplate(imp.cases), facilities(), tenantList());
+    const r = validateCsv(t, importTemplate(imp.cases), facilities(), tenantList(), templateImportColumns());
     if (typeof r === 'string') { up(() => { imp.csv = { rows: [], ok: 0, err: 0 }; }); return toast(r); }
     up(() => { imp.csv = r; });
   };
   /** The cases' template or switch changed: check the validated rows again for it (not after they are loaded). */
   const recheck = () => {
     if (!imp.csv || imp.csv.committed || !imp.text.trim()) return;
-    const r = validateCsv(imp.text.trim(), importTemplate(imp.cases), facilities(), tenantList());
+    const r = validateCsv(imp.text.trim(), importTemplate(imp.cases), facilities(), tenantList(), templateImportColumns());
     if (typeof r !== 'string') imp.csv = r;
   };
   const file = (f: File | undefined) => {
@@ -302,7 +303,7 @@ export function Import() {
               <button className="btn pri" onClick={validate}>Validate</button>
             </div>
             <div className="note" style={{ marginTop: 8 }}>Required columns: asset_id, qty, condition_grade, location, owner, received.</div>
-            {templateColumnsNote(importTemplate(imp.cases)) && <div className="note" style={{ marginTop: 4 }}>{templateColumnsNote(importTemplate(imp.cases))}</div>}
+            {templateColumnsNote(importTemplate(imp.cases), templateImportColumns(), templateName(importTemplate(imp.cases))) && <div className="note" style={{ marginTop: 4 }}>{templateColumnsNote(importTemplate(imp.cases), templateImportColumns(), templateName(importTemplate(imp.cases)))}</div>}
           </div>
         </div>
         <div className="panel">
@@ -331,7 +332,7 @@ export function Import() {
                   <span className="row" style={{ gap: 6 }}>
                     <label><input type="checkbox" checked={imp.cases.on} disabled={st.committed} onChange={(e) => up(() => { imp.cases.on = e.target.checked; recheck(); })} /> Open a case for each row</label>
                     <select aria-label="Template" value={imp.cases.template} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.template = e.target.value; recheck(); })}>
-                      {CASE_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      {caseTemplates().map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
                     </select>
                     <select aria-label="Reason" value={imp.cases.reason} disabled={!imp.cases.on || st.committed} onChange={(e) => up(() => { imp.cases.reason = e.target.value; })}>
                       {CASE_REASONS.map((x) => <option key={x} value={x}>{x}</option>)}

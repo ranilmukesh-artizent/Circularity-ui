@@ -11,7 +11,7 @@ import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
 import { AgeingCard } from './AgeingCard';
 import { LotsCard } from './LotsCard';
-import { countsByKind, dueLabel, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
+import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
 
 type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
 
@@ -27,7 +27,11 @@ export function MyWorkPage() {
   }, []);
   const packs = [...new Set(s.kpis.map((k) => k.pack))];
   const counts = countsByKind(s.items);
-  const rows = sortItems(s.items).filter((i) => kind === 'all' || (kind === 'fraud' ? isFraudItem(i) : i.kind === kind));
+  const picked = sortItems(s.items).filter((i) => kind === 'all' || (kind === 'fraud' ? isFraudItem(i) : i.kind === kind));
+  // in "All", the conflicts are one row below everything else; the Conflicts chip lists them one by one
+  const grouped = kind === 'all' ? groupConflicts(picked) : { rows: picked, conflicts: [] as WorkItem[] };
+  const rows = grouped.rows;
+  const conflictGo = grouped.conflicts.every((c) => c.go === grouped.conflicts[0]?.go) ? grouped.conflicts[0]?.go : null;
   const accept = async (i: WorkItem) => {
     const id = proposalId(i);
     if (id === null) return;
@@ -67,7 +71,7 @@ export function MyWorkPage() {
           Fraud and compliance {s.items.filter(isFraudItem).length}
         </button>
       </div>
-      {!rows.length && <div className="callout info">Nothing waits for you here.</div>}
+      {!rows.length && !grouped.conflicts.length && <div className="callout info">Nothing waits for you here.</div>}
       <ul className="frbl" aria-label="My work">
         {rows.map((i) => (
           <li key={i.id} data-kind={i.kind} data-id={i.id}>
@@ -93,6 +97,19 @@ export function MyWorkPage() {
             </span>
           </li>
         ))}
+        {grouped.conflicts.length > 0 && (
+          <li data-kind="conflict" data-id="conflicts">
+            <span>
+              <span className="chip line" style={{ marginRight: 6 }}>{KIND_LABEL.conflict}</span>
+              <b>{conflictGroupTitle(grouped.conflicts.length)}</b>
+              <span className="note">They hold decisions until a source is chosen.</span>
+              <span className="row">
+                <a className="btn sm pri" href={'#/' + (conflictGo ?? 'integration/conflicts')}>Open the conflict queue</a>
+                <button className="btn sm" onClick={() => setKind('conflict')}>List them here</button>
+              </span>
+            </span>
+          </li>
+        )}
       </ul>
       {dialog && <ItemDialog d={dialog} onClose={() => setDialog(null)} />}
     </div>

@@ -95,15 +95,17 @@ from typing import Literal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.connectors import mapping
+from di.connectors import manual, mapping
 from di.core import golden
 from di.core.auth import Principal
 from di.repositories.constants import MAP_TARGET, MAPPINGS
 from di.repositories.context import case_openable
 from di.repositories.fabric import DAY, FR_CATOF, Fabric, cat_of, epoch_ms, sla_minutes, stream, type_of
+from di.repositories.packs import active_pack, published_keys
 from di.repositories.workflows import monitor_stats, wf_stat
 from di.services.actions.decisions import comments
 from di.services.engine.jsmath import js_round
+from di.services.modeler.templates import TEMPLATE_KEYS, load_template
 
 CANON: list[dict] = golden.load("canonical")["models"]
 _REF = golden.load("screens/integration")
@@ -321,6 +323,14 @@ def tables(session: Session, p: Principal, source: str | None) -> dict | None:
     }
 
 
+def _case_templates(session: Session) -> list[dict[str, str]]:
+    """Every template a case can be opened with ({key, name}): the template packs, then the published imported packs."""
+    out = {k: load_template(k).name for k in TEMPLATE_KEYS}
+    for k in sorted(published_keys(session)):
+        out.setdefault(k, active_pack(session, k, None).name)
+    return [{"key": k, "name": n} for k, n in out.items()]
+
+
 def models(session: Session, p: Principal) -> dict:
     """GET /models: the canonical models with their synced record counts, examples and mappings."""
     f = Fabric(session, p)
@@ -331,6 +341,10 @@ def models(session: Session, p: Principal) -> dict:
         "prefix": CANON_PFX,
         "mappings": {k: v for k, v in f.maps.items() if k in f.by_id},
         "source_models": {s["id"]: src_models(s, f.maps) for s in f.sources},
+        # the templates a manual import may open cases with, and the columns each reads besides the common ones (grade and qty
+        # come from condition_grade and qty): the Records import offers these, not a list of its own
+        "case_templates": _case_templates(session),
+        "template_columns": {k: [c for c in cols if c not in ("grade", "qty")] for k, cols in manual.TEMPLATE_COLUMNS.items()},
         "counts": {
             "models": len(CANON),
             "fields": sum(len(m["fields"]) for m in CANON),

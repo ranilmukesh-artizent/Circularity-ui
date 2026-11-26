@@ -76,6 +76,7 @@ class WorkedQuestion:
     question: str
     chart_kind: str
     compute: Callable[[Session, Scope | None, date], Answer]
+    pack: str = ""  # the pack whose Analytics page lists the question ("": none)
 
 
 REGISTRY: dict[str, WorkedQuestion] = {}
@@ -84,6 +85,11 @@ REGISTRY: dict[str, WorkedQuestion] = {}
 def register(q: WorkedQuestion) -> WorkedQuestion:
     REGISTRY[q.id] = q
     return q
+
+
+def questions_of(pack_key: str) -> list[dict[str, str]]:
+    """The worked questions registered for a pack, in registration order: {id, question}."""
+    return [{"id": q.id, "question": q.question} for q in REGISTRY.values() if q.pack == pack_key]
 
 
 def answer(s: Session, question_id: str, scope: Scope | None, as_of: date) -> Answer:
@@ -253,8 +259,8 @@ def _disputes_compute(s: Session, scope: Scope | None, as_of: date) -> Answer:
     return disputes_by_partner(_load_disputes(s, scope), as_of - timedelta(days=DISPUTE_DAYS), as_of)
 
 
-register(WorkedQuestion("price_after_launch", "Why did price realised drop?", "line", _price_compute))
-register(WorkedQuestion("disputes_by_partner", "Who causes grading disputes?", "bar", _disputes_compute))
+register(WorkedQuestion("price_after_launch", "Why did price realised drop?", "line", _price_compute, "device"))
+register(WorkedQuestion("disputes_by_partner", "Who causes grading disputes?", "bar", _disputes_compute, "device"))
 
 
 # ------------------------------------------------------------------ the model words the sentence (R16)

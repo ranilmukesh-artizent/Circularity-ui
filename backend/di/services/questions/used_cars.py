@@ -130,5 +130,5 @@ def _lease(s: Session, scope: Scope | None, _as_of: date) -> Answer:
     return lease_return_lots(load_cars(s, scope), _names())
 
 
-register(WorkedQuestion("wq_uc_1", "Where do returned EV crossovers sell fastest?", "bar", _ev))
-register(WorkedQuestion("wq_uc_2", "Which lots sell lease returns fastest?", "bar", _lease))
+register(WorkedQuestion("wq_uc_1", "Where do returned EV crossovers sell fastest?", "bar", _ev, "used_cars"))
+register(WorkedQuestion("wq_uc_2", "Which lots sell lease returns fastest?", "bar", _lease, "used_cars"))

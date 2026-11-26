@@ -129,7 +129,14 @@ const overview = (): OverviewAnswer | undefined => (may('overview') ? cached<Ove
 const mapAnswer = (): MapAnswer | undefined => (may('map') ? cached<MapAnswer>(withQuery(BASE + '/map', { limit: 2000 })) : undefined);
 const monitorAnswer = (): MonitorAnswer | undefined => (may('monitor') ? cached<MonitorAnswer>(BASE + '/monitor') : undefined);
 const tablesAnswer = (): { models: Record<string, TableModel> } | undefined => (may('tables') ? cached<{ models: Record<string, TableModel> }>(BASE + '/tables') : undefined);
-const modelsAnswer = (): { mappings: Record<string, MapRow[]>; source_models: Record<string, Record<string, MapRow[]>> } | undefined =>
+interface ModelsAnswer {
+  mappings: Record<string, MapRow[]>; source_models: Record<string, Record<string, MapRow[]>>;
+  /** the templates a manual import may open cases with (every pack file and published pack) */
+  case_templates?: { key: string; name: string }[];
+  /** the columns each template reads besides the common ones */
+  template_columns?: Record<string, string[]>;
+}
+const modelsAnswer = (): ModelsAnswer | undefined =>
   may('models') ? cached(BASE + '/models') : undefined;
 
 /* ---- reference data ---- */
@@ -389,24 +396,25 @@ export async function resolveConflict(id: string, choice?: ConflictChoice) {
   return r;
 }
 export const escalateConflict = (id: string) => invoke('conflict.escalate', { id });
-/** The columns a tool-fleet or device case reads besides the common ones (backend/di/connectors/manual.py TEMPLATE_COLUMNS;
- *  grade comes from condition_grade and qty from qty). */
-export const TEMPLATE_IMPORT_COLUMNS = { tool_fleet: ['cls', 'ft', 'site', 'rul'], device: ['brand', 'model', 'band', 'ref', 'doh'] } as const;
-type TemplateColumn = (typeof TEMPLATE_IMPORT_COLUMNS)[keyof typeof TEMPLATE_IMPORT_COLUMNS][number];
-export interface ImportRow extends Partial<Record<TemplateColumn, string>> { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[] }
+/** The columns a template's case reads besides the common ones, as the server lists them (GET /api/screens/integration/models
+ *  `template_columns`, from backend/di/connectors/manual.py TEMPLATE_COLUMNS; grade comes from condition_grade and qty from qty). */
+export const templateImportColumns = (): Record<string, readonly string[]> => modelsAnswer()?.template_columns ?? {};
+/** One row of a manual import: the common columns, and the template's own columns by name. */
+export interface ImportRow { asset_id: string; qty: string; grade: string; location: string; owner: string; received: string; errors: string[]; [column: string]: string | string[] | undefined }
+const COMMON_KEYS = ['asset_id', 'qty', 'grade', 'location', 'owner', 'received'];
 /** The import.commit input: the demo's counts and hash (of every validated row, so the same file loads once), plus
  *  the valid rows themselves, which the server checks again and loads, tagged manual, and the rejected rows, which it
  *  holds as failed records (plan 6 B3). */
 /** Open a case for each loaded row (plan 8): the template, the reason, the org unit (empty: each row's owner) and the
  *  column holding the asset key. */
 export interface OpenCases { template: string; reason: string; org_unit_id: string; asset_field: string }
-export const CASE_TEMPLATES = ['industrial', 'tool_fleet', 'device'];
+/** The templates a case can be opened with, from the server (every pack file and published pack); industrial alone until it answers. */
+export const caseTemplates = (): { key: string; name: string }[] => modelsAnswer()?.case_templates ?? [{ key: 'industrial', name: 'industrial' }];
 export const CASE_REASONS = ['lease_end', 'rma', 'trade_in', 'contract_end', 'iot_alarm', 'manual'];
 export function importInput(ok: number, err: number, rows: ImportRow[], open?: OpenCases) {
-  const extra = Object.values(TEMPLATE_IMPORT_COLUMNS).flat();
   const pick = (r: ImportRow) => ({
     asset_id: r.asset_id, qty: r.qty, grade: r.grade, location: r.location, owner: r.owner, received: r.received,
-    ...Object.fromEntries(extra.filter((k) => r[k] !== undefined).map((k) => [k, r[k]])),
+    ...Object.fromEntries(Object.keys(r).filter((k) => !COMMON_KEYS.includes(k) && k !== 'errors' && k !== 'warn' && r[k] !== undefined).map((k) => [k, r[k]])),
   });
   const valid = rows.filter((r) => !r.errors.length).map(pick);
   const rejected = rows.filter((r) => r.errors.length).map(pick);
