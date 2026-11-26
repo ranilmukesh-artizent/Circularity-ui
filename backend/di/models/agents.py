@@ -143,3 +143,18 @@ trace_span = Table(
     Index("ix_trace_span_run", "run_id", "started_at"),
     Index("ix_trace_span_started", "started_at"),
 )
+
+# --- 0060 client credentials of an agent (plan 9, P9-13.9): only a scrypt hash of the secret is stored ----------------------
+
+agent_credential = Table(
+    "agent_credential",
+    metadata,
+    Column("client_id", Text, primary_key=True),
+    Column("agent_id", Text, ForeignKey("agent_identity.id", ondelete="CASCADE"), nullable=False),
+    Column("owner", Text, nullable=False),  # the account the agent's token acts as
+    Column("secret_hash", Text, nullable=False),  # scrypt$<salt>$<hash>
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    ts("last_used_at"),
+    ts("revoked_at"),
+    Index("ix_agent_credential_agent", "agent_id"),
+)

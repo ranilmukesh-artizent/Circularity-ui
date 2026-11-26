@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, findTools, startAdapterDraft, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -161,5 +161,16 @@ describe('findTools (plan 9 P9-2.12)', () => {
     expect(m.invoke).not.toHaveBeenCalled();
     m.invoke.mockResolvedValueOnce({ ok: false, code: 'out_of_scope', message: 'no' });
     expect(await findTools('case')).toEqual([]);
+  });
+});
+
+describe('agent credentials (P9-13.9)', () => {
+  it('issues, lists and revokes through the action pipeline', async () => {
+    await issueCredential('finder');
+    expect(last()).toEqual(['agent.issueCredential', { agent_id: 'finder' }]);
+    await agentCredentials('finder');
+    expect(last()).toEqual(['agent.credentials', { agent_id: 'finder' }]);
+    await revokeCredential('agc_1');
+    expect(last()).toEqual(['agent.revokeCredential', { client_id: 'agc_1' }]);
   });
 });

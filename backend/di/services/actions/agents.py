@@ -14,6 +14,8 @@ The demo has a fixed list of nine agents, so these are declared here, beside the
 agent.setEnabled (di.services.actions.access, the demo's kill switch) writes the row too, through `set_enabled`.
 `tools` are MCP tool ids (di.mcp.tools.TOOLS) or action ids; `org_scope` are org unit ids (empty: every org). An action
 no agent may run (di.services.agents.catalog.agent_allowed: FORBIDDEN_ACTIONS and system actions) is refused as a tool.
+    agent.issueCredential commit {agent_id}  a client id and secret (the secret once); agent.revokeCredential commit
+    {client_id}; agent.credentials read {agent_id} (P9-13.9; di.services.agent_credentials, POST /oauth/token)
     agent.runTrace  read   {run_id? | case_id?}   P9-2.6 (I-12): one run (the latest for a case) with its stage records, calls,
                                                   spans as a tree, journal rows, proposals and the agent's pause history
                                                   (`di.repositories.run_trace`). Needs the agents page, or for a case the
@@ -29,6 +31,7 @@ from sqlalchemy import text
 from di.core import policy, state
 from di.repositories import run_trace
 from di.repositories.constants import TOOLS_BY_ID
+from di.services import agent_credentials
 from di.services.actions.decisions import rb_log
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, guard, implement
@@ -76,6 +79,67 @@ ACTIONS.setdefault(
                "playbook": {**_OPT, "t": "string"}},
     ),
 )  # fmt: skip
+
+# P9-13.9: client credentials of an agent. A person (Admin) issues and revokes; the secret is returned once.
+ACTIONS.setdefault(
+    "agent.issueCredential",
+    ActionDef(
+        id="agent.issueCredential", title="Issue an agent credential", verb="issue agent credentials", risk="commit", perm=_PERM,
+        scope="none", desc="Create a client id and secret for an agent. The secret is shown once; the agent acts as you.",
+        input={"agent_id": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+ACTIONS.setdefault(
+    "agent.revokeCredential",
+    ActionDef(
+        id="agent.revokeCredential", title="Revoke an agent credential", verb="revoke agent credentials", risk="commit",
+        perm=_PERM, scope="none", desc="Stop a credential: its tokens are refused at the next request.",
+        input={"client_id": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+ACTIONS.setdefault(
+    "agent.credentials",
+    ActionDef(
+        id="agent.credentials", title="List an agent's credentials", verb="list agent credentials", risk="read", perm=_PERM,
+        scope="none", desc="An agent's credentials: client id, owner, created, last used, revoked. Never the secret.",
+        input={"agent_id": {"req": True, "t": "string"}},
+    ),
+)  # fmt: skip
+
+
+@guard("agent.issueCredential")
+def issue_credential_guard(i: dict[str, Any], ctx: CallContext):
+    return None if registry.get(ctx.session, i["agent_id"]) else ("not_found", "Unknown agent.")
+
+
+@implement("agent.issueCredential")
+def issue_credential(i: dict[str, Any], ctx: CallContext):
+    out = agent_credentials.issue(ctx.session, i["agent_id"], ctx.actor.id)
+    rb_log(ctx, "agent.credential.issued", f"{i['agent_id']} · {out['client_id']}", "agent.issueCredential")  # never the secret
+    return out
+
+
+@guard("agent.revokeCredential")
+def revoke_credential_guard(i: dict[str, Any], ctx: CallContext):
+    row = ctx.session.execute(text("SELECT 1 FROM agent_credential WHERE client_id = :c"), {"c": i["client_id"]}).first()
+    return None if row else ("not_found", "Unknown credential.")
+
+
+@implement("agent.revokeCredential")
+def revoke_credential(i: dict[str, Any], ctx: CallContext):
+    agent_credentials.revoke(ctx.session, i["client_id"])
+    rb_log(ctx, "agent.credential.revoked", i["client_id"], "agent.revokeCredential")
+    return {"client_id": i["client_id"], "revoked": True}
+
+
+@guard("agent.credentials")
+def credentials_guard(i: dict[str, Any], ctx: CallContext):
+    return None if registry.get(ctx.session, i["agent_id"]) else ("not_found", "Unknown agent.")
+
+
+@implement("agent.credentials")
+def credentials(i: dict[str, Any], ctx: CallContext):
+    return {"agent_id": i["agent_id"], "credentials": agent_credentials.listing(ctx.session, i["agent_id"])}
 
 
 def _fields_problem(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:

@@ -55,7 +55,21 @@ import di.services.cases.close_used_cars  # noqa: F401  (registers usedCar.close
 from di.core.errors import register as register_error_handlers
 from di.core.logs import configure_logging
 from di.mcp import server as mcp_server
-from di.routes import actions, agents, ask, auth, health, scim, screens, sources, stream, tasks, webhooks, wellknown
+from di.routes import (
+    actions,
+    agents,
+    ask,
+    auth,
+    health,
+    oauth,
+    scim,
+    screens,
+    sources,
+    stream,
+    tasks,
+    webhooks,
+    wellknown,
+)
 from di.services.actions.registry import ACTIONS
 from di.services.agents.forbidden import check_person_only
 from di.services.cases import use_database_scope
@@ -75,6 +89,7 @@ app.include_router(stream.router)
 app.include_router(ask.router)  # POST /api/ask (B16b; di.services.ask)
 app.include_router(agents.router)  # /api/agents (plan 8 phase 11; di.services.agents)
 app.include_router(wellknown.router)  # /.well-known/oauth-protected-resource (P9-2.14; di.mcp.oauth)
+app.include_router(oauth.router)  # POST /oauth/token: an agent's client credentials (P9-13.9)
 app.include_router(scim.router)  # /scim/v2: SCIM 2.0 provisioning of directory users (P9-8.11; di.services.scim)
 mcp_server.mount(app)  # the MCP server at /mcp (B16; di.mcp)
 use_database_scope()

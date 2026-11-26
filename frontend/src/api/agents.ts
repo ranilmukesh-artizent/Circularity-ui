@@ -446,3 +446,12 @@ export function runTrace(q: { runId: string } | { caseId: string }): RunTrace {
 /** The pause switch: stop (`on` false) or start an agent (Admin; the journaled `agent.setEnabled`). */
 export const setAgentEnabled = (id: string, on: boolean): Promise<ActionResult<{ id: string; on: boolean }>> =>
   invoke('agent.setEnabled', { id, on });
+
+/** P9-13.9: an agent's client credentials. The secret comes back once, from issueCredential; a list never has it. */
+export interface AgentCredential { client_id: string; owner: string; created_at: string | null; last_used_at: string | null; revoked_at: string | null }
+export const issueCredential = (agentId: string): Promise<ActionResult<{ client_id: string; client_secret: string }>> =>
+  invoke('agent.issueCredential', { agent_id: agentId });
+export const revokeCredential = (clientId: string): Promise<ActionResult<{ client_id: string; revoked: boolean }>> =>
+  invoke('agent.revokeCredential', { client_id: clientId });
+export const agentCredentials = (agentId: string): Promise<ActionResult<{ agent_id: string; credentials: AgentCredential[] }>> =>
+  invoke('agent.credentials', { agent_id: agentId });

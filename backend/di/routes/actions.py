@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 
 from di.core.deps import CurrentPrincipal, DbSession, OptionalPrincipal
 from di.schemas.actions import Undo
+from di.services import agent_credentials
 from di.services import journal as journal_service
 from di.services.actions.pipeline import ERROR_STATUS, Actor, CallContext, invoke
 
@@ -38,11 +39,19 @@ def call_action(
             {"ok": False, "error": {"code": "validation_error", "message": "The input must be a JSON object."}}, 400
         )
     actor = Actor(account=p.account, ctx=p.ctx) if p else Actor(account=None)
+    preparer, confirmed = x_circularity_preparer, (x_circularity_confirmed or "").lower() == "true"
+    if p is not None and p.agent_id:  # P9-13.9: an agent's own token: the agent is the preparer, a person confirms, never it
+        if preparer and preparer != p.agent_id:
+            msg = f"This token is for the agent {p.agent_id}; it cannot prepare a call as {preparer}."
+            return JSONResponse({"ok": False, "error": {"code": "conflict", "message": msg}}, 409)
+        preparer, confirmed = p.agent_id, False
+        if refusal := agent_credentials.tools_refusal(session, p.agent_id, action_id):
+            return JSONResponse({"ok": False, "error": refusal}, 403)
     ctx = CallContext(
         actor=actor,
         session=session,
-        preparer=x_circularity_preparer,
-        confirmed=(x_circularity_confirmed or "").lower() == "true",
+        preparer=preparer,
+        confirmed=confirmed,
         run_id=x_circularity_run,
         idem_key=idempotency_key,
     )

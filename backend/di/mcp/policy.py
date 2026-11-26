@@ -137,6 +137,32 @@ def _account(s: Session, token: str | None) -> tuple[policy.Account, policy.Cont
     return p.account, p.ctx
 
 
+def token_agent(token: str | None) -> str | None:
+    """The agent an agent token (sub "agent:<id>", P9-13.9) names; None for a person's token or no valid token."""
+    if not token:
+        return None
+    from di.core.db import SessionLocal
+
+    with SessionLocal() as s:
+        try:
+            return principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token), s).agent_id
+        except HTTPException:
+            return None
+
+
+def effective_agent(token: str | None, named: str | None) -> str | None:
+    """The agent a call acts as: the token's own when it is an agent token (a different X-Agent is refused later, in
+    _run), else the X-Agent header (the person JWT plus X-Agent keeps working for the demo)."""
+    return token_agent(token) or named
+
+
+def _principal_agent(s: Session, token: str | None) -> str | None:
+    try:
+        return principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token or ""), s).agent_id if token else None
+    except HTTPException:
+        return None
+
+
 def tools_for(agent_id: str | None) -> set[str] | None:
     """The tools tools/list shows (plan 8 MVP-11.6): None (all) when no agent is named, else the agent's registry
     row's tools (none for an agent that is not registered). tools/call checks the same row (step 2, scope)."""
@@ -196,6 +222,11 @@ def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
     account, pctx = acct
     call.account = account.id
     # 1 authenticate: the agent (registered), its kill switch, the tenant it acts for
+    own = _principal_agent(s, who.token)  # P9-13.9: with an agent's own token the agent comes from the token
+    if own and who.agent_id and who.agent_id != own:
+        call.step("Authenticate agent token", False, f"Token is for {own}, not {who.agent_id}")
+        return call.fail("conflict", f"This token is for the agent {own}; X-Agent names {who.agent_id}.")
+    who = Caller(token=who.token, agent_id=own or who.agent_id, tenant=who.tenant)
     row = agent_registry.get(s, who.agent_id) if who.agent_id else None
     ag = agent_of(row)
     call.agent = ag

@@ -76,12 +76,36 @@ def _resolve(token: str, audience: str, session: Session) -> "Principal":
     # The account is looked up by id on every request, as mapped now: a token issued before an identity mapping
     # changed the account's role or warehouse carries the old role claim, which is informational only.
     ctx = load_context(session)
-    a = policy.account(claims.get("sub", ""), ctx)
+    sub = str(claims.get("sub", ""))
+    agent_id: str | None = None
+    if sub.startswith("agent:"):  # P9-13.9: an agent's token acts as its owner's account, prepared by the agent
+        agent_id = sub[len("agent:") :]
+        _check_agent_token(session, claims, agent_id)
+        sub = str(claims.get("own", ""))
+    a = policy.account(sub, ctx)
     if a is None:
         raise HTTPException(401, {"code": "unauthenticated", "message": "Unknown account."})
     if _revoked(session, a.id, claims.get("iat")):
         raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
-    return Principal(a, ctx)
+    return Principal(a, ctx, agent_id)
+
+
+def _check_agent_token(session: Session, claims: dict[str, object], agent_id: str) -> None:
+    """401 unless the token's credential is live (not revoked, agent enabled) and belongs to this agent and owner."""
+    cred = (
+        session.execute(
+            text(
+                "SELECT c.agent_id, c.owner FROM agent_credential c JOIN agent_identity a ON a.id = c.agent_id "
+                "WHERE c.client_id = :c AND c.revoked_at IS NULL AND a.enabled"
+            ),
+            {"c": str(claims.get("azp", ""))},
+        )
+        .mappings()
+        .first()
+    )
+    off = state.get(session, "access_settings", "agents_off") or {}  # the kill switch beside agent_identity.enabled
+    if cred is None or off.get(agent_id) or cred["agent_id"] != agent_id or cred["owner"] != claims.get("own"):
+        raise HTTPException(401, _ENDED, headers={"WWW-Authenticate": 'Bearer error="invalid_token"'})
 
 
 def _revoked(session: Session, account_id: str, issued_at: object) -> bool:
@@ -94,6 +118,8 @@ def _revoked(session: Session, account_id: str, issued_at: object) -> bool:
     after = datetime.fromisoformat(rec["revoked_after"]).timestamp()
     return not isinstance(issued_at, int | float) or issued_at <= int(after)
 
+
+revoked = _revoked  # for di.services.agent_credentials
 
 GROUP_RULES = text(
     "SELECT group_id, role, org_unit_id, site, warehouse FROM idp_group_map WHERE status = 'approved' "
@@ -135,6 +161,7 @@ def load_context(session: Session) -> policy.Context:
 class Principal:
     account: policy.Account
     ctx: policy.Context
+    agent_id: str | None = None  # set when an agent's own token (sub "agent:<id>") was presented (P9-13.9)
 
     def can(self, perm: str) -> bool:
         return policy.can(self.account, perm, self.ctx)
