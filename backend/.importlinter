@@ -108,6 +108,11 @@ ignore_imports =
     # out-of-office cover when it escalates: lazy reads of the workspace repository, as intake reads the live rules.
     di.services.cases.process -> di.repositories.workspace
     di.services.cases.process -> di.repositories.common
+    # A contract refresh's swaps are matched with the org's returns queue (plan 9, P9-5.3): the queue module reads the
+    # market's decision table, PLM's end of parts, the refurbished stock and the held reservations, as intake reads PLM.
+    di.services.cases.tool_queue -> di.repositories.market_tables
+    di.services.cases.tool_queue -> di.repositories.plm
+    di.services.cases.tool_queue -> di.repositories.unit_reservations
 
 [importlinter:contract:foundations]
 name = di.core and di.models import nothing above them

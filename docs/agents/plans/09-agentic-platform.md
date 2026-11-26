@@ -894,7 +894,7 @@ each story went.
 - [ ] P9-4.13 Phase 4 gate
 - [x] P9-5.1 Refresh case per contract entering the window
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
-- [ ] P9-5.3 Like-life units matched and reserved once
+- [x] P9-5.3 Like-life units matched and reserved once
 - [ ] P9-5.4 Refresh proposal priced with fee and renewal odds
 - [ ] P9-5.5 Approved proposal sent, lines drafted, units reserved
 - [ ] P9-5.6 Test-the-proposal levers
