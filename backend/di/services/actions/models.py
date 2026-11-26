@@ -7,7 +7,9 @@
                                         Weibull remaining life on the teardown verdicts of the actor's org units
                                         (di.services.models.rul_fit, imported only here); `price` (template device; plan 9,
                                         P9-6.9) fits the device price model, three conformalised LightGBM quantile boosters
-                                        (di.services.models.price) on the settled sales and the feed; `calibration` is the default
+                                        (di.services.models.price) on the settled sales and the feed; `take_up`
+                                        (template tool_fleet; P9-4.11, `market?`) fits the logistic take-up curve on the last
+                                        24 months of upgrade offers (di.services.models.take_up); `calibration` is the default
     model.propose  act     {id}         a person proposes a candidate for promotion (plan 8 UI gaps): stored as
                                         metrics.proposal {by, at}; manageFlows
     model.promote  commit  {id}         a proposed candidate -> active; the active model it replaces is retired
@@ -46,7 +48,7 @@ from di.services.engine.predictor import Predictor
 from di.services.modeler.templates import TEMPLATE_KEYS
 
 MAKER_CHECKER = "Maker-checker: you created this model, so you cannot promote it."
-FIT_KINDS = ("calibration", "rated_life", "price")
+FIT_KINDS = ("calibration", "rated_life", "price", "take_up")
 PROPOSER_CHECKER = "Maker-checker: you proposed this model, so you cannot promote it."
 
 ACTIONS.setdefault(
@@ -55,7 +57,10 @@ ACTIONS.setdefault(
         id="model.fit", title="Fit a model candidate", risk="act", perm="manageFlows", scope="none",
         verb="fit models", desc="Fit a candidate calibration model on the confirmed outcomes. It is used only once "
         "a different person promotes it.",
-        input={"template": {"req": False, "t": "string"}, "kind": {"req": False, "t": "string"}},
+        input={
+            "template": {"req": False, "t": "string"}, "kind": {"req": False, "t": "string"},
+            "market": {"req": False, "t": "string"},
+        },
     ),
 )  # fmt: skip
 ACTIONS.setdefault(
@@ -139,6 +144,8 @@ def fit_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:  #
         return "validation_error", "A rated-life model is fitted for the tool_fleet template."
     if kind == "price" and t != "device":
         return "validation_error", "A price model is fitted for the device template."
+    if kind == "take_up" and t != "tool_fleet":
+        return "validation_error", "A take-up model is fitted for the tool_fleet template."
     return None if t in TEMPLATE_KEYS else ("validation_error", f"The template is one of {', '.join(TEMPLATE_KEYS)}.")
 
 
@@ -232,6 +239,36 @@ def _fit_price(ctx: CallContext) -> dict[str, Any]:
     return _insert_candidate(ctx, "device", "price", [{"artefact": model.save()}], metrics)
 
 
+def _fit_take_up(ctx: CallContext, market: str | None) -> dict[str, Any]:
+    """The take-up candidate (P9-4.11): a logistic curve of acceptance on the credit share, on the offers of the last 24 months
+    (of one market, or all) in the org units the actor may see. The metrics carry the pack's prior on the same rows as the
+    baseline. `factors` is `[{a, b}]`; the candidate replaces the prior in `service_desk.inputs` once promoted."""
+    from di.repositories import upgrade_offers
+    from di.services.models import take_up
+    from di.services.service_desk.inputs import take_up_prior
+
+    acct, until = ctx.actor.account, ctx.now.date()
+    since = upgrade_offers.window_start(until)
+    rows = [
+        r
+        for r in upgrade_offers.window(ctx.session, since, until, market)
+        if r.org is None or (acct is not None and policy.tenant_ok(acct, r.org, ctx.actor.ctx))
+    ]
+    if len(take_up.points_of(rows)) < take_up.MIN_OFFERS:
+        raise ActionError("validation_error", take_up.TOO_FEW)
+    f = take_up.fit_curve(rows)
+    prior = take_up_prior()
+    base_ll, base_br = take_up.score(prior["a"], prior["b"], take_up.points_of(rows))
+    act = repo.active(ctx.session, "tool_fleet", "take_up")
+    metrics = {
+        "n": f.n, "active_id": act.id if act else None, "mae_active": None, "mae_candidate": None, "kind": "take_up",
+        "market": market, "window": {"from": since.isoformat(), "to": until.isoformat()},
+        "log_loss": f.log_loss, "brier": f.brier, "baseline_log_loss": base_ll, "baseline_brier": base_br,
+        "prior": {"a": prior["a"], "b": prior["b"]}, "bands": f.bands,
+    }  # fmt: skip
+    return _insert_candidate(ctx, "tool_fleet", "take_up", [{"a": f.a, "b": f.b}], metrics)
+
+
 def price_predictor(s: Session, base: Predictor) -> Predictor:
     """`base`, with the active device price model's band for `channel_price` if a person has promoted one (P9-6.9)."""
     act = repo.active(s, "device", "price")
@@ -249,6 +286,8 @@ def fit_model(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         return _fit_rated_life(ctx)
     if i.get("kind") == "price":
         return _fit_price(ctx)
+    if i.get("kind") == "take_up":
+        return _fit_take_up(ctx, i.get("market") or None)
     rows = [r for r in outcome_rows(ctx.session) if r["template"] == t]
     factors = fit(rows)
     act = repo.active(ctx.session, t)
