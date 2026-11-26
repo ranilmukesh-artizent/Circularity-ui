@@ -9,6 +9,8 @@ mapping rows the owner accepted and the stage-agent settings, with maker-checker
     compose.systems        read    {id}                             the systems the change set names, each joined with the
                                                                     org's sources and the adapter registry (P9-8.18)
     compose.prompts        read    {pack_key}                       the pack's sample prompts, for the Describe step
+    compose.testRun        read    {id, limit?, batch_id?}          (P9-8.19) past items through the draft: where
+                                                                    cases stopped, by stage and reason; writes nothing
     compose.submit         act     {id}                             refused with the blocking list; else a snapshot
     compose.sendBack       act     {id, step, reason, node_id?}     approve.packs: the reason (15+ characters) on the step
     compose.approve        commit  {id}                             approve.packs: applies the parts as one, or none of them
@@ -26,7 +28,8 @@ autonomy and threshold from the pack's stages today, so the settings are recorde
 """
 
 import json
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, cast
 
 from pydantic import ValidationError
 from sqlalchemy import text
@@ -38,6 +41,7 @@ from di.repositories import adapter_registry as adapter_repo
 from di.repositories import compositions as repo
 from di.repositories import mapping_decisions
 from di.repositories import overlays as overlay_repo
+from di.repositories import replay as replay_repo
 from di.repositories.orgs import units
 from di.repositories.packs import active_pack
 from di.services.actions import overlays
@@ -45,10 +49,17 @@ from di.services.actions.modeler import _boundary, _org_ok
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError, draft_change_set, read_text
-from di.services.agents.playbooks import pack_author
+from di.services.agents.playbooks import pack_author, stop_explainer
+from di.services.cases.decide import Decision, decide_case
 from di.services.modeler import compose as core
+from di.services.modeler import stop_reasons
+from di.services.modeler.compile import FlowVersion
+from di.services.modeler.gates import catalogue
 from di.services.modeler.overlay import OverlayError, apply_overlay, ops_json, parse_ops
 from di.services.modeler.pack import Pack, load_pack, pack_keys
+from di.services.policy_standing import decide_threshold
+from di.services.replay import history
+from di.services.replay import run as replay_run
 
 _MANAGE, _APPROVE = "managePacks", "approve.packs"
 MAKER_CHECKER = "Maker-checker: you composed this, so you cannot approve it."
@@ -76,6 +87,8 @@ _DECLARED: tuple[tuple[str, str, str, Risk, dict[str, dict[str, Any]], str | Non
      "read", _ID, None),
     ("compose.prompts", "Read a pack's sample prompts", "The sample descriptions a pack offers to start a composition.", "read",
      {"pack_key": _STR}, None),
+    ("compose.testRun", "Test run a composition", "Put past items through the draft and see where cases stopped.", "read",
+     {**_ID, "limit": {"t": "number"}, "batch_id": {"t": "number"}}, _MANAGE),
     ("compose.submit", "Submit a composition", "Send a finished composition to a different person for approval.", "act",
      _ID, _MANAGE),
     ("compose.sendBack", "Send a composition back", "Send a submitted composition back to its maker, with the step and a reason.",
@@ -388,6 +401,146 @@ def systems(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         summary = _mapping_summary(ctx, src["id"], src["vendor"])
         out.append(base | {"source_id": src["id"], "status": _status(ctx, src, summary["asked_owner"]), "mapping": summary})
     return {"id": row["id"], "systems": out}
+
+
+# ---------------------------------------------------------------- test run (P9-8.19)
+DEFAULT_SAMPLE, MAX_SAMPLE = 200, 2000
+_HELD_CODES = {
+    history.R_DUP: "dup", history.R_DATE: "date", history.R_VALUE: "value", history.R_COST: "cost", history.R_NO_ID: "id",
+}  # fmt: skip
+
+
+def _held_code(reason: str) -> str:
+    """The code of a row the import held (its reason text is the history module's)."""
+    if reason in _HELD_CODES:
+        return _HELD_CODES[reason]
+    return "route" if reason.startswith("Route '") else "fact" if reason.startswith("Fact ") else "other"
+
+
+def _fact_target(fact: str) -> str:
+    return f"{fact}.{replay_run.ALIASES.get(fact, fact)}"  # the history column `condition` is the field `condition.grade`
+
+
+def _mapped_targets(row: dict[str, Any], pack: Pack, ctx: CallContext) -> set[str]:
+    """The canonical fields the draft brings in: the rows the owner accepted in the mapping step and the current mapping of
+    every source that is one of the systems the composition needs (the join `compose.systems` shows)."""
+    out = {
+        str(f["row"][2]).strip().removesuffix("[]")
+        for f in (row["steps"].get("mapping") or {}).get("fields") or []
+        if f.get("state") == "accepted" and len(f.get("row") or []) > 2
+    }
+    s, org = ctx.session, row["org_unit_id"]
+    reg_type = {(e.id, e.version): e.system_type for e in adapter_repo.entries(s, org)}
+    sources = _sources(s, org)
+    for _name, kind, key in _wanted_systems(row, pack):
+        found = sorted((m, x["id"]) for x in sources if (m := _match(x, key, kind, reg_type)) is not None)
+        if found:
+            out |= {str(r[2]).strip().removesuffix("[]") for r in _current_maps(ctx, found[0][1]) if len(r) > 2}
+    return out
+
+
+def _test_batch(i: dict[str, Any], row: dict[str, Any], ctx: CallContext) -> Any:
+    """The batch a test run reads (the one asked for, else the org's newest of the pack with good rows) or the refusal."""
+    s = ctx.session
+    if i.get("batch_id") is not None:
+        found = replay_repo.batches(s, [int(i["batch_id"])])
+        if not found:
+            return "not_found", f"No history batch {i['batch_id']}."
+        if (found[0].pack, found[0].org_unit_id) != (row["pack_key"], row["org_unit_id"]):
+            return "conflict", "The batch is not history of this composition's pack and org unit."
+        return found[0]
+    for b in replay_repo.for_org(s, row["pack_key"], row["org_unit_id"]):
+        if b.rows > b.held:
+            return b
+    return "not_found", f"No past decisions of {row['pack_key']} at {row['org_unit_id']}: import a history batch first."
+
+
+@guard("compose.testRun")
+def test_run_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if bad := _reach(i, ctx):
+        return bad
+    if i.get("limit") is not None and not 1 <= int(i["limit"]) <= MAX_SAMPLE:
+        return "validation_error", f"The sample is 1 to {MAX_SAMPLE:,} past items."
+    got = _test_batch(i, _row(i, ctx), ctx)
+    return got if isinstance(got, tuple) else None
+
+
+def _trace(item_id: str, d: Decision, stages: Sequence[str], limits: dict[str, float]) -> stop_reasons.Trace:
+    """Where a decision stopped (R20 order: gates, then a stage's confidence threshold), or no stop when it chose a route."""
+    failed = [g for g in d.gates if not g.passed]
+    if failed and (d.hold or d.recommendation is None):
+        g = next((x for x in failed if x.effect.hold), failed[0])
+        gd = catalogue().get(g.gate_id)
+        return stop_reasons.Trace(item_id, gd.stage if gd and gd.stage in stages else "decide", f"guardrail:{g.gate_id}")
+    if d.recommendation is None:
+        return stop_reasons.Trace(item_id, "decide", "no_route:decide")
+    conf = replay_run.confidence_of(d)
+    if conf is not None:
+        for st in stages:
+            if st in limits and conf < limits[st]:
+                return stop_reasons.Trace(item_id, st, f"threshold:{st}")
+    return stop_reasons.Trace(item_id)
+
+
+@implement("compose.testRun")
+def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """Put the batch's items (at most `limit`) through the draft pack: an item the draft cannot give a field stops there, the
+    rest are decided by `replay` (I-16, so `decide_case`, R19) and read as traces. Writes no row."""
+    row, s = _row(i, ctx), ctx.session
+    try:
+        draft = apply_overlay(_pack(row, ctx), _ops(row))
+    except OverlayError as e:
+        raise ActionError("validation_error", f"The changes do not validate ({e.op_id}): {e.message}") from e
+    batch = cast(Any, _test_batch(i, row, ctx))
+    items = replay_repo.ok_items(s, batch.id)[: int(i.get("limit") or DEFAULT_SAMPLE)]
+    stages: list[str] = [st.key for st in draft.stages if st.key in stop_reasons.STAGES] or [*stop_reasons.STAGES]
+    labels: dict[str, str] = {st.key: st.agent for st in draft.stages}
+    governed = {f"{m['model']}.{f}" for m in draft.data.mappings for f in m.get("fields") or []}
+    required = sorted({t for it in items for n in it["facts"] if (t := _fact_target(n)) in governed})
+    mapped = _mapped_targets(row, draft, ctx)
+    traces: list[stop_reasons.Trace] = []
+    ready: list[dict[str, Any]] = []
+    for it in items:
+        lack = next((t for t in required if t not in mapped or t.partition(".")[0] not in it["facts"]), None)
+        if lack is None:
+            ready.append(it)
+            continue
+        stage = lack.partition(".")[0]
+        traces.append(stop_reasons.Trace(str(it["item_id"]), stage if stage in stages else "value", f"missing_field:{lack}"))
+    held = s.execute(
+        text("SELECT item_id, held_reason FROM replay_item WHERE batch_id = :b AND status = 'held' ORDER BY n"), {"b": batch.id}
+    ).mappings()
+    traces += [stop_reasons.Trace(str(h["item_id"]), "receive", f"held_record:{_held_code(h['held_reason'])}") for h in held]
+    limits = {str(x["stage"]): float(x["threshold"]) for x in core.stage_settings(row["steps"]) if x.get("threshold") is not None}
+    limits.setdefault("decide", decide_threshold(draft))
+    decided: dict[str, Decision] = {}
+
+    def watch(case: Any, pack: Pack, fv: FlowVersion, **kw: Any) -> Decision:
+        try:
+            d = decide_case(case, pack, fv, **kw)
+        except ActionError:  # the valuer refuses the item's facts: `replay` counts it, the trace says where
+            traces.append(stop_reasons.Trace(str(case["id"]), "value", "no_route:value"))
+            raise
+        decided[str(case["id"])] = d
+        return d
+
+    if ready:
+        replay_run.replay(batch, ready, FlowVersion(None, 0, ()), pack=draft, decide=watch, label="draft")
+    traces += [_trace(k, d, stages, limits) for k, d in decided.items()]
+    stops = stop_reasons.group(traces, stages)
+    n_decided = sum(1 for t in traces if t.stage is None)
+    total = len(traces)
+    line = stop_reasons.sentence(stops, total, n_decided, labels)
+    facts = line + "\n" + "\n".join(
+        f"{s_.stage}: reached {s_.reached}, stopped {s_.stopped}; " + ", ".join(f"{r}: {n}" for r, n in s_.reasons)
+        for s_ in stops if s_.stopped
+    )  # fmt: skip
+    words = stop_explainer.explain(ctx, facts, lambda t: stop_reasons.check_text(t, facts))
+    return {
+        "id": row["id"], "batch_id": batch.id, "sample": len(items), "total": total, "decided": n_decided,
+        "stages": [s_.view() for s_ in stops], "text": words or line, "by_model": words is not None,
+        "decisions": [{"item_id": t.item_id, "route": decided[t.item_id].route} for t in traces if t.stage is None],
+    }  # fmt: skip
 
 
 # ---------------------------------------------------------------- submit

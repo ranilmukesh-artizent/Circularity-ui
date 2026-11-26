@@ -178,3 +178,44 @@ export const sendBack = (id: number, step: CompositionStep, reason: string, node
 
 /** The checker approves (never the maker, submitter or an editor): the changes, mapping and stage settings apply as one. */
 export const approveComposition = (id: number): Promise<ActionResult> => invoke('compose.approve', { id });
+
+// ---------------------------------------------------------------- the test run (P9-8.19; compose.testRun)
+
+export interface StopReasonCount {
+  /** missing_field:<model.field>, held_record:<code>, guardrail:<id>, threshold:<stage>, no_route:<stage> */
+  reason: string;
+  count: number;
+  /** the first item ids behind the count */
+  examples: string[];
+}
+
+export interface StageStop {
+  stage: string;
+  reached: number;
+  stopped: number;
+  reasons: StopReasonCount[];
+}
+
+/** Past items put through the draft flow: where cases stopped. Nothing is written, published or approved. */
+export interface TestRun {
+  id: number;
+  batch_id: number;
+  /** items taken from the batch (at most the limit) */
+  sample: number;
+  /** the sample plus the rows the import held */
+  total: number;
+  decided: number;
+  stages: StageStop[];
+  /** "200 past items: 163 reached a decision; ...", worded by a model when one answered (the counts are the code's) */
+  text: string;
+  by_model: boolean;
+  decisions: { item_id: string; route: string | null }[];
+}
+
+/** Run the draft over the org's past items (the newest batch of the pack unless `batchId` is given). On demand, never cached. */
+export const testRunComposition = (id: number, opts: { limit?: number; batchId?: number } = {}): Promise<ActionResult<TestRun>> =>
+  invoke('compose.testRun', {
+    id,
+    ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
+    ...(opts.batchId !== undefined ? { batch_id: opts.batchId } : {}),
+  }) as Promise<ActionResult<TestRun>>;

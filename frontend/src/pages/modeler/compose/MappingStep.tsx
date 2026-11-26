@@ -6,6 +6,7 @@ import { toast } from '../../../components/toast';
 import { useAction } from '../../../hooks/useAction';
 import { MappingSuggestions } from '../../integration/MappingSuggestions';
 import { RegistryPicker } from '../../integration/RegistryPicker';
+import { TestRunCard } from './TestRunCard';
 import { canMarkMappingDone, needsAdapter, statusLabel, statusTone, summaryLine, totalMapping } from './composeView';
 
 /**
@@ -63,6 +64,7 @@ export function MappingStep({ c }: { c: Composition }) {
           {waiting === 0 && lacking.length > 0 && !done && <span className="note">Still without an adapter: {lacking.join(', ')}. You may mark the step done once you accept that.</span>}
         </div>
       )}
+      <TestRunCard c={c} />
       {adding && (
         <Modal title={'Add ' + adding.name} wide onClose={() => setAdding(null)}>
           <p className="note">System type: <b>{adding.system_type}</b>. {adding.registry.length > 0 ? `Registry entries of this type: ${adding.registry.join(', ')}.` : 'No registry entry has this type yet: use Generic REST or draft one from an API spec.'}</p>

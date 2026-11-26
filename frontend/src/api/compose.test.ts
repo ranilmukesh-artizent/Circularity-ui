@@ -8,7 +8,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 
 import {
   answerQuestion, approveComposition, compositions, draftChangeSet, editChangeSet, markStep, readDescription, sendBack, startComposition,
-  packPrompts, submitComposition, useComposeSystems, useComposition,
+  packPrompts, submitComposition, testRunComposition, useComposeSystems, useComposition,
 } from './compose';
 
 const last = () => m.invoke.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
@@ -49,6 +49,15 @@ describe('the composition facade (plan 9, P9-8.17)', () => {
     expect(last()[1]).not.toHaveProperty('node_id');
     await approveComposition(7);
     expect(last()).toEqual(['compose.approve', { id: 7 }]);
+  });
+});
+
+describe('the test run (plan 9, P9-8.19)', () => {
+  it('x-10: testRunComposition invokes compose.testRun with the id, and the limit and batch only when given', async () => {
+    await testRunComposition(7);
+    expect(last()).toEqual(['compose.testRun', { id: 7 }]);
+    await testRunComposition(7, { limit: 50, batchId: 3 });
+    expect(last()).toEqual(['compose.testRun', { id: 7, limit: 50, batch_id: 3 }]);
   });
 });
 
