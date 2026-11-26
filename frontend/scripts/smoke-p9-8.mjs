@@ -465,9 +465,9 @@ await step('7 Shadow and replay, then publish to Customer A at 20 %', async () =
   if (!(await p.getByRole('button', { name: 'Submit for approval' }).count())) {
     // a fork is published v1, not a draft: one rule makes the draft to submit (as smoke-modeler.mjs does)
     await p.getByRole('button', { name: 'Add rule' }).click();
-    const paths = await p.getByLabel('Path').locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
-    await p.getByLabel('Path').selectOption(paths[paths.length - 1]);
-    await p.getByLabel('Action').selectOption('exclude');
+    const paths = await p.getByLabel('Path', { exact: true }).locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+    await p.getByLabel('Path', { exact: true }).selectOption(paths[paths.length - 1]);
+    await p.getByLabel('Action', { exact: true }).selectOption('exclude');
     await p.locator('.mdl-inspector fieldset input[type=checkbox], fieldset input[type=checkbox]').first().check();
     await p.waitForTimeout(3000); // the 2 s autosave
     await p.getByRole('button', { name: 'Submit for approval' }).first().waitFor({ timeout: UI });
