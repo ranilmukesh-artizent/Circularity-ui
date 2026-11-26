@@ -114,6 +114,8 @@ def reset_sources(conn: Connection) -> None:
         for t in SOURCE_TABLES:
             conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
         conn.execute(text("DELETE FROM job WHERE kind = 'sync.source' AND payload->>'source_id' = ANY(:i)"), {"i": made})
+        # a new source may get a removed one's id: it must not inherit its owner approval
+        conn.execute(text("DELETE FROM connection_approval WHERE source_id = ANY(:i)"), {"i": made})
         conn.execute(text("DELETE FROM source_system WHERE id = ANY(:i)"), {"i": made})
     for s in ref:
         start = "live" if provisioned(s["id"]) else "unavailable"
