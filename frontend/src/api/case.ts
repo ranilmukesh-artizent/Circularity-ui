@@ -108,6 +108,8 @@ export interface CaseRec {
   blocked?: { action: string; owner: string; reason: string; gateName?: string } | null;
   requested?: { ref: string; at: string } | null;
   evidence: Evidence[];
+  /** The asset's compliance records the gates read (P9-12.9: `servicing_assessment` is the assessment a person recorded); read it with `recordedAssessment` (pages/case/assessment.ts). */
+  evidenceRecords?: { type: string; at?: string; operator?: string; value?: { assessment?: string; planned_work?: string; rationale?: string; by?: string } }[];
   gates?: GateRow[]; gateHold?: GateHold | null; requiredSteps?: RequiredStep[]; batch?: BatchStatus | null;
   snapshot?: { id: string; items?: number } | null;
   /** A rental device's service gate result and the booking it proposes (P9-11.7); read it with `serviceProposal`. */

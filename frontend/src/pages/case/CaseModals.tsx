@@ -13,6 +13,7 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { JsonView } from '../../components/kit/JsonView';
 import { AfBadge, Disclosures } from './CaseBlocks';
+import { OUTCOMES, outcomeLabel, saveBlock } from './assessment';
 import { TiResult } from './tabs/DecideTabs';
 
 /** The approval card (ACT.approve with the agent's draft, the limit and the raw instruction; confirmApprove). */
@@ -148,12 +149,6 @@ export function DeclineModal({ c, onClose }: { c: CaseRec; onClose: () => void }
   );
 }
 
-const ASSESSMENTS: [AssessmentResult, string][] = [
-  ['servicing', 'Servicing (no change to performance or intended use)'],
-  ['remanufacturing', 'Remanufacturing'],
-  ['full_refurbishment', 'Full refurbishment'],
-];
-
 /** Record the regulatory assessment of the planned work on a medical device (assessment.record; plan 9, P9-12.9). A person's
  *  record: Admin or Engineer. Remanufacturing and full refurbishment stop the refurbish route unless the market allows it.
  *  The wording of the gate needs review by Kinective's Legal team before it is relied on. */
@@ -163,33 +158,37 @@ export function RecordAssessmentModal({ c, onClose }: { c: CaseRec; onClose: () 
   const [why, setWhy] = useState('');
   const [err, setErr] = useState('');
   const action = useAction();
+  const block = saveBlock(work, why);
   async function ok() {
-    if (!work.trim() || !why.trim()) return setErr('Describe the planned work and give the rationale.');
+    if (block) return;
     const r = await action.run(() => recordAssessment(c.id, work.trim(), result, why.trim()), { ms: 4200, inline: setErr });
     if (!r.ok) return;
     onClose();
-    toast('Assessment recorded for ' + c.id + '.', 4200);
+    toast('Assessment recorded for ' + c.id + ': ' + outcomeLabel(result) + '.', 4200);
   }
   return (
     <Modal
-      title={'Record assessment · ' + c.id} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn pri" onClick={ok}>Record assessment</button></>}
+      title="Record assessment" onClose={onClose}
+      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn pri" disabled={!!block || action.pending} aria-describedby="as-block" onClick={ok}>Save assessment</button></>}
     >
+      <p className="ink2" style={{ marginTop: 0 }}>Case {c.id}. Whether the planned work is servicing, remanufacturing or full refurbishment is a regulatory call, and only a person records it.</p>
       <div className="fld">
-        <label htmlFor="as-work">Planned work</label>
+        <label htmlFor="as-work">Planned work <span className="muted">(required)</span></label>
         <input id="as-work" type="text" maxLength={200} value={work} onChange={(e) => setWork(e.target.value)} />
       </div>
       <div className="fld">
-        <label htmlFor="as-result">Result</label>
+        <label htmlFor="as-result">Outcome</label>
         <select id="as-result" value={result} onChange={(e) => setResult(e.target.value as AssessmentResult)}>
-          {ASSESSMENTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          {OUTCOMES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        <div className="hint">{OUTCOMES.find((o) => o.value === result)?.hint}</div>
       </div>
       <div className="fld">
-        <label htmlFor="as-why">Rationale <span className="muted">(required)</span></label>
+        <label htmlFor="as-why">Reason <span className="muted">(required)</span></label>
         <textarea id="as-why" maxLength={500} value={why} onChange={(e) => setWhy(e.target.value)} />
         <div className="hint">Recorded with your name and the time. Do not enter personal data.</div>
-        <div className="err" id="as-err" hidden={!err}>{err}</div>
+        <div className="hint" id="as-block" hidden={!block}>{block}</div>
+        <div className="err" id="as-err" role="alert" hidden={!err}>{err}</div>
       </div>
     </Modal>
   );
