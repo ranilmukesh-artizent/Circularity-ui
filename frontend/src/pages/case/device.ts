@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, SettlementView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, RepairQuote, SettlementView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -112,6 +112,12 @@ export function channelRow(v: ChannelView): string {
   const feed = v.feedWeek ? `feed ${day(v.feedWeek)}` : '';
   return [v.name, `${money(v.cash)} net`, `${v.days.toFixed(1)} days`, band, feed, v.modelId ? `model ${v.modelId}` : '', v.ok ? '' : 'not allowed']
     .filter(Boolean).join(' · ');
+}
+
+/** "battery swap +$28 price, −$24 cost, +5 days" (P9-6.15, DV-11): what a repair quote adds to the price, costs and takes. */
+export function evidenceLine(q: RepairQuote): string {
+  const n = (v: number) => String(Number(v.toFixed(2)));
+  return `${q.repair.toLowerCase()} +$${n(q.priceUplift)} price, −$${n(q.cost)} cost, +${n(q.days)} days`;
 }
 
 /** "98.6%" for a sale at 0.986 of the forecast, "90%" at 0.9 (one decimal, no trailing zero). */

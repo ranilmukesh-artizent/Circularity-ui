@@ -6,6 +6,9 @@ of `fSim`, 2411-2413).
 - `dScore` (2341): one channel's cash per unit, expected days to sell and score (cash less a penalty for days past
   the 60-day SLA), and whether the channel may take the lot (grade D never on Buy Now or Marketplace; lot size cap).
 - `dDecide` (2347): the business rules (exclude, require, prefer) over the four channels; the best by score.
+- P9-6.15 (story DV-11), a received device only: `repair_sell` (a repair quote, then the best listing channel), `parts` (a
+  teardown into service stock) and `recycle` (a certified recycler's material value less its fee). Their settings are the pack's
+  `valuer.params.more_routes`; a PO lot never has them (`channels_for`). The prototype has no such routes.
 
 The prototype's TPL has no device entry, so it gives the template no name; it is "Device recommerce" (fixtures/golden/
 po/README.md). Pure code: no Session, no I/O. Lots and rules are the prototype's JSON shapes, as in the goldens.
@@ -55,6 +58,15 @@ DMOD: list[list[Any]] = [
     ["Google", "Pixel 8", 250, "25-48m"],
     ["Motorola", "Moto G Power 2024", 95, "0-24m"],
 ]
+# The routes of a received device beyond the sale channels (P9-6.15): the pack's settings for `repair_sell`, `parts`, `recycle`.
+MORE: dict[str, dict[str, Any]] = _PARAMS["more_routes"]
+EXTRA: tuple[str, ...] = tuple(MORE)
+GRADE_MULT = {
+    "A": 1.0,
+    "B": 0.85,
+    "C": 0.68,
+    "D": 0.45,
+}  # a grade's share of the grade-A reference value (the lots' `ref`, dLots 2337)
 # Policy (2334): holding cost a unit a day, penalty a day past the SLA, SLA days, cost per return, weekly price erosion,
 # recovery floor.
 DG: dict[str, float] = _PARAMS["dg"]
@@ -77,6 +89,9 @@ class ChannelValue(TypedDict):
     p90_cash: NotRequired[float]
     feed_week: NotRequired[str | None]
     model_id: NotRequired[str | None]
+    # `repair_sell` (P9-6.15): the channel the repaired device sells on, and the repair quote it rests on
+    via: NotRequired[str]
+    repair: NotRequired[dict[str, Any]]
 
 
 class Decision(TypedDict):
@@ -151,20 +166,75 @@ def _wholesale(lot: Lot, band: PriceBand | None) -> tuple[float, float, float, f
     return v, v, v, c["win"], "No live bid: index estimate"
 
 
-def score(lot: Lot, channel: str, band: PriceBand | None = None) -> ChannelValue:
+def repair_line(q: Mapping[str, Any]) -> str:
+    """The evidence line of a repair quote: "battery swap +$28 price, −$24 cost, +5 days" (DV-11, verbatim)."""
+    return f"{str(q['repair']).lower()} +${q['price_uplift']:g} price, −${q['cost']:g} cost, +{q['days']:g} days"
+
+
+def _repair_sell(lot: Lot, bands: Mapping[str, PriceBand]) -> tuple[float, float, bool, str, str | None]:
+    """(cash, days, ok, why, channel) a unit repaired, then sold (P9-6.15): on each listing channel the repaired price (its sale
+    price plus the quote's price uplift) goes through that channel's own formula (fees, logistics, returns, sell-through and the
+    days to sell), then the repair cost and the holding cost of the extra days come off:
+    cash = repaired price net of the channel − repair cost − hold × extra days. The channel with the most cash takes it. No quote,
+    no route."""
+    q = (lot.get("inputs") or {}).get("repair_quote")
+    if not q:
+        return 0.0, 0.0, False, "No repair quote on file", None
+    best: tuple[float, float, str] | None = None
+    for ch in MORE["repair_sell"]["channels"]:
+        if lot["qty"] > DCFG[ch]["lot"] or (lot["grade"] == "D" and ch in ("buynow", "market")):
+            continue
+        band = bands.get(ch)
+        price = (band.p50 if band is not None else lot["ref"] * DST[lot["grade"]][lot["band"]][ch][3]) + float(q["price_uplift"])
+        cash, days = _cash(lot, ch, price)
+        cash -= float(q["cost"]) + DG["hold"] * float(q["days"])
+        if best is None or cash > best[0]:
+            best = (cash, days + float(q["days"]), ch)
+    if best is None:
+        return 0.0, 0.0, False, "", None
+    return best[0], best[1], True, repair_line(q), best[2]
+
+
+def _parts_base(lot: Lot) -> float:
+    """The grade-A feed price of the device's SKU (`inputs.feed_price_a`), else the reference value scaled up to grade A."""
+    a = (lot.get("inputs") or {}).get("feed_price_a")
+    return float(a) if a is not None else float(lot["ref"]) / GRADE_MULT[lot["grade"]]
+
+
+def _more(lot: Lot, channel: str, bands: Mapping[str, PriceBand]) -> tuple[float, float, bool, str, dict[str, Any]]:
+    """(cash, days, ok, why, extra) a unit on `repair_sell`, `parts` or `recycle` (P9-6.15). Parts: the pack's share of the
+    grade-A feed price less the teardown cost. Recycle: the material value less the recycler's fee (a certified recycler, with a
+    certificate: the `cert` step)."""
+    p = MORE[channel]
+    if channel == "repair_sell":
+        cash, days, ok, why, via = _repair_sell(lot, bands)
+        extra: dict[str, Any] = {"via": via, "repair": dict(lot["inputs"]["repair_quote"])} if via else {}
+        return cash, days, ok, why, extra
+    ok = lot["qty"] <= p["lot"]
+    if channel == "parts":
+        return p["value_share"] * _parts_base(lot) - p["teardown"], p["days"], ok, "", {}
+    return p["material"] - p["fee"], p["days"], ok, "", {}
+
+
+def score(lot: Lot, channel: str, band: PriceBand | None = None, bands: Mapping[str, PriceBand] | None = None) -> ChannelValue:
     """dScore (2341): an unsold lot falls back to auction after the channel's window, at the eroded price. With `band` the
     sale price is its P50 (instead of the reference value times the grade's price index) and the value gains `p10_cash` and
     `p90_cash` (the same formula at P10 and P90), `feed_week` and `model_id`; days and sell-through still come from `DST`.
-    The `wholesale` channel (a Recover case's lot sale, P9-6.10) has no learning table: see `_wholesale`."""
-    c = DCFG[channel]
+    The `wholesale` channel (a Recover case's lot sale, P9-6.10) has no learning table: see `_wholesale`. The routes of
+    `EXTRA` (P9-6.15) have none either: see `_more`; `bands` (default the lot's own) are the sale channels' bands for
+    `repair_sell`."""
     extra: dict[str, Any] = {}
-    if channel == "wholesale":
+    if channel in EXTRA:
+        cash, days, ok, why, extra = _more(lot, channel, bands_of(lot) if bands is None else bands)
+    elif channel == "wholesale":
+        c = DCFG[channel]
         cash, lo, hi, days, why = _wholesale(lot, band)
         ok = lot["qty"] <= c["lot"]
         why = why if ok else ""
         if band is not None:
             extra = {"p10_cash": lo, "p90_cash": hi, "feed_week": _week(band), "model_id": band.model_id}
     else:
+        c = DCFG[channel]
         why = ""
         price = lot["ref"] * DST[lot["grade"]][lot["band"]][channel][3] if band is None else band.p50
         cash, days = _cash(lot, channel, price)
@@ -239,7 +309,7 @@ def decide(lot: Lot, rules: Sequence[Rule] | None = None, bands: Mapping[str, Pr
     channel are waived. `rules` defaults to the published flow's rules. Only `channels_for(lot)` are scored, each on its price
     band (`bands`, default the lot's own, `bands_of`)."""
     bands = bands_of(lot) if bands is None else bands
-    values = [score(lot, k, bands.get(k)) for k in channels_for(lot)]
+    values = [score(lot, k, bands.get(k), bands) for k in channels_for(lot)]
     keep = [v["ok"] for v in values]
     pref = None
     for r in LIVE_RULES if rules is None else rules:

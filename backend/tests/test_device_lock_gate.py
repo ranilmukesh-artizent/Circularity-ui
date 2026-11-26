@@ -79,15 +79,23 @@ def _items(cid: str, type: str = "blacklist_hit") -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def _blocked(c: dict) -> list[dict]:
+    """The routes a hit blocks: every one but the gate's locked routes, parts and recycle (P9-6.15); repair then sell, with no
+    quote, carries the valuer's own reason."""
+    return [r for r in c["routes"] if r["id"] not in ("parts", "recycle", "repair_sell")]
+
+
 def test_dv_03_blacklist_blocks_sale_channels():
     at = seed_registry(IMEI, blacklist="reported_stolen")
     c = _open()
     day = at[:10]
     assert c["routes"] and all(
         r["excluded"] and f"Blacklist or lock check hit (GR-D7): reported stolen, checked {day}" in r["failReason"]
-        for r in c["routes"]
+        for r in _blocked(c)
     )
-    assert c["recommendation"] is None and c["stage"] == "none"
+    # only the locked routes stay open ("as law allows", P9-6.15); the case is recommended one of them
+    assert {r["id"] for r in c["routes"] if not r["excluded"]} == {"parts", "recycle"}
+    assert c["recommendation"]["id"] in ("parts", "recycle")
     lock = next(g for g in c["gates"] if g["id"] == "G-DEV-LOCK")
     assert (lock["type"], lock["passed"], lock["owner"]) == ("Compliance", False, "Compliance")
 
@@ -98,7 +106,7 @@ def test_dv_03_blacklist_blocks_sale_channels():
 def test_dv_03_lock_and_balance_owed_are_hits(over, said):
     seed_registry(IMEI, **over)
     c = _open()
-    assert all(r["excluded"] and said in r["failReason"] for r in c["routes"])
+    assert all(r["excluded"] and said in r["failReason"] for r in _blocked(c))
 
 
 def test_dv_03_waits_for_compliance_with_evidence():
@@ -115,7 +123,7 @@ def test_dv_03_waits_for_compliance_with_evidence():
     assert _items(c["id"])[0]["status"] == "open"
     r = client.get(f"/api/screens/case/{c['id']}", headers=h("admin"))
     reg = r.json()["case"]["device"]["registry"]
-    assert (reg["state"], reg["owner"], reg["item"], reg["allowedRoutes"]) == ("hit", "Compliance", "open", [])
+    assert (reg["state"], reg["owner"], reg["item"], reg["allowedRoutes"]) == ("hit", "Compliance", "open", ["parts", "recycle"])
 
 
 def test_dv_03_release_needs_a_newer_registry_check():
@@ -149,7 +157,7 @@ def test_dv_03_stale_check_waits():
     seed_registry(IMEI, days_ago=9)
     c = _open()
     assert c["recommendation"] is None and c["gateHold"]["gates"] == ["G-DEV-LOCK"]
-    assert all(r["excluded"] and "Evidence stale" in r["failReason"] for r in c["routes"])
+    assert all(r["excluded"] and "Evidence stale" in r["failReason"] for r in c["routes"] if r["id"] != "repair_sell")
     assert _items(c["id"]) == []  # a stale check is not a hit
     assert len(_items(c["id"], "evidence_missing")) == 1
 
@@ -157,7 +165,8 @@ def test_dv_03_stale_check_waits():
 def test_dv_03_no_check_waits_and_a_fresh_one_releases():
     seed_wipe(IMEI)  # the wipe gate (P9-6.7) has its certificate; only the registry check is missing
     c = _open()
-    assert c["gateHold"] is not None and all("No registry check on file" in r["failReason"] for r in c["routes"])
+    assert c["gateHold"] is not None
+    assert all("No registry check on file" in r["failReason"] for r in c["routes"] if r["id"] != "repair_sell")
     seed_registry(IMEI, days_ago=1)
     from di.services.cases import gate_hold
 

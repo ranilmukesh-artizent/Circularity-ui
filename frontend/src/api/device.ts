@@ -155,7 +155,12 @@ export interface ChannelView {
   modelId: string | null;
   ok: boolean;
   why: string;
+  /** the repair quote a Repair then sell route rests on (P9-6.15); only on that route */
+  repair?: RepairQuote | null;
 }
+
+/** The lab's repair quote on a device: what is done, its cost, the price it adds and the days it takes (P9-6.15). */
+export interface RepairQuote { repair: string; cost: number; priceUplift: number; days: number }
 
 /** A hold on the price: the guardrail that raised it (GR-D2 floor, GR-D8 confidence), why, and who it waits for. */
 export interface PriceHold { id: string; reason: string; owner: string; signals?: string[] }

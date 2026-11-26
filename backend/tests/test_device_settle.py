@@ -158,8 +158,8 @@ def test_dv_09_a_listing_channel_has_a_list_step_and_wholesale_does_not():
         assert ex_kinds({"id": k, "variant": "listing"}) == ["reserve", "list", "ship", "fulfil", "receipt"]
         assert ex_kinds({"id": k}) == STEP_TPL[k]  # a PO lot: unchanged
     c = _open()
-    assert [r.get("variant") for r in c["routes"]] == ["listing", "listing", "listing", None]  # not the wholesale lot
-    assert [r["id"] for r in c["routes"]] == ["buynow", "offers", "auction", "wholesale"]
+    assert [r.get("variant") for r in c["routes"]] == ["listing"] * 3 + [None] * 4  # not the wholesale lot, nor the other routes
+    assert [r["id"] for r in c["routes"]] == ["buynow", "offers", "auction", "wholesale", "repair_sell", "parts", "recycle"]
 
 
 def test_dv_09_listing_instruction(monkeypatch, sending):

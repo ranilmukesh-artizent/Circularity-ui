@@ -10,7 +10,9 @@ model and grade that is collecting bids (the wholesale channel then values the d
 the channel, days listed and offers of the device's live listing, which a rule's scope reads (`listChannel`, `listDaysMin`,
 `offersMax`); `refresh_listing` keeps it current on every valuation. P9-6.14 adds `model_age_months`, which a customer's
 diversion reads (grade C of a model over 36 months goes to wholesale). P9-6.18 keeps a proposed price candidate's band on the
-case (`priceShadow`, `record_price_shadow`; it decides nothing). Later tasks add replacement demand.
+case (`priceShadow`, `record_price_shadow`; it decides nothing).
+P9-6.15 adds `repair_quote` (the lab's newest repair quote on the device, read from its raw records: the lab adapter makes no fact
+of it) and `feed_price_a` (the grade-A feed price of the SKU, which `parts` is valued on). Later tasks add replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -55,6 +57,10 @@ class DeviceInputs:
     listing: dict[str, Any] = field(default_factory=dict)
     # months from the model's first week in the market feed to `as_of` (P9-6.14); None when the feed has none of the model
     model_age_months: float | None = None
+    # the lab's newest repair quote on the device, {quote_id, repair, cost, price_uplift, days} (P9-6.15); None when it has none
+    repair_quote: dict[str, Any] | None = None
+    # the market feed's grade-A price of the device's SKU as of the date (P9-6.15); None when the feed has none
+    feed_price_a: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -127,6 +133,31 @@ def model_age_months(s: Session, model: str | None, as_of: date) -> float | None
     return round((as_of - first).days / 30.4375, 1)
 
 
+def repair_quote(s: Session, imei: str | None) -> dict[str, Any] | None:
+    """The newest repair quote the lab (`dvlab`) made on the device, from its raw records (a dry-run sample is quarantined and
+    never read): `{quote_id, repair, cost, price_uplift, days}`. None without a quote, or one with a figure missing: nothing is
+    guessed (R16)."""
+    if not imei:
+        return None
+    row = s.execute(
+        text(
+            "SELECT payload FROM raw_record WHERE source_id = 'dvlab' AND resource = 'repairQuotes' "
+            "AND payload ->> 'imei' = :i AND coalesce(request, '') NOT LIKE 'dry-run sample%' "
+            "ORDER BY payload ->> 'quotedAt' DESC NULLS LAST, ext_id DESC LIMIT 1"
+        ),
+        {"i": imei},
+    ).scalar()
+    if not isinstance(row, dict):
+        return None
+    try:
+        return {
+            "quote_id": str(row.get("quoteId")), "repair": str(row["repair"]), "cost": float(row["cost"]),
+            "price_uplift": float(row["priceUplift"]), "days": float(row["days"]),
+        }  # fmt: skip
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def imei_key(imei: str) -> str:
     """The canonical key of a device (the lab and registry adapters key their facts the same way)."""
     return f"IMEI:{imei}"
@@ -168,7 +199,7 @@ def price_bands(
     }  # fmt: skip
     out: dict[str, dict[str, Any]] = {}
     for ch in device.RECOVER:
-        if isinstance(pred, FormulaPredictor) and ch == "wholesale":
+        if ch in device.EXTRA or (isinstance(pred, FormulaPredictor) and ch == "wholesale"):  # repair, parts and recycle have no price band (P9-6.15)
             continue
         b = pred.channel_price(facts, ch)
         week = b.feed_week or feed_week
@@ -189,6 +220,7 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
     """The inputs of the device case (or lot dict) `case`, which names `imei`, `sku_key` and `grade`, as of `as_of`."""
     imei = case.get("imei")
     point = device_market.feed_price(s, str(case["sku_key"]), str(case["grade"]), as_of) if case.get("sku_key") else None
+    feed_a = device_market.feed_price(s, str(case["sku_key"]), "A", as_of) if case.get("sku_key") else None
     cond = ((canonical.get(s, "condition", imei_key(imei)) or {}).get("data") or {}) if imei else {}
     row = device_tradeins.by_imei(s, imei) if imei else None
     evidence: dict[str, Any] = {}
@@ -209,4 +241,6 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         bid_per_unit=bid_per_unit(s, case, as_of),
         listing=listing_view(s, imei, as_of),
         model_age_months=model_age_months(s, case.get("model"), as_of),
+        repair_quote=repair_quote(s, imei),
+        feed_price_a=feed_a.price if feed_a else None,
     )

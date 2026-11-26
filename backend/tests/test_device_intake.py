@@ -109,7 +109,15 @@ def test_dv_01_one_case_per_imei():
     v = c["valuer"]
     assert v["imei"] == IMEI and v["sku_key"] == "iPhone 14|128" and v["ref"] == 330 and v["grade"] == "B"
     assert v["ref_source"] == "feed" and v["band"] == "25-48m" and v["inputs"]["feed_price"] == 330
-    assert [r["id"] for r in c["routes"]] == ["buynow", "offers", "auction", "wholesale"]  # the Recover channels (pack list)
+    assert [r["id"] for r in c["routes"]] == [
+        "buynow",
+        "offers",
+        "auction",
+        "wholesale",
+        "repair_sell",
+        "parts",
+        "recycle",
+    ]  # the Recover channels (pack list)
     assert c["recommendation"] is not None
     with SessionLocal() as s:
         assert device_tradeins.by_imei(s, IMEI).case_id == cid and device_tradeins.pending(s, ORG) == []
@@ -244,7 +252,7 @@ def test_device_po_lots_unchanged():
 def test_decide_scores_only_the_channels_of_the_lot():
     lot = device.sample_lots()[0] | {"imei": IMEI}
     d = device.decide(lot)
-    assert [v["k"] for v in d["all"]] == device.channels_for(lot) and len(d["all"]) == 4
+    assert [v["k"] for v in d["all"]] == device.channels_for(lot) and len(d["all"]) == 7
 
 
 def test_dv_01_gather_reads_the_feed_and_the_evidence_as_of():

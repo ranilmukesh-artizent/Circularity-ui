@@ -35,7 +35,7 @@ def test_order_invariant_device():
     buynow = next(r for r in d.routes if r["id"] == "buynow")
     assert buynow["excluded"] and "GR-D1" in buynow["failReason"]  # the first failed gate's reason stays
     assert d.rules_applied == [] and d.recommendation is None and d.route is None  # the rule never re-enables a gated channel
-    assert all(r["excluded"] for r in d.routes)
+    assert all(r["excluded"] for r in d.routes if r["id"] != "recycle")  # both gates keep recycle open (P9-6.15)
     assert d.hold is not None and d.hold["gates"] == ["G-DEV-WIPE"]  # the hold follows the gates, last
 
 
@@ -72,5 +72,5 @@ def test_order_invariant_device_a_shortcut_never_bypasses_the_gates():
     case["valuer"]["inputs"]["model_age_months"] = 40.0
     d = decide_case(case, pack, FlowVersion(None, 3, ()))
     assert d.diversions == ["op-1"] and d.route is None and d.recommendation is None
-    assert all(r["excluded"] for r in d.routes)
+    assert all(r["excluded"] for r in d.routes if r["id"] != "recycle")  # both gates keep recycle open (P9-6.15)
     assert {g.gate_id for g in d.gates if not g.passed} >= {"G-DEV-WIPE", "G-DEV-LOCK"}

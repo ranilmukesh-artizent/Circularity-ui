@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceView, PayoutView } from '../../api/device';
 import type { ChannelView, QuoteCheck, RegistryView, SettlementView, WipeView } from '../../api/device';
-import { channelRow, deviceLine, diversionLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
+import { channelRow, deviceLine, diversionLine, evidenceLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, wipeLine, wipeState } from './device';
 
 const cert = { id: 'WC-1', method: 'Purge', toolVersion: '4.2', verification: 'pass', operator: 'OP-17', at: '2026-10-06T08:00:00Z' };
 
@@ -134,6 +134,18 @@ describe('P9-6.10 channelRow (DV-06)', () => {
     expect(channelRow({ ...v, modelId: 'PM-3' })).toBe('Buy Now · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026 · model PM-3');
     expect(channelRow({ ...v, p10: null, p90: null, feedWeek: null })).toBe('Buy Now · $312 net · 11.6 days');
     expect(channelRow({ ...v, name: 'Wholesale lot', ok: false })).toBe('Wholesale lot · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026 · not allowed');
+  });
+});
+
+describe('P9-6.15 evidenceLine (DV-11)', () => {
+  it('says what the repair adds to the price, costs and takes', () => {
+    expect(evidenceLine({ repair: 'Battery swap', cost: 24, priceUplift: 28, days: 5 })).toBe('battery swap +$28 price, −$24 cost, +5 days');
+    expect(evidenceLine({ repair: 'Screen swap', cost: 41.5, priceUplift: 60, days: 3 })).toBe('screen swap +$60 price, −$41.5 cost, +3 days');
+  });
+  it('shows it beside the Repair then sell route', () => {
+    const q = { repair: 'Battery swap', cost: 24, priceUplift: 28, days: 5 };
+    const v: ChannelView = { k: 'repair_sell', name: 'Repair then sell', cash: 301, days: 17, p10: null, p90: null, feedWeek: null, modelId: null, ok: true, why: evidenceLine(q), repair: q };
+    expect(channelRow(v)).toBe('Repair then sell · $301 net · 17.0 days');
   });
 });
 
