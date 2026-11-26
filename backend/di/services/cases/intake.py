@@ -220,7 +220,7 @@ class OneCase:
 
 
 CAR_TEMPLATE = "used_cars"
-APPROVAL_PACKS = (CAR_TEMPLATE, "telecom_network")  # the packs whose decisions can hold for an approval item
+APPROVAL_PACKS = (CAR_TEMPLATE, "telecom_network", "medical_rental")  # the packs whose decisions can hold for an approval item
 RENTAL_TEMPLATE = "medical_rental"
 ONE_CASE = {
     CAR_TEMPLATE: OneCase(

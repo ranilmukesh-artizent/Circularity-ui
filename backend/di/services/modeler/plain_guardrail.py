@@ -22,7 +22,7 @@ before it is relied on.
 
 import importlib
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -62,12 +62,25 @@ class FactWords:
 
 
 @dataclass(frozen=True)
+class RangeWords:
+    """A number a sentence may bound a fact by ("younger than 5 years" for asset.age_years): the words for a bound below ("lt")
+    and above ("gt") the number, and the unit that follows it (P9-11.14)."""
+
+    fact: str
+    below: tuple[str, ...]
+    above: tuple[str, ...]
+    unit: str
+
+
+@dataclass(frozen=True)
 class Vocab:
     id_prefix: str  # "AP-TN": the guardrail id is `<prefix>-<value code>`
     routes: dict[str, tuple[str, ...]]  # route id -> the words that name it in a sentence
     facts: tuple[FactWords, ...]
     action: str  # the words of the work item an approval of a guardrail of this vocabulary opens
     default_route: str  # the route that is not named in the id
+    ranges: tuple[RangeWords, ...] = ()  # numbers a sentence may bound a fact by
+    ident: Callable[[str, list[str]], str] | None = None  # (route, codes) -> the guardrail id, when it is not `<prefix>-<codes>`
 
 
 @dataclass(frozen=True)
@@ -127,6 +140,13 @@ def _scope(subject: str, v: Vocab) -> tuple[list[Cond], list[str]] | None:
                 return None
             conds.append(Cond(fact=f.fact, op="eq", value=val.literal))
             codes.append(val.code)
+    for r in v.ranges:
+        for m in re.finditer(
+            rf"\b(?P<w>{'|'.join(map(re.escape, (*r.below, *r.above)))})\s+(?P<n>\d+(?:\.\d+)?)\s+{r.unit}\b", n
+        ):
+            num = float(m.group("n"))
+            conds.append(Cond(fact=r.fact, op="lt" if m.group("w") in r.below else "gt", value=num))
+            codes.append(f"{num:g}".replace(".", ""))
     return conds, codes
 
 
@@ -152,7 +172,11 @@ def read_clause(clause: str, pack: Pack) -> PlainReading | None:
         return None
     conds, codes = scope
     route = routes[0]
-    gid = "-".join([v.id_prefix, *codes, *([] if route == v.default_route else [route.upper()])])
+    gid = (
+        v.ident(route, codes)
+        if v.ident
+        else "-".join([v.id_prefix, *codes, *([] if route == v.default_route else [route.upper()])])
+    )
     op = AddApprover(
         id="op-0", op="add_approver", guardrail_id=gid, type="Approval", stage="decide",
         when=GuardWhen(all=[RouteIs(route=route), *conds]), approver=role, text=clause.strip().rstrip(".;!?"),
@@ -173,7 +197,10 @@ def vouches(op: AddApprover, pack: Pack, text: str) -> str | None:
     if _norm(op.text) not in _norm(text):
         return f"The guardrail {op.guardrail_id} quotes words the description does not contain."
     names = {f.fact: {x.literal for x in f.values.values()} for f in v.facts}
+    bounds = {r.fact for r in v.ranges}
     for c in op.when.all if op.when else []:
+        if isinstance(c, Cond) and c.fact in bounds and c.op in ("lt", "gt") and isinstance(c.value, int | float):
+            continue  # a number the vocabulary lets a sentence bound this fact by
         if isinstance(c, Cond) and (c.fact not in names or c.value not in names[c.fact] or c.op != "eq"):
             return (
                 f"The guardrail {op.guardrail_id} scopes by {c.fact} {c.op} {c.value}, which the {pack.key} pack does not offer."
