@@ -29,7 +29,7 @@ import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
-from functools import cache
+from functools import cache, lru_cache
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
@@ -309,13 +309,17 @@ def refused_choice(source_id: str, field: str, decision: str, target: str | None
 
 
 # ---------------------------------------------------------------- candidates
-def _words(name: str) -> list[str]:
+@lru_cache(maxsize=8192)
+def _words(name: str) -> tuple[str, ...]:
+    """The name's words, synonyms applied. Cached: `suggest` asks for the same few hundred names tens of thousands of times,
+    and `compose.systems` runs it for every system on each read (12 s on 83 fields before the cache)."""
     parts = [p for p in re.split(r"[^a-z0-9]+", re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name).lower()) if p]
     syn = _synonyms()
     out = [w for p in parts for w in syn.get(p, p).split()]
-    return out or parts
+    return tuple(out or parts)
 
 
+@lru_cache(maxsize=65536)
 def _name_score(query: str, field_name: str) -> float:
     """0..1: fuzzy token overlap, Jaro-Winkler on the joined words and the Jaccard overlap of the word sets (1.0 only
     when the two have the same words)."""

@@ -323,6 +323,9 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-9.19 used-car worked analytics questions | this commit | wt-check 9 test_uc_analytics, test_mr_analytics, test_device_analytics: all passed (pytest, ruff, mypy, lint-imports) | done |
 | 2026-11-26 | 09 · P9-11.16 turnaround alert and medical worked questions | this commit | wt-check 9 test_uc_analytics, test_mr_analytics, test_device_analytics: all passed (pytest, ruff, mypy, lint-imports) | done |
 | 2026-11-26 | 09 · P9-10.16 telecom follow-through battery lanes and recycling | this commit | wt-check 9 on 20 files (tn/mr/uc/tf routing and follow-through, decide, instructions, steps, queue, policy, proposals, po_golden): all passed; lint, tsc, vitest, eslint ok | done |
+| 2026-11-26 | 09 · P9-10.17 telecom close and learn with worked questions | this commit | wt-check 9 on 10 files (mr/tn close, tn follow-through, medical paths, pack tests, steps, instructions send, gates, execution): pytest ok; ruff, format, mypy, lint-imports ok | done |
+| 2026-11-26 | 09 · P9-11.17 medical follow-through hospital evidence and close | this commit | wt-check 9 on 10 files (mr/tn close, tn follow-through, medical paths, pack tests, steps, instructions send, gates, execution): pytest ok; ruff, format, mypy, lint-imports ok | done |
+| 2026-11-26 | 09 · P9-12.1 extend the standard valuer with conditions and decay | this commit | wt-check 9 test_standard_valuer, test_pack_format: 28 passed; 1 failed (test_device_template_equals_po_golden, lane B 6.13 scope dims, not 12.1); lint ok | done |
 
 ## Decisions taken without the user (to review)
 

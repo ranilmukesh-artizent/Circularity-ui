@@ -30,11 +30,11 @@ def _row(r: Any) -> RegistryEntry:
 
 def entries(s: Session, org_unit_id: str | None) -> list[RegistryEntry]:
     """The catalogue's entries, the released rows, and the org's own draft and tested rows (its `org_unit_id`; a row with
-    none belongs to the person who saved it, whatever org they work in), ordered by kind, system type and id."""
+    none, such as an imported spec's draft, can be started from at any org unit), ordered by kind, system type and id."""
     rows = s.execute(
         text(
             "SELECT * FROM adapter_registry WHERE status = 'released' "
-            "OR (status IN ('draft','tested') AND org_unit_id IS NOT DISTINCT FROM CAST(:o AS text))"
+            "OR (status IN ('draft','tested') AND (org_unit_id IS NULL OR org_unit_id IS NOT DISTINCT FROM CAST(:o AS text)))"
         ),
         {"o": org_unit_id},
     ).all()

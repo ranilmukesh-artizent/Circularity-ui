@@ -6,6 +6,8 @@ An amount is exactly one of:
     {"param": "name"}                   a pack parameter (`valuer.params.params`)
     {"table": "name", "by": ["f", ...]} a lookup in a pack table (`valuer.params.tables`) by case fields, one level each
     {"mul": [a, ...]}  {"add": [a, ...]}  {"min": [a, ...]}  {"max": [a, ...]}  {"sub": [a, b]}  {"round": a}
+    {"div": [a, b]}     division (by zero raises `AmountError`)       {"fact": "model.field"}  an alias of `field`
+    {"decay": {"start": a, "monthly": a, "months": a}}   start x (1 - monthly) ^ months (P9-12.1)
 
 `evaluate(expr, case, pack) -> float` prices one amount; `check(expr)` is the static check `parse_pack` runs (an unknown
 key is a `PackError` part 9). Errors raise `AmountError(path, message)` with the place in the pack's lines.
@@ -21,7 +23,8 @@ from di.services.engine.jsmath import js_round
 if TYPE_CHECKING:
     from di.services.modeler.pack import Pack
 
-OPS = ("const", "field", "param", "table", "mul", "add", "sub", "min", "max", "round")
+OPS = ("const", "field", "fact", "param", "table", "mul", "add", "sub", "div", "min", "max", "round", "decay")
+_DECAY = ("start", "monthly", "months")
 _LISTS = ("mul", "add", "min", "max")
 
 
@@ -54,7 +57,12 @@ def check(expr: Any, path: str = "amount") -> None:
     if op == "const":
         if not _num(v):
             raise AmountError(here, f"const is a number at {here}")
-    elif op in ("field", "param"):
+    elif op == "decay":
+        if not isinstance(v, Mapping) or set(v) != set(_DECAY):
+            raise AmountError(here, f"decay is {{start, monthly, months}} amounts at {here}")
+        for k in _DECAY:
+            check(v[k], f"{here}.{k}")
+    elif op in ("field", "fact", "param"):
         if not isinstance(v, str) or not v:
             raise AmountError(here, f"{op} is a name at {here}")
     elif op == "table":
@@ -64,8 +72,8 @@ def check(expr: Any, path: str = "amount") -> None:
     elif op == "round":
         check(v, here)
     else:
-        if not isinstance(v, list) or (op == "sub" and len(v) != 2) or (op in _LISTS and not v):
-            raise AmountError(here, f"{op} takes {'two amounts' if op == 'sub' else 'a list of amounts'} at {here}")
+        if not isinstance(v, list) or (op in ("sub", "div") and len(v) != 2) or (op in _LISTS and not v):
+            raise AmountError(here, f"{op} takes {'two amounts' if op in ('sub', 'div') else 'a list of amounts'} at {here}")
         for i, x in enumerate(v):
             check(x, f"{here}[{i}]")
 
@@ -106,7 +114,7 @@ def _eval(expr: Mapping[str, Any], case: Mapping[str, Any], params: Mapping[str,
     here = f"{path}.{op}"
     if op == "const":
         return float(v)
-    if op == "field":
+    if op in ("field", "fact"):
         return _number(_field(case, v, path), f"The case's {v}", path)
     if op == "param":
         given = (params.get("params") or {}).get(v)
@@ -125,6 +133,9 @@ def _eval(expr: Mapping[str, Any], case: Mapping[str, Any], params: Mapping[str,
         return _number(row, f"The table {v} row", path)
     if op == "round":
         return float(js_round(_eval(v, case, params, here)))
+    if op == "decay":
+        a, m, n = (_eval(v[k], case, params, f"{here}.{k}") for k in _DECAY)
+        return a * (1 - m) ** n
     xs = [_eval(x, case, params, f"{here}[{i}]") for i, x in enumerate(v)]
     if op == "mul":
         out = 1.0
@@ -135,4 +146,8 @@ def _eval(expr: Mapping[str, Any], case: Mapping[str, Any], params: Mapping[str,
         return sum(xs)
     if op == "sub":
         return xs[0] - xs[1]
+    if op == "div":
+        if xs[1] == 0:
+            raise AmountError(path, f"Division by zero at {path}")
+        return xs[0] / xs[1]
     return min(xs) if op == "min" else max(xs)

@@ -344,7 +344,28 @@ writer. A task is about an hour of code; it must not take three hours of checks.
 - **The lead** runs no check twice: not the writer's checks before the merge, not the whole suite per batch (see
   step 4). At most three check runs (writers and lead together) at a time; a writer whose check waits behind them is
   fine.
-- **No second stack.** Browser smokes run at phase gates on the main stack; no writer starts its own Compose project.
+- **No second stack.** Browser smokes run on the main stack; no writer starts its own Compose project.
+- **Smokes never block writers (26 Nov, the user: smokes took three quarters of the day).** A phase whose tasks are
+  merged and whose own tests pass counts as done for the tasks after it: the next writers start at once, even when
+  the spec lists that phase's gate as a dependency. A smoke failure becomes a fix task like any other, never a reason
+  to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand: the second failure
+  goes to a subagent.
+
+### Testing model (26 Nov, the user; overrides the gate tasks' own steps)
+
+Code, test, iterate, merge. Phases that passed are not tested again.
+- **A task** runs only its own new tests, plus the test file of a module it changed when that file exists. Nothing
+  else: no tests of older phases, no "related" suites.
+- **A merge batch** (the lead) runs only the merged tasks' own test files, once, plus lint on the changed files. When
+  two tasks touched the same shared file, add that file's own test file. No other old tests.
+- **One check every two phases** replaces the per-phase gates (3.22, 4.13, 5.9, 6.21, 7.9, 8.23, …): after both
+  phases' tasks are merged, the api `parallel-suite.sh` once and the demo smokes of those two phases, run by
+  subagents in the background (one owns the main stack for the smokes). Failures are split into fix tasks and fixed
+  by writers in parallel; only the failing tests are re-run, then the gate boxes of both phases are ticked. The gate
+  tasks' reviews (`review-phase-N.md`) are written by one reviewer subagent for the pair. Pairs: 3+4, 5+6, 7+8, 9+10,
+  11+12, 13 alone. The serial `full-suite.sh` runs once, at the end of the plan.
+- **Shared core** (`di/core`, migrations, conftest, `actions/pipeline.py`): when a merge changes one of these, the
+  lead adds the `parallel-suite.sh` once for that batch, in the background, and keeps dispatching.
 - **Idle servers stay quiet.** The main stack runs with `DEV_POLLING=0` during a run (the reloaders' file polling cost
   about two cores); `lead-verify.sh` restarts the containers anyway.
 - **Stop means stop.** After stopping a backgrounded verify, also kill its script and `docker rm -f` its
@@ -1018,7 +1039,7 @@ each story went.
 - [x] P9-10.14 Current-generation resale guardrail in plain words
 - [x] P9-10.15 Cross-region transfer alert and suggestion
 - [x] P9-10.16 Telecom follow-through battery lanes and recycling
-- [ ] P9-10.17 Telecom close and learn with worked questions
+- [x] P9-10.17 Telecom close and learn with worked questions
 - [ ] P9-10.18 Telecom demo smoke
 - [ ] P9-10.19 Phase 10 gate
 - [x] P9-11.1 Medical rental pack data file
@@ -1037,10 +1058,10 @@ each story went.
 - [x] P9-11.14 Retire under 5 years guardrail in plain words
 - [x] P9-11.15 Service planning around regional demand
 - [x] P9-11.16 Turnaround alert and medical worked questions
-- [ ] P9-11.17 Medical follow-through hospital evidence and close
+- [x] P9-11.17 Medical follow-through hospital evidence and close
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
-- [ ] P9-12.1 Extend the standard valuer with conditions and decay
+- [x] P9-12.1 Extend the standard valuer with conditions and decay
 - [ ] P9-12.2 ITAD pack with manifest reconciliation
 - [ ] P9-12.3 ITAD sanitisation per serial and residual decay
 - [ ] P9-12.4 Rental fleet pack with re-rent rebuild or sell

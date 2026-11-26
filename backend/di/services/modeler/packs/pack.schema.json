@@ -229,7 +229,7 @@
   },
   "Diversion": {
    "additionalProperties": false,
-   "description": "One customer step or shortcut, written by `apply_overlay` (P9-1.3); never present in a pack file.",
+   "description": "One customer step, shortcut or approval, written by `apply_overlay` (P9-1.3); never present in a pack file.",
    "properties": {
     "op_id": {
      "title": "Op Id",
@@ -259,7 +259,8 @@
     "kind": {
      "enum": [
       "step",
-      "shortcut"
+      "shortcut",
+      "approval"
      ],
      "title": "Kind",
      "type": "string"
@@ -292,6 +293,30 @@
      "default": "",
      "title": "Owner Role",
      "type": "string"
+    },
+    "route": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Route"
+    },
+    "guardrail_id": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Guardrail Id"
     }
    },
    "required": [

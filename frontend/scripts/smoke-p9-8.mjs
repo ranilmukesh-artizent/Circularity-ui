@@ -54,8 +54,8 @@ const ORG = 'Customer A';
 const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}`;
 const JOINER = 'joiner.one@example.com';
 const JOINER_GROUP = 'circ-planners-customer-b';
-const UI = 30000;
-const FIRST = 20000; // a first page load after sign-in
+const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
+const FIRST = 180000; // a first page load after sign-in
 const LOG = /repair log/i;
 mkdirSync(shots, { recursive: true });
 
@@ -68,13 +68,16 @@ async function as(acct) {
   if (pages[acct]) return pages[acct];
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 }, acceptDownloads: true });
   const p = await ctx.newPage();
+  p.on('crash', () => say('CRASH', acct, p.url()));
   p.setDefaultTimeout(UI);
   p.on('pageerror', (e) => errors.push(`${acct} @ ${p.url().replace(/^.*#/, '#')}: ${e.message}`));
-  await p.goto(base + '/#/signin');
+  await p.goto(base + '/#/signin', { waitUntil: 'domcontentloaded', timeout: 180000 });
   await p.fill('#si-id', acct);
   await p.fill('#si-pw', 'demo');
   await p.click('button[type=submit]');
   await p.waitForURL((u) => !/signin/.test(u.hash), { timeout: FIRST });
+  await p.locator('#view').first().waitFor({ timeout: FIRST });
+  await p.waitForTimeout(2500); // the shell's own redirect to Home lands a moment after sign-in and would undo a goto made now
   pages[acct] = p;
   return p;
 }
@@ -109,7 +112,12 @@ const until = async (fn, msg, ms, p) => {
 const waitText = (p, rx, msg, ms = UI) => until(async () => rx.test(await text(p)), msg || `"${rx}" never showed`, ms, p);
 /** Open a route and drop the read cache with a reload (a hash change alone keeps what the page read earlier). */
 async function open(p, url, ready = '#view') {
-  await p.goto(url);
+  const want = url.replace(/^.*#/, '#');
+  for (let i = 0; i < 4; i++) {
+    await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
+    await p.waitForTimeout(800);
+    if (p.url().includes(want)) break; // else the shell sent us Home: try again
+  }
   await p.reload();
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
@@ -120,9 +128,9 @@ async function step(name, fn) {
     const detail = await fn();
     say('PASS', name, detail ? '· ' + detail : '', `(${Math.round((Date.now() - t0) / 1000)} s)`);
   } catch (e) {
-    say('FAIL', name, '·', String(e?.message || e).split('\n')[0]);
+    say('FAIL', name, '·', String(e?.message || e).split('\n').slice(0, 3).join(' | '), (e?.stack || '').match(/smoke-p9-8\.mjs:\d+/)?.[0] ?? '');
     for (const [a, p] of Object.entries(pages)) await p.screenshot({ path: path.join(shots, `fail-${a}.png`), fullPage: true }).catch(() => {});
-    await browser.close().catch(() => {});
+    await Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
     process.exit(1);
   }
 }
@@ -251,12 +259,13 @@ await step('2 Adapter mapping: Needs an adapter, spec import, test connection, o
   await dlg.locator('#spFamily').fill('Depot');
   await dlg.locator('#spType').fill('repairlog'); // the type the composition looks for (RegistryPicker hook, P9-8.22)
   await dlg.locator('#spBase').fill('http://source-sim:8100/repairlog/api');
+  const before = await dlg.locator('label.frpk', { hasText: 'Depot' }).count(); // drafts of an earlier run stay: wait for one more
   await dlg.getByRole('button', { name: 'Save draft' }).click();
   await waitText(dev, /resource\(s\) found/, 'the import did not list the resources it found');
-  const entry = dlg.locator('label.frpk', { hasText: 'Depot' }).first();
+  const entry = dlg.locator('label.frpk', { hasText: 'Depot' }).last();
   await until(
     async () => {
-      if (await entry.count()) return true;
+      if ((await dlg.locator('label.frpk', { hasText: 'Depot' }).count()) > before) return true;
       await kind('Catalogue').click(); // refresh the entry list
       await kind('From an API spec').click();
       return null;
@@ -453,6 +462,16 @@ await step('7 Shadow and replay, then publish to Customer A at 20 %', async () =
     await fork.click();
     await waitText(p, /Tool fleet returns · Customer A|· Customer A/, 'Customer A did not get its own flow');
   }
+  if (!(await p.getByRole('button', { name: 'Submit for approval' }).count())) {
+    // a fork is published v1, not a draft: one rule makes the draft to submit (as smoke-modeler.mjs does)
+    await p.getByRole('button', { name: 'Add rule' }).click();
+    const paths = await p.getByLabel('Path', { exact: true }).locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+    await p.getByLabel('Path', { exact: true }).selectOption(paths[paths.length - 1]);
+    await p.getByLabel('Action', { exact: true }).selectOption('exclude');
+    await p.locator('.mdl-inspector fieldset input[type=checkbox], fieldset input[type=checkbox]').first().check();
+    await p.waitForTimeout(3000); // the 2 s autosave
+    await p.getByRole('button', { name: 'Submit for approval' }).first().waitFor({ timeout: UI });
+  }
   await p.getByRole('button', { name: 'Submit for approval' }).first().click();
   await waitText(p, /In review · v\d+/, 'the flow was not submitted');
   const ap = await as('approver');
@@ -504,10 +523,11 @@ await step('8 Identity: not found, the joiner added in the directory, synced, Pl
 await step('9 The joiner signs in with the organisation', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
   const p = await ctx.newPage();
+  p.on('crash', () => say('CRASH', 'joiner', p.url()));
   p.setDefaultTimeout(UI);
   p.on('pageerror', (e) => errors.push(`joiner @ ${p.url().replace(/^.*#/, '#')}: ${e.message}`));
   pages.joiner = p;
-  await p.goto(base + '/#/signin');
+  await p.goto(base + '/#/signin', { waitUntil: 'domcontentloaded', timeout: 180000 });
   await p.getByRole('button', { name: 'Sign in with your organisation' }).click();
   await p.waitForURL(/\/directory\/authorize/, { timeout: FIRST });
   await p.getByRole('button', { name: JOINER }).click(); // the mock's own link: authorize with login_hint

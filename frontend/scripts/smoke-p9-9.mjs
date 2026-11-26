@@ -50,8 +50,8 @@ const SOURCES = ['uc_lease', 'uc_dms', 'uc_title', 'uc_insp', 'uc_recall', 'uc_a
 const vin = (n) => 'SYNUC' + String(n).padStart(12, '0');
 const CARS = [1, 2, 3, 7, 90]; // the demo's cars: UC-S1 (retail South), UC-S2 (recall), UC-S3 (lien), UC-S7 (recon 2,800), 090 (inspection scheduled)
 const MODELER = `${base}/#/modeler?template=used_cars&org=${encodeURIComponent(ORG)}`;
-const UI = 30000;
-const FIRST = 20000; // a first page load after sign-in
+const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
+const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
 const MARK = {
   '9.13': 'source-sim/sim/vendors/body_shop_legacy/__init__.py',
@@ -71,13 +71,16 @@ async function as(acct) {
   if (pages[acct]) return pages[acct];
   const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
   const p = await ctx.newPage();
+  p.on('crash', () => say('CRASH', acct, p.url()));
   p.setDefaultTimeout(UI);
   p.on('pageerror', (e) => errors.push(`${acct} @ ${p.url().replace(/^.*#/, '#')}: ${e.message}`));
-  await p.goto(base + '/#/signin');
+  await p.goto(base + '/#/signin', { waitUntil: 'domcontentloaded', timeout: 180000 });
   await p.fill('#si-id', acct);
   await p.fill('#si-pw', 'demo');
   await p.click('button[type=submit]');
   await p.waitForURL((u) => !/signin/.test(u.hash), { timeout: FIRST });
+  await p.locator('#view').first().waitFor({ timeout: FIRST });
+  await p.waitForTimeout(2500); // the shell's own redirect to Home lands a moment after sign-in and would undo a goto made now
   pages[acct] = p;
   return p;
 }
@@ -114,7 +117,12 @@ const until = async (fn, msg, ms, p) => {
 const waitText = (p, rx, msg, ms = UI) => until(async () => rx.test(await text(p)), msg || `"${rx}" never showed`, ms, p);
 /** Open a route and drop the read cache with a reload (a hash change alone keeps what the page read earlier). */
 async function open(p, url, ready = '#view') {
-  await p.goto(url);
+  const want = url.replace(/^.*#/, '#');
+  for (let i = 0; i < 4; i++) {
+    await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
+    await p.waitForTimeout(800);
+    if (p.url().includes(want)) break; // else the shell sent us Home: try again
+  }
   await p.reload();
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
@@ -125,9 +133,9 @@ async function step(name, fn) {
     const detail = await fn();
     say('PASS', name, detail ? '- ' + detail : '', `(${Math.round((Date.now() - t0) / 1000)} s)`);
   } catch (e) {
-    say('FAIL', name, '-', String(e?.message || e).split('\n')[0]);
+    say('FAIL', name, '-', String(e?.message || e).split('\n').slice(0, 3).join(' | '), (e?.stack || '').match(/smoke-p9-9\.mjs:\d+/)?.[0] ?? '');
     for (const [a, p] of Object.entries(pages)) await p.screenshot({ path: path.join(shots, `fail-${a}.png`), fullPage: true }).catch(() => {});
-    await browser.close().catch(() => {});
+    await Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
     process.exit(1);
   }
 }

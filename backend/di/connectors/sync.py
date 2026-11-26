@@ -110,10 +110,15 @@ def reset_sources(conn: Connection) -> None:
     manual.remove(Session(bind=conn))  # Manual Import data (plan 6 B3); the imports list is reset with the workspace
     connection.reset_demo(conn, ids)  # the demo sources' connections back on source-sim (plan 6 A2)
     conn.execute(text("DELETE FROM field_mapping"))  # edited mappings (plan 6 A4): every source maps as its code does
+    # the people's choices for suggested mappings (P9-8.4): none at the start; a test source made again with a removed one's
+    # id (erp_2) showed the last run's choices instead of proposals (smoke-p9-8 step 3, 26 Nov 2026)
+    conn.execute(text("DELETE FROM mapping_decision"))
     if made:
         for t in SOURCE_TABLES:
             conn.execute(text(f"DELETE FROM {t} WHERE source_id = ANY(:i)"), {"i": made})  # noqa: S608 - fixed names
         conn.execute(text("DELETE FROM job WHERE kind = 'sync.source' AND payload->>'source_id' = ANY(:i)"), {"i": made})
+        # a new source may get a removed one's id: it must not inherit its owner approval
+        conn.execute(text("DELETE FROM connection_approval WHERE source_id = ANY(:i)"), {"i": made})
         conn.execute(text("DELETE FROM source_system WHERE id = ANY(:i)"), {"i": made})
     for s in ref:
         start = "live" if provisioned(s["id"]) else "unavailable"

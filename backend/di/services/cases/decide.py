@@ -80,6 +80,7 @@ from di.services.modeler.valuers import (
     fleet_evidence,
     kind_of,
     medical_rental,
+    medical_steps,
     service_desk,
     tool_approval,
     tool_fleet,
@@ -382,6 +383,9 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
         for r in routes:
             r["steps"] = used_car_steps.follow_steps(r["id"], pack, facts)  # the channel's follow-through (P9-9.17)
         return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
+    if kind == "medical_rental":
+        for r in routes:
+            r["steps"] = medical_steps.follow_steps(r["id"], pack, facts)  # the route's follow-through (P9-11.17)
     approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
     holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)
     return _Valued(routes, best["k"] if best else None, approvals=[dict(h) | {"passed": False} for h in holds], facts=facts)

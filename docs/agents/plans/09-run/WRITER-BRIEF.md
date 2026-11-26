@@ -31,9 +31,9 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
   finish.
 - **One check run at a time.** Never start a second `wt-check.sh` while one runs, and never leave one running in the
   background when you finish: the Docker host is shared by four writers.
-- **Test only what you touched (26 Nov, the user: whole-repo runs are wasted time).** The limit is file reads over the
-  Windows bind mount, not CPU, so every extra check slows every sibling. While you iterate, run `WT_LINT=0` with only
-  your spec's tests and the tests of the modules you changed (grep their importers); never a whole suite. Run the full
+- **Test only what you touched (26 Nov, the user: whole-repo runs are wasted time; see the plan's "Testing model").**
+  Phases that passed are not tested again. Run only your task's new tests, plus the test file of a module you changed
+  when that file exists; no tests of older phases, no importer sweeps, never a whole suite. Run the full
   `wt-check.sh` (lint, and web only if you changed `frontend/`, else `WT_WEB=0`) once, right before your commit.
   Iterate on one failing test with `-k <name>`. After two failed full runs, commit anyway with the failing test named
   in the body and report: the lead fixes it after the merge. A task is about an hour of code, not three of checks.

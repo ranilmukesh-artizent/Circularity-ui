@@ -162,6 +162,18 @@ def test_registry_save_entry_makes_a_draft_and_refuses_the_catalogue():
     assert msg == "Catalogue connectors are maintained by Circularity."
 
 
+def test_a_draft_without_an_org_unit_can_start_a_connection_at_any_org():
+    """The smoke P9-8.22 found it: an imported spec's draft has no org unit, the picker lists it, and creating the
+    connection at the chosen org said "No connector ... in the registry"."""
+    entry = {"id": "nolocal-api", "kind": "from_spec", "system_type": "erp", "vendor_family": "Acme", "auth_methods": ["basic"]}
+    ok(call("registry.saveEntry", {"entry": entry}, "developer"))
+    ids = [e["id"] for e in ok(call("registry.list", {"kind": "from_spec", "org_unit_id": "Customer A"}, "developer"))["entries"]]
+    assert "nolocal-api" in ids
+    body = {"registry_id": "nolocal-api", "version": 1, "name": "No local", "org_unit_id": "Customer A", "system_owner": "approver",
+            "test_base_url": "http://source-sim:8100/x"}  # fmt: skip
+    ok(call("connection.create", body, "developer"))
+
+
 def test_registry_release_maker_cannot_release():
     entry = {"id": "acme-api", "kind": "from_spec", "system_type": "erp", "vendor_family": "Acme"}
     ok(call("registry.saveEntry", {"entry": entry}, "developer"))
@@ -392,3 +404,31 @@ def test_secret_never_returned():
             text("SELECT ciphertext, last4 FROM source_secret WHERE source_id = :i ORDER BY version"), {"i": sid}
         ).all()
     assert len(stored) == 2 and all(SECRET.encode() not in bytes(r[0]) and NEW_SECRET.encode() not in bytes(r[0]) for r in stored)
+
+
+def test_the_demo_reset_removes_the_approvals_of_the_sources_it_removes():
+    """Found by the smoke P9-8.22: a reset removed a connection's source but kept its approval, so the next source that
+    got the same id read "Approved by engineer" before anyone had asked."""
+    from di.connectors import sync
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner) VALUES ('zz_reset_1', 'V', 'erp', 'live', 0, '{}', 'o')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO connection_approval (source_id, environment, access, requested_by, owner, status, decided_by) VALUES ('zz_reset_1', 'production', 'read', 'developer', 'engineer', 'approved', 'engineer')"
+            )
+        )
+    try:
+        with engine.begin() as conn:
+            sync.reset_sources(conn)
+        with engine.begin() as conn:
+            assert conn.execute(text("SELECT count(*) FROM source_system WHERE id = 'zz_reset_1'")).scalar() == 0
+            assert conn.execute(text("SELECT count(*) FROM connection_approval WHERE source_id = 'zz_reset_1'")).scalar() == 0
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM connection_approval WHERE source_id = 'zz_reset_1'"))
+            conn.execute(text("DELETE FROM source_system WHERE id = 'zz_reset_1'"))

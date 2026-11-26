@@ -43,6 +43,11 @@ SYSTEM_OF = {
     "salvage_sale": "uc_auction",
     "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
     "lessee_charge": "uc_lease",
+    "dispatch": "mr_rental",  # P9-11.17: the follow-through of a medical rental route (the pack's route instructions)
+    "service_order": "mr_biomed",
+    "biomed_refurb": "mr_biomed",
+    "data_sanitisation": "mr_disposal",
+    "disposal_collection": "mr_disposal",
     "enhanced_decon": "mr_decon",  # P9-11.12: an enhanced cycle for a device from an isolation ward
     "list": "dvmkt",  # P9-6.12: a received device is listed on the device market (di.services.device.settle)
 }
