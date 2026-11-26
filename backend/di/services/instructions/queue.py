@@ -35,7 +35,6 @@ SYSTEM_OF = {
     "move": "wms",
     "finance": "erp",
     "payout": "dvlab",  # P9-6.8: the payout of a received device, outside an approval's plan (di.services.device.payout.send)
-    "list": "dvmkt",  # P9-6.12: a received device is listed on the device market (di.services.device.settle)
     "recon_order": "uc_dms",  # P9-9.17: the used-car channels (the pack's route instructions)
     "lot_transfer": "uc_dms",
     "listing": "uc_dms",
@@ -45,6 +44,7 @@ SYSTEM_OF = {
     "residual": "erp",  # P9-9.20: the close of a used-car lease return, outside an approval's plan
     "lessee_charge": "uc_lease",
     "enhanced_decon": "mr_decon",  # P9-11.12: an enhanced cycle for a device from an isolation ward
+    "list": "dvmkt",  # P9-6.12: a received device is listed on the device market (di.services.device.settle)
 }
 # The kinds sent on their own, outside an approval's plan: no plan step to acknowledge, and the case's `exec` is not theirs
 OFF_PLAN = frozenset({"payout", "residual", "lessee_charge"})

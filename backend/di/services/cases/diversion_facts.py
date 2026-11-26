@@ -4,6 +4,8 @@
 
     asset.ward_type                      the ward type the device came back from (the rental system's `wardType`, e.g. isolation)
     asset.hospital                       the hospital it came back from
+    asset.age_years                      the years in service the asset system gives (a customer approval's "younger than 5
+                                         years", P9-11.14)
     demand.same_hospital_within_24h      the hospital it came back from has asked again within 24 hours: two of its requests (the
                                          case's `rentalRequests`) are at most 24 hours apart
 
@@ -38,6 +40,6 @@ def facts(s: Session, case: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         return {}
     hospital = asset.get("hospital")
     return {
-        "asset": {"ward_type": asset.get("ward_type"), "hospital": hospital},
+        "asset": {"ward_type": asset.get("ward_type"), "hospital": hospital, "age_years": asset.get("age_years")},
         "demand": {"same_hospital_within_24h": same_hospital_again(hospital, list(case.get("rentalRequests") or []))},
     }

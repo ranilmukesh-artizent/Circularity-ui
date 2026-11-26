@@ -101,9 +101,6 @@ EX_STEP: dict[str, dict[str, Any]] = {
     # plan 9 P9-6.8: the payout of a received device; sent on its own (di.services.device.payout), never a step of a plan
     "payout": _s("Payout adjusted", "Trade-in platform · payout", ("TI", "Trade-in"), "Customer care", None, "payout.adjusted", 0,
                  "payout adjusted on the trade-in", "Customer care owns the payout the customer is paid"),
-    # plan 9 P9-6.12: a received device on a listing channel is listed on the device market (di.services.device.settle)
-    "list": _s("List on the channel", "Marketplace · listing", ("LST", "Listing"), "Channel ops", 8, "listing.posted", 21,
-               "listing live on the channel", "Channel ops owns what is offered for sale and at what price"),
     # plan 9 P9-9.17: the used-car channels' follow-through (the pack's route instructions, UC-18 and UC-25); written to the
     # dealer system (`uc_dms`) and the auction platform (`uc_auction`), or a person's checklist with no system write
     "infotainment_reset": _s("Reset infotainment and remove paired devices", "Lot · checklist", ("CHK", "Checklist"),
@@ -127,6 +124,9 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "salvage_sale": _s("Salvage sale", "Auction platform · salvage sale", ("SS", "Salvage sale"), "Remarketing manager", 8,
                        "sale.recorded", 0, "sold to a salvage buyer that reports to the national title database",
                        "The remarketing manager sells to a buyer that reports to the national title database"),
+    # plan 9 P9-6.12: a received device on a listing channel is listed on the device market (di.services.device.settle)
+    "list": _s("List on the channel", "Marketplace · listing", ("LST", "Listing"), "Channel ops", 8, "listing.posted", 21,
+               "listing live on the channel", "Channel ops owns what is offered for sale and at what price"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is

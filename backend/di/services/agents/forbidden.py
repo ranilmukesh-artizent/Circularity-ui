@@ -42,6 +42,7 @@ FORBIDDEN_ACTIONS = (
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
     "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "device.ageingSuggestions",  # plan 9 P9-6.13: a person reads the ageing suggestions, accepts one into their draft (R21)
+    "telecom.crossRegion",  # P9-10.15: a person reads the cross-region transfers and accepts the rule into their draft (R21)
     "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
 )  # fmt: skip
 

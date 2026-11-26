@@ -963,7 +963,6 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "reeval": (16, "Planner"),
     "holdout": (16, "Finance"),
     "payout": (None, "Customer care"),
-    "list": (8, "Channel ops"),  # plan 9 P9-6.12: a received device is listed on its channel
     "infotainment_reset": (None, "Inspection lead"),  # plan 9 P9-9.17: the used-car channels' follow-through
     "recon_order": (8, "Lot manager"),
     "lot_transfer": (8, "Lot manager"),
@@ -971,6 +970,7 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "consignment": (8, "Remarketing manager"),
     "dealer_trade": (8, "Remarketing manager"),
     "salvage_sale": (8, "Remarketing manager"),
+    "list": (8, "Channel ops"),  # plan 9 P9-6.12: a received device is listed on its channel
     "takeback": (48, "Fleet desk"),  # plan 9 P9-4.9: a service ticket's old tool comes back, then the credit goes
     "credit": (16, "Finance"),
     "propsend": (8, "Fleet desk"),  # plan 9 P9-5.5: an approved contract refresh is sent, its lines drafted, its units held

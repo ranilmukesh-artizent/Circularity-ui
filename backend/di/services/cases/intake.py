@@ -220,6 +220,7 @@ class OneCase:
 
 
 CAR_TEMPLATE = "used_cars"
+APPROVAL_PACKS = (CAR_TEMPLATE, "telecom_network", "medical_rental")  # the packs whose decisions can hold for an approval item
 RENTAL_TEMPLATE = "medical_rental"
 ONE_CASE = {
     CAR_TEMPLATE: OneCase(
@@ -623,9 +624,9 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
             )  # the payout once graded: within the limit adjusted, else for Customer care (P9-6.8)
     # a recommendation waits for approval, as after a re-evaluation (decision.reevaluate); none: no decision yet
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
-    if pack.key == CAR_TEMPLATE:  # a decision over the pack's recon limit waits for the manager, as an item in My work (P9-9.11)
-        approval_hold.sync(s, c, pack)
-        if battery_wait.holding(c):  # an EV waits for its battery assessment: one request to the inspection app (P9-9.14)
+    if pack.key in APPROVAL_PACKS:  # a decision over a limit waits for its manager, as an item in My work (P9-9.11)
+        approval_hold.sync(s, c, pack)  # and so does a telecom resale the customer's guardrail holds (P9-10.14)
+        if pack.key == CAR_TEMPLATE and battery_wait.holding(c):  # an EV waits for its battery assessment (P9-9.14)
             battery_wait.request(s, c)
 
 

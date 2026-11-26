@@ -42,7 +42,7 @@ from di.services.cases import store
 from di.services.instructions import fees, outbound, queue, writers
 
 log = logging.getLogger("di.services.instructions")
-OWN_KINDS = (*sorted(queue.OFF_PLAN), fees.KIND)  # no plan step: nothing to acknowledge, done when sent
+OWN_KINDS = queue.OFF_PLAN | {fees.KIND}  # no plan step: nothing to acknowledge, done when sent (P9-6.8, P9-9.20, P9-3.18)
 
 
 def send(iid: int, resend: bool = False) -> str:
@@ -184,9 +184,7 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
-        if (
-            ins["kind"] in OWN_KINDS
-        ):  # no plan step to acknowledge: the simulated payout or fee is done when due (P9-6.8, P9-3.18)
+        if ins["kind"] in OWN_KINDS:  # no plan step to acknowledge: the simulated write is done when due
             with SessionLocal() as s:
                 _update(s, ins["id"], status="acknowledged")
                 s.commit()

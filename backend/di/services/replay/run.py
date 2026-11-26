@@ -39,13 +39,14 @@ from pydantic import BaseModel
 
 from di.repositories.replay import Batch
 from di.services.actions.registry import ActionError
+from di.services.cases import car_facts
 from di.services.cases.decide import Decision, decide_case
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.modeler.compile import FlowVersion
 from di.services.modeler.gates import catalogue
 from di.services.modeler.pack import Pack
-from di.services.modeler.valuers import tool_fleet
+from di.services.modeler.valuers import kind_of, tool_fleet
 from di.services.policy_standing import decide_threshold, pack_value_limit
 from di.services.replay import history, measures
 
@@ -128,6 +129,8 @@ def case_input(item: Mapping[str, Any], facts: Mapping[str, Any], pack: Pack) ->
         case = intake.tool_fleet_case(iid, {"cls": item.get("cls"), **raw})
     elif kind == "device":
         case = intake.device_lot(iid, {**DEVICE_DEFAULTS, **raw})
+    elif kind_of(pack) == "used_cars":  # the gates read evidence built from the facts (P9-9.15)
+        case = car_facts.replay_case(iid, item.get("cls"), raw)
     elif kind == "industrial":
         raise ActionError("validation_error", "A replay does not value the industrial pack: its numbers come from the engine.")
     else:
@@ -150,7 +153,20 @@ class Signals:
 def confidence_of(d: Decision) -> float | None:
     from di.services.agents.stages.valuation import confidence  # lazy: the stage modules import the pipeline
 
-    return confidence({}, {"routes": d.routes})
+    return confidence({}, {"routes": _by_channel(d.routes)})
+
+
+def _by_channel(routes: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """A route per channel: of a channel valued per lot (`retail:LOT-C`, `retail:LOT-N`) the best one, so the confidence compares
+    channels, not two lots of the same channel (their bands overlap by design). Routes without a colon pass as they are."""
+    best: dict[str | None, Mapping[str, Any]] = {}
+    for r in routes:
+        key = channel(r["id"]) if ":" in str(r["id"]) else r["id"]
+        if key not in best or (
+            not r.get("excluded") and (best[key].get("excluded") or float(r["net"]) > float(best[key]["net"]))
+        ):
+            best[key] = r
+    return list(best.values())
 
 
 def signals(d: Decision, pack: Pack) -> Signals:
@@ -380,20 +396,27 @@ class _Demand:
                     break
 
 
+def channel(route: str | None) -> str | None:
+    """A route's channel: the id before a colon (a used car's `retail:LOT-C` is the channel `retail`); history names channels."""
+    return route.split(":", 1)[0] if route else route
+
+
 def _route(d: Decision, route: str | None) -> Mapping[str, Any] | None:
-    """The decision's valued route of a pack route id. A route that is one per demand (the medical pack's `rerent:<request>`)
-    is found by its prefix: the best request that is eligible, else the first."""
+    """The decision's valued route of a pack route id. A route valued once per lot or per demand (a used car's
+    `retail:LOT-C`, the medical pack's `rerent:<request>`) is found by its prefix: the best eligible one by net, else the
+    first."""
     if not route:
         return None
-    exact = next((r for r in d.routes if r["id"] == route), None)
-    if exact is not None:
+    if (exact := next((r for r in d.routes if r["id"] == route), None)) is not None:
         return exact
-    per_demand = [r for r in d.routes if str(r["id"]).startswith(f"{route}:")]
-    return next((r for r in per_demand if not r.get("excluded")), per_demand[0] if per_demand else None)
+    own = [r for r in d.routes if str(r["id"]).startswith(f"{route}:")]
+    ok = [r for r in own if not r.get("excluded") and r.get("ok", True)]
+    return max(ok, key=lambda r: float(r["net"])) if ok else (own[0] if own else None)
 
 
 def _base(route: str | None, known: Collection[str]) -> str | None:
-    """A chosen route as its pack route: `rerent:REQ-1` is `rerent`; an id the pack lists is kept as it is."""
+    """A chosen route as its pack route: `rerent:REQ-1` is `rerent`, `retail:LOT-C` is `retail`; an id the pack lists is
+    kept as it is."""
     return route.split(":", 1)[0] if route and route not in known and ":" in route else route
 
 

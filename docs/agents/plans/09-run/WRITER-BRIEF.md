@@ -31,10 +31,19 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
   finish.
 - **One check run at a time.** Never start a second `wt-check.sh` while one runs, and never leave one running in the
   background when you finish: the Docker host is shared by four writers.
+- **Test only what you touched (26 Nov, the user: whole-repo runs are wasted time).** The limit is file reads over the
+  Windows bind mount, not CPU, so every extra check slows every sibling. While you iterate, run `WT_LINT=0` with only
+  your spec's tests and the tests of the modules you changed (grep their importers); never a whole suite. Run the full
+  `wt-check.sh` (lint, and web only if you changed `frontend/`, else `WT_WEB=0`) once, right before your commit.
+  Iterate on one failing test with `-k <name>`. After two failed full runs, commit anyway with the failing test named
+  in the body and report: the lead fixes it after the merge. A task is about an hour of code, not three of checks.
+- **No smokes, no second stacks.** Browser smokes run once at the phase gate, by the lead, on the main stack.
 
 - **Tests** run only through `bash scripts/dev/wt-check.sh <k> <api test files>` from your worktree root, in Git
   Bash. Use `WT_LINT=0` for the red-first run.
-  - It also runs tsc, vitest and eslint when `frontend/` changed.
+  - It lints only your changed files (mypy cached) and, when `frontend/` changed, runs tsc, `vitest related` and eslint on them.
+  - `WT_AUTO=1 bash scripts/dev/wt-check.sh <k>` runs the tests your change impacts (`impacted-tests.sh`); on ALL (core,
+    migrations or conftest changed) it refuses: name the files.
   - It refuses test files that call the shared source-sim (`/_sim/`, faults); the lead runs those after the merge.
     Say which in your report.
   - Never run `api-test.sh`, `full-suite.sh`, `reset.sh`, `restart.sh`, `selftest.sh`, a smoke, or

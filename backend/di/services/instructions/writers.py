@@ -354,10 +354,9 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
     return Sent([call], doc, detail)
 
 
-def post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict]:
-    """Post one journal entry to SAP S/4HANA (SOAP, one message id per instruction key, so a resend is a duplicate): returns the
-    accounting document and its detail (`AccountingDocument`, `CompanyCode`, `FiscalYear`, `duplicate`). The `finance` step and
-    the non-return fee (P9-3.18) both write through it. A refusal by the system is `Refused`."""
+def post_journal(s: Session, ins: dict, ref: str, header: str, items: list[str]) -> tuple[str, dict[str, Any]]:
+    """One S/4HANA journal entry (SOAP Journal Entry - Post) with the items, once per instruction key: the document number and
+    what later steps need (`detail`: AccountingDocument, CompanyCode, FiscalYear, duplicate). A refusal is `Refused`."""
     today = clock.now().date().isoformat()
     msg = uuid.uuid5(uuid.NAMESPACE_URL, ins["idem_key"]).hex.upper()  # the same message id on every resend
     xml = (
@@ -427,37 +426,6 @@ def payout(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
     finally:
         cl.close()
     return Sent([{"call": "PATCH tradeins/{tradeInId}", "body": body}], row.trade_in_id, {"tradeInId": row.trade_in_id, **body})
-
-
-def list_device(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
-    """Device market: POST /listings, the received device on its channel at the forecast P50 (P9-6.12). The listing id is
-    made from the case and the channel (`<case id>:<channel>`), so a repeat is the market's own 409: the first listing is
-    read and no second is made. The body carries the instruction key (`issuedKey`), which the market's
-    `devicemarket.listing.created` event returns."""
-    from di.services.device import settle  # lazy: the device services are only needed by this write
-
-    body = settle.listing_body(c)
-    if body is None:
-        raise NotApplicable("nothing to list: not a received device on a listing channel")
-    body = body | {"issuedKey": ins["idem_key"]}
-    lid, duplicate = body["listingId"], False
-    cl = client(s, "dvmkt")
-    try:
-        try:
-            cl.request("POST", "/listings", json=body)
-        except SourceError as e:
-            if e.status != 409:
-                raise
-            cl.get_json(f"/listings/{lid}")  # listed before: the first listing stands
-            duplicate = True
-    except SourceError as e:
-        raise _refused(e) from e
-    finally:
-        cl.close()
-    return Sent(
-        [{"call": "POST listings", "body": body}], lid,
-        {"listingId": lid, "channel": body["channel"], "price": body["price"], "duplicate": duplicate},
-    )  # fmt: skip
 
 
 # ---------------------------------------------------------------- used-car channels (P9-9.17)
@@ -679,6 +647,37 @@ def battery_assessment(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent
         cl.close()
     ref = r.json().get("assessmentId")
     return Sent([{"call": "POST battery-assessments", "body": body}], ref, {"assessmentId": ref, "vin": vin})
+
+
+def list_device(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """Device market: POST /listings, the received device on its channel at the forecast P50 (P9-6.12). The listing id is
+    made from the case and the channel (`<case id>:<channel>`), so a repeat is the market's own 409: the first listing is
+    read and no second is made. The body carries the instruction key (`issuedKey`), which the market's
+    `devicemarket.listing.created` event returns."""
+    from di.services.device import settle  # lazy: the device services are only needed by this write
+
+    body = settle.listing_body(c)
+    if body is None:
+        raise NotApplicable("nothing to list: not a received device on a listing channel")
+    body = body | {"issuedKey": ins["idem_key"]}
+    lid, duplicate = body["listingId"], False
+    cl = client(s, "dvmkt")
+    try:
+        try:
+            cl.request("POST", "/listings", json=body)
+        except SourceError as e:
+            if e.status != 409:
+                raise
+            cl.get_json(f"/listings/{lid}")  # listed before: the first listing stands
+            duplicate = True
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    return Sent(
+        [{"call": "POST listings", "body": body}], lid,
+        {"listingId": lid, "channel": body["channel"], "price": body["price"], "duplicate": duplicate},
+    )  # fmt: skip
 
 
 WRITERS = {

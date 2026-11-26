@@ -33,7 +33,7 @@ from di.services.modeler.pack import PACKS_DIR, Pack, RouteClass
 from di.services.modeler.stages import GuardType, StageKey
 
 GateKind = Literal["block", "require_step", "require_approval", "close_block", "disclose"]
-Op = Literal["eq", "ne", "in", "gte", "lte", "exists"]
+Op = Literal["eq", "ne", "in", "gte", "lte", "lt", "gt", "exists"]  # lt, gt: a strict bound ("younger than 5 years", P9-11.14)
 
 
 class _M(BaseModel):
@@ -145,7 +145,7 @@ def _fact(case: Mapping[str, Any], pack: Pack, path: str) -> Any:
     cur: Any = case
     for part in path.split("."):
         if not isinstance(cur, Mapping) or part not in cur:
-            return None
+            return case.get(path)  # a flat dotted name: a replayed unit keeps `market` as its region (P9-10.14)
         cur = cur[part]
     return cur
 
@@ -162,6 +162,8 @@ def _holds(c: Cond, v: Any) -> bool:
             return bool(v == c.value)
         if c.op == "in":
             return v in c.value
+        if c.op in ("lt", "gt"):
+            return bool(v < c.value) if c.op == "lt" else bool(v > c.value)
         return bool(v >= c.value) if c.op == "gte" else bool(v <= c.value)
     except TypeError:
         return False
