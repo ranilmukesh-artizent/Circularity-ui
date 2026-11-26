@@ -7,7 +7,14 @@ Modeler's policy core is pure). A pack adds one entry here; the entries import t
 `python -m <module>` runs without the package having loaded it first.
 """
 
+import importlib
 from collections.abc import Callable
+
+
+def _used_cars() -> list[dict[str, str]]:
+    from di.services.modeler.replay_samples import used_cars
+
+    return used_cars.history_rows()
 
 
 def _telecom_network() -> list[dict[str, str]]:
@@ -23,6 +30,16 @@ def _medical_rental() -> list[dict[str, str]]:
 
 
 DATASETS: dict[str, Callable[[], list[dict[str, str]]]] = {
+    "used_cars": _used_cars,
     "telecom_network": _telecom_network,
     "medical_rental": _medical_rental,
 }
+
+
+def make_csv(dataset: str, n: int) -> str | None:
+    """A dataset's own sample CSV when its module writes one (`used_cars.make_csv`), else None: then
+    `di.services.replay.sample` uses its generic generator."""
+    if dataset not in DATASETS:
+        return None
+    own = getattr(importlib.import_module(f"{__name__}.{dataset}"), "make_csv", None)
+    return own(n) if own is not None else None

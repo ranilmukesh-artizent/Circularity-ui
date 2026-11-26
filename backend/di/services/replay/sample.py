@@ -12,6 +12,7 @@ import random
 import sys
 from datetime import UTC, date, datetime, timedelta
 
+from di.services.modeler import replay_samples
 from di.services.modeler.pack import load_pack
 from di.services.modeler.tables import market_spec
 
@@ -22,6 +23,8 @@ FACT = "condition"
 
 def make_csv(pack_key: str, rows: int, seed: int = 26111) -> str:
     """The sample history as CSV text; its first line is a comment holding the command that made it."""
+    if seed == 26111 and (own := replay_samples.make_csv(pack_key, rows)) is not None:  # a pack's own generator (P9-9.15)
+        return own
     pack = load_pack(pack_key)
     rng = random.Random(f"{pack_key}:{seed}")  # noqa: S311 - invented sample data, not a secret
     spec = market_spec(pack_key)

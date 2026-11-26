@@ -859,6 +859,33 @@
     "exceptions_per_day": 5,
     "gross_per_car": 410
    },
+   "defaults": {
+    "market.lot_avg_price": {
+     "LOT-N": 23600,
+     "LOT-C": 24000,
+     "LOT-S": 24300
+    },
+    "market.lot_days_to_sale": {
+     "LOT-N": 34,
+     "LOT-C": 21,
+     "LOT-S": 15
+    },
+    "market.lot_distance_miles": {
+     "LOT-N": 12,
+     "LOT-C": 40,
+     "LOT-S": 95
+    },
+    "market.lot_comparables": {
+     "LOT-N": 12,
+     "LOT-C": 22,
+     "LOT-S": 18
+    },
+    "market.lot_spread": {
+     "LOT-N": 1500,
+     "LOT-C": 1300,
+     "LOT-S": 1200
+    }
+   },
    "samples": [
     {
      "id": "UC-S1",

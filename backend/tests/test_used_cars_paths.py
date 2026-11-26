@@ -69,6 +69,29 @@ def _replayed(c: dict[str, Any]) -> tuple[str | None, float]:
     return got[0].route, got[0].net
 
 
+def _replayed_history(c: dict[str, Any]) -> tuple[str | None, float]:
+    """The same car replayed the way a history file carries it (P9-9.15): dotted scalar facts only, each dated the day before
+    the decision, and the gates' evidence built from them by `car_facts.replay_case` (no `evidenceRecords`, `title`, `odometer`
+    or `recall` given). No fact is from the future: the leakage list is empty."""
+    when = clock.now()
+    with SessionLocal() as s:
+        recs = car_facts.records(s, str(c["assetId"]))
+        pack, fv = live_pack(s, c), flow_version(s, c)
+    facts = {f"{m}.{k}": {"value": v, "at": when - timedelta(days=1)} for m, data in recs.items() for k, v in data.items()}
+    facts["market.salvage_buyer_reports"] = {"value": True, "at": when - timedelta(days=1)}  # a history row states it
+    it = {"item_id": c["id"], "decided_at": when, "cls": None, "market": None, "actual_route": "auction", "realised_value": 1.0,
+          "facts": facts}  # fmt: skip
+    got: list[Decision] = []
+
+    def decide(*a, **k) -> Decision:
+        got.append(decide_case(*a, **k))
+        return got[-1]
+
+    report = replay_run.replay(Batch(1, c["template"], uc.ORG, 1, 0, None, {}), [it], fv, pack=pack, decide=decide)
+    assert report.leakage == []
+    return got[0].route, got[0].net
+
+
 def _simulated(c: dict[str, Any]) -> tuple[str | None, float]:
     """What the Modeler's simulation decides the case as: `template_decider`, the decider `flow.simulate` and the queue run each
     live case through (no used-car flow is published yet, so no flow row: a flow of version 0 and no rules)."""
@@ -115,6 +138,7 @@ def test_paths_agree_used_cars(n: int):
         d = decide_case(c["id"], live_pack(s, c), flow_version(s, c), session=s)
     seen["decide_case"] = (d.route, d.net)
     seen["replay"] = _replayed(c)
+    seen["replay_history"] = _replayed_history(c)  # the samples as a history file carries them (P9-9.15)
     if (chained := _chained(c["id"])) is not None:  # the chain stops before the valuation while a hold waits
         seen["run_chain"] = chained
     assert len({p[0] for p in seen.values()}) == 1, seen
