@@ -42,7 +42,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import car_facts, gate_hold, store
+from di.services.cases import car_facts, gate_hold, store, unit_plan
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
 from di.services.device import wipe as _device_wipe  # noqa: F401 - registers the check of the gate G-DEV-WIPE (P9-6.7)
@@ -326,6 +326,26 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
 
 
+def _unit_pack(
+    c: Mapping[str, Any], pack: Pack, t: Template, session: Session | None, queue: Sequence[Mapping[str, Any]] | None,
+    as_of: datetime | None, blocked: frozenset[str],
+) -> _Valued:  # fmt: skip
+    """A unit pack (telecom network, P9-10.10) valued, then planned with the units of its queue: the `queue` given, else the
+    org's other open cases of the template. Spares before new and every named demand filled once (`unit_plan`)."""
+    members = (
+        [dict(x) for x in queue]
+        if queue is not None
+        else _intake().open_unit_cases(session, c["owner"], str(c.get("template")), str(c.get("id")))
+        if session is not None and c.get("owner")
+        else []
+    )
+    values = unit_plan.plan(c, pack, as_of, blocked, members)
+    routes = to_routes(t, values)
+    _decorate(t, routes)
+    best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
+    return _Valued(routes, best["k"] if best else None)
+
+
 def _industrial(c: dict[str, Any], session: Session | None) -> list[Route]:
     if session is None:
         raise TypeError(f"decide_case needs a session to value {c.get('id')} (the active model and PLM)")
@@ -420,6 +440,8 @@ def decide_case(
         valued = _service_desk(before, t, session, as_of) or _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
     elif kind == "device":
         valued = _device(before, t, rules)
+    elif kind == "telecom_network":  # 2. valuation, then the queue plan of the units (P9-10.10)
+        valued = _unit_pack(before, pack, t, session, queue, as_of, blocked)
     elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)
         valued = _plugin(kind, before, pack, t, as_of)
     else:

@@ -485,6 +485,19 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda d: str(d["id"]))
 
 
+def open_unit_cases(s: Session, org_unit_id: str, template: str, except_id: str) -> list[dict[str, Any]]:
+    """The documents of the org's other open cases of a unit template (telecom network), in case id order: the queue a unit
+    is planned in (P9-10.10)."""
+    rows = s.execute(
+        text(
+            "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' AND data ->> 'template' = :t "
+            "AND id <> :i ORDER BY id"
+        ),
+        {"o": org_unit_id, "t": template, "i": except_id},
+    ).scalars()
+    return list(rows)
+
+
 def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
     """The queue for the valuer input `v` of a case of the org: its open tool-fleet cases plus `v`, with the named
     demand of their classes: the queue's tagged orders (named_demand.for_queue) and the live named demand of the org's

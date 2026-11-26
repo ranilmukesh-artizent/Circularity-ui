@@ -70,6 +70,9 @@ def _fact(facts: Mapping[str, Any], path: str) -> Any:
     return cur
 
 
+fact = _fact  # public name for the queue plan of P9-10.10 (di.services.cases.unit_plan)
+
+
 def _num(v: Any) -> Decimal | None:
     return _d(v) if isinstance(v, int | float) and not isinstance(v, bool) else None
 
@@ -139,7 +142,8 @@ def _redeploy(facts: Mapping[str, Any], pack: Pack, p: Mapping[str, Any], name: 
         _line("c", "Logistics", _d(p["logistics_per_unit"]), "fees"),
         _line("c", "Install job", _d(p["install_job"]), "fees", f"at {site}" if site else ""),
     ]
-    return _value("redeploy", name, lines, pack, facts, {"site": site, "demand": demand}, True)
+    steps = ["site_transfer"] if gap is None or gap < 1 else ["firmware_upgrade", "site_transfer"]  # P9-10.10: upgrade first
+    return _value("redeploy", name, lines, pack, facts, {"site": site, "demand": demand, "steps": steps}, True)
 
 
 def _spare(facts: Mapping[str, Any], pack: Pack, p: Mapping[str, Any], name: str) -> PathValue:

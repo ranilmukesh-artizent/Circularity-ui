@@ -87,3 +87,36 @@ def planner_for(pack: Pack) -> QueuePlanner:
     if name == "heuristic":
         return HeuristicPlanner()
     raise ValueError(f"No queue planner {name}")
+
+
+# ------------------------------------------------------------------ orders filled once (plan 9, P9-10.10)
+@dataclass(frozen=True)
+class Bid:
+    """One unit's claim on an order by a route: `gain` is what the unit is worth on that route (net). An order is a named
+    demand (one unit) or a gap to fill (several); it names no industry."""
+
+    unit: str
+    route: str
+    order: str
+    gain: float
+
+
+def fill_orders(bids: Sequence[Bid], capacity: Mapping[str, int]) -> tuple[dict[str, Bid], dict[tuple[str, str], str]]:
+    """Fill every order once, the best gain first (ties by unit name, then route name): a unit takes the first order it can
+    and bids no more. `capacity` is each order's units (default 1). Returns the bid each unit placed and, for each (unit,
+    route) that lost, the unit that holds the order. Pure and the same for every caller, so every case of a queue reads
+    one plan."""
+    left = dict(capacity)
+    placed: dict[str, Bid] = {}
+    holder: dict[str, str] = {}
+    lost: dict[tuple[str, str], str] = {}
+    for b in sorted(bids, key=lambda x: (-x.gain, x.unit, x.route)):
+        if b.unit in placed:
+            continue
+        if left.get(b.order, 1) > 0:
+            left[b.order] = left.get(b.order, 1) - 1
+            placed[b.unit] = b
+            holder.setdefault(b.order, b.unit)
+        else:
+            lost[(b.unit, b.route)] = holder.get(b.order, "")  # nobody holds a gap of none
+    return placed, lost
