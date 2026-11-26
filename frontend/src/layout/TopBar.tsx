@@ -10,7 +10,7 @@ import { Modal } from '../components/Overlay';
 import { toast } from '../components/toast';
 import { useAction } from '../hooks/useAction';
 import { toggleTheme, useTheme } from '../utils/theme';
-import { openAssistant } from '../utils/askBus';
+import { openAsk, openAssistant } from '../utils/askBus';
 
 /** Close a <details> menu when the user clicks outside it. */
 function useOutsideClose(ref: React.RefObject<HTMLDetailsElement>) {
