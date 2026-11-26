@@ -339,8 +339,13 @@ def _canonical(s: Session, asset_key: str) -> dict[str, Any]:
         try:
             installed = date.fromisoformat(asset["install_date"][:10])
             out["age"] = round((clock.now().date() - installed).days / 365.25, 1)
+            out["age_months"] = round((clock.now().date() - installed).days / 30.4375, 1)
         except ValueError:
             pass
+    if "age_months" not in out:  # no install date: the months the tool has been on its contract line
+        months = ((canonical.get(s, "contract_line", asset_key) or {}).get("data") or {}).get("months_on_contract")
+        if isinstance(months, int | float) and months >= 0:
+            out["age_months"] = months
     return out
 
 
@@ -354,7 +359,8 @@ def _base(case_id: str, i: dict[str, Any], known: dict[str, Any], by: str) -> st
     return {
         "id": case_id, "owner": i["org_unit_id"], "location": known.get("location") or LOCATION, "stage": STAGES[0],
         "template": i["template_key"], "assetId": i["asset_key"], "cls": known.get("cls"), "grade": known.get("grade"),
-        "age": known.get("age", 0), "qty": known.get("qty", 1), "spec": known.get("spec") or {},
+        "age": known.get("age", 0), "ageMonths": known.get("age_months"), "qty": known.get("qty", 1),
+        "spec": known.get("spec") or {},
         "demand": known.get("demand") or dict(_EMPTY_DEMAND), "product": known.get("product") or "",
         "mfr": known.get("mfr") or "", "received": known.get("received") or _received(now), "kind": "standard",
         "hero": False, "readiness": "ready", "evidence": [], "notes": [], "approval": None, "exec": None,
@@ -488,6 +494,9 @@ class ToolQueue:
 
 
 def _recommended(doc: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The route a decided case takes: the one chosen (an override), else the recommended one."""
+    if isinstance(doc.get("chosen"), dict) and doc["chosen"]:
+        return doc["chosen"]
     i = doc.get("rec_index")
     return doc["routes"][i] if i is not None and doc.get("routes") else {}
 

@@ -69,8 +69,15 @@ def value_line(line: dict[str, Any]) -> dict[str, Any]:
     return {"type": "v", "label": title_of(line["line_id"]), "basis": BASIS, "amt": line["fee"]}
 
 
-def org_of(s: Session, serial: str) -> str | None:
-    """The org unit that owns the tool's latest case (its work and the tenant boundary follow it), or None without one."""
+def org_of(s: Session, serial: str, contract_id: str | None = None) -> str | None:
+    """The org unit that owns the fee (its work and the tenant boundary follow it): the `owner_org` of the line's contract, else
+    the owner of the tool's latest case, or None when neither is on file (a tenant-scoped person is then refused, R21)."""
+    if contract_id:
+        owner = s.execute(
+            text("SELECT data ->> 'owner_org' FROM canonical WHERE model = 'contract' AND key = :k"), {"k": contract_id}
+        ).scalar()
+        if owner:
+            return str(owner)
     return s.execute(
         text("SELECT owner FROM case_record WHERE data ->> 'assetId' = :a ORDER BY id DESC LIMIT 1"), {"a": serial}
     ).scalar()
@@ -102,7 +109,8 @@ def raise_items(s: Session) -> list[int]:
         v = value_line(line)
         out.append(
             process.open_item(
-                s, kind="exception", case_id=None, org_unit_id=org_of(s, line["serial"]), type=EXCEPTION,
+                s, kind="exception", case_id=None, org_unit_id=org_of(s, line["serial"], line["contract_id"]),
+                type=EXCEPTION,
                 title=title_of(line["line_id"]),
                 cause=f"Contract line {line['line_id']} closed without the tool {line['serial']}. {v['label']}: {v['basis']}, "
                 f"${v['amt']:,.0f}.",
@@ -135,7 +143,8 @@ def post(s: Session, line_id: str, by: str) -> dict[str, Any]:
     ref, key = f"FEE-{line_id}", f"FEE.{line_id}.{cents}"
     iid = None
     if queue.enabled():
-        detail = {"line_id": line_id, "serial": line["serial"], "fee": line["fee"], "org": org_of(s, line["serial"]), "by": by}
+        org = org_of(s, line["serial"], line["contract_id"])
+        detail = {"line_id": line_id, "serial": line["serial"], "fee": line["fee"], "org": org, "by": by}
         iid = s.execute(
             text(
                 "INSERT INTO instruction (case_id, approval_ref, step, kind, system, idem_key, match_refs, detail, queued_at) "

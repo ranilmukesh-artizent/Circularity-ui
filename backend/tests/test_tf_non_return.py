@@ -49,10 +49,13 @@ def world():
     starting.reset()
 
 
-def _line(status: str = "closed_not_returned", fee: float = 180.0) -> None:
+def _line(status: str = "closed_not_returned", fee: float = 180.0, owner: str | None = ORG) -> None:
     row = {"line_id": LINE, "contract_id": "FC-TF14", "status": status, "non_return_fee": fee, "tool_class": "AGR"}
+    facts = [canonical.Fact("contract_line", SERIAL, k, v, resource="lines") for k, v in row.items()]
+    if owner:  # the contract the line belongs to names the org unit that owns the tool (R21)
+        facts.append(canonical.Fact("contract", "FC-TF14", "owner_org", owner, resource="contracts"))
     with SessionLocal() as s:
-        canonical.apply(s, "fleet", [canonical.Fact("contract_line", SERIAL, k, v, resource="lines") for k, v in row.items()])
+        canonical.apply(s, "fleet", facts)
         s.commit()
 
 
@@ -187,3 +190,61 @@ def test_non_return_fee_tenant_boundary(sending):
     assert r["ok"] is False and r["error"]["code"] == "tenant_boundary", r
     assert _mine()[0]["status"] == "open" and _instructions() == []
     assert call(ACTION, {"line_id": LINE}, "planner.a")["ok"] is True  # Customer A's own planner may
+
+
+# ------------------------------------------------------------------ review phase 3, findings 5, 9 and 11
+def test_non_return_fee_tenant_boundary_line_without_a_case(sending):
+    """Finding 5: a lost tool has no case and no item yet; the contract's owner_org is the tenant that owns the fee."""
+    _line()  # no sync: no item, no case
+    r = call(ACTION, {"line_id": LINE}, "planner.b")
+    assert r["ok"] is False and r["error"]["code"] == "tenant_boundary", r
+    assert _instructions() == []
+    _sync()
+    (item,) = _mine()
+    assert item["org_unit_id"] == ORG  # the item is opened for the contract's owner, not for nobody
+    assert call(ACTION, {"line_id": LINE}, "planner.b")["error"]["code"] == "tenant_boundary"
+    assert call(ACTION, {"line_id": LINE}, "planner.a")["ok"] is True
+
+
+def test_non_return_fee_tenant_boundary_owner_unknown_refuses_a_tenant_scoped_person(sending):
+    _line(owner=None)
+    r = call(ACTION, {"line_id": LINE}, "planner.a")
+    assert r["ok"] is False and r["error"]["code"] == "tenant_boundary", r
+    assert _instructions() == []
+
+
+def test_tf_14_instructions_off_refuses_and_keeps_the_item_open():
+    """Finding 9: with sending off nothing is posted, the item stays open and the key is not spent."""
+    _line()
+    _sync()
+    r = call(ACTION, {"line_id": LINE}, "planner.a")
+    assert r["ok"] is False and r["error"]["code"] == "validation_error", r
+    assert _mine()[0]["status"] == "open" and _instructions() == []
+
+
+def test_tf_14_the_journal_reference_of_long_line_ids_does_not_collide():
+    """Finding 11: the reference is at most 16 characters and differs for two ids that share a long prefix."""
+    refs = []
+    for line_id in ("FL-CONTRACT-2026-0001", "FL-CONTRACT-2026-0002"):
+        seen: list = []
+
+        def journal(s, ins, ref, header, items, seen=seen):
+            seen.append(ref)
+            return "0100000001", {"AccountingDocument": "0100000001", "duplicate": False}
+
+        mp = pytest.MonkeyPatch()
+        mp.setattr(writers, "post_journal", journal)
+        try:
+            writers_fleet.fee_post(None, {"detail": {"line_id": line_id, "fee": 10.0}, "idem_key": "k"}, {}, {})  # type: ignore[arg-type]
+        finally:
+            mp.undo()
+        refs += seen
+    assert len(set(refs)) == 2 and all(len(r) <= 16 for r in refs), refs
+    seen = []
+    mp = pytest.MonkeyPatch()
+    mp.setattr(writers, "post_journal", lambda s, ins, ref, header, items: (seen.append(ref), ("1", {}))[1])
+    try:
+        writers_fleet.fee_post(None, {"detail": {"line_id": LINE, "fee": 10.0}, "idem_key": "k"}, {}, {})  # type: ignore[arg-type]
+    finally:
+        mp.undo()
+    assert seen == [f"FEE-{LINE}"]  # a short id keeps its reference
