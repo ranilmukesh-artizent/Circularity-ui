@@ -33,6 +33,11 @@ describe('Agents page: the business view (UI audit gaps 14 and 21)', () => {
     expect(g[2].rows.map((r) => r.agent.id)).toEqual(['ext-x']);
   });
 
+  it('keeps a pack with no stage agent, marked not set up', () => {
+    const g = agentGroups({ ...screen, packs: [...screen.packs, { key: 'used_cars', name: 'Used vehicles', stages: [{ stage: 'lease_end', agent: 'stage-missing', autonomy: 'alone', threshold: 0.75 }] }] });
+    expect(g.map((x) => [x.title, x.notSetUp ?? false])).toEqual([['Industrial returns', false], ['Used vehicles', true], ['Platform agents', false], ['Outside agents', false]]);
+  });
+
   it('names the three levels in business words and says what act alone never covers', () => {
     expect(STAGE_AUTONOMY).toEqual({ recommend: 'Recommend only', limits: 'Act within limits', alone: 'Act alone' });
     expect(NEVER_ALONE).toMatch(/approving, overriding, declining or changing access/);

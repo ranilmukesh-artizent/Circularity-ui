@@ -1,7 +1,7 @@
 import { updateAgent, type AgentsScreen } from '../../api/agents';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { NEVER_ALONE, STAGE_AUTONOMY, STAGE_AUTONOMY_NOTE, agentGroups, type AgentLine } from './agentsView';
+import { NEVER_ALONE, STAGE_AUTONOMY, STAGE_AUTONOMY_NOTE, agentGroups, type AgentLine, type StageLevel } from './agentsView';
 
 const LEVEL_CHIP = { recommend: 'line', limits: 'y', alone: 'ok' } as const;
 const when = (iso: string) => iso.slice(0, 16).replace('T', ' ');
@@ -44,23 +44,40 @@ export function AgentsBusiness({ s }: { s: AgentsScreen }) {
         <h2>Agents</h2>
         <span className="note">{s.agents.length} agents · {s.agents.filter((a) => !a.enabled).length} paused</span>
       </div>
-      <div className="callout info" style={{ marginBottom: 12 }}>
-        <b>How far an agent may go.</b> Recommend only: it prepares, a person decides. Act within limits: it acts while value, confidence and volume stay
-        inside the limits. Act alone: it acts without waiting. {NEVER_ALONE}{' '}
-        Each pack sets the level of its stages in <a href="#/modeler">Compose, in the Modeler</a> (a second person approves the change).
-      </div>
-      {groups.map((g) => (
-        <div key={g.key} style={{ marginBottom: 14 }} data-pack={g.key}>
-          <h3 style={{ margin: '0 0 6px' }}>{g.title} <span className="note">{g.note}</span></h3>
-          <div className="panel">
-            <div className="tw">
-              <table className="t static" aria-label={g.title + ' agents'}>
-                <thead><tr><th>Agent</th><th>Stage</th><th>Autonomy</th><th>Status</th><th>Last run</th></tr></thead>
-                <tbody>{g.rows.map((l) => <Row key={l.agent.id} l={l} manage={s.can.manage} busy={action.pending} toggle={toggle} />)}</tbody>
-              </table>
-            </div>
-          </div>
+      <div className="ag-levels panel">
+        <div className="pb">
+          <h3>How far an agent may go</h3>
+          <dl>
+            {(Object.keys(STAGE_AUTONOMY) as StageLevel[]).map((k) => (
+              <div key={k}>
+                <dt><span className={'chip ' + LEVEL_CHIP[k]}>{STAGE_AUTONOMY[k]}</span></dt>
+                <dd>{STAGE_AUTONOMY_NOTE[k]}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="ag-never"><b>Always a person:</b> {NEVER_ALONE}</p>
+          <p className="note">Each pack sets the level of its stages in <a href="#/modeler">Compose, in the Modeler</a>; a second person approves the change.</p>
         </div>
+      </div>
+      {groups.map((g, k) => (
+        <details key={g.key} className="ag-pack" data-pack={g.key} open={k === 0 && !g.notSetUp}>
+          <summary>
+            <span className="ag-pack-title">{g.title}</span>
+            <span className="note">{g.notSetUp ? 'Not set up' : `${g.rows.length} ${g.rows.length === 1 ? 'agent' : 'agents'}${g.key === 'platform' || g.key === 'outside' ? ' · ' + g.note : ''}`}</span>
+          </summary>
+          {g.notSetUp ? (
+            <div className="panel"><div className="pb"><div className="empty"><b>Not set up</b>No stage agents for this pack yet. <a href="#/modeler">Set it up in the Modeler</a>.</div></div></div>
+          ) : (
+            <div className="panel">
+              <div className="tw">
+                <table className="t static" aria-label={g.title + ' agents'}>
+                  <thead><tr><th>Agent</th><th>Stage</th><th>Autonomy</th><th>Status</th><th>Last run</th></tr></thead>
+                  <tbody>{g.rows.map((l) => <Row key={l.agent.id} l={l} manage={s.can.manage} busy={action.pending} toggle={toggle} />)}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </details>
       ))}
     </section>
   );

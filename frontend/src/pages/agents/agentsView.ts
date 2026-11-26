@@ -83,9 +83,11 @@ export interface AgentGroup {
   title: string;
   note: string;
   rows: AgentLine[];
+  /** a pack the org has but with no stage agent yet: shown as "not set up", with a link to set it up in the Modeler */
+  notSetUp?: boolean;
 }
 
-/** Stage agents under each pack, then the platform's other agents, then outside agents. Empty groups are left out. */
+/** Stage agents under each pack (every pack the org has; one with no stage agent is marked not set up), then the platform's other agents, then outside agents. */
 export function agentGroups(s: Pick<AgentsScreen, 'agents' | 'packs' | 'runs'>): AgentGroup[] {
   const byId = new Map(s.agents.map((a) => [a.id, a]));
   const used = new Set<string>();
@@ -99,7 +101,7 @@ export function agentGroups(s: Pick<AgentsScreen, 'agents' | 'packs' | 'runs'>):
       used.add(a.id);
       return [line(a, st.stage, st.autonomy)];
     });
-    return { key: p.key, title: p.name, note: 'One agent per stage of the journey', rows };
+    return { key: p.key, title: p.name, note: 'One agent per stage of the journey', rows, notSetUp: rows.length === 0 };
   });
   const rest = s.agents.filter((a) => !used.has(a.id));
   const platform = rest.filter((a) => a.kind === 'internal').map((a) => line(a));
@@ -108,5 +110,5 @@ export function agentGroups(s: Pick<AgentsScreen, 'agents' | 'packs' | 'runs'>):
     ...groups,
     { key: 'platform', title: 'Platform agents', note: 'Work across every pack', rows: platform },
     { key: 'outside', title: 'Outside agents', note: 'Registered by an admin, connected over MCP', rows: outside },
-  ].filter((g) => g.rows.length > 0);
+  ].filter((g) => g.rows.length > 0 || g.notSetUp);
 }

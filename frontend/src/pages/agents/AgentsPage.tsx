@@ -8,6 +8,7 @@ import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import './agents.css';
 import { AgentsBusiness } from './AgentsBusiness';
 import { LlmModelsPanel } from './LlmModelsPanel';
 import { OutsideClients } from './OutsideClients';
@@ -45,16 +46,18 @@ export function AgentsPage() {
       <AgentsBusiness s={s} />
       <Proposals list={s.proposals} />
       <Runs s={s} />
-      <div className="sh" id="agExpert" style={{ marginTop: 28, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
-        <h2>Models and tools</h2>
-        <span className="note">For admins and developers: the registry, credentials, language models and the tool catalogue.</span>
+      <div className="ag-expert">
+        <div className="ag-expert-head" id="agExpert">
+          <h2>Models and tools</h2>
+          <p className="note">For admins and developers: the registry, credentials, language models and the tool catalogue.</p>
+        </div>
+        <Registry s={s} />
+        {s.can.manage && <Credentials agents={s.agents} />}
+        {s.can.manage && <OutsideClients agents={s.agents} />}
+        <LlmModelsPanel s={s} />
+        <ModelsPanel />
+        <Catalogue s={s} />
       </div>
-      <Registry s={s} />
-      {s.can.manage && <Credentials agents={s.agents} />}
-      {s.can.manage && <OutsideClients agents={s.agents} />}
-      <LlmModelsPanel s={s} />
-      <ModelsPanel />
-      <Catalogue s={s} />
     </div>
   );
 }
@@ -83,7 +86,7 @@ function Registry({ s }: { s: AgentsScreen }) {
             <tbody>
               {s.agents.map((a) => (
                 <tr key={a.id} data-agent={a.id}>
-                  <td><b>{a.name}</b> <span className="note mono">{a.id}</span></td>
+                  <td><b>{a.name}</b><span className="note mono ag-id">{a.id}</span></td>
                   <td><span className="chip line">{a.kind}</span></td>
                   <td className="nowrap">
                     <span className={'chip ' + (a.enabled ? 'ok' : 'bad')}>{a.enabled ? 'On' : 'Stopped'}</span>{' '}
@@ -167,7 +170,7 @@ function Credentials({ agents }: { agents: AgentRow[] }) {
         <label className="sr" htmlFor="ag-cred-agent">Agent</label>
         <select className="sel" id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
           {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>{' '}
+        </select>
         <button className="btn sm pri" id="ag-cred-issue" disabled={action.pending || !agent} onClick={issue}>Issue credential</button>
       </div>
       {secret && (
@@ -185,7 +188,7 @@ function Credentials({ agents }: { agents: AgentRow[] }) {
           <table className="t static">
             <thead><tr><th>Client id</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={5} className="note">No credentials for this agent.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={5} className="note">No credentials for this agent yet. Issue one to let it get its own token.</td></tr>}
               {rows.map((c) => (
                 <tr key={c.client_id}>
                   <td className="mono">{c.client_id}</td>
@@ -351,17 +354,23 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
     toast(`Run ${r.output.run_id} started: ${PLAYBOOKS[playbook].toLowerCase()} on ${r.output.case_id}.`);
   };
   return (
-    <div className="pb axrl" style={{ borderBottom: '1px solid var(--line)' }}>
-      <label htmlFor="ag-run-agent">Agent</label>
-      <select className="sel" id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
-        {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-      </select>
-      <label htmlFor="ag-run-playbook">Playbook</label>
-      <select className="sel" id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
-        {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
-      </select>
-      <label htmlFor="ag-run-case">Case</label>
-      <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" style={{ width: 120 }} />
+    <div className="ag-form ag-run">
+      <div className="ag-field">
+        <label htmlFor="ag-run-agent">Agent</label>
+        <select className="sel" id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+          {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+      <div className="ag-field">
+        <label htmlFor="ag-run-playbook">Playbook</label>
+        <select className="sel" id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
+          {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
+        </select>
+      </div>
+      <div className="ag-field">
+        <label htmlFor="ag-run-case">Case</label>
+        <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" />
+      </div>
       <button className="btn sm pri" disabled={action.pending || !agent || !caseId.trim()} onClick={start}>Start run</button>
       {err && <span className="note err">{err}</span>}
     </div>
