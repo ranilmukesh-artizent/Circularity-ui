@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixedAssetLine, leaseResidualLine } from './case';
+import { creditLine, creditMismatch, fixedAssetLine, leaseResidualLine, resolveSettlement } from './case';
 
 describe('P9-13.1 fixedAssetLine (X-13)', () => {
   it('shows the ERP retirement with its gain', () => {
@@ -23,5 +23,20 @@ describe('P9-13.2 leaseResidualLine (X-13)', () => {
   });
   it('has no line without a residual', () => {
     expect(leaseResidualLine({})).toBeNull();
+  });
+});
+
+describe('P9-13.4 customer credit (X-16)', () => {
+  const credit = { memo: 'CM-90000001', amount: 160, erp_amount: 160, basis: 'grade_table' as const, grade_received: 'B', percent: 80, quote: 200, status: 'matched' as const };
+  it('shows the credit with its basis', () => {
+    expect(creditLine({ finance: { credit } })).toBe('Customer credit · CM-90000001 · $160.00 (grade B at 80 % of the $200.00 quote)');
+    expect(creditLine({})).toBeNull();
+  });
+  it('names the two amounts of a mismatch, only while it waits', () => {
+    expect(creditMismatch({ finance: { credit: { ...credit, erp_amount: 150, status: 'mismatch' } } })).toBe('The ERP posted $150.00; the case says $160.00');
+    expect(creditMismatch({ finance: { credit } })).toBeNull();
+  });
+  it('resolveSettlement is an action of the facade', () => {
+    expect(typeof resolveSettlement).toBe('function');
   });
 });

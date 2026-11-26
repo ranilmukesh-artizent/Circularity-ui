@@ -354,7 +354,7 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
     return _Valued(routes, ticket["best"], ticket=ticket | {"inputs": inputs})
 
 
-def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) -> _Valued:
+def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule], pack: Pack) -> _Valued:
     lot = _valuer_case(c, "device")
     dec = device.decide(dict(lot), _rule_dicts(rules))
     own = {x["k"]: x for x in device.decide(dict(lot), [])["all"]}
@@ -362,6 +362,9 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
         t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]], listing=bool(lot.get("imei"))
     )  # a received device is listed on its channel (P9-6.12)
     _decorate(t, routes)
+    if lot.get("imei") and isinstance(lot.get("quote"), Mapping):  # a received trade-in is credited to the customer (P9-13.4)
+        for r in routes:
+            r["close_steps"] = close_kinds(pack, r)
     best = dec["best"]
     figures = {
         x["k"]: {"cash": x["cash"], "days": x["days"], **device_price.band_figures(x, device.bands_of(lot).get(x["k"]))}
@@ -549,7 +552,7 @@ def decide_case(
             else _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
         )
     elif kind == "device":
-        valued = _device(before, t, rules)
+        valued = _device(before, t, rules, pack)
     elif kind == "telecom_network":  # 2. valuation, then the queue plan of the units (P9-10.10)
         valued = _unit_pack(before, pack, t, session, queue, as_of, blocked)
     elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)

@@ -57,15 +57,7 @@ export function fixedAssetLine(c: { finance?: { asset?: FixedAsset } | null }): 
   const usd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
   return `Fixed-asset retirement · ${a.doc} · proceeds ${usd(a.proceeds ?? 0)} · book value ${usd(a.book_value ?? 0)} · ${a.gain_loss >= 0 ? 'gain' : 'loss'} ${usd(a.gain_loss)} (from the ERP)`;
 }
-/** The lease residual against the ERP's proceeds, kept on the case when its lease states one (P9-13.2). */
-export interface LeaseResidual { contract_ref: string; residual: number; proceeds: number; gain_loss: number; currency?: string }
-/** The close block's lease residual line, or null when the case has none. */
-export function leaseResidualLine(c: { finance?: { residual?: LeaseResidual } | null }): string | null {
-  const r = c.finance?.residual;
-  if (!r) return null;
-  const usd = (n: number) => '$' + Math.abs(n).toLocaleString('en-US');
-  return `Lease residual · contract ${r.contract_ref} · residual ${usd(r.residual)} · proceeds ${usd(r.proceeds)} · ${r.gain_loss >= 0 ? 'gain' : 'loss'} against residual ${usd(r.gain_loss)}`;
-}
+  finance?: { asset?: FixedAsset; residual?: LeaseResidual; credit?: CreditMemo } | null;
 export interface GateHold { gates: string[]; since: string; batch: string | null }
 export interface RequiredStep { gate: string; step: string; owner: string }
 export interface BatchStatus { ref: string; total: number; held: number; released: number }
@@ -80,7 +72,7 @@ export interface CaseRec {
   packet?: { rationale: string; at: string; by: string; prep?: string | null } | null;
   outcome?: { net: number; by?: string; at?: string; order?: string | null; lines: OutcomeLine[] } | null;
   /** The ERP's answer to the fixed-asset step of a pack that owns its assets (P9-13.1); read it with `fixedAssetLine`. */
-  finance?: { asset?: FixedAsset; residual?: LeaseResidual } | null;
+  finance?: { asset?: FixedAsset; residual?: LeaseResidual; credit?: CreditMemo } | null;
   exec?: { ref: string; decisionId: string; approvedAt?: string; instruction?: number; steps: ExecStep[]; terms?: MarketTerms } | null;
   blocked?: { action: string; owner: string; reason: string; gateName?: string } | null;
   requested?: { ref: string; at: string } | null;

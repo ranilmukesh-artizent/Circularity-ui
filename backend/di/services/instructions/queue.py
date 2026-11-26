@@ -45,6 +45,7 @@ SYSTEM_OF = {
     "lessee_charge": "uc_lease",
     "retire": "erp",  # P9-13.1: the fixed-asset retirement and transfer of a pack that owns the asset
     "transfer": "erp",
+    "credit": "erp",  # P9-13.4: the customer credit memo (a service ticket's upgrade plan ends on it too: no credit, no write)
     "dispatch": "mr_rental",  # P9-11.17: the follow-through of a medical rental route (the pack's route instructions)
     "service_order": "mr_biomed",
     "biomed_refurb": "mr_biomed",

@@ -22,7 +22,7 @@ from di.repositories.common import hash_id, money
 from di.services import instructions
 from di.services.actions.decisions import NOW, _by, _case, _key, _peek, cyc, push_event, skey
 from di.services.actions.pipeline import CallContext
-from di.services.actions.registry import ACTIONS, guard, implement
+from di.services.actions.registry import ACTIONS, ActionDef, guard, implement
 from di.services.cases import lifecycle, store
 from di.services.engine.jsmath import js_sum
 from di.services.execution import (
@@ -34,6 +34,7 @@ from di.services.execution import (
     line_actuals,
     ref_label,
     residual,
+    settlement,
     value_order,
     variance,
 )
@@ -157,6 +158,7 @@ def adapter_acknowledge(i: dict[str, Any], ctx: CallContext):
     if s.get("k") in asset.KINDS:  # P9-13.1: the ERP's gain or loss on the asset, stored as it answered
         asset.record(ctx.session, c, k)
         residual.record(c, (c.get("finance") or {}).get("asset"))  # P9-13.2: the lease residual against the proceeds
+    held = s.get("k") == settlement.KIND and not settlement.record(ctx.session, c, k)  # P9-13.4: the ERP's credit differs
     t = ex_ev(s)
     note = ack_note(s, c)
     push_event(
@@ -176,7 +178,7 @@ def adapter_acknowledge(i: dict[str, Any], ctx: CallContext):
     if k == 0 and c["stage"] != "executing":
         lifecycle.move(ctx.session, c, "executing", why, ctx.actor.id)
         moved = True
-    if k == len(e["steps"]) - 1:
+    if k == len(e["steps"]) - 1 and not held:  # a credit the ERP posted differently keeps the case executing for Finance
         lifecycle.move(ctx.session, c, "closed", why, ctx.actor.id)
         moved = True
     if not moved:
@@ -223,3 +225,53 @@ def instruction_resend(i: dict[str, Any], ctx: CallContext):
     )  # fmt: skip
     instructions.resend(ctx.session, c)  # the real resend, under the same key (when sending is on)
     return {"case_id": c["id"], "deduplicated": True}
+
+
+# ---------------------------------------------------------------- settlement.resolve (P9-13.4, X-16)
+ACTIONS.setdefault(
+    "settlement.resolve",
+    ActionDef(
+        id="settlement.resolve", title="Resolve a credit the ERP posted differently", verb="resolve a credit settlement",
+        desc="Finance accepts the amount the ERP posted for a customer credit, or sends the credit again under the same key. "
+        "A person's decision: an agent's call is held.",
+        risk="commit", perm="confirm", scope="case",
+        input={
+            "case_id": {"req": True, "t": "string"}, "resolution": {"req": True, "t": "string"},
+            "note": {"req": True, "t": "string", "min": 15, "minText": "Add a note of at least 15 characters."},
+        },
+    ),
+)  # fmt: skip
+RESOLUTIONS = ("accept_erp", "resend")
+
+
+@guard("settlement.resolve")
+def resolve_guard(i: dict[str, Any], ctx: CallContext):
+    c = _peek(ctx, i["case_id"])
+    if i["resolution"] not in RESOLUTIONS:
+        return "validation_error", "The resolution is accept_erp or resend."
+    if not settlement.waiting(c):
+        return "conflict", f"{c['id']} has no credit waiting for Finance: the ERP's amount matches or was already answered."
+    return None
+
+
+@implement("settlement.resolve", emits=[])
+def settlement_resolve(i: dict[str, Any], ctx: CallContext):
+    """accept_erp: the ERP's amount is the realised credit and the case closes (its last step was acknowledged); resend: the
+    credit step goes out again under its idempotency key, so the ERP answers its first memo, and the item stays open until a
+    new answer matches."""
+    c = _case(ctx, i["case_id"])
+    credit = c["finance"]["credit"]
+    note, by = i["note"].strip(), ctx.actor.id
+    if i["resolution"] == "accept_erp":
+        c["finance"]["credit"] = credit | {
+            "status": "accepted",
+            "realised": credit["erp_amount"],
+            "resolved": {"by": by, "note": note, "at": NOW},
+        }
+        settlement.close_item(ctx.session, c["id"], f"Finance accepted the ERP's {settlement.money(credit['erp_amount'])}", by)
+        lifecycle.move(ctx.session, c, "closed", f"ERP credit {settlement.money(credit['erp_amount'])} accepted: {note}", by)
+    else:
+        c["finance"]["credit"] = credit | {"resent": {"by": by, "note": note, "at": NOW}}
+        store.save(ctx.session, c)
+        instructions.resend(ctx.session, c)
+    return {"case_id": c["id"], "resolution": i["resolution"], "realised": c["finance"]["credit"].get("realised")}

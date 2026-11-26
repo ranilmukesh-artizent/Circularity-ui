@@ -165,6 +165,7 @@ from di.services.execution import (
     ex_trace,
     ex_what_if,
     loc_name,
+    settlement,
 )
 from di.services.execution.lanes import LOCS, RATE_CARD, loc_win
 from di.services.execution.plan import ack_note, ex_delivered, value_order
@@ -580,6 +581,19 @@ def stage_data(c: Case, n: int, rn: dict, p: Principal, deleg: bool, waiting: st
             )
         elif fa:
             F("Asset transfer", f"{fa['doc']} (from the ERP)", "ret", "ERP fixed assets")
+        fc: Any = (c.get("finance") or {}).get("credit")  # P9-13.4: the customer's credit memo, matched against the case
+        if fc:
+            F(
+                "Customer credit",
+                f"{fc['memo']} · {settlement.money(fc.get('realised') or fc['amount'])} ({settlement.basis_line(fc)})"
+                + (
+                    f" · the ERP posted {settlement.money(fc['erp_amount'])}, waiting for Finance"
+                    if settlement.waiting(c)
+                    else ""
+                ),
+                "ret",
+                "ERP billing",
+            )
         o["docs"] = [d for d in (last["ack"]["ref"] if last and last.get("ack") else None, (o9 or {}).get("order")) if d]
         if o9:
             if o9["net"] >= r["net"]:

@@ -134,4 +134,5 @@ def test_x_13_tool_fleet_and_device_unaffected():
         pack = load_pack(key)
         if key in ("tool_fleet", "device", "industrial"):
             assert not pack.close.fixed_asset
-            assert all(close_kinds(pack, {"id": r.id}) == [] and r.asset_effect == "none" for r in pack.routes)
+            # the asset is not touched; device and tool fleet settle customer credits (P9-13.4), which is not an asset close
+            assert all(set(close_kinds(pack, {"id": r.id})) <= {"credit"} and r.asset_effect == "none" for r in pack.routes)

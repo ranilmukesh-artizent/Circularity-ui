@@ -2186,5 +2186,14 @@
   "Sales": "Approver",
   "Sustainability lead": "Approver",
   "Finance": "Finance"
+ },
+ "close": {
+  "credit_settlement": true,
+  "credit_table": {
+   "A": 100,
+   "B": 80,
+   "C": 55,
+   "D": 20
+  }
  }
 }

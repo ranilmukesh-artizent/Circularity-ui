@@ -432,6 +432,46 @@ def payout(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
     return Sent([{"call": "PATCH tradeins/{tradeInId}", "body": body}], row.trade_in_id, {"tradeInId": row.trade_in_id, **body})
 
 
+CREDIT_MEMO = "/sap/bc/srt/scs_ext/sap/creditmemo"
+
+
+def credit(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """SAP S/4HANA (`erp`): POST creditmemo {customer, amount, currency, externalReference} (P9-13.4, X-16). The amount is the
+    credit
+    the case says (`settlement.credit_amount`), the approval reference the external reference and the idempotency key, so a
+    resend answers the first memo. The memo and the amount the ERP posted are kept as `detail.credit`; the acknowledgement
+    matches them (`settlement.record`). Endpoint modelled, not verified, against SAP's billing document API."""
+    from di.repositories.packs import active_pack  # lazy: the pack in force is the org's own version
+    from di.services.execution import settlement
+
+    pack = active_pack(s, str(c.get("template") or ""), c.get("owner"))
+    got = settlement.credit_amount(c, pack)
+    if got is None:
+        raise NotApplicable("no credit to post for this case")
+    body = {
+        "customer": c.get("customer") or c.get("owner"), "amount": float(got.amount), "currency": got.currency,
+        "externalReference": c["exec"]["ref"],
+    }  # fmt: skip
+    cl = client(s, "erp")
+    try:
+        doc = dict(cl.request("POST", CREDIT_MEMO, json=body, headers={"Idempotency-Key": ins["idem_key"]}).json())
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    if not doc.get("creditMemo"):
+        raise Refused("The ERP returned no credit memo")
+    pct = pack.close.credit_table.get(str(got.grade_received)) if got.basis == "grade_table" else None
+    memo = {
+        "memo": doc["creditMemo"], "amount": float(got.amount), "erp_amount": float(doc["amount"]), "currency": got.currency,
+        "basis": got.basis, "grade_declared": got.grade_declared, "grade_received": got.grade_received,
+        "quote": float(got.quote) if got.quote is not None else None, "percent": pct, "requote_ref": got.requote_ref,
+    }  # fmt: skip
+    return Sent(
+        [{"call": f"POST {CREDIT_MEMO.lstrip('/')}", "body": body}], doc["creditMemo"], {"confirmed": True, "credit": memo}
+    )
+
+
 # ---------------------------------------------------------------- used-car channels (P9-9.17)
 UC_DMS = "/dealer-dms/api/v1"
 UC_AUCTION = "/vehicle-auction/v1"
@@ -699,6 +739,7 @@ WRITERS = {
     "consignment": consignment,
     "salvage_sale": salvage_sale,
     "payout": payout,
+    "credit": credit,  # P9-13.4: the customer's credit memo, matched against the ERP's
     "order": order,
     "repair": repair,
     "teardown": repair,

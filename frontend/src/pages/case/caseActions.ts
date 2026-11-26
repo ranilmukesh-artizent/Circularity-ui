@@ -1,6 +1,6 @@
 /** The human-in-the-loop actions of the case pages, each one invoke() with the demo's action id and its toast. */
 import { actionTitle, invoke } from '../../api/actions';
-import { approverRole, caseById, checkAcknowledgement, evidencePack, nextStep } from '../../api/case';
+import { approverRole, caseById, checkAcknowledgement, evidencePack, nextStep, resolveSettlement } from '../../api/case';
 import { money } from '../../api/format';
 import { can } from '../../api/session';
 import type { ActionResult } from '../../api/types';
@@ -44,6 +44,10 @@ export const caseActions = {
   async resend(id: string) {
     const r = await invoke('instruction.resend', { case_id: id });
     if (!refused(r, 4200)) toast('Duplicate delivery ignored. The idempotency key already exists, so nothing was created twice.', 4200);
+  },
+  async resolveSettlement(id: string, resolution: 'accept_erp' | 'resend', note: string) {
+    const r = await resolveSettlement(id, resolution, note);
+    if (!refused(r, 4200)) toast(resolution === 'accept_erp' ? 'The ERP amount is the realised credit; the case closes.' : 'The credit was sent again under the same key.');
   },
   async confirmOutcome(id: string) {
     const r = await invoke('outcome.confirm', { case_id: id });

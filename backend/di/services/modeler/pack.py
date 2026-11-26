@@ -432,13 +432,17 @@ FIELD_PART: dict[str, int] = {
 
 
 def close_kinds(pack: Pack, route: Mapping[str, Any]) -> list[str]:
-    """The step kinds that close a route's fixed asset (P9-13.1): `["retire"]` or `["transfer"]` when the pack owns the asset
-    (`close.fixed_asset`) and the route's `asset_effect` says so, else none. A route id may carry its request or site
+    """The step kinds that close a route (P9-13.1, P9-13.4): `["retire"]` or `["transfer"]` when the pack owns the asset
+    (`close.fixed_asset`) and the route's `asset_effect` says so, then `"credit"` when the pack settles customer credits
+    (`close.credit_settlement`), else none. A route id may carry its request or site
     (`redeploy:SITE-3`); the pack's route is the part before the colon. Pure; `di.services.execution.steps` re-exports it."""
-    if not pack.close.fixed_asset:
-        return []
-    pr = next((r for r in pack.routes if r.id == str(route.get("id", "")).split(":", 1)[0]), None)
-    return [pr.asset_effect] if pr is not None and pr.asset_effect in ("retire", "transfer") else []
+    out: list[str] = []
+    if pack.close.fixed_asset:
+        pr = next((r for r in pack.routes if r.id == str(route.get("id", "")).split(":", 1)[0]), None)
+        out += [pr.asset_effect] if pr is not None and pr.asset_effect in ("retire", "transfer") else []
+    if pack.close.credit_settlement:
+        out.append("credit")  # P9-13.4: the customer's credit memo, matched against the ERP's
+    return out
 
 
 class PackError(ValueError):

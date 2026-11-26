@@ -39,6 +39,7 @@ FORBIDDEN_ACTIONS = (
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
     "lot.approve", "lot.reject",  # plan 9 P9-6.11: only a person (or the standing policy) accepts a wholesale lot's bid (R21)
+    "settlement.resolve",  # plan 9 P9-13.4: what to do about a credit the ERP posted differently is Finance's, a person's (R21)
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
     "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "device.ageingSuggestions",  # plan 9 P9-6.13: a person reads the ageing suggestions, accepts one into their draft (R21)

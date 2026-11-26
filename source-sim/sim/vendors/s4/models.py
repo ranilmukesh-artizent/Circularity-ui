@@ -270,8 +270,9 @@ SEQUENCES_DDL = [
     "CREATE SEQUENCE IF NOT EXISTS s4.mblnr_seq START 4900000000",
     "CREATE SEQUENCE IF NOT EXISTS s4.belnr_seq START 100000000",  # number range 01 for document type SA
     "CREATE SEQUENCE IF NOT EXISTS s4.anek_seq START 100000",  # asset documents (P9-13.1)
+    "CREATE SEQUENCE IF NOT EXISTS s4.vbrk_seq START 90000000",  # customer credit memos (P9-13.4)
 ]
-SEQUENCES = ("rsnum_seq", "mblnr_seq", "belnr_seq", "anek_seq")
+SEQUENCES = ("rsnum_seq", "mblnr_seq", "belnr_seq", "anek_seq", "vbrk_seq")
 
 # Fixed assets (plan 9, P9-13.1): the asset master (ANLA-like) and the retirement and transfer documents (ANEK-like). The
 # book value is the ERP's: a retirement's gain or loss is computed here, never by di.
@@ -301,6 +302,19 @@ ANEK = Table(
     Column("GAIN_LOSS", AMT),
     Column("WAERS", String(3)),
     Column("TO_LOCATION", String(20)),
+    Column("BUDAT", Date),
+    _changed(),
+)
+
+# Customer credit memos (plan 9, P9-13.4): one billing document per external reference (VBRK-like)
+VBRK = Table(
+    "VBRK",
+    metadata,
+    Column("VBELN", String(12), primary_key=True),  # billing document number
+    Column("XBLNR", String(40), nullable=False, unique=True),  # external reference: one memo per reference
+    Column("CUSTOMER", String(40)),
+    Column("NETWR", AMT),  # the amount the ERP posted
+    Column("WAERS", String(3)),
     Column("BUDAT", Date),
     _changed(),
 )

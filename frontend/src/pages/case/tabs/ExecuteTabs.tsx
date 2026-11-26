@@ -2,10 +2,10 @@
  * The detail tabs of stages 7 to 10 and the hand-off blocks Full analysis reuses (bestCard, execBlock, tiHandoff,
  * tiReconcile, exMoveHTML, exWhatIfHTML, stPlanTl, stDelivery, stDocsTab, stCarried, stLines).
  */
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { actionCatalog } from '../../../api/actions';
 import {
-  approverRole, defaultSpend, exNum, fixedAssetLine, exTs, leaseResidualLine, fmtD, fmtDY, inr, moveDay, refList, when,
+  approverRole, creditLine, creditMismatch, defaultSpend, exNum, fixedAssetLine, exTs, leaseResidualLine, fmtD, fmtDY, inr, moveDay, refList, when,
   type CaseAnalysis, type CaseRec, type OutcomeLine, type ScenRoutes,
 } from '../../../api/case';
 import { money } from '../../../api/format';
@@ -22,6 +22,28 @@ import type { TabProps } from './index';
 const routeOf = (c: CaseRec) => c.chosen || c.recommendation;
 const routeIndex = (c: CaseRec) => { const r = routeOf(c); return r ? c.routes.findIndex((x) => x.id === r.id && x.plan === r.plan) : -1; };
 const uniq = <T,>(a: T[]) => [...new Set(a)];
+
+// ---------- the customer credit the ERP posted differently (P9-13.4, X-16) ----------
+function SettlementCard({ c }: { c: CaseRec }) {
+  const [note, setNote] = useState('');
+  const text = creditMismatch(c);
+  if (!text) return null;
+  const ok = note.trim().length >= 15;
+  return (
+    <div className="callout" style={{ marginTop: 12 }}>
+      <b>{text}.</b> Check the credit memo in the ERP; accept the ERP amount or send the credit again.
+      {can('confirm') && (
+        <div style={{ marginTop: 8 }}>
+          <input type="text" style={{ width: '100%' }} placeholder="Note for the record (15 characters or more)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="btn sm pri" disabled={!ok} onClick={() => caseActions.resolveSettlement(c.id, 'accept_erp', note.trim())}>Accept the ERP amount</button>
+            <button className="btn sm" disabled={!ok} onClick={() => caseActions.resolveSettlement(c.id, 'resend', note.trim())}>Send again</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ---------- the decision card (bestCard) ----------
 export function BestCard({ c, a }: { c: CaseRec; a: CaseAnalysis; sr?: ScenRoutes }) {
@@ -148,6 +170,7 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
         )}
         <div className="note" style={{ marginTop: 10 }}>Circularity sends the approved instruction. {uniq(steps.map((s) => s.sys.split(' · ')[0])).filter((x) => x !== 'Circularity' && x !== 'Planning').join(' / ')} carries out the work and reports back; those systems stay the record for orders, stock and repairs.</div>
         <HandoffLegend />
+        <SettlementCard c={c} />
         {c.stage === 'closed' && (
           <div className={'callout ' + (c.outcome ? 'ok' : '')} style={{ marginTop: 12 }}>
             {c.outcome
@@ -155,6 +178,7 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
               : <><b>Outcome reported by source systems.</b> Finance confirms the economic result.{can('confirm') && <div style={{ marginTop: 8 }}><button className="btn sm pri" onClick={() => caseActions.confirmOutcome(c.id)}>Confirm outcome <Stp n={10} /></button></div>}</>}
             {fixedAssetLine(c) && <div className="note" style={{ marginTop: 6 }}>{fixedAssetLine(c)}</div>}
             {leaseResidualLine(c) && <div className="note" style={{ marginTop: 6 }}>{leaseResidualLine(c)}</div>}
+            {creditLine(c) && <div className="note" style={{ marginTop: 6 }}>{creditLine(c)}</div>}
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ POST /_sim/faults {"system": "mkt", "kind": "token_expired"}     kinds:
     error          answer `value` (HTTP status, default 500) to every `every`-th call (default every call)
     unavailable    answer 503 to every call (system down)
     token_expired  refuse every call with 401 unless it uses Basic auth: bearer tokens and API keys have expired
+    amount         a mock that posts an amount (the S/4 credit memo) posts `value` cents instead of the one asked (P9-13.4)
 Optional "minutes": the fault ends after that many simulated minutes; otherwise it lasts until removed.
 DELETE /_sim/faults[?system=…] removes faults.
 A mock can register its vendor's error shape for these in SHAPES (AWS IoT: ThrottlingException for a 429, etc.).
@@ -27,7 +28,7 @@ from sim.core import clock
 from sim.core.db import engine
 from sim.core.registry import SYSTEMS
 
-KINDS = {"latency", "error", "unavailable", "token_expired"}
+KINDS = {"latency", "error", "unavailable", "token_expired", "amount"}
 DEMO_FAULTS = [{"system": "mkt", "kind": "token_expired", "note": "Feed token expired 6 Oct (demo SOURCES.mkt)"}]
 
 metadata = MetaData(schema="sim")
