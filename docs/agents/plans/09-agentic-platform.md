@@ -950,7 +950,7 @@ each story went.
 - [x] P9-8.17 Composition object with maker-checker
 - [x] P9-8.18 Compose describe and adapter mapping steps
 - [x] P9-8.19 Compose test run shows where cases stopped
-- [ ] P9-8.20 Compose agent mapping, approve and publish steps
+- [x] P9-8.20 Compose agent mapping, approve and publish steps
 - [x] P9-8.21 DMN and BPMN export from the Modeler
 - [ ] P9-8.22 Compose demo smoke
 - [ ] P9-8.23 Phase 8 gate
@@ -964,8 +964,8 @@ each story went.
 - [x] P9-9.8 Title finance and title brand gates
 - [x] P9-9.9 Odometer and open recall gates
 - [x] P9-9.10 Used-car channel valuer net of costs
-- [ ] P9-9.11 Lot choice and recon approval
-- [ ] P9-9.12 Compose draft from the used-car prompt
+- [x] P9-9.11 Lot choice and recon approval
+- [x] P9-9.12 Compose draft from the used-car prompt
 - [ ] P9-9.13 Used-car mappings and legacy body-shop connector
 - [ ] P9-9.14 Used-car diversions and locked guardrails
 - [ ] P9-9.15 Used-car replay data and 20 percent publish
@@ -984,8 +984,8 @@ each story went.
 - [x] P9-10.6 One case per serial with inventory match gate
 - [x] P9-10.7 Configuration wipe and covered equipment gates
 - [x] P9-10.8 Export control gate and trade compliance approval
-- [ ] P9-10.9 Telecom five-route valuer
-- [ ] P9-10.10 Spares before new and site-swap matching
+- [x] P9-10.9 Telecom five-route valuer
+- [x] P9-10.10 Spares before new and site-swap matching
 - [ ] P9-10.11 Compose draft from the telecom prompt
 - [ ] P9-10.12 Telecom diversions and blocked wipe skip
 - [ ] P9-10.13 Telecom replay data and 20 percent publish
@@ -1002,9 +1002,9 @@ each story went.
 - [x] P9-11.5 Parts supplier portal and disposal partner mocks
 - [x] P9-11.6 One case per tag with decontamination gate
 - [x] P9-11.7 Service in date and safety notice gates
-- [ ] P9-11.8 Medical rental four-route valuer
-- [ ] P9-11.9 Nearest next hospital and repair approval
-- [ ] P9-11.10 Refurbish stays servicing gate
+- [x] P9-11.8 Medical rental four-route valuer
+- [x] P9-11.9 Nearest next hospital and repair approval
+- [x] P9-11.10 Refurbish stays servicing gate
 - [ ] P9-11.11 Compose draft and mappings for medical rental
 - [ ] P9-11.12 Medical diversions and blocked decontamination skip
 - [ ] P9-11.13 Medical replay data and 20 percent publish
