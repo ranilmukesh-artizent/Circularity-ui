@@ -207,3 +207,14 @@ unattended". Times are local (IST).
 | 26 Nov 19:07 | P9-10.17 merged. Questions wq_tn_1, wq_tn_2 in di.services.questions.telecom_network. close_case is callable from code only (no action registered yet). Red run quoted. |
 | 26 Nov 19:07 | P9-11.17 merged. Medical refurbish step renamed biomed_refurb (e26dfa72; it collided with telecom's refurb_order). rental.writeOff held for a person. No DemandModel table: training rows kept on the case. A Waiting disposal collection has no requeue hook yet. |
 | 26 Nov 20:14 | P9-12.1 merged. Per-route eligible_if in valuer.params.routes (no schema change). load_pack validates standard valuers. Schema regenerated in adacf644. |
+| 26 Nov 20:27 | P9-13.3 merged. G-DS-1 reads case vendors first, falls back to downstream. Device pack has no downstream route. Duplicate downstream_roles field removed in a40702a8. |
+| 26 Nov 20:27 | P9-13.7 merged. model.fit/list for every pack file; device price bands go through intake_predictor. No factor ships by default. |
+| 26 Nov 20:29 | P9-13.1 merged. Close step (retire/transfer) appended to routes with asset_effect; S/4 asset endpoints modelled, not verified against SAP docs. |
+| 26 Nov 20:36 | P9-13.9 merged. Owner deactivation refuses /oauth/token and every agent-token request until reactivated (fix b589f1d8: the iat check was second-granular). Migration 0060 filled: re-apply needed on existing databases. |
+| 26 Nov 21:00 | P9-13.2 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-12.2 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.8 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.4 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:00 | P9-13.5 merged. Merged by the lead 26 Nov; see the commit body for decisions. |
+| 26 Nov 21:06 | P9-13.10 merged. Admin-only agent.registerClient/revokeClient/clients; PKCE S256 only; 15-minute tokens with act claim; decision-log row asks Legal review before outside clients go to a customer |
+| 26 Nov 21:43 | P9-12.4 merged. rerent 27,600 / rebuild -6,800 / retail 6,270, recommendation rerent; per-class rates as valuer tables; G-SAFE-1 locked for scissor_lift and telehandler; sim seed fixed (duplicate utilisation key) |

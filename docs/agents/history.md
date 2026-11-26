@@ -147,7 +147,25 @@ drawer org field width), `2e985ff` (audit docs, evidence, research). Audit, find
 - **Research:** `docs/agents/research/2026-11-agent-foundation.md` (keep the in-house agent runtime; MCP first, then
   OpenAPI/CLI and an A2A card).
 
-## 10. Next
+## 10. Plan 9, Recover on the agentic core (25–26 Nov 2026, in progress)
+
+Plan: [docs/agents/plans/09-agentic-platform.md](plans/09-agentic-platform.md); status and known gaps in
+`docs/backend-steps.md` ("Plan 9 status"); per-task commits in `docs/agents/plans/PROGRESS.md`; the run's merges in
+`docs/agents/plans/09-run/RUN-LOG.md`.
+
+- **What:** packs as data (industrial, tool fleet, device, then used cars, telecom network, medical rental, ITAD,
+  rental fleet), a gate catalogue, one decider, a stage chain of agents on an LLM router, replay and staged publish,
+  Compose with organisation sign-in, SCIM and an adapter registry, and the phase-13 close (fixed-asset retirement, lease
+  residual, customer credit, reporting evidence, vendor qualification, model drift, per-agent credentials, OAuth for
+  outside MCP clients).
+- **How:** a lead with parallel writers in two lanes, one task per commit, tests by the change's impact and a gate per
+  phase (the lead runs the shards and the browser smokes); writers' rules in `docs/agents/plans/09-run/WRITER-BRIEF.md`.
+- **Still open when this entry was written:** the phase gates 3 to 13, the remaining phase-12 packs, the final smoke
+  and proof. Plan 10 (one assistant, a Modeler layout; `docs/agents/plans/10-unified-assistant-ux.md`) is in progress.
+- **Legal:** outside-client access and the accounting and reporting texts are reviewed by Kinective's Legal team before a
+  customer relies on them.
+
+## 11. Next
 
 - **Agents:** per-agent credentials instead of a person's token plus a header; MCP tools generated from the action
   catalogue, with OAuth for outside clients (the research above).

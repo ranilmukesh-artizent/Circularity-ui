@@ -56,6 +56,9 @@ Don't edit them; apply these adaptations when you use them:
 | requesting-code-review, receiving-code-review, finishing-a-development-branch | superpowers | Commit and push only when the user asks; branch `feature/fullstack-poc`. |
 | webapp-testing | anthropics | Use the repo's Node Playwright with the installed Chrome (`channel: 'chrome'`, see `frontend/scripts/smoke-*.mjs`), not Python Playwright. Write outputs to the session scratchpad, never `/tmp` or `/mnt/user-data`. |
 | mcp-builder | anthropics | Its `scripts/` folder was removed (its evaluation sent tool results to an external API). This repo's MCP server is Python (`backend/di/mcp/`), so use the Python guide. |
+| frontend-design | anthropics | Work from the existing brand tokens (`frontend/src/styles/`, `frontend/src/layout/app.css`); never change a demo number or text, golden files or the generated demo stylesheet. Plan per `docs/agents/plans/10-unified-assistant-ux.md`. |
+| web-interface-guidelines | vercel-labs | Review any frontend change against it; report file:line. |
+| emil-design-eng | emilkowalski | Interaction polish and motion restraint only; skip its "Initial Response" line. No motion on actions people repeat all day. |
 
 - A cross-reference like `superpowers:test-driven-development` means the project skill of the same name, without
   the prefix.

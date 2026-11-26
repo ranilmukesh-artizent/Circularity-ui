@@ -165,6 +165,30 @@ The **Agents** page is the fuller view:
 **Agent metrics** counts success measures from the journal: interactions to approve, share of changes started through
 the agent, acceptance, edit, undo and fallback rates, time to decision, response time.
 
+### Agent credentials
+
+An agent can sign in on its own instead of borrowing a person's token. On the **Agents** page, **Credentials**: pick the
+agent and press **Issue credential**. The page shows the **client id** and the **client secret once**; copy the secret
+then, because only a hash is kept and nobody can read it again. The list shows each credential's client id, created and
+last used time and status, with **Revoke**. The agent's token lasts 15 minutes and acts with its owner's permissions,
+narrowed by the agent's tools and organisation scope. It prepares work and never approves: the forbidden list and the
+autonomy limits still apply. A revoked credential, a stopped agent or a deactivated owner is refused at the next
+request. Issuing and revoking are a person's
+action; an agent cannot do either.
+
+### Outside clients
+
+**Outside clients** (Agents page, Admin only) lets a program outside Circularity, such as an AI assistant that speaks MCP,
+ask a person for consent and then use Circularity's MCP tools as one of your agents. You register the client: **Client
+name**, **Redirect URIs** (one per line, matched exactly), **Acts as** (the agent) and the scopes it may ask for: *Read
+cases*, *Prepare case actions*, *Draft decision flows*, *Draft configuration* (these three are held for a person) and
+*Find tools*. The client holds no secret. Each use starts with a signed-in person who sees a consent page and allows or
+denies; the token is good for 15 minutes with no refresh, and is refused at the app's own API. **Revoke** stops a client.
+The client is pre-registered by you: dynamic registration is not offered.
+
+> **Legal review first.** Kinective's Legal team reviews outside-client access before it is offered to a customer. Do not
+> register an outside client for a customer organisation until that review is done.
+
 ### Models
 
 The **Models** panel (on the Agents page and at the foot of the Modeler) shows the base model, the active calibration

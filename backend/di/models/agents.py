@@ -143,3 +143,49 @@ trace_span = Table(
     Index("ix_trace_span_run", "run_id", "started_at"),
     Index("ix_trace_span_started", "started_at"),
 )
+
+# --- 0060 client credentials of an agent (plan 9, P9-13.9): only a scrypt hash of the secret is stored ----------------------
+
+agent_credential = Table(
+    "agent_credential",
+    metadata,
+    Column("client_id", Text, primary_key=True),
+    Column("agent_id", Text, ForeignKey("agent_identity.id", ondelete="CASCADE"), nullable=False),
+    Column("owner", Text, nullable=False),  # the account the agent's token acts as
+    Column("secret_hash", Text, nullable=False),  # scrypt$<salt>$<hash>
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    ts("last_used_at"),
+    ts("revoked_at"),
+    Index("ix_agent_credential_agent", "agent_id"),
+)
+
+# --- 0061 OAuth for outside MCP clients (plan 9, P9-13.10): pre-registered public clients, codes stored hashed -----------------
+
+oauth_client = Table(
+    "oauth_client",
+    metadata,
+    Column("client_id", Text, primary_key=True),
+    Column("name", Text, nullable=False),
+    Column("redirect_uris", ARRAY(Text), nullable=False),  # exact match only
+    Column("agent_id", Text, ForeignKey("agent_identity.id", ondelete="CASCADE"), nullable=False),
+    Column("scopes", ARRAY(Text), nullable=False),  # the most a token of this client may carry
+    Column("created_by", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    ts("revoked_at"),
+)
+
+oauth_code = Table(
+    "oauth_code",
+    metadata,
+    Column("code", Text, primary_key=True),  # the SHA-256 of the code, never the code
+    Column("client_id", Text, ForeignKey("oauth_client.client_id", ondelete="CASCADE"), nullable=False),
+    Column("account_id", Text, nullable=False),
+    Column("agent_id", Text, nullable=False),
+    Column("scopes", ARRAY(Text), nullable=False),
+    Column("resource", Text, nullable=False),
+    Column("challenge", Text, nullable=False),
+    Column("redirect_uri", Text, nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    ts("used_at"),
+    Index("ix_oauth_code_client", "client_id"),
+)

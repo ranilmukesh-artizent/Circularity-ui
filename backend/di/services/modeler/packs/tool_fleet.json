@@ -236,6 +236,9 @@
    "classes": [
     "parts"
    ],
+   "downstream_roles": [
+    "parts_broker"
+   ],
    "instructions": []
   },
   {
@@ -247,6 +250,9 @@
    "classes": [
     "recycle",
     "exit"
+   ],
+   "downstream_roles": [
+    "recycler"
    ],
    "instructions": []
   }
@@ -2180,5 +2186,15 @@
   "Sales": "Approver",
   "Sustainability lead": "Approver",
   "Finance": "Finance"
+ },
+ "close": {
+  "credit_settlement": true,
+  "credit_table": {
+   "A": 100,
+   "B": 80,
+   "C": 55,
+   "D": 20
+  },
+  "reporting": ["G-REP-1", "G-REP-2"]
  }
 }

@@ -46,7 +46,7 @@ from sqlalchemy.orm import Session
 
 from di.core import clock
 from di.services.actions.registry import ActionError
-from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan
+from di.services.cases import battery_wait, car_facts, gate_hold, store, telecom_facts, unit_plan, vendor_facts
 from di.services.device import diversions as device_diversions
 from di.services.device import lock as _device_lock  # noqa: F401 - registers the check of the gate G-DEV-LOCK (P9-6.6)
 from di.services.device import verify as _device_verify  # noqa: F401 - registers the check of the gate G-DEV-QUOTE (P9-6.5)
@@ -66,10 +66,11 @@ from di.services.modeler.gates import (
     GateTrigger,
     apply_disclosures,
     apply_gate_results,
+    pack_gates,
     triggered,
 )
 from di.services.modeler.guard import rule_breaks
-from di.services.modeler.pack import Diversion, Pack
+from di.services.modeler.pack import Diversion, Pack, close_kinds
 from di.services.modeler.templates import Template, template_of_pack
 from di.services.modeler.valuers import (
     APPROVALS,
@@ -91,9 +92,16 @@ from di.services.modeler.valuers.device import ChannelValue
 from di.services.modeler.valuers.routes_adapter import to_routes
 from di.services.modeler.valuers.tool_fleet import PathValue
 from di.services.modeler.valuers.tool_inputs import fleet_params
+from di.services.modeler.vendor_qualification import chosen as chosen_vendor
 
 TRACE = ("gates", "valuation", "queue_plan", "rules", "rank")
-GATE_KEYS = ("gates", "gateHold", "requiredSteps", "diversionsApplied")  # the case keys the gates and the diversions set
+GATE_KEYS = (
+    "gates",
+    "gateHold",
+    "requiredSteps",
+    "diversionsApplied",
+    "vendorCheck",
+)  # the case keys the gates and the diversions set
 RULE_KEYS = ("rulesApplied", "rulesWaived", "preferred")
 RULE_REASONS = ("Excluded by business rule ", "Business rule ", FLOW_REMOVED)  # why a path a business rule excluded says
 
@@ -128,6 +136,7 @@ class Decision:
     approval: Mapping[str, Any] | None = None  # a tool return's route for approval and its confidence (P9-3.15)
     approvals: list[dict[str, Any]] = field(default_factory=list)  # the pack's approval limits on the case (P9-9.11)
     evidence: list[str] = field(default_factory=list)  # the plain facts behind the recommendation (P9-9.11)
+    vendor_check: Mapping[str, Any] | None = None  # the chosen route's qualified downstream vendor and certificate (P9-13.3)
 
     @property
     def approval_holds(self) -> list[dict[str, Any]]:
@@ -343,7 +352,7 @@ def _service_desk(c: Mapping[str, Any], t: Template, session: Session | None, as
     return _Valued(routes, ticket["best"], ticket=ticket | {"inputs": inputs})
 
 
-def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) -> _Valued:
+def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule], pack: Pack) -> _Valued:
     lot = _valuer_case(c, "device")
     dec = device.decide(dict(lot), _rule_dicts(rules))
     own = {x["k"]: x for x in device.decide(dict(lot), [])["all"]}
@@ -351,6 +360,9 @@ def _device(c: Mapping[str, Any], t: Template, rules: Sequence[CompiledRule]) ->
         t, [x | {"ok": own[x["k"]]["ok"], "why": own[x["k"]]["why"]} for x in dec["all"]], listing=bool(lot.get("imei"))
     )  # a received device is listed on its channel (P9-6.12)
     _decorate(t, routes)
+    if lot.get("imei") and isinstance(lot.get("quote"), Mapping):  # a received trade-in is credited to the customer (P9-13.4)
+        for r in routes:
+            r["close_steps"] = close_kinds(pack, r)
     best = dec["best"]
     figures = {
         x["k"]: {"cash": x["cash"], "days": x["days"], **device_price.band_figures(x, device.bands_of(lot).get(x["k"]))}
@@ -381,11 +393,17 @@ def _plugin(kind: str, c: Mapping[str, Any], pack: Pack, t: Template, as_of: dat
     best = best_of(values)
     if kind == "used_cars":
         for r in routes:
-            r["steps"] = used_car_steps.follow_steps(r["id"], pack, facts)  # the channel's follow-through (P9-9.17)
+            r["steps"] = [
+                *used_car_steps.follow_steps(r["id"], pack, facts),
+                *close_kinds(pack, r),
+            ]  # follow-through (P9-9.17), close (P9-13.1)
         return _Valued(routes, best["k"] if best else None, approvals=used_cars.approval_checks(facts, pack, values), facts=facts)
     if kind == "medical_rental":
         for r in routes:
-            r["steps"] = medical_steps.follow_steps(r["id"], pack, facts)  # the route's follow-through (P9-11.17)
+            r["steps"] = [
+                *medical_steps.follow_steps(r["id"], pack, facts),
+                *close_kinds(pack, r),
+            ]  # follow-through, close (P9-13.1)
     approve = APPROVALS.get(kind)  # a guardrail the plug-in holds the decision with for a person (P9-11.9)
     holds = approve(facts, pack, values) if approve else []  # a plug-in's holds are failed approval checks (P9-9.11 model)
     return _Valued(routes, best["k"] if best else None, approvals=[dict(h) | {"passed": False} for h in holds], facts=facts)
@@ -415,7 +433,7 @@ def _unit_pack(
         r.id: list(r.instructions) for r in pack.routes
     }  # P9-10.16: a route's steps are the valuer's (`dest.steps`) or the pack's
     for r in routes:
-        r["steps"] = list((r.get("dest") or {}).get("steps") or by_id.get(r["id"].split(":", 1)[0]) or [])
+        r["steps"] = [*((r.get("dest") or {}).get("steps") or by_id.get(r["id"].split(":", 1)[0]) or []), *close_kinds(pack, r)]
     best = max((v for v in values if v["ok"]), key=lambda v: v["net"], default=None)
     return _Valued(routes, best["k"] if best else None)
 
@@ -515,6 +533,10 @@ def decide_case(
         for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
             if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
                 c[model] = data
+    roled = [r for r in pack.routes if r.downstream_roles]
+    own_vendors = "vendors" not in c and bool(roled) and session is not None and any(g.id == "G-DS-1" for g in pack_gates(pack))
+    if own_vendors:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
+        c["vendors"] = vendor_facts.records(cast(Session, session))
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)
@@ -528,7 +550,7 @@ def decide_case(
             else _tool_fleet(before, pack, t, rules, session, queue, planner, blocked)
         )
     elif kind == "device":
-        valued = _device(before, t, rules)
+        valued = _device(before, t, rules, pack)
     elif kind == "telecom_network":  # 2. valuation, then the queue plan of the units (P9-10.10)
         valued = _unit_pack(before, pack, t, session, queue, as_of, blocked)
     elif kind in VALUERS:  # a data-only pack (`standard`) or a code plug-in (I-21)
@@ -570,6 +592,17 @@ def decide_case(
     rec = rank_routes(routes, c.get("blocked") or c.get("gateHold"), chosen)
     rec = _not_held_for_person(rec, routes, results, c.get("life"), c.get("disagreement"))
     approval = _approval(rec, valued, c, results, pack)  # 6. who approves (P9-3.15)
+    check = None
+    c.pop("vendorCheck", None)  # an earlier decision's vendor is stale
+    if rec is not None and c.get("vendors"):  # the chosen route's vendor and certificate, judged on the decision date (P9-13.3)
+        role = next((r for r in roled if r.id == str(rec["id"]).split(":", 1)[0]), None)
+        if role is not None:
+            route_def = {"id": role.id, "downstream_roles": role.downstream_roles}
+            check = chosen_vendor(c["vendors"], route_def, (as_of or clock.now()).date())
+    if check is not None:
+        c["vendorCheck"] = check
+    if own_vendors:
+        c.pop("vendors", None)
     return Decision(
         case_id=str(c.get("id")), pack_key=pack.key, pack_version=pack.version, flow_ver=flow_ver.ver,
         route=rec["id"] if rec else None, net=float(rec["net"]) if rec else 0.0, routes=routes, recommendation=rec,
@@ -580,7 +613,7 @@ def decide_case(
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
         approval=approval,
         approvals=[*_approvals(valued, rec), *_customer_approvals(diversions, rec, pack)],
-        evidence=_evidence(valued, rec, pack, as_of),
+        evidence=_evidence(valued, rec, pack, as_of), vendor_check=check,
     )  # fmt: skip
 
 

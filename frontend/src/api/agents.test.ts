@@ -9,7 +9,7 @@ vi.mock('./actions', () => ({ invoke: m.invoke, read: m.read }));
 vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 
 import {
-  acceptProposal, findTools, startAdapterDraft, fitModel, fitStageCalibration, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
+  acceptProposal, agentCredentials, findTools, outsideClients, registerClient, revokeClient, issueCredential, revokeCredential, startAdapterDraft, fitModel, fitStageCalibration, checkModelDrift, promoteModel, proposeModel, reasonText, registerAgent, rejectProposal, runTrace, setAgentEnabled, setLlmModel, spanRows, spanTree, STAGE_OPTIONS, stageCalibrationOf, stageLabel, stageReading, startRun, updateAgent, useAgents, useModels,
   type TraceSpan,
 } from './agents'; // prettier-ignore
 import { actionScope } from './invalidation';
@@ -59,11 +59,15 @@ describe('the Agents facade (plan 8 MVP-11.8)', () => {
       [() => setLlmModel('groq-default', { enabled: false, priority: 2 }), 'llm.setModel', { id: 'groq-default', enabled: false, priority: 2 }],
       [() => fitModel(), 'model.fit', { template: 'industrial' }],
       [() => fitModel('device'), 'model.fit', { template: 'device' }],
+      [() => fitModel('used_cars'), 'model.fit', { template: 'used_cars' }],
+      [() => fitModel('telecom_network'), 'model.fit', { template: 'telecom_network' }],
+      [() => fitModel('medical_rental'), 'model.fit', { template: 'medical_rental' }],
       [() => fitModel('tool_fleet', 'rated_life'), 'model.fit', { template: 'tool_fleet', kind: 'rated_life' }],
       [() => fitModel('device', 'price'), 'model.fit', { template: 'device', kind: 'price' }],
       [() => fitModel('tool_fleet', 'take_up'), 'model.fit', { template: 'tool_fleet', kind: 'take_up' }],
       [() => fitStageCalibration('industrial', 'disposition'), 'stage.fitCalibration', { pack: 'industrial', stage: 'disposition' }],
       [() => proposeModel('MV-001'), 'model.propose', { id: 'MV-001' }],
+      [() => checkModelDrift('MV-001'), 'model.checkDrift', { id: 'MV-001' }],
       [() => promoteModel('MV-001'), 'model.promote', { id: 'MV-001' }],
     ];
     for (const [run, id, body] of cases) {
@@ -158,5 +162,28 @@ describe('findTools (plan 9 P9-2.12)', () => {
     expect(m.invoke).not.toHaveBeenCalled();
     m.invoke.mockResolvedValueOnce({ ok: false, code: 'out_of_scope', message: 'no' });
     expect(await findTools('case')).toEqual([]);
+  });
+});
+
+describe('agent credentials (P9-13.9)', () => {
+  it('issues, lists and revokes through the action pipeline', async () => {
+    await issueCredential('finder');
+    expect(last()).toEqual(['agent.issueCredential', { agent_id: 'finder' }]);
+    await agentCredentials('finder');
+    expect(last()).toEqual(['agent.credentials', { agent_id: 'finder' }]);
+    await revokeCredential('agc_1');
+    expect(last()).toEqual(['agent.revokeCredential', { client_id: 'agc_1' }]);
+  });
+});
+
+describe('outside MCP clients (P9-13.10)', () => {
+  it('registers, lists and revokes through the action pipeline', async () => {
+    const c = { name: 'Tool', redirect_uris: ['http://localhost:9/cb'], agent_id: 'finder', scopes: ['cases:read'] };
+    await registerClient(c);
+    expect(last()).toEqual(['agent.registerClient', c]);
+    await outsideClients();
+    expect(last()).toEqual(['agent.clients', {}]);
+    await revokeClient('ocl_1');
+    expect(last()).toEqual(['agent.revokeClient', { client_id: 'ocl_1' }]);
   });
 });

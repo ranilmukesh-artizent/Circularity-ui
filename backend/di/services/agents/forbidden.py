@@ -39,6 +39,7 @@ FORBIDDEN_ACTIONS = (
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
     "lot.approve", "lot.reject",  # plan 9 P9-6.11: only a person (or the standing policy) accepts a wholesale lot's bid (R21)
+    "settlement.resolve",  # plan 9 P9-13.4: what to do about a credit the ERP posted differently is Finance's, a person's (R21)
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
     "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "device.ageingSuggestions",  # plan 9 P9-6.13: a person reads the ageing suggestions, accepts one into their draft (R21)
@@ -64,6 +65,7 @@ HELD_FOR_PERSON = (
     "requisition.reduce",  # P9-10.16: cutting a purchase requisition is a person's; the follow-through agent prepares it
     "rental.writeOff",  # P9-11.17: the write-off of a retired rental device is posted by Finance
     "usedCar.post",  # P9-9.20: the residual gain or loss and the lessee's charges of a sold car are posted by Finance
+    "case.attachReporting",  # P9-13.5: reporting evidence for a close is attached by a person; an agent may prepare it
 )  # a policy draft is a person's (P9-2.5)
 
 # Writes that only add caution: never held for a person (phase 2 review). Holding them would let a model's own concern

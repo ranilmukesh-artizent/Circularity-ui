@@ -2,15 +2,15 @@
 
 Written against source-sim's Windchill mock (source-sim/sim/vendors/windchill, MVP-9.2), a synthetic stand-in: no real
 Windchill is connected. Windchill REST Services, ProdMgmt domain (OData v4), HTTP Basic:
-1. GET Parts, following `@odata.nextLink` (the server's paging) â†’ one `parts` record per part;
-2. for every part, POST Parts('<ID>')/PTC.ProdMgmt.GetPartStructure â†’ one `structures` record per part that uses
+1. GET Parts, following `@odata.nextLink` (the server's paging) → one `parts` record per part;
+2. for every part, POST Parts('<ID>')/PTC.ProdMgmt.GetPartStructure → one `structures` record per part that uses
    other parts (an assembly), with the state of each used part from step 1.
 Neither resource has a change time, so both are read in full (Resource.delta False).
 
 Not one of the demo's 21 sources: it starts unregistered, so every demo screen and count is unchanged (as AWS IoT
 starts not provisioned). di.connectors.extra registers it (status disconnected, optionally bound to an org unit) and
 source.reconnect connects it. A second instance (plm_wc_2, plm_wc_3 ...) reads with the same adapter
-(registry.python_adapter â†’ instance()), bound to another org unit.
+(registry.python_adapter → instance()), bound to another org unit.
 
 Facts, keyed per the source's org unit (schema.part_key, bom_key: two org units never collide)
     part.<org>:<Number>                       number, name, revision (Version; the provenance keeps Version.Iteration),
@@ -130,7 +130,7 @@ class WindchillAdapter(Adapter):
                 Fact("bom", key, "qty", u.get("Quantity"), "Uses.Quantity", u.get("Quantity"), "Pass-through"),
                 Fact("bom", key, "parent_revision", rev, "Version", rev, "Pass-through"),
                 Fact("bom", key, "harvestable", u.get("State") in HARVESTABLE, "Uses.Part.State", u.get("State"),
-                     "Released or obsolete â†’ harvestable"),
+                     "Released or obsolete → harvestable"),
             ]
         )  # fmt: skip
 

@@ -9,6 +9,7 @@ import re
 from typing import Any
 
 from di.repositories.common import Case, demand_order
+from di.services.modeler.pack import close_kinds  # noqa: F401 - re-exported: the pure rule lives with the pack model (P9-13.1)
 
 
 def _s(label, sys, doc, owner, lim, ev, off, note, why) -> dict[str, Any]:
@@ -85,8 +86,9 @@ EX_STEP: dict[str, dict[str, Any]] = {
     # plan 9 P9-4.9: a service ticket's old tool comes back (the Returns case opens on its acknowledgement), then the credit goes
     "takeback": _s("Take back the old tool", "WMS · inbound receipt", ("RCV", "Receipt"), "Fleet desk", 48, "tool.received", 33,
                    "old tool received; a Returns case opened for it", "The Fleet desk receives the tool the customer returns"),
-    "credit": _s("Release the credit", "ERP · credit memo", ("CM", "Credit memo"), "Finance", 16, "credit.released", 71,
-                 "credit memo released to the customer", "Finance releases the credit once the old tool is received"),
+    # plan 9 P9-13.4 (X-16): the credit memo to the customer; a service ticket's upgrade plan also ends on it
+    "credit": _s("Customer credit memo", "ERP · billing", ("CM", "Credit memo"), "Finance", 16, "credit.posted", 74,
+                 "credit memo posted to the customer", "The ERP posts customer credits; Finance owns the match"),
     # plan 9 P9-5.5: an approved contract refresh is sent, its lines drafted and its units held (the systems answer
     # with the proposal, the draft lines and the reservation; PR-, DL- and RU- are their planned numbers, which the mocks keep)
     "propsend": _s("Send the proposal", "Fleet contract system · proposal", ("PR", "Proposal"), "Fleet desk", 8,
@@ -164,6 +166,13 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "recycler_pickup": _s("Recycler pickup", "Recycler portal · pickup", ("PU", "Pickup"), "Sustainability lead", 24,
                           "collection.confirmed", 13, "pickup scheduled with the certified recycler",
                           "The sustainability lead sends the unit to a recycler whose certificate is valid"),
+    # plan 9 P9-13.1 (X-13): the close of a pack that owns the asset; the ERP stays the book of record for fixed assets
+    "retire": _s("Fixed-asset retirement", "ERP · fixed assets", ("FA", "Asset document"), "Finance", 16, "asset.retired", 70,
+                 "asset retired with its proceeds; gain or loss posted",
+                 "The ERP stays the book of record for fixed assets; Finance owns the retirement"),
+    "transfer": _s("Asset transfer", "ERP · fixed assets", ("FA", "Asset document"), "Finance", 16, "asset.transferred", 72,
+                   "asset transferred to its new site; posted in the ERP",
+                   "The ERP stays the book of record for fixed assets; Finance owns the transfer"),
 }  # fmt: skip
 
 # The step plan per route; a refurbish-then-sell resale gets a repair step after the reservation. A step's identity is
@@ -238,6 +247,7 @@ def ex_kinds(r: dict) -> list[str]:
     k = list(STEP_TPL.get(r.get("id") or "resale") or STEP_TPL["resale"])
     if r.get("id") == "resale" and r.get("variant") == "refurb":
         k.insert(1, "repair")
+    k += [x for x in r.get("close_steps") or [] if x not in k]  # P9-13.4: a pack's close steps after the route's own (decide.py)
     if r.get("variant") == "listing":  # plan 9 P9-6.12: a received device on a channel is listed, not entered as a sale order
         k = ["list" if x == "sale" else x for x in k]
     return k

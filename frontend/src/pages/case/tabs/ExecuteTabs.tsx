@@ -2,10 +2,10 @@
  * The detail tabs of stages 7 to 10 and the hand-off blocks Full analysis reuses (bestCard, execBlock, tiHandoff,
  * tiReconcile, exMoveHTML, exWhatIfHTML, stPlanTl, stDelivery, stDocsTab, stCarried, stLines).
  */
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { actionCatalog } from '../../../api/actions';
 import {
-  approverRole, defaultSpend, exNum, exTs, fmtD, fmtDY, inr, moveDay, refList, when,
+  TREATMENT_CODE, approverRole, attachReporting, creditLine, creditMismatch, defaultSpend, exNum, fixedAssetLine, waitingEvidence, exTs, leaseResidualLine, fmtD, fmtDY, inr, moveDay, refList, when,
   type CaseAnalysis, type CaseRec, type OutcomeLine, type ScenRoutes,
 } from '../../../api/case';
 import { money } from '../../../api/format';
@@ -15,6 +15,8 @@ import { openExSrc, openPayload, openRaw } from '../CaseDrawers';
 import { Timeline } from '../../../components/kit/Timeline';
 import { VendorLogo } from '../../../components/kit/VendorLogo';
 import { AfBadge, CasePanel, Doc, ExClockChip, Kv, Pva, Stp, Tag, locOf } from '../CaseBlocks';
+import { toast } from '../../../components/toast';
+import { refused } from '../../../hooks/useAction';
 import { approveGuarded, caseActions, declineGuarded } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
 import type { TabProps } from './index';
@@ -22,6 +24,28 @@ import type { TabProps } from './index';
 const routeOf = (c: CaseRec) => c.chosen || c.recommendation;
 const routeIndex = (c: CaseRec) => { const r = routeOf(c); return r ? c.routes.findIndex((x) => x.id === r.id && x.plan === r.plan) : -1; };
 const uniq = <T,>(a: T[]) => [...new Set(a)];
+
+// ---------- the customer credit the ERP posted differently (P9-13.4, X-16) ----------
+function SettlementCard({ c }: { c: CaseRec }) {
+  const [note, setNote] = useState('');
+  const text = creditMismatch(c);
+  if (!text) return null;
+  const ok = note.trim().length >= 15;
+  return (
+    <div className="callout" style={{ marginTop: 12 }}>
+      <b>{text}.</b> Check the credit memo in the ERP; accept the ERP amount or send the credit again.
+      {can('confirm') && (
+        <div style={{ marginTop: 8 }}>
+          <input type="text" style={{ width: '100%' }} placeholder="Note for the record (15 characters or more)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="btn sm pri" disabled={!ok} onClick={() => caseActions.resolveSettlement(c.id, 'accept_erp', note.trim())}>Accept the ERP amount</button>
+            <button className="btn sm" disabled={!ok} onClick={() => caseActions.resolveSettlement(c.id, 'resend', note.trim())}>Send again</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ---------- the decision card (bestCard) ----------
 export function BestCard({ c, a }: { c: CaseRec; a: CaseAnalysis; sr?: ScenRoutes }) {
@@ -113,6 +137,28 @@ function HandoffLegend() {
     </div>
   );
 }
+/** The evidence card of a case whose last step waits for the facility's report (P9-13.5, X-16): what is missing, and the form. */
+function ReportingCard({ c, waiting }: { c: CaseRec; waiting: string }) {
+  const [f, setF] = useState({ mass: '', material: '', code: '', ref: '' });
+  const bad = !(Number(f.mass) > 0) || !f.material.trim() || !TREATMENT_CODE.test(f.code.trim()) || !f.ref.trim();
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const submit = async () => {
+    const r = await attachReporting(c.id, { mass_kg: Number(f.mass), material: f.material.trim(), treatment_code: f.code.trim(), source_ref: f.ref.trim() });
+    if (!refused(r, 4200)) toast(r.ok && r.output.closed ? c.id + ' closed: reporting evidence received.' : 'Evidence saved; the case still waits for the rest.', 4200);
+  };
+  return (
+    <div className="note" id="tiReporting" style={{ marginTop: 12 }}>
+      <b>{waiting}</b>
+      <div className="row" style={{ marginTop: 6, gap: 8, flexWrap: 'wrap' }}>
+        <input aria-label="Mass in kilograms" type="number" min={0} step="0.1" placeholder="Mass (kg)" value={f.mass} onChange={set('mass')} />
+        <input aria-label="Material" placeholder="Material" value={f.material} onChange={set('material')} />
+        <input aria-label="Treatment code" placeholder="Code, e.g. R4" value={f.code} onChange={set('code')} />
+        <input aria-label="Facility reference" placeholder="Facility reference" value={f.ref} onChange={set('ref')} />
+        <button className="btn sm" disabled={bad || !can('assess')} onClick={submit}>Attach evidence</button>
+      </div>
+    </div>
+  );
+}
 export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
   const ui = useCaseUi();
   const r = routeOf(c);
@@ -128,7 +174,7 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
           <div key={i} className={'ev ' + (s.state === 'done' ? '' : s.state === 'active' ? 'partial' : 'missing')} id={'tiHo' + (i + 1)} style={dim(s) ? { opacity: 0.62 } : undefined}>
             <span className="ic" aria-hidden="true" style={dim(s) ? { background: 'var(--panel3)', color: 'var(--ink)' } : undefined}>{s.state === 'done' ? '✓' : i + 1}</span>
             <div>
-              <b>{s.label} <span className={'chip ' + (!started || s.state === 'todo' ? 'line' : s.state === 'active' ? 'warn' : 'ok')}>{!started || s.state === 'todo' ? 'Not sent' : s.state === 'active' ? 'Sent · awaiting acknowledgement' : i === steps.length - 1 ? 'Done' : 'Acknowledged'}</span></b>
+              <b>{s.label} <span className={'chip ' + (!started || s.state === 'todo' ? 'line' : s.state === 'active' ? 'warn' : 'ok')}>{!started || s.state === 'todo' ? 'Not sent' : s.state === 'active' ? 'Sent · awaiting acknowledgement' : s.state === 'waiting_evidence' ? 'Acknowledged · waiting for evidence' : i === steps.length - 1 ? 'Done' : 'Acknowledged'}</span></b>
               <small>
                 To <b>{s.app}</b> <span className="note">{s.sys}</span>
                 {s.ack
@@ -139,6 +185,7 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
             <em>{s.ack ? fmtD(s.ack.at) : ''}</em>
           </div>
         ))}
+        {waitingEvidence(steps) && <ReportingCard c={c} waiting={waitingEvidence(steps) ?? ''} />}
         {started && (
           <div className="row" style={{ marginTop: 12 }}>
             <button className="btn sm" disabled={done >= steps.length} onClick={() => caseActions.advance(c.id)}>Check for acknowledgement</button>
@@ -148,11 +195,15 @@ export function ExecBlock({ c, a }: { c: CaseRec; a: CaseAnalysis }) {
         )}
         <div className="note" style={{ marginTop: 10 }}>Circularity sends the approved instruction. {uniq(steps.map((s) => s.sys.split(' · ')[0])).filter((x) => x !== 'Circularity' && x !== 'Planning').join(' / ')} carries out the work and reports back; those systems stay the record for orders, stock and repairs.</div>
         <HandoffLegend />
+        <SettlementCard c={c} />
         {c.stage === 'closed' && (
           <div className={'callout ' + (c.outcome ? 'ok' : '')} style={{ marginTop: 12 }}>
             {c.outcome
               ? <><b>Outcome confirmed.</b> Predicted {money(r.net)} · actual {money(c.outcome.net)} · variance {money(c.outcome.net - r.net)}{c.outcome.order ? ' against ' + c.outcome.order : ''}. Linked to {c.exec?.decisionId} for learning. <a className="lnk" href={'#/product/' + c.id + '/stage/10'}>Line by line (step 10)</a></>
               : <><b>Outcome reported by source systems.</b> Finance confirms the economic result.{can('confirm') && <div style={{ marginTop: 8 }}><button className="btn sm pri" onClick={() => caseActions.confirmOutcome(c.id)}>Confirm outcome <Stp n={10} /></button></div>}</>}
+            {fixedAssetLine(c) && <div className="note" style={{ marginTop: 6 }}>{fixedAssetLine(c)}</div>}
+            {leaseResidualLine(c) && <div className="note" style={{ marginTop: 6 }}>{leaseResidualLine(c)}</div>}
+            {creditLine(c) && <div className="note" style={{ marginTop: 6 }}>{creditLine(c)}</div>}
           </div>
         )}
       </div>

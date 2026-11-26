@@ -26,12 +26,12 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+import jwt
 from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from di.core import clock, policy, state
-from di.core.auth import principal
+from di.core.auth import resolve_mcp
 from di.mcp import calllog, catalog_tools
 from di.mcp.tools import ACTIONS_OF, AGENTS, NO_APPROVAL_REF, RUN, TOOLS, Refused, ToolCall, cross_tenant
 from di.services.actions.pipeline import Actor, CallContext
@@ -131,10 +131,36 @@ def _account(s: Session, token: str | None) -> tuple[policy.Account, policy.Cont
     if not token:
         return None
     try:
-        p = principal(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token), s)
-    except HTTPException:
+        p = resolve_mcp(token, s)
+    except (HTTPException, jwt.PyJWTError):
         return None
     return p.account, p.ctx
+
+
+def token_agent(token: str | None) -> str | None:
+    """The agent an agent token (sub "agent:<id>", P9-13.9) names; None for a person's token or no valid token."""
+    if not token:
+        return None
+    from di.core.db import SessionLocal
+
+    with SessionLocal() as s:
+        try:
+            return resolve_mcp(token, s).agent_id
+        except (HTTPException, jwt.PyJWTError):
+            return None
+
+
+def effective_agent(token: str | None, named: str | None) -> str | None:
+    """The agent a call acts as: the token's own when it is an agent token (a different X-Agent is refused later, in
+    _run), else the X-Agent header (the person JWT plus X-Agent keeps working for the demo)."""
+    return token_agent(token) or named
+
+
+def _principal_agent(s: Session, token: str | None) -> str | None:
+    try:
+        return resolve_mcp(token, s).agent_id if token else None
+    except (HTTPException, jwt.PyJWTError):
+        return None
 
 
 def tools_for(agent_id: str | None) -> set[str] | None:
@@ -196,6 +222,11 @@ def _run(s: Session, who: Caller, call: Call, tool_id: str, args: dict) -> dict:
     account, pctx = acct
     call.account = account.id
     # 1 authenticate: the agent (registered), its kill switch, the tenant it acts for
+    own = _principal_agent(s, who.token)  # P9-13.9: with an agent's own token the agent comes from the token
+    if own and who.agent_id and who.agent_id != own:
+        call.step("Authenticate agent token", False, f"Token is for {own}, not {who.agent_id}")
+        return call.fail("conflict", f"This token is for the agent {own}; X-Agent names {who.agent_id}.")
+    who = Caller(token=who.token, agent_id=own or who.agent_id, tenant=who.tenant)
     row = agent_registry.get(s, who.agent_id) if who.agent_id else None
     ag = agent_of(row)
     call.agent = ag

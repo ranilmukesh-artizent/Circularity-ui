@@ -326,6 +326,17 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-10.17 telecom close and learn with worked questions | this commit | wt-check 9 on 10 files (mr/tn close, tn follow-through, medical paths, pack tests, steps, instructions send, gates, execution): pytest ok; ruff, format, mypy, lint-imports ok | done |
 | 2026-11-26 | 09 · P9-11.17 medical follow-through hospital evidence and close | this commit | wt-check 9 on 10 files (mr/tn close, tn follow-through, medical paths, pack tests, steps, instructions send, gates, execution): pytest ok; ruff, format, mypy, lint-imports ok | done |
 | 2026-11-26 | 09 · P9-12.1 extend the standard valuer with conditions and decay | this commit | wt-check 9 test_standard_valuer, test_pack_format: 28 passed; 1 failed (test_device_template_equals_po_golden, lane B 6.13 scope dims, not 12.1); lint ok | done |
+| 2026-11-26 | 09 · P9-13.3 downstream vendor qualification with certificate dates | this commit | wt-check 9 own tests + pack_format, standard_valuer, tn_follow_through: passed except test_device_template_equals_po_golden (lane B 6.13, known); lint ok | done |
+| 2026-11-26 | 09 · P9-13.7 calibration and model candidates across all packs | this commit | wt-check 9 own tests + pack_format, standard_valuer, tn_follow_through: passed except test_device_template_equals_po_golden (lane B 6.13, known); lint ok | done |
+| 2026-11-26 | 09 · P9-13.1 fixed-asset retirement and transfer instructions | this commit | writer: test_x13_asset_retirement + full wt-check ok; source-sim test_s4_assets 6 passed (private db); lead: uc/tn/mr follow-through fixed in fa5cbc5e (wt-check 2: all passed) | done |
+| 2026-11-26 | 09 · P9-13.9 per-agent credentials with client credentials | this commit | wt-check 9 test_agent_credentials, test_auth, test_access_matrix, test_agent_registry: all passed; lint ok | done |
+| 2026-11-26 | 09 · P9-13.2 lease residual gain or loss on the case | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-12.2 iTAD pack with manifest reconciliation | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.8 model quality, drift and cadence across packs | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.4 customer credit settlement with ERP match | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.5 close only with reporting evidence | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
+| 2026-11-26 | 09 · P9-13.10 oAuth for outside MCP clients | this commit | 3 api test files, ruff, mypy, lint-imports, tsc, vitest, eslint green | done |
+| 2026-11-26 | 09 · P9-12.4 rental fleet pack with re-rent rebuild or sell | this commit | api: 35 pass (only known po_golden fail), source-sim test_equipment_rental 5 pass, lint green | done |
 
 ## Decisions taken without the user (to review)
 

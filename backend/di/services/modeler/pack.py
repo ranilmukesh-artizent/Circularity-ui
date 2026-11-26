@@ -100,9 +100,25 @@ class PackRoute(_Part):
     lead_days: int | None = None
     classes: list[RouteClass]
     instructions: list[str] = Field(default_factory=list)
+    # the vendor roles the route hands the asset to (`recycler`, `parts_broker`): G-DS-1 qualifies one of them (P9-13.3)
+    downstream_roles: list[str] = Field(default_factory=list)
     # a route the pack values and gates for one kind of case only (device wholesale: Recover cases). It is not a path of the
     # pack's default flow, so what is derived from the flow (templates, parser, sample history) leaves it out (P9-6.10 fix).
     recover_only: bool = False
+    # plan 9 P9-13.1 (X-13): what the route does to the fixed asset in the books once it is approved: retired (sold, salvaged,
+    # written off) or transferred (redeployed to another site or cost centre). `none`: the asset's book is not touched.
+    asset_effect: Literal["retire", "transfer", "none"] = "none"
+
+
+class PackClose(_Part):
+    """The close-and-learn switches of a pack (plan 9 phase 13). Every default changes nothing: a pack that does not name one
+    behaves as before (the industrial pack carries none)."""
+
+    fixed_asset: bool = False  # the pack owns the asset: an approved route retires or transfers it in the ERP (X-13)
+    lease_residual: bool = False
+    credit_settlement: bool = False
+    credit_table: dict[str, float] = Field(default_factory=dict)  # grade -> credit percent
+    reporting: list[str] = Field(default_factory=list)
 
 
 class ForbidDef(_Part):
@@ -362,6 +378,7 @@ class Pack(_Part):
     # 13 stories and fraud signals
     stories: list[str]
     fraud: FraudRules | None = None  # plan 9 P9-2.11: the fraud rules (di.services.modeler.fraud); none: no fraud hold
+    close: PackClose = Field(default_factory=PackClose)  # plan 9 P9-13.1: the close-and-learn switches (default: all off)
 
     @field_validator("stages")
     @classmethod
@@ -410,7 +427,22 @@ FIELD_PART: dict[str, int] = {
     **dict.fromkeys(("kpis", "analytics"), 12),
     "stories": 13,
     "fraud": 13,
+    "close": 13,
 }  # fmt: skip
+
+
+def close_kinds(pack: Pack, route: Mapping[str, Any]) -> list[str]:
+    """The step kinds that close a route (P9-13.1, P9-13.4): `["retire"]` or `["transfer"]` when the pack owns the asset
+    (`close.fixed_asset`) and the route's `asset_effect` says so, then `"credit"` when the pack settles customer credits
+    (`close.credit_settlement`), else none. A route id may carry its request or site
+    (`redeploy:SITE-3`); the pack's route is the part before the colon. Pure; `di.services.execution.steps` re-exports it."""
+    out: list[str] = []
+    if pack.close.fixed_asset:
+        pr = next((r for r in pack.routes if r.id == str(route.get("id", "")).split(":", 1)[0]), None)
+        out += [pr.asset_effect] if pr is not None and pr.asset_effect in ("retire", "transfer") else []
+    if pack.close.credit_settlement:
+        out.append("credit")  # P9-13.4: the customer's credit memo, matched against the ERP's
+    return out
 
 
 class PackError(ValueError):

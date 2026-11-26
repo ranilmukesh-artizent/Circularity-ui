@@ -1,23 +1,44 @@
-"""Reserved for P9-13.8 (plan 9): Model quality, drift and cadence across packs.
+"""P9-13.8 (plan 9): the model registry fields: kind, pack, training time and window, quality, drift, cadence.
 
-Empty until that task fills it. Plan 9's writers run in parallel and merge in any order, so every migration from
-0029 to 0061 exists, chained, from the start; a filled one is idempotent (IF NOT EXISTS), and
-`scripts/dev/migrate-reapply.sh 0028` applies it on a database that already ran it empty.
+Idempotent: `kind` exists since 0042, and every other column is added with IF NOT EXISTS. `pack` is backfilled from `template`.
 
 Revision ID: 0059
 Revises: 0058
-Create Date: 2026-11-25
+Create Date: 2026-11-26
 """
+
+from alembic import op
 
 revision = "0059"
 down_revision = "0058"
 branch_labels = None
 depends_on = None
 
+BACKFILL = "UPDATE model_version SET pack = template WHERE pack IS NULL"
+
 
 def upgrade() -> None:
-    pass
+    op.execute("ALTER TABLE model_version ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'calibration'")
+    for col in (
+        "pack text",
+        "trained_at timestamptz",
+        "data_window jsonb",
+        "quality jsonb",
+        "drift jsonb",
+        "drift_status text",
+        "cadence text",
+        "next_due timestamptz",
+    ):
+        op.execute(f"ALTER TABLE model_version ADD COLUMN IF NOT EXISTS {col}")
+    op.execute("ALTER TABLE model_version DROP CONSTRAINT IF EXISTS model_version_drift_status")
+    op.execute(
+        "ALTER TABLE model_version ADD CONSTRAINT model_version_drift_status "
+        "CHECK (drift_status IS NULL OR drift_status IN ('ok','watch','alert'))"
+    )
+    op.execute(BACKFILL)
 
 
 def downgrade() -> None:
-    pass
+    op.execute("ALTER TABLE model_version DROP CONSTRAINT IF EXISTS model_version_drift_status")
+    for col in ("next_due", "cadence", "drift_status", "drift", "quality", "data_window", "trained_at", "pack"):
+        op.execute(f"ALTER TABLE model_version DROP COLUMN IF EXISTS {col}")

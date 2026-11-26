@@ -19,6 +19,11 @@ the valuation goes on; mode "hold" leaves no recommendation until the record is 
 back, with no case after `missing_after_days`, for the record's org). `case["custody"]` is append-only: `{at, event, source,
 location, by}` with event "received", "matched", "moved" or "released"; it is never edited or removed, and a revalue keeps it.
 
+A pack may name its own exception types (P9-12.2, the ITAD manifest): `record_match.extra_type` and `missing_type` (ids of its
+`runtime.exception_types`, `type_id`), and `critical` (the ids whose items sort first, priority 10); an item's owner goes
+through the pack's `roles`. A source that carries `asset.custody` (events with their times) gives the case's custody
+itself (`receive`), in its order and under its own name.
+
 Never does: decide, approve or resolve anything; an item waits for a person. The industrial pack has no `record_match` and
 no custody, so the demo's cases are unchanged. Custody is a record the platform keeps; it makes no claim about legal
 chain-of-custody requirements, which Kinective's Legal team reviews.
@@ -90,6 +95,24 @@ def _type(pack: Pack, type_id: str) -> Any:
     return next((t for t in pack.runtime.exception_types if t.id == type_id), None)
 
 
+def type_id(pack: Pack, kind: str) -> str:
+    """The exception type id for `kind` ("extra": received, not in the record; "missing": expected, no case): the pack's
+    `record_match.extra_type` / `missing_type` when it names one (the ITAD manifest, P9-12.2), else the default."""
+    spec = _spec(pack) or {}
+    return str(spec.get(f"{kind}_type") or (NOT_IN_RECORD if kind == "extra" else EXPECTED_MISSING))
+
+
+def _role(pack: Pack, kind: Any) -> str:
+    """The app role an item of this exception type goes to: the type's owner through the pack's `roles`, else as written."""
+    return pack.roles.get(kind.owner_role, kind.owner_role) if kind else "Planner"
+
+
+def _critical(s: Session, pack: Pack, item_id: int, type_id_: str) -> None:
+    """An item of a type the pack lists in `record_match.critical` sorts first in My work (priority 10)."""
+    if type_id_ in ((_spec(pack) or {}).get("critical") or []):
+        s.execute(text("UPDATE work_item SET priority = 10 WHERE id = :i"), {"i": item_id})
+
+
 # ---------------------------------------------------------------- the match
 def match(s: Session, case: Mapping[str, Any], pack: Pack) -> MatchResult:
     """Is the case's asset in the system of record? (module docstring)"""
@@ -141,8 +164,31 @@ def receive(s: Session, case: MutableMapping[str, Any], by: str) -> None:
     """Custody "received": the asset arrived, where the case says it is (a non-industrial case that has none yet)."""
     if case.get("template") in (None, "industrial") or case.get("custody"):
         return
+    if _carried(s, case):
+        return
     _, src = _located(s, case.get("assetId"))
     _add(case, "received", src, case.get("location"), by)
+
+
+def _carried(s: Session, case: MutableMapping[str, Any]) -> bool:
+    """A source that carries the chain of custody itself (`asset.custody`, the ITAD logistics, P9-12.2): its events, in its
+    order, with that source, become the case's custody. True when it had some."""
+    row = s.execute(
+        text(
+            "SELECT c.data -> 'custody' AS ev, (SELECT p.source_id FROM provenance p WHERE p.model = 'asset' AND p.key = c.key "
+            "AND p.field = 'custody' ORDER BY p.fetched_at DESC LIMIT 1) AS src FROM canonical c "
+            "WHERE c.model = 'asset' AND c.key = :k"
+        ),
+        {"k": case.get("assetId")},
+    ).first()
+    if row is None or not isinstance(row.ev, list) or not row.ev:
+        return False
+    events = row.ev
+    for e in events:
+        case.setdefault("custody", []).append(
+            {"at": e.get("at"), "event": e.get("event"), "source": row.src, "location": case.get("location"), "by": e.get("by")}
+        )
+    return True
 
 
 def released(case: MutableMapping[str, Any], by: str = "system") -> None:
@@ -174,15 +220,17 @@ def _open_item(s: Session, case_id: str, type_id: str) -> int | None:
 def _open_exception(s: Session, case: Mapping[str, Any], pack: Pack, res: MatchResult) -> None:
     """The case's one `not_in_system_of_record` item, opened for the pack's owner with the pack's `exception` SLA."""
     cid = str(case["id"])
-    if _open_item(s, cid, NOT_IN_RECORD) is not None:
+    tid = type_id(pack, "extra")
+    if _open_item(s, cid, tid) is not None:
         return
-    kind = _type(pack, NOT_IN_RECORD)
-    process.open_item(
-        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=NOT_IN_RECORD,
+    kind = _type(pack, tid)
+    item = process.open_item(
+        s, kind="exception", case_id=cid, org_unit_id=case.get("owner"), type=tid,
         title=f"{cid} is not in {res.source}", cause=res.reason,
-        action=f"Check the serial in {res.source}, or correct the asset key",
-        owner_role=kind.owner_role if kind else "Planner", due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+        action=(kind.action if kind and tid != NOT_IN_RECORD else f"Check the serial in {res.source}, or correct the asset key"),
+        owner_role=_role(pack, kind), due_hours=pack.runtime.sla_hours.get("exception"), by="system",
     )  # fmt: skip
+    _critical(s, pack, item, tid)
 
 
 def check(s: Session, case: MutableMapping[str, Any], pack: Pack, by: str = "system") -> None:
@@ -202,7 +250,7 @@ def check(s: Session, case: MutableMapping[str, Any], pack: Pack, by: str = "sys
             case["recordMatch"]["since"] = prev["since"]
         if isinstance(prev, dict) and prev.get("found") is False:
             _add(case, "matched", str(spec["source_type"]), (case.get("custody") or [{}])[-1].get("location"), by)
-        if (item := _open_item(s, cid, NOT_IN_RECORD)) is not None:
+        if (item := _open_item(s, cid, type_id(pack, "extra"))) is not None:
             process.close_item(s, item, f"Found in {res.source}", by)
         return
     since = prev["since"] if isinstance(prev, dict) and prev.get("found") is False and prev.get("since") else _now_iso()
@@ -268,7 +316,8 @@ def _missing(s: Session, source_id: str, pack: Pack, report: ReconcileReport) ->
         ),
         {"s": source_id, "d": list(ON_THE_WAY)},
     ).all()
-    kind, now = _type(pack, EXPECTED_MISSING), clock.now()
+    tid = type_id(pack, "missing")
+    kind, now = _type(pack, tid), clock.now()
     for r in rows:
         title = f"{r.key} was expected back and has no case"
         has_case = s.execute(text("SELECT 1 FROM case_record WHERE data ->> 'assetId' = :k LIMIT 1"), {"k": r.key}).first()
@@ -278,25 +327,24 @@ def _missing(s: Session, source_id: str, pack: Pack, report: ReconcileReport) ->
                     "UPDATE work_item SET status = 'done', outcome = 'A case is open', closed_by = 'system', closed_at = :n "
                     "WHERE type = :t AND title = :ti AND status = 'open'"
                 ),
-                {"n": now, "t": EXPECTED_MISSING, "ti": title},
+                {"n": now, "t": tid, "ti": title},
             )
             continue
         if now - _asset_time(r) < timedelta(days=days):
             continue
         report.missing.append(r.key)
-        seen = s.execute(
-            text("SELECT 1 FROM work_item WHERE type = :t AND title = :ti LIMIT 1"), {"t": EXPECTED_MISSING, "ti": title}
-        ).first()
+        seen = s.execute(text("SELECT 1 FROM work_item WHERE type = :t AND title = :ti LIMIT 1"), {"t": tid, "ti": title}).first()
         if seen:
             continue  # opened before (open, or resolved by a person): not again
         org = r.data.get("owner_tenant")
         known = s.execute(text("SELECT 1 FROM org_unit WHERE id = :i"), {"i": org}).first() if org else None
-        process.open_item(
-            s, kind="exception", case_id=None, org_unit_id=org if known else None, type=EXPECTED_MISSING, title=title,
+        item = process.open_item(
+            s, kind="exception", case_id=None, org_unit_id=org if known else None, type=tid, title=title,
             cause=f"{system_name(s, source_id)} lists {r.key} as {r.data.get('disposition')}; no case has been opened for it",
             action=kind.action if kind else "Find the unit or confirm it was not returned",
-            owner_role=kind.owner_role if kind else "Planner", due_hours=pack.runtime.sla_hours.get("exception"), by="system",
+            owner_role=_role(pack, kind), due_hours=pack.runtime.sla_hours.get("exception"), by="system",
         )  # fmt: skip
+        _critical(s, pack, item, tid)
 
 
 def reconcile(s: Session, source_id: str) -> ReconcileReport:
@@ -324,6 +372,5 @@ def view(case: Mapping[str, Any], pack: Pack) -> dict[str, Any] | None:
     if rm.get("syncedAt"):
         out["syncedMinutesAgo"] = max(0, int((clock.now() - datetime.fromisoformat(rm["syncedAt"])).total_seconds() // 60))
     if not out["found"]:
-        kind = _type(pack, NOT_IN_RECORD)
-        out["owner"] = kind.owner_role if kind else "Planner"
+        out["owner"] = _role(pack, _type(pack, type_id(pack, "extra")))
     return out

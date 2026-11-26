@@ -1,0 +1,1116 @@
+{
+ "key": "rental_fleet",
+ "name": "Rental and construction fleets",
+ "version": "1.0.0",
+ "unit": "machines",
+ "author_role": "fleet_director",
+ "prefix": "RF",
+ "industry": "Equipment rental and construction",
+ "regions": [
+  "US"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "off_rent",
+   "name": "Off-rent rental machines"
+  }
+ ],
+ "prompts": [
+  "Off-rent rental and construction machines: check each one in, read its hours and condition, then re-rent it, rebuild it, transfer it to another branch, or sell it at retail, auction or to a dealer, harvest parts or scrap it. Value every route against keeping the machine idle.",
+  "Which off-rent machines should we re-rent and which should we sell?",
+  "Value every route against keeping the machine idle"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "excavator_20t",
+   "name": "Excavator 20 t",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 190000
+  },
+  {
+   "id": "wheel_loader",
+   "name": "Wheel loader",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 160000
+  },
+  {
+   "id": "scissor_lift",
+   "name": "Scissor lift",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 28000
+  },
+  {
+   "id": "telehandler",
+   "name": "Telehandler",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 95000
+  },
+  {
+   "id": "generator",
+   "name": "Generator set",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 22000
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "no findings",
+   "B": "cosmetic wear",
+   "C": "repairs needed",
+   "D": "major damage"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Off-rent return",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Check-in inspection",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Hours and condition",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and learn",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "rerent",
+   "name": "Re-rent",
+   "app": "rf_rental",
+   "owner": "branch_manager",
+   "lead_days": 3,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "rebuild",
+   "name": "Rebuild and re-rent",
+   "app": "rf_rental",
+   "owner": "fleet_director",
+   "lead_days": 30,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "transfer_branch",
+   "name": "Transfer to another branch",
+   "app": "rf_rental",
+   "owner": "branch_manager",
+   "lead_days": 5,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "retail",
+   "name": "Sell at retail",
+   "app": "erp",
+   "owner": "fleet_director",
+   "lead_days": 21,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "auction",
+   "name": "Sell at auction",
+   "app": "erp",
+   "owner": "fleet_director",
+   "lead_days": 14,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "dealer",
+   "name": "Sell to a dealer",
+   "app": "erp",
+   "owner": "fleet_director",
+   "lead_days": 10,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "parts",
+   "name": "Recover parts",
+   "app": "rf_rental",
+   "owner": "branch_manager",
+   "lead_days": 10,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "scrap",
+   "name": "Scrap",
+   "app": "rf_rental",
+   "owner": "finance",
+   "lead_days": 14,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-SAFE-1",
+   "text": "Lifting and access equipment needs a certificate in date before it goes back out or is sold",
+   "owner": "approver",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DS-1",
+   "text": "Scrap only through a certified vendor",
+   "owner": "approver",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-SAFE-1",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "classes": [
+     "scissor_lift",
+     "telehandler"
+    ],
+    "routes": [
+     "rerent",
+     "transfer_branch",
+     "retail",
+     "auction",
+     "dealer"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DS-1",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "scrap"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Machine class",
+   "kind": "set",
+   "values": [
+    "excavator_20t",
+    "wheel_loader",
+    "scissor_lift",
+    "telehandler",
+    "generator"
+   ],
+   "fields": []
+  },
+  {
+   "key": "branch",
+   "label": "Branch",
+   "kind": "set",
+   "values": [
+    "BR-1",
+    "BR-2",
+    "BR-3"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "fleetd",
+   "Fleet director",
+   "Fleet director"
+  ],
+  [
+   "brm",
+   "Branch manager",
+   "Branch manager"
+  ],
+  [
+   "rfapp",
+   "Approver",
+   "Approver"
+  ]
+ ],
+ "wording": {
+  "every": "every machine",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "excavator_20t": "20 t excavators",
+     "wheel_loader": "wheel loaders",
+     "scissor_lift": "scissor lifts",
+     "telehandler": "telehandlers",
+     "generator": "generator sets"
+    }
+   },
+   {
+    "key": "branch",
+    "fmt": "at {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "rerent": "Re-rent",
+   "rebuild": "Rebuild and re-rent",
+   "transfer_branch": "Transfer to another branch",
+   "retail": "Sell at retail",
+   "auction": "Sell at auction",
+   "dealer": "Sell to a dealer",
+   "parts": "Recover parts",
+   "scrap": "Scrap"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-DS-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "rf_rental",
+    "name": "Equipment rental system",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Off-rent machine",
+    "canonical": "asset"
+   },
+   {
+    "name": "Branch utilisation",
+    "canonical": "demand.branch_utilisation"
+   },
+   {
+    "name": "Price index",
+    "canonical": "market.price_index"
+   },
+   {
+    "name": "Damage claim",
+    "canonical": "condition.damage_claims"
+   },
+   {
+    "name": "Purchase plan",
+    "canonical": "demand.purchase_plans"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "rf_rental",
+    "resource": "off_rent",
+    "when": null,
+    "reason": "off_rent",
+    "key": "machineId"
+   }
+  ],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
+  },
+  "params": {
+   "params": {
+    "horizon_months": 6,
+    "prep_cost": 1200,
+    "maintenance_per_hour": 4,
+    "expected_hours": 900,
+    "rebuild_min_age_years": 7,
+    "rebuild_extra_years": 3,
+    "rebuild_downtime_months": 2,
+    "retail_cost_pct": 0.03,
+    "transport_cost": 900,
+    "auction_factor": 0.88,
+    "auction_fees": 1800,
+    "parts_value_pct": 0.25,
+    "scrap_value_pct": 0.08
+   },
+   "tables": {
+    "monthly_rate": {
+     "excavator_20t": 7500,
+     "wheel_loader": 6200,
+     "scissor_lift": 1900,
+     "telehandler": 4300,
+     "generator": 1400
+    },
+    "annual_margin": {
+     "excavator_20t": 14000,
+     "wheel_loader": 11000,
+     "scissor_lift": 3500,
+     "telehandler": 8000,
+     "generator": 2500
+    },
+    "rebuild_cost": {
+     "excavator_20t": 38000,
+     "wheel_loader": 31000,
+     "scissor_lift": 9000,
+     "telehandler": 22000,
+     "generator": 6000
+    }
+   },
+   "lines": [
+    {
+     "route": "rerent",
+     "type": "v",
+     "label": "Re-rent income",
+     "basis": "monthly rate x branch utilisation x horizon",
+     "amount": {
+      "mul": [
+       {
+        "table": "monthly_rate",
+        "by": [
+         "asset.asset_class"
+        ]
+       },
+       {
+        "field": "demand.branch_utilisation"
+       },
+       {
+        "param": "horizon_months"
+       }
+      ]
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "rerent",
+     "type": "c",
+     "label": "Preparation",
+     "basis": "per machine",
+     "amount": {
+      "param": "prep_cost"
+     }
+    },
+    {
+     "route": "rerent",
+     "type": "c",
+     "label": "Maintenance",
+     "basis": "per hour x expected hours",
+     "amount": {
+      "mul": [
+       {
+        "param": "maintenance_per_hour"
+       },
+       {
+        "param": "expected_hours"
+       }
+      ]
+     }
+    },
+    {
+     "route": "rebuild",
+     "type": "v",
+     "label": "Extra margin from extended life",
+     "basis": "extra years x annual margin",
+     "amount": {
+      "mul": [
+       {
+        "param": "rebuild_extra_years"
+       },
+       {
+        "table": "annual_margin",
+        "by": [
+         "asset.asset_class"
+        ]
+       }
+      ]
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "rebuild",
+     "type": "c",
+     "label": "Rebuild cost",
+     "basis": "per class",
+     "amount": {
+      "table": "rebuild_cost",
+      "by": [
+       "asset.asset_class"
+      ]
+     }
+    },
+    {
+     "route": "rebuild",
+     "type": "c",
+     "label": "Rebuild downtime",
+     "basis": "months x monthly rate x utilisation",
+     "amount": {
+      "mul": [
+       {
+        "param": "rebuild_downtime_months"
+       },
+       {
+        "table": "monthly_rate",
+        "by": [
+         "asset.asset_class"
+        ]
+       },
+       {
+        "field": "demand.branch_utilisation"
+       }
+      ]
+     }
+    },
+    {
+     "route": "transfer_branch",
+     "type": "v",
+     "label": "Used price avoided",
+     "basis": "price index",
+     "amount": {
+      "field": "market.price_index"
+     },
+     "kind": "purchase"
+    },
+    {
+     "route": "transfer_branch",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "retail",
+     "type": "v",
+     "label": "Retail sale price",
+     "basis": "price index",
+     "amount": {
+      "field": "market.price_index"
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "retail",
+     "type": "c",
+     "label": "Retail costs",
+     "basis": "share of the price",
+     "amount": {
+      "mul": [
+       {
+        "field": "market.price_index"
+       },
+       {
+        "param": "retail_cost_pct"
+       }
+      ]
+     },
+     "kind": "fees"
+    },
+    {
+     "route": "retail",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "retail",
+     "type": "c",
+     "label": "Book value forgone",
+     "basis": "Sale routes are relative to keeping the machine idle",
+     "amount": {
+      "field": "asset.book_value"
+     },
+     "kind": "prep"
+    },
+    {
+     "route": "auction",
+     "type": "v",
+     "label": "Auction price",
+     "basis": "price index x auction factor",
+     "amount": {
+      "mul": [
+       {
+        "field": "market.price_index"
+       },
+       {
+        "param": "auction_factor"
+       }
+      ]
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "auction",
+     "type": "c",
+     "label": "Auction fees",
+     "basis": "per lot",
+     "amount": {
+      "param": "auction_fees"
+     },
+     "kind": "fees"
+    },
+    {
+     "route": "auction",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "auction",
+     "type": "c",
+     "label": "Book value forgone",
+     "basis": "Sale routes are relative to keeping the machine idle",
+     "amount": {
+      "field": "asset.book_value"
+     },
+     "kind": "prep"
+    },
+    {
+     "route": "dealer",
+     "type": "v",
+     "label": "Dealer price",
+     "basis": "price index x auction factor",
+     "amount": {
+      "mul": [
+       {
+        "field": "market.price_index"
+       },
+       {
+        "param": "auction_factor"
+       }
+      ]
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "dealer",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "dealer",
+     "type": "c",
+     "label": "Book value forgone",
+     "basis": "Sale routes are relative to keeping the machine idle",
+     "amount": {
+      "field": "asset.book_value"
+     },
+     "kind": "prep"
+    },
+    {
+     "route": "parts",
+     "type": "v",
+     "label": "Parts value",
+     "basis": "share of the price index",
+     "amount": {
+      "mul": [
+       {
+        "field": "market.price_index"
+       },
+       {
+        "param": "parts_value_pct"
+       }
+      ]
+     },
+     "kind": "parts"
+    },
+    {
+     "route": "parts",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "parts",
+     "type": "c",
+     "label": "Book value forgone",
+     "basis": "Sale routes are relative to keeping the machine idle",
+     "amount": {
+      "field": "asset.book_value"
+     },
+     "kind": "prep"
+    },
+    {
+     "route": "scrap",
+     "type": "v",
+     "label": "Scrap value",
+     "basis": "share of the price index",
+     "amount": {
+      "mul": [
+       {
+        "field": "market.price_index"
+       },
+       {
+        "param": "scrap_value_pct"
+       }
+      ]
+     },
+     "kind": "material"
+    },
+    {
+     "route": "scrap",
+     "type": "c",
+     "label": "Transport",
+     "basis": "per move",
+     "amount": {
+      "param": "transport_cost"
+     }
+    },
+    {
+     "route": "scrap",
+     "type": "c",
+     "label": "Book value forgone",
+     "basis": "Sale routes are relative to keeping the machine idle",
+     "amount": {
+      "field": "asset.book_value"
+     },
+     "kind": "prep"
+    }
+   ],
+   "routes": [
+    {
+     "route": "rebuild",
+     "eligible_if": {
+      "fact": "asset.age_years",
+      "op": "ge",
+      "value": 7
+     },
+     "ineligible_reason": "Not considered: machine under 7 years"
+    },
+    {
+     "route": "transfer_branch",
+     "eligible_if": {
+      "fact": "demand.purchase_plans",
+      "op": "exists"
+     },
+     "ineligible_reason": "No other branch plans to buy this class"
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": "rental_fleet",
+  "example": {
+   "case": "RF-S1",
+   "legal_review_note": "Lifting and access equipment certification and downstream vendor rules summarised. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "machines": 1800,
+    "straight_through_pct": 64,
+    "approvals_per_day": 6,
+    "exceptions_per_day": 4,
+    "recovery_per_asset": 9200
+   },
+   "required_facts": [
+    "asset.asset_class",
+    "asset.hours",
+    "asset.age_years",
+    "asset.book_value",
+    "demand.branch_utilisation",
+    "market.price_index"
+   ],
+   "samples": [
+    {
+     "id": "RF-S1",
+     "title": "Excavator 20 t, 6,200 h: re-rent beats rebuild and retail",
+     "serial": "SYNRF000000000001",
+     "facts": {
+      "asset.machine_id": "M-0001",
+      "asset.asset_class": "excavator_20t",
+      "asset.hours": 6200,
+      "asset.branch": "BR-1",
+      "asset.age_years": 8,
+      "asset.book_value": 52000,
+      "demand.branch_utilisation": 0.72,
+      "market.price_index": 61000
+     }
+    },
+    {
+     "id": "RF-S2",
+     "title": "Excavator 20 t, 5 years: rebuild not considered",
+     "serial": "SYNRF000000000002",
+     "facts": {
+      "asset.machine_id": "M-0002",
+      "asset.asset_class": "excavator_20t",
+      "asset.hours": 3900,
+      "asset.branch": "BR-1",
+      "asset.age_years": 5,
+      "asset.book_value": 98000,
+      "demand.branch_utilisation": 0.72,
+      "market.price_index": 112000
+     }
+    },
+    {
+     "id": "RF-S3",
+     "title": "Wheel loader idle 44 days, BR-3 plans to buy one",
+     "serial": "SYNRF000000000003",
+     "facts": {
+      "asset.machine_id": "M-0003",
+      "asset.asset_class": "wheel_loader",
+      "asset.hours": 5100,
+      "asset.branch": "BR-2",
+      "asset.age_years": 6,
+      "asset.book_value": 61000,
+      "demand.branch_utilisation": 0.31,
+      "market.price_index": 74000,
+      "asset.idle_days": 44,
+      "demand.purchase_plans": [
+       {
+        "branch": "BR-3",
+        "assetClass": "wheel_loader",
+        "qty": 1
+       }
+      ]
+     }
+    },
+    {
+     "id": "RF-S4",
+     "title": "Scissor lift: needs a certificate in date",
+     "serial": "SYNRF000000000004",
+     "facts": {
+      "asset.machine_id": "M-0004",
+      "asset.asset_class": "scissor_lift",
+      "asset.hours": 2400,
+      "asset.branch": "BR-1",
+      "asset.age_years": 4,
+      "asset.book_value": 14000,
+      "demand.branch_utilisation": 0.66,
+      "market.price_index": 17500
+     }
+    },
+    {
+     "id": "RF-S5",
+     "title": "Telehandler returned with damage, claim 2,350",
+     "serial": "SYNRF000000000005",
+     "facts": {
+      "asset.machine_id": "M-0005",
+      "asset.asset_class": "telehandler",
+      "asset.hours": 4800,
+      "asset.branch": "BR-2",
+      "asset.age_years": 6,
+      "asset.book_value": 44000,
+      "demand.branch_utilisation": 0.58,
+      "market.price_index": 52000,
+      "condition.damage_claims": [
+       {
+        "claimId": "DC-1",
+        "renterRef": "R-0042",
+        "amount": 2350
+       }
+      ]
+     }
+    },
+    {
+     "id": "RF-S6",
+     "title": "Excavator 20 t, 9,400 h, 11 years",
+     "serial": "SYNRF000000000006",
+     "facts": {
+      "asset.machine_id": "M-0006",
+      "asset.asset_class": "excavator_20t",
+      "asset.hours": 9400,
+      "asset.branch": "BR-3",
+      "asset.age_years": 11,
+      "asset.book_value": 21000,
+      "demand.branch_utilisation": 0.45,
+      "market.price_index": 33000
+     }
+    },
+    {
+     "id": "RF-S7",
+     "title": "Generator set, low utilisation",
+     "serial": "SYNRF000000000007",
+     "facts": {
+      "asset.machine_id": "M-0007",
+      "asset.asset_class": "generator",
+      "asset.hours": 7300,
+      "asset.branch": "BR-1",
+      "asset.age_years": 12,
+      "asset.book_value": 2500,
+      "demand.branch_utilisation": 0.12,
+      "market.price_index": 6200
+     }
+    },
+    {
+     "id": "RF-S8",
+     "title": "Wheel loader, 7 years: rebuild considered",
+     "serial": "SYNRF000000000008",
+     "facts": {
+      "asset.machine_id": "M-0008",
+      "asset.asset_class": "wheel_loader",
+      "asset.hours": 6800,
+      "asset.branch": "BR-1",
+      "asset.age_years": 7,
+      "asset.book_value": 40000,
+      "demand.branch_utilisation": 0.8,
+      "market.price_index": 51000
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "fleet_director": "Planner",
+  "branch_manager": "Planner",
+  "approver": "Approver",
+  "finance": "Finance"
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_machine",
+   "label": "Recovery per machine",
+   "definition": "realised net / machines",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "fleet_utilisation",
+   "label": "Fleet utilisation",
+   "definition": "rented days / available days",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "rerent_rate",
+   "label": "Re-rent rate",
+   "definition": "machines re-rented / off-rent machines",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_idle",
+   "label": "Days idle",
+   "definition": "off-rent to next rental or sale",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "machines decided with no person in the loop / machines",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "damage_recovered",
+   "label": "Damage recovered",
+   "definition": "damage charged and collected / damage claimed",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which branches have the most idle machines?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.branch",
+    "measure": {
+     "kind": "count",
+     "where": [
+      {
+       "fact": "asset.idle_days",
+       "op": "gt",
+       "value": 30
+      }
+     ]
+    }
+   }
+  },
+  {
+   "question": "What is the average book value by machine class?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.asset_class",
+    "measure": {
+     "kind": "avg",
+     "of": "asset.book_value"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-RC-01",
+  "NS-RC-02",
+  "NS-RC-03"
+ ]
+}

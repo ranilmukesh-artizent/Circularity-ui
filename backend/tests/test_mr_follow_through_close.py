@@ -127,8 +127,8 @@ def _close(cid: str) -> close.CloseResult:
 
 def test_mr_19_retire_steps_and_write_off_held():
     c = _retired()
-    assert _kinds(c) == ["data_sanitisation", "disposal_collection"]  # a patient monitor: sanitised, then collected
-    assert [queue.SYSTEM_OF[k] for k in _kinds(c)] == ["mr_disposal", "mr_disposal"]
+    assert _kinds(c) == ["data_sanitisation", "disposal_collection", "retire"]  # a patient monitor: sanitised, then collected
+    assert [queue.SYSTEM_OF[k] for k in _kinds(c)] == ["mr_disposal", "mr_disposal", "erp"]
     out = _send(c, "data_sanitisation")
     assert out.doc_ref == "SAN-0001" and Stub.calls == [("mr_disposal", "/sanitisations", {"tag": tag(8)})]
     _write("mr_disposal", "sanitisations", {"sanitisationId": "SAN-0001", "tag": tag(8), "org_unit_id": ORG})

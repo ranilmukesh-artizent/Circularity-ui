@@ -324,6 +324,27 @@ def enqueue_accuracy() -> None:
         s.commit()
 
 
+@handler("model.drift")
+def _model_drift(payload: dict[str, Any]) -> None:
+    """The weekly drift check of one model (plan 9, P9-13.8): `model.checkDrift` as SYSTEM on an active model, then the next
+    week's job while the model is not retired (a candidate waits for its promotion)."""
+    from di.repositories import model_versions
+    from di.services.actions import models as model_actions
+    from di.services.actions.pipeline import SYSTEM, CallContext, invoke
+
+    mid = str(payload["model_id"])
+    with SessionLocal() as s:
+        m = model_versions.get(s, mid)
+        if m is None or m.status == "retired":
+            return
+        if m.status == "active":
+            done = invoke("model.checkDrift", {"id": mid}, CallContext(actor=SYSTEM, session=s))
+            if not done.get("ok"):
+                log.warning("drift check of %s refused: %s", mid, done)
+        model_actions.schedule_drift(s, mid)
+        s.commit()
+
+
 @handler("agent.autostart")
 def _agent_autostart(payload: dict[str, Any]) -> None:
     """A case was opened and the autopilot setting is on: start its run (runtime.autostart, P9-0.9). The run's own

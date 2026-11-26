@@ -49,6 +49,7 @@ class Stub:
     ids: ClassVar[dict[str, str]] = {
         "recon-orders": "orderId", "transfers": "transferId", "listings": "listingId", "dealer-trades": "dealerTradeId",
         "consignments": "consignmentId", "salvage-sales": "salvageSaleId",
+        "fixedassetretirement": "assetDocument",
     }  # fmt: skip
 
     def __init__(self, source: str):
@@ -139,14 +140,15 @@ def test_uc_18_retail_sends_three_steps():
     c = _open(1, brand="rebuilt")
     assert c["recommendation"]["id"] == "retail:LOT-S" and c["recommendation"]["disclosures"] == ["Title brand: rebuilt"]
     done = _approve(c)
-    assert [s["k"] for s in done["exec"]["steps"]] == ["recon_order", "lot_transfer", "listing"]
+    assert [s["k"] for s in done["exec"]["steps"]] == ["recon_order", "lot_transfer", "listing", "retire"]
     assert [r["kind"] for r in _rows(c["id"])] == ["recon_order"]  # only the first goes out on approval
-    assert _run(c["id"], 3) == ["sent", "sent", "sent"]
+    assert _run(c["id"], 4) == ["sent"] * 4  # the asset retirement (P9-13.1) follows the channel's three steps
     rows = _rows(c["id"])
-    assert [(r["kind"], r["system"], r["status"]) for r in rows] == [(k, "uc_dms", "acknowledged") for k in
-                                                                    ("recon_order", "lot_transfer", "listing")]  # fmt: skip
-    assert [k for k, _, _ in Stub.calls] == ["recon-orders", "transfers", "listings"]
-    (_, recon, hdr), (_, transfer, _), (_, listing, _) = Stub.calls
+    assert [(r["kind"], r["system"], r["status"]) for r in rows] == [
+        *[(k, "uc_dms", "acknowledged") for k in ("recon_order", "lot_transfer", "listing")], ("retire", "erp", "acknowledged")
+    ]  # fmt: skip
+    assert [k for k, _, _ in Stub.calls] == ["recon-orders", "transfers", "listings", "fixedassetretirement"]
+    (_, recon, hdr), (_, transfer, _), (_, listing, _), _retire = Stub.calls
     assert recon["vin"] == uc.vin(1) and recon["estimate"] == 1200
     assert hdr["Idempotency-Key"].endswith(".0.recon_order")
     assert (transfer["fromLot"], transfer["toLot"]) == (
@@ -157,19 +159,19 @@ def test_uc_18_retail_sends_three_steps():
     assert listing == {"vin": uc.vin(1), "lotId": "LOT-S", "price": sale, "disclosures": ["Title brand: rebuilt"]}
     after = uc.get(c["id"])  # each confirmation is recorded on the case, and the last one closes the case
     assert [s["ack"]["ref"] for s in after["exec"]["steps"]] == [r["doc_ref"] for r in rows] and after["stage"] == "closed"
-    assert _item(c["id"])["status"] == "done" and _item(c["id"])["outcome"] == f"Confirmed: {rows[2]['doc_ref']}"
+    assert _item(c["id"])["status"] == "done" and _item(c["id"])["outcome"] == f"Confirmed: {rows[3]['doc_ref']}"
 
 
 def test_uc_18_auction_consignment_with_title():
     c = _open(1)
     done = _approve(c, "Wholesale auction")
-    assert [s["k"] for s in done["exec"]["steps"]] == ["consignment"]  # a one-step route
-    assert _run(c["id"], 1) == ["sent"]
-    ((kind, body, _),) = Stub.calls
-    assert kind == "consignments" and body["vin"] == uc.vin(1)
+    assert [s["k"] for s in done["exec"]["steps"]] == ["consignment", "retire"]  # the channel step, then the asset retirement
+    assert _run(c["id"], 2) == ["sent", "sent"]
+    (kind, body, _), (retire, _, _) = Stub.calls
+    assert retire == "fixedassetretirement" and kind == "consignments" and body["vin"] == uc.vin(1)
     assert body["titleRef"] == f"TITLE-{uc.vin(1)}" and body["disclosures"] == []
     assert body["saleDate"] == (clock.now().date() + timedelta(days=6)).isoformat()  # the next sale of the car's site, 6 days on
-    assert [(r["system"], r["status"]) for r in _rows(c["id"])] == [("uc_auction", "acknowledged")]
+    assert [(r["system"], r["status"]) for r in _rows(c["id"])] == [("uc_auction", "acknowledged"), ("erp", "acknowledged")]
     assert uc.get(c["id"])["stage"] == "closed"
 
 
@@ -266,9 +268,9 @@ def test_uc_25_infotainment_reset_before_release():
     paired = _open(15, like=1, paired=True)
     assert all(r["steps"][0] == "infotainment_reset" for r in paired["routes"])  # first on every channel
     done = _approve(paired)
-    assert [s["k"] for s in done["exec"]["steps"]] == ["infotainment_reset", "recon_order", "lot_transfer", "listing"]
+    assert [s["k"] for s in done["exec"]["steps"]] == ["infotainment_reset", "recon_order", "lot_transfer", "listing", "retire"]
     assert _run(paired["id"], 1) == ["simulated"]  # a person's checklist step: no system write
     assert Stub.calls == []
     plain = _open(1)
     assert all("infotainment_reset" not in r["steps"] for r in plain["routes"])
-    assert [s["k"] for s in _approve(plain)["exec"]["steps"]] == ["recon_order", "lot_transfer", "listing"]
+    assert [s["k"] for s in _approve(plain)["exec"]["steps"]] == ["recon_order", "lot_transfer", "listing", "retire"]

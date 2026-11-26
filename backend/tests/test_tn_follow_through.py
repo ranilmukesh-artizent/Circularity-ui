@@ -88,11 +88,11 @@ def _send(kind: str, c: dict[str, Any]):
 def test_tn_19_steps_per_route():
     near = {"demand.open_site_demand": True, "demand.id": "SD-112", "demand.site": "SITE-N-014"}
     d = decide(sample("TN-S1", **near))
-    assert route(d, "redeploy")["steps"] == ["site_transfer"]
+    assert route(d, "redeploy")["steps"] == ["site_transfer", "transfer"]
     assert route(d, "spare")["steps"] == ["refurb_order", "spares_transfer"]
-    assert route(d, "resell")["steps"] == ["broker_listing"]
+    assert route(d, "resell")["steps"] == ["broker_listing", "retire"]
     assert route(d, "harvest")["steps"] == ["teardown"]
-    assert route(d, "recycle")["steps"] == ["recycler_pickup"]
+    assert route(d, "recycle")["steps"] == ["recycler_pickup", "retire"]
 
 
 def test_tn_19_each_step_is_written_and_its_confirmation_recorded():

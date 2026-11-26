@@ -535,7 +535,8 @@
    "device",
    "used_cars",
    "telecom_network",
-   "medical_rental"
+   "medical_rental",
+   "itad"
   ],
   "trigger": {
    "routes": [
@@ -575,7 +576,8 @@
    "device",
    "used_cars",
    "telecom_network",
-   "medical_rental"
+   "medical_rental",
+   "itad"
   ],
   "trigger": {
    "routes": "any",
@@ -648,7 +650,9 @@
    "device",
    "used_cars",
    "telecom_network",
-   "medical_rental"
+   "medical_rental",
+   "itad",
+   "rental_fleet"
   ],
   "trigger": {
    "routes": [
@@ -754,7 +758,8 @@
    "device",
    "used_cars",
    "telecom_network",
-   "medical_rental"
+   "medical_rental",
+   "itad"
   ],
   "trigger": {
    "routes": [
@@ -1195,7 +1200,8 @@
   "stage": "match",
   "packs": [
    "tool_fleet",
-   "used_cars"
+   "used_cars",
+   "itad"
   ],
   "trigger": {
    "routes": "any",
@@ -1253,7 +1259,8 @@
   "type": "Compliance",
   "stage": "condition",
   "packs": [
-   "tool_fleet"
+   "tool_fleet",
+   "rental_fleet"
   ],
   "trigger": {
    "routes": [

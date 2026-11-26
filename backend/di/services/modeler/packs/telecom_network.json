@@ -191,7 +191,8 @@
    "instructions": [
     "firmware_upgrade",
     "site_transfer"
-   ]
+   ],
+   "asset_effect": "transfer"
   },
   {
    "id": "spare",
@@ -218,7 +219,8 @@
    ],
    "instructions": [
     "broker_listing"
-   ]
+   ],
+   "asset_effect": "retire"
   },
   {
    "id": "harvest",
@@ -228,6 +230,9 @@
    "lead_days": 4,
    "classes": [
     "parts"
+   ],
+   "downstream_roles": [
+    "parts_broker"
    ],
    "instructions": [
     "teardown"
@@ -242,9 +247,13 @@
    "classes": [
     "recycle"
    ],
+   "downstream_roles": [
+    "recycler"
+   ],
    "instructions": [
     "recycler_pickup"
-   ]
+   ],
+   "asset_effect": "retire"
   }
  ],
  "guardrails": [
@@ -1275,5 +1284,9 @@
   "TN-22",
   "TN-23",
   "TN-24"
- ]
+ ],
+ "close": {
+  "fixed_asset": true,
+  "reporting": ["G-REP-1", "G-REP-2"]
+ }
 }

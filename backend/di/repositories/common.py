@@ -976,6 +976,13 @@ EX_STEP: dict[str, tuple[int | None, str]] = {
     "refurb_order": (8, "Spares planner"),
     "broker_listing": (8, "Network asset manager"),
     "recycler_pickup": (24, "Sustainability lead"),
+    "dispatch": (8, "Operations manager"),  # plan 9 P9-11.17: the medical pack's follow-through
+    "service_order": (8, "Biomedical engineer"),
+    "biomed_refurb": (8, "Clinical engineering"),
+    "data_sanitisation": (24, "Fleet manager"),
+    "disposal_collection": (24, "Fleet manager"),
+    "retire": (16, "Finance"),  # plan 9 P9-13.1: the fixed-asset close of a pack that owns the asset
+    "transfer": (16, "Finance"),
     "list": (8, "Channel ops"),  # plan 9 P9-6.12: a received device is listed on its channel
     "takeback": (48, "Fleet desk"),  # plan 9 P9-4.9: a service ticket's old tool comes back, then the credit goes
     "credit": (16, "Finance"),

@@ -1,13 +1,15 @@
 """Reserved for P9-13.9 (plan 9): Per-agent credentials with client credentials.
 
-Empty until that task fills it. Plan 9's writers run in parallel and merge in any order, so every migration from
-0029 to 0061 exists, chained, from the start; a filled one is idempotent (IF NOT EXISTS), and
-`scripts/dev/migrate-reapply.sh 0028` applies it on a database that already ran it empty.
+A client credential per agent (client id, scrypt hash of the secret, owner account): the agent's token acts as the
+owner, narrowed by the agent's tools and org scope. Idempotent (IF NOT EXISTS): `scripts/dev/migrate-reapply.sh 0028`
+applies it on a database that already ran it empty.
 
 Revision ID: 0060
 Revises: 0059
 Create Date: 2026-11-25
 """
+
+from alembic import op
 
 revision = "0060"
 down_revision = "0059"
@@ -16,8 +18,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    pass
+    op.execute(
+        "CREATE TABLE IF NOT EXISTS agent_credential ("
+        "client_id text PRIMARY KEY, "
+        "agent_id text NOT NULL REFERENCES agent_identity(id) ON DELETE CASCADE, "
+        "owner text NOT NULL, secret_hash text NOT NULL, "
+        "created_at timestamptz DEFAULT now(), last_used_at timestamptz, revoked_at timestamptz)"
+    )
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agent_credential_agent ON agent_credential (agent_id)")
 
 
 def downgrade() -> None:
-    pass
+    op.execute("DROP TABLE IF EXISTS agent_credential")

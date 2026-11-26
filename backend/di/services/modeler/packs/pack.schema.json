@@ -690,6 +690,43 @@
    "title": "PackClass",
    "type": "object"
   },
+  "PackClose": {
+   "additionalProperties": false,
+   "description": "The close-and-learn switches of a pack (plan 9 phase 13). Every default changes nothing: a pack that does not name one\nbehaves as before (the industrial pack carries none).",
+   "properties": {
+    "fixed_asset": {
+     "default": false,
+     "title": "Fixed Asset",
+     "type": "boolean"
+    },
+    "lease_residual": {
+     "default": false,
+     "title": "Lease Residual",
+     "type": "boolean"
+    },
+    "credit_settlement": {
+     "default": false,
+     "title": "Credit Settlement",
+     "type": "boolean"
+    },
+    "credit_table": {
+     "additionalProperties": {
+      "type": "number"
+     },
+     "title": "Credit Table",
+     "type": "object"
+    },
+    "reporting": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Reporting",
+     "type": "array"
+    }
+   },
+   "title": "PackClose",
+   "type": "object"
+  },
   "PackData": {
    "additionalProperties": false,
    "properties": {
@@ -882,10 +919,34 @@
      "title": "Instructions",
      "type": "array"
     },
+    "downstream_roles": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Downstream Roles",
+     "type": "array"
+    },
     "recover_only": {
      "default": false,
      "title": "Recover Only",
      "type": "boolean"
+    },
+    "asset_effect": {
+     "default": "none",
+     "enum": [
+      "retire",
+      "transfer",
+      "none"
+     ],
+     "title": "Asset Effect",
+     "type": "string"
+    },
+    "downstream_roles": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Downstream Roles",
+     "type": "array"
     }
    },
    "required": [
@@ -1460,6 +1521,9 @@
     }
    ],
    "default": null
+  },
+  "close": {
+   "$ref": "#/$defs/PackClose"
   }
  },
  "required": [

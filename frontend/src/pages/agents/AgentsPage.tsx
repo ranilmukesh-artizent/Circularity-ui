@@ -1,13 +1,14 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
-  acceptProposal, findTools, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
-  type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
+  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
+  type AgentCredential, type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { LlmModelsPanel } from './LlmModelsPanel';
+import { OutsideClients } from './OutsideClients';
 import { ModelsPanel } from './ModelsPanel';
 import { RegisterAgentDialog } from './RegisterAgentDialog';
 import { RunView } from './RunView';
@@ -40,6 +41,8 @@ export function AgentsPage() {
         </div>
       )}
       <Registry s={s} />
+      {s.can.manage && <Credentials agents={s.agents} />}
+      {s.can.manage && <OutsideClients agents={s.agents} />}
       <Proposals list={s.proposals} />
       <Runs s={s} />
       <LlmModelsPanel s={s} />
@@ -116,6 +119,79 @@ function Registry({ s }: { s: AgentsScreen }) {
           }}
         />
       )}
+    </section>
+  );
+}
+
+/** P9-13.9: client credentials per agent. The secret is shown once, right after it is issued. */
+function Credentials({ agents }: { agents: AgentRow[] }) {
+  const action = useAction();
+  const [agent, setAgent] = useState(agents[0]?.id ?? '');
+  const [rows, setRows] = useState<AgentCredential[]>([]);
+  const [secret, setSecret] = useState<{ client_id: string; client_secret: string } | null>(null);
+  const load = async (id: string) => {
+    const r = await agentCredentials(id);
+    setRows(r.ok ? r.output.credentials : []);
+  };
+  useEffect(() => {
+    if (agent) void load(agent);
+    setSecret(null);
+  }, [agent]);
+  const issue = async () => {
+    const r = await action.run(() => issueCredential(agent));
+    if (r.ok) {
+      setSecret(r.output);
+      await load(agent);
+    }
+  };
+  const revoke = async (id: string) => {
+    const r = await action.run(() => revokeCredential(id));
+    if (r.ok) {
+      toast('Credential revoked.');
+      await load(agent);
+    }
+  };
+  return (
+    <section className="sect" id="agCred">
+      <div className="sh">
+        <h2>Credentials</h2>
+        <span className="note">A credential lets an agent get its own token. It acts as you, limited to its tools.</span>
+        <span className="grow" />
+        <label className="sr" htmlFor="ag-cred-agent">Agent</label>
+        <select id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+          {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>{' '}
+        <button className="btn sm pri" id="ag-cred-issue" disabled={action.pending || !agent} onClick={issue}>Issue credential</button>
+      </div>
+      {secret && (
+        <div className="callout info" style={{ marginBottom: 12 }}>
+          <b>Client id</b> <span className="mono">{secret.client_id}</span>
+          <div>
+            <label className="sr" htmlFor="ag-cred-secret">Client secret</label>
+            <input id="ag-cred-secret" className="mono" readOnly value={secret.client_secret} style={{ width: '100%' }} onFocus={(e) => e.currentTarget.select()} />
+          </div>
+          <span className="note">This secret is shown once. Store it in your agent's secret store.</span>
+        </div>
+      )}
+      <div className="panel">
+        <div className="tw">
+          <table className="t static">
+            <thead><tr><th>Client id</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {rows.length === 0 && <tr><td colSpan={5} className="note">No credentials for this agent.</td></tr>}
+              {rows.map((c) => (
+                <tr key={c.client_id}>
+                  <td className="mono">{c.client_id}</td>
+                  <td>{c.created_at?.slice(0, 16).replace('T', ' ') ?? '—'}</td>
+                  <td>{c.last_used_at?.slice(0, 16).replace('T', ' ') ?? 'Never'}</td>
+                  <td><span className={'chip ' + (c.revoked_at ? 'bad' : 'ok')}>{c.revoked_at ? 'Revoked' : 'Active'}</span></td>
+                  <td>{!c.revoked_at && <button className="btn sm" disabled={action.pending} onClick={() => revoke(c.client_id)}>Revoke</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
   );
 }

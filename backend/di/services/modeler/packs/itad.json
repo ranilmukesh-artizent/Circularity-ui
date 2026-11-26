@@ -1,0 +1,1004 @@
+{
+ "key": "itad",
+ "name": "IT asset disposition \u00b7 IT lease end",
+ "version": "1.0.0",
+ "unit": "assets",
+ "author_role": "itad_manager",
+ "prefix": "IT",
+ "industry": "IT asset disposition",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "lease_end",
+   "name": "Decommissioned and lease-end IT assets"
+  }
+ ],
+ "prompts": [
+  "Decommissioned and lease-end IT: when laptops, desktops, servers or network gear come back on a pickup, reconcile them with the manifest, sanitise every disk, then redeploy, return to the lessor, resell, harvest parts or recycle. A serial missing from the manifest is a critical exception.",
+  "Reconcile every pickup with its manifest",
+  "Sanitise before anything leaves our control"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "laptop",
+   "name": "Laptop",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 1400
+  },
+  {
+   "id": "desktop",
+   "name": "Desktop",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 900
+  },
+  {
+   "id": "server",
+   "name": "Server",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 6500
+  },
+  {
+   "id": "network",
+   "name": "Network device",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": 2200
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {
+   "A": "all tests passed",
+   "B": "cosmetic wear",
+   "C": "minor failures",
+   "D": "failed"
+  }
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Decommission or lease end",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Reconcile the manifest",
+   "agent": "intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Sanitise and test",
+   "agent": "condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "Execute",
+   "agent": "follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Close and settle",
+   "agent": "analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "redeploy",
+   "name": "Redeploy to a request",
+   "app": "it_cmdb",
+   "owner": "itad_manager",
+   "lead_days": 5,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "return_to_lessor",
+   "name": "Return to the lessor",
+   "app": "it_logistics",
+   "owner": "itad_manager",
+   "lead_days": 7,
+   "classes": [
+    "release"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "resell",
+   "name": "Resell",
+   "app": "erp",
+   "owner": "itad_manager",
+   "lead_days": 14,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest parts",
+   "app": "it_logistics",
+   "owner": "logistics_lead",
+   "lead_days": 5,
+   "classes": [
+    "parts"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "it_logistics",
+   "owner": "compliance",
+   "lead_days": 10,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "G-DATA-1",
+   "text": "Every disk is sanitised, with a record per media serial, before an asset leaves our control",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DATA-2",
+   "text": "Media that fails sanitising is destroyed",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-CON-1",
+   "text": "The lease contract decides: return to the lessor when it says so, no resale without consent",
+   "owner": "itad_manager",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-DS-1",
+   "text": "Recycle or harvest only through a certified vendor",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-WEEE-2",
+   "text": "EU recycling only through an authorised treatment facility",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "execute",
+   "locked": false,
+   "forbids": [],
+   "protects": [],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-DATA-1",
+   "params": {
+    "stage": 3,
+    "locked": true,
+    "routes": [
+     "return_to_lessor",
+     "resell",
+     "harvest",
+     "recycle"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DATA-2",
+   "params": {
+    "stage": 3,
+    "routes": "all",
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-CON-1",
+   "params": {
+    "stage": 2,
+    "routes": [
+     "redeploy",
+     "resell",
+     "harvest",
+     "recycle"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-DS-1",
+   "params": {
+    "stage": 6,
+    "routes": [
+     "recycle",
+     "harvest"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  },
+  {
+   "id": "G-WEEE-2",
+   "params": {
+    "stage": 6,
+    "regions": [
+     "EU"
+    ],
+    "routes": [
+     "recycle"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": [
+    "grade"
+   ]
+  },
+  {
+   "key": "class",
+   "label": "Asset class",
+   "kind": "set",
+   "values": [
+    "laptop",
+    "desktop",
+    "server",
+    "network"
+   ],
+   "fields": []
+  },
+  {
+   "key": "security_level",
+   "label": "Security level",
+   "kind": "set",
+   "values": [
+    "standard",
+    "high"
+   ],
+   "fields": []
+  },
+  {
+   "key": "region",
+   "label": "Region",
+   "kind": "set",
+   "values": [
+    "US",
+    "EU"
+   ],
+   "fields": []
+  }
+ ],
+ "actors": [
+  [
+   "itadm",
+   "ITAD manager",
+   "ITAD manager"
+  ],
+  [
+   "itlog",
+   "Logistics lead",
+   "Logistics lead"
+  ],
+  [
+   "itcomp",
+   "Compliance",
+   "Compliance"
+  ]
+ ],
+ "wording": {
+  "every": "every asset",
+  "phrases": [
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "class",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "laptop": "laptops",
+     "desktop": "desktops",
+     "server": "servers",
+     "network": "network devices"
+    }
+   },
+   {
+    "key": "security_level",
+    "fmt": "at {} security",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "region",
+    "fmt": "in {}",
+    "joiner": " or ",
+    "words": {}
+   }
+  ],
+  "path_names": {
+   "redeploy": "Redeploy to a request",
+   "return_to_lessor": "Return to the lessor",
+   "resell": "Resell",
+   "harvest": "Harvest parts",
+   "recycle": "Recycle"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-DATA-2": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-CON-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-DS-1": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ],
+   "G-WEEE-2": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "high security level \u2192 witnessed destruction",
+    "op": {
+     "id": "DV-IT-HIGH",
+     "op": "add_step",
+     "stage": "condition",
+     "step": "Witnessed destruction",
+     "owner_role": "compliance",
+     "when": [
+      {
+       "fact": "asset.security_level",
+       "op": "eq",
+       "value": "high"
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Sanitise and test; no gate is skipped."
+   },
+   {
+    "text": "urgent redeploy: skip the sanitisation record",
+    "op": {
+     "id": "DV-IT-SKIP",
+     "op": "shortcut",
+     "stage": "match",
+     "to": "value",
+     "when": [
+      {
+       "fact": "request.urgent",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-DATA-1, the sanitisation record per media serial. Suggestion: redeploy an asset whose media are already sanitised."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "it_cmdb",
+    "name": "IT service management and CMDB",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "it_logistics",
+    "name": "ITAD logistics and chain of custody",
+    "adapter": "registry",
+    "system_of_record": false
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Configuration item",
+    "canonical": "asset"
+   },
+   {
+    "name": "Pickup and manifest",
+    "canonical": "asset.pickup"
+   },
+   {
+    "name": "Custody event",
+    "canonical": "asset.custody"
+   },
+   {
+    "name": "Erasure record",
+    "canonical": "condition.erasures"
+   },
+   {
+    "name": "Catalogue price",
+    "canonical": "market.new_price"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "hint",
+    "source": "it_cmdb",
+    "field": "securityLevel",
+    "canonical": "asset.security_level",
+    "confidence": 0.78,
+    "reason": "levels differ by customer; needs a conversion table"
+   },
+   {
+    "kind": "threshold",
+    "value": 0.8
+   },
+   {
+    "kind": "intake_trigger",
+    "source": "it_logistics",
+    "resource": "pickups",
+    "when": null,
+    "reason": "lease_end",
+    "key": "serial"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "lease_clause",
+    "model": "asset",
+    "key": "serial",
+    "fields": [
+     "lessor_return_required",
+     "consent_to_resell"
+    ],
+    "source": "it_cmdb"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "chain_of_custody",
+    "model": "asset",
+    "key": "serial",
+    "fields": [
+     "pickup",
+     "custody"
+    ],
+    "source": "it_logistics"
+   },
+   {
+    "kind": "evidence",
+    "evidence_type": "sanitisation_record",
+    "model": "condition",
+    "key": "serial",
+    "fields": [
+     "erasures"
+    ],
+    "source": "it_logistics"
+   }
+  ],
+  "min_fields": [],
+  "record_match": {
+   "source_type": "it_logistics",
+   "field": "asset.pickup",
+   "mode": "exception",
+   "missing_after_days": 0,
+   "missing_type": "EX-IT-MISSING",
+   "extra_type": "EX-IT-EXTRA",
+   "critical": [
+    "EX-IT-MISSING"
+   ]
+  }
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
+  },
+  "params": {
+   "params": {
+    "plugin": "itad",
+    "residual_start": {
+     "laptop": 0.35,
+     "desktop": 0.2,
+     "server": 0.3,
+     "network": 0.25
+    },
+    "residual_monthly_decay": 0.03,
+    "resell_fee_pct": 0.12,
+    "logistics_per_unit": 18,
+    "recycle_fee": 6,
+    "carbon_d": {
+     "redeploy": 1,
+     "against": "a named request"
+    }
+   }
+  }
+ },
+ "replay": {
+  "dataset": "itad",
+  "example": {
+   "case": "IT-S1",
+   "legal_review_note": "Data sanitisation (NIST SP 800-88 Rev. 2, IEEE 2883), lease-contract, downstream-vendor (R2v3, e-Stewards) and WEEE rules summarised. Kinective's Legal team must review before shipping.",
+   "modelled": {
+    "assets": 3200,
+    "straight_through_pct": 71,
+    "approvals_per_day": 8,
+    "exceptions_per_day": 6,
+    "recovery_per_asset": 118
+   },
+   "required_facts": [
+    "asset.asset_class",
+    "market.new_price",
+    "asset.media",
+    "condition.erasures"
+   ],
+   "samples": [
+    {
+     "id": "IT-S1",
+     "title": "Laptop, one SSD purged",
+     "serial": "SYNIT000000000001",
+     "facts": {
+      "asset.asset_class": "laptop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 1400,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "purge",
+        "verification": "passed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S2",
+     "title": "Laptop, SSD cleared only (not enough to leave)",
+     "serial": "SYNIT000000000002",
+     "facts": {
+      "asset.asset_class": "laptop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 1400,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "clear",
+        "verification": "passed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S3",
+     "title": "Laptop, SSD purge failed verification",
+     "serial": "SYNIT000000000003",
+     "facts": {
+      "asset.asset_class": "laptop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 1400,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "purge",
+        "verification": "failed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S4",
+     "title": "Leased desktop: the lease says return",
+     "serial": "SYNIT000000000004",
+     "facts": {
+      "asset.asset_class": "desktop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": true,
+      "asset.consent_to_resell": false,
+      "market.new_price": 900,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       },
+       {
+        "mediaSerial": "MS-S-2",
+        "type": "hdd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "purge",
+        "verification": "passed"
+       },
+       {
+        "mediaSerial": "MS-S-2",
+        "method": "clear",
+        "verification": "passed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S5",
+     "title": "Server, two hard disks cleared",
+     "serial": "SYNIT000000000005",
+     "facts": {
+      "asset.asset_class": "server",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 6500,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "hdd"
+       },
+       {
+        "mediaSerial": "MS-S-2",
+        "type": "hdd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "clear",
+        "verification": "passed"
+       },
+       {
+        "mediaSerial": "MS-S-2",
+        "method": "clear",
+        "verification": "passed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S6",
+     "title": "Network device, no media",
+     "serial": "SYNIT000000000006",
+     "facts": {
+      "asset.asset_class": "network",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 2200,
+      "asset.months_in_stock": 1,
+      "asset.media": []
+     }
+    },
+    {
+     "id": "IT-S7",
+     "title": "Laptop in stock four months",
+     "serial": "SYNIT000000000007",
+     "facts": {
+      "asset.asset_class": "laptop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "standard",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 1400,
+      "asset.months_in_stock": 4,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "purge",
+        "verification": "passed"
+       }
+      ]
+     }
+    },
+    {
+     "id": "IT-S8",
+     "title": "High-security laptop",
+     "serial": "SYNIT000000000008",
+     "facts": {
+      "asset.asset_class": "laptop",
+      "asset.owner_org": "Customer A",
+      "asset.security_level": "high",
+      "asset.lessor_return_required": false,
+      "asset.consent_to_resell": true,
+      "market.new_price": 1400,
+      "asset.months_in_stock": 1,
+      "asset.media": [
+       {
+        "mediaSerial": "MS-S-1",
+        "type": "ssd"
+       }
+      ],
+      "condition.erasures": [
+       {
+        "mediaSerial": "MS-S-1",
+        "method": "destruct",
+        "verification": "passed"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "EX-IT-MISSING",
+    "label": "Serial on the manifest not received",
+    "owner_role": "logistics_lead",
+    "action": "Find the unit with the carrier or the pickup site, or record it as lost"
+   },
+   {
+    "id": "EX-IT-EXTRA",
+    "label": "Serial received but not on the manifest",
+    "owner_role": "logistics_lead",
+    "action": "Check the serial against the pickup request and the CMDB"
+   }
+  ],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24
+  },
+  "escalate_to": null
+ },
+ "roles": {
+  "itad_manager": "Planner",
+  "logistics_lead": "Warehouse Manager",
+  "compliance": "Approver",
+  "finance": "Finance"
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_asset",
+   "label": "Recovery per asset",
+   "definition": "realised net after route costs / assets",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_settle",
+   "label": "Days to settle",
+   "definition": "receipt to settlement statement",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "redeploy_rate",
+   "label": "Redeploy rate",
+   "definition": "assets redeployed / assets",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "assets decided with no person in the loop / assets",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "sanitisation_exceptions",
+   "label": "Sanitisation exceptions",
+   "definition": "assets held by a sanitisation gate / assets",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "manifest_mismatches",
+   "label": "Manifest mismatches",
+   "definition": "serials missing from or extra to a manifest / serials on manifests",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which customers' pickups have the most missing serials?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.owner_org",
+    "measure": {
+     "kind": "count",
+     "where": [
+      {
+       "fact": "asset.disposition",
+       "op": "eq",
+       "value": "in_transit"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "question": "How fast does residual value fall by class?",
+   "chart": "line",
+   "query": {
+    "group_by": "asset.asset_class",
+    "measure": {
+     "kind": "avg",
+     "of": "market.new_price"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-IT-01",
+  "NS-IT-02",
+  "NS-IT-03"
+ ]
+}

@@ -12,7 +12,7 @@
  * Plan 9 P9-2.3: `useAgents().llm` lists the language models (Admin); setLlmModel is llm.setModel. Agents never run it.
  */
 import { invoke, read } from './actions';
-import { cached } from './client';
+import { cached, http } from './client';
 import type { ActionResult } from './types';
 
 export type Autonomy = 'read' | 'propose' | 'act';
@@ -246,6 +246,15 @@ export interface ModelVersion {
   };
   /** what the model predicts: a calibration of route values (default), the remaining life of tool components, or a device's price per channel */
   kind?: 'calibration' | 'rated_life' | 'price' | 'take_up';
+  /** P9-13.8 registry fields: the pack, when and on what it was trained, its quality, the last drift check and the cadence */
+  pack?: string;
+  trained_at?: string | null;
+  data_window?: { from?: string | null; to?: string | null; n?: number | null } | null;
+  quality?: { mae: number | null; mae_active: number | null; n: number | null } | null;
+  drift_status?: 'ok' | 'watch' | 'alert' | null;
+  drift?: { psi: number; ratio: number; status: 'ok' | 'watch' | 'alert'; rule: string; n_new: number; checked_at: string; explanation?: string; by_model?: boolean } | null;
+  cadence?: string | null;
+  next_due?: string | null;
   proposal: { by: string; at: string } | null;
   /** why the signed-in person may not propose or approve it, else null */
   blocks: { propose: string | null; promote: string | null };
@@ -319,6 +328,10 @@ export const stageCalibrationOf = (template: string): { pack: string; stage: str
 
 /** Propose a candidate for promotion (manageFlows; model.propose). */
 export const proposeModel = (id: string): Promise<ActionResult<ModelVersion>> => invoke('model.propose', { id });
+
+/** Measure the active models (or one) against the outcomes closed since training; an alert opens a work item (manageFlows; model.checkDrift). */
+export const checkModelDrift = (id?: string): Promise<ActionResult<{ checked: { id: string; status: 'ok' | 'watch' | 'alert'; psi: number; ratio: number; rule: string }[] }>> =>
+  invoke('model.checkDrift', id ? { id } : {});
 
 /** Approve the promotion: the candidate becomes the active model (approve.flows; never its maker or proposer). */
 export const promoteModel = (id: string): Promise<ActionResult<{ id: string; status: string; retired: string | null }>> =>
@@ -448,3 +461,37 @@ export function runTrace(q: { runId: string } | { caseId: string }): RunTrace {
 /** The pause switch: stop (`on` false) or start an agent (Admin; the journaled `agent.setEnabled`). */
 export const setAgentEnabled = (id: string, on: boolean): Promise<ActionResult<{ id: string; on: boolean }>> =>
   invoke('agent.setEnabled', { id, on });
+
+/** P9-13.9: an agent's client credentials. The secret comes back once, from issueCredential; a list never has it. */
+export interface AgentCredential { client_id: string; owner: string; created_at: string | null; last_used_at: string | null; revoked_at: string | null }
+export const issueCredential = (agentId: string): Promise<ActionResult<{ client_id: string; client_secret: string }>> =>
+  invoke('agent.issueCredential', { agent_id: agentId });
+export const revokeCredential = (clientId: string): Promise<ActionResult<{ client_id: string; revoked: boolean }>> =>
+  invoke('agent.revokeCredential', { client_id: clientId });
+export const agentCredentials = (agentId: string): Promise<ActionResult<{ agent_id: string; credentials: AgentCredential[] }>> =>
+  invoke('agent.credentials', { agent_id: agentId });
+
+/** P9-13.10: outside MCP clients (OAuth authorization code with PKCE). Registered by Admin; a person consents on the consent page. */
+export const OAUTH_SCOPES = ['cases:read', 'cases:write', 'flows:draft', 'config:draft', 'tools:read'] as const;
+export const SCOPE_TEXT: Record<string, string> = {
+  'cases:read': 'Read cases',
+  'cases:write': 'Prepare case actions (held for a person)',
+  'flows:draft': 'Draft decision flows (held for a person)',
+  'config:draft': 'Draft configuration (held for a person)',
+  'tools:read': 'Find tools',
+};
+export interface OutsideClient {
+  client_id: string; name: string; redirect_uris: string[]; agent_id: string; agent_name: string | null; scopes: string[];
+  created_by: string; created_at: string | null; revoked_at: string | null;
+}
+export const registerClient = (c: { name: string; redirect_uris: string[]; agent_id: string; scopes: string[] }): Promise<ActionResult<{ client_id: string }>> =>
+  invoke('agent.registerClient', c);
+export const revokeClient = (clientId: string): Promise<ActionResult<{ client_id: string; revoked: boolean }>> =>
+  invoke('agent.revokeClient', { client_id: clientId });
+export const outsideClients = (): Promise<ActionResult<{ clients: OutsideClient[] }>> => invoke('agent.clients', {});
+
+/** What the consent page tells the person, and their answer (the answer is the URL to send the browser back to). */
+export interface ConsentRequest { client_name: string; agent_id: string; agent_name: string; scopes: string[] }
+export const consentRequest = (req: string): Promise<ConsentRequest> => http<ConsentRequest>('/api/oauth/consent?req=' + encodeURIComponent(req));
+export const answerConsent = (req: string, approve: boolean): Promise<{ redirect: string }> =>
+  http<{ redirect: string }>('/api/oauth/consent', { method: 'POST', body: { req, approve } });

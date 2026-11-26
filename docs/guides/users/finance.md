@@ -65,7 +65,24 @@ the case.
 - **Overrides**: when people changed the plan, and what it cost or saved.
 - **Command Center → Value realisation**: predicted against actual recovery.
 
-### 5. Check the sources
+### 5. Retirement, residual and credit at close
+
+Packs with a fixed asset or a customer credit add close steps ([README](README.md#more-industries-plan-9)).
+
+- **Retirement or transfer.** After the route steps the case sends the ERP a retirement (sale, salvage or write-off) or a
+  transfer. The case shows the ERP's document, proceeds, book value and gain or loss exactly as the ERP answered; the
+  app does not recompute them.
+- **Lease residual** (leased vehicles and devices). The gain or loss is the ERP's proceeds minus the lease contract's
+  residual, to the cent, on the case.
+- **Customer credit** (trade-in or upgrade). The case computes the credit from the final payout, or from the quote and the
+  grade received, and compares it with the amount the ERP posted. If they differ to the cent, an item opens for you and
+  the case waits. Resolve it with one of two resolutions, accept the ERP's amount or send the credit again
+  under the same key, and add a note of at least 15 characters. An agent cannot resolve it; it is your decision.
+
+These accounting references are orientation only. Finance and Kinective's Legal team confirm them before anyone relies
+on them.
+
+### 6. Check the sources
 
 **Connection Fabric → Source Map** shows which system each figure comes from; **Monitor** shows integration health
 over time. Open a source to read its details and add a comment for the Developer. **Audit & Provenance → Fetch log**

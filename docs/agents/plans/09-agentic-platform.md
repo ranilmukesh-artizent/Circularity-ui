@@ -350,6 +350,7 @@ writer. A task is about an hour of code; it must not take three hours of checks.
   the spec lists that phase's gate as a dependency. A smoke failure becomes a fix task like any other, never a reason
   to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand: the second failure
   goes to a subagent.
+- **The lead orchestrates only (26 Nov, the user).** The lead dispatches tasks, reads reports and keeps the queue full; an integrator subagent cherry-picks, resolves conflicts, runs the merged tasks' own tests, ticks and pushes. Writers rebase onto the latest `lead-merge` before their final check, so the writer whose change conflicts resolves it.
 
 ### Testing model (26 Nov, the user; overrides the gate tasks' own steps)
 
@@ -1062,9 +1063,9 @@ each story went.
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
 - [x] P9-12.1 Extend the standard valuer with conditions and decay
-- [ ] P9-12.2 ITAD pack with manifest reconciliation
+- [x] P9-12.2 ITAD pack with manifest reconciliation
 - [ ] P9-12.3 ITAD sanitisation per serial and residual decay
-- [ ] P9-12.4 Rental fleet pack with re-rent rebuild or sell
+- [x] P9-12.4 Rental fleet pack with re-rent rebuild or sell
 - [ ] P9-12.5 Rental fleet damage recovery and branch transfer
 - [ ] P9-12.6 Telecom CPE pack with lot decisions
 - [ ] P9-12.7 Battery pack with passport and safe lanes
@@ -1074,16 +1075,16 @@ each story went.
 - [ ] P9-12.11 Industrial pack in the full pack format
 - [ ] P9-12.12 Next-segments demo smoke
 - [ ] P9-12.13 Phase 12 gate
-- [ ] P9-13.1 Fixed-asset retirement and transfer instructions
-- [ ] P9-13.2 Lease residual gain or loss on the case
-- [ ] P9-13.3 Downstream vendor qualification with certificate dates
-- [ ] P9-13.4 Customer credit settlement with ERP match
-- [ ] P9-13.5 Close only with reporting evidence
+- [x] P9-13.1 Fixed-asset retirement and transfer instructions
+- [x] P9-13.2 Lease residual gain or loss on the case
+- [x] P9-13.3 Downstream vendor qualification with certificate dates
+- [x] P9-13.4 Customer credit settlement with ERP match
+- [x] P9-13.5 Close only with reporting evidence
 - [ ] P9-13.6 Core credit settlement with ERP match
-- [ ] P9-13.7 Calibration and model candidates across all packs
-- [ ] P9-13.8 Model quality, drift and cadence across packs
-- [ ] P9-13.9 Per-agent credentials with client credentials
-- [ ] P9-13.10 OAuth for outside MCP clients
+- [x] P9-13.7 Calibration and model candidates across all packs
+- [x] P9-13.8 Model quality, drift and cadence across packs
+- [x] P9-13.9 Per-agent credentials with client credentials
+- [x] P9-13.10 OAuth for outside MCP clients
 - [ ] P9-13.11 Final end-to-end smoke over the five packs
 - [ ] P9-13.12 Story matrix, fresh clone and trial package proof
 - [ ] P9-13.13 Plan 9 docs, status and user guides

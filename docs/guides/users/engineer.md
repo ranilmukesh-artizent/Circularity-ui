@@ -72,7 +72,16 @@ When a redeploy or re-lease is approved, one execution step is a **Refurbishment
 order** for parts recovery) in the depot repair system, owned by the Repair centre lead (Engineer). The repair system
 acknowledges it and returns the work order number; follow it in stage 8 *Messages and acknowledgements*.
 
-### 6. Read the data behind a case
+### 6. Reporting evidence before a case closes
+
+For recycle and exit routes, and for organisations flagged for sustainability reporting, a case does not
+close until the treatment facility's evidence is on it: the **mass in kilograms** and the **material** (organisations in
+scope), and a **treatment code** of the form R or D plus a number, such as R4 or D10 (recycle and exit routes). The last
+step then shows that it is waiting for the evidence. When the facility has reported it, use **Attach reporting evidence**:
+case, mass, material, treatment code and a source reference. When nothing is missing any more, the case closes. Waste and
+reporting rules are orientation only: Kinective's Legal team reviews them before anyone relies on them.
+
+### 7. Read the data behind a case
 
 - **Asset intelligence**: condition, product, eligibility and data tabs for one asset.
 - **Connection Fabric** (read only): where each source's data comes from, how tables link, the canonical models, and

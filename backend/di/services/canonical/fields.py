@@ -105,6 +105,8 @@ CONNECTOR_FIELDS: dict[str, dict[str, str]] = {
         "lease_opportunity_ref": "ref",
         "lease_rate": "number",
         "lease_ref": "ref",
+        "lease_residual": "number",  # P9-13.2: the lease contract's residual value, in `lease_residual_currency`
+        "lease_residual_currency": "text",
         "lease_status": "text",
         "lease_term_months": "number",
         "lessee": "text",
@@ -730,3 +732,27 @@ CONNECTOR_FIELDS["asset"] |= {"idle_days": "number"}
 CONNECTOR_FIELDS["market"] |= {"broker_bids": "list", "cleared_price": "number"}
 CONNECTOR_FIELDS["vendor"] |= {"recycler_certificate": "object", "dg_lane": "bool"}
 CONNECTOR_FIELDS["condition"] |= {"disposal_record_ref": "ref"}
+
+# IT asset disposition (plan 9, P9-12.2), written by the extra adapters it_cmdb and it_logistics, keyed by `serial_key`: on
+# `asset`, the CMDB's identity and lease terms (asset_class, owner_org, security_level, lessor_return_required,
+# consent_to_resell, media: the list of {mediaSerial, type}) and the logistics' manifest and custody (pickup, custody: the
+# list of {event, at, by}); on `condition`, erasures (the list of the media erasure records).
+CONNECTOR_FIELDS["asset"] |= {
+    "asset_class": "text",
+    "consent_to_resell": "bool",
+    "custody": "list",
+    "lessor_return_required": "bool",
+    "media": "list",
+    "owner_org": "text",
+    "pickup": "text",
+    "security_level": "text",
+}
+CONNECTOR_FIELDS["condition"] |= {"erasures": "list"}
+
+# Equipment rental (plan 9, P9-12.4), written by the extra adapter rf_rental, keyed by the machine id (`serial_key`): the machine
+# (machine_id, hours, branch; asset_class, age_years, book_value and idle_days exist), its branch's utilisation and the branches'
+# purchase plans (the list of {branch, assetClass, qty}) on `demand`, and the check-in damage claims (the list of {claimId,
+# renterRef, amount}) on `condition`. `market.price_index` is the used price of the class and hours band.
+CONNECTOR_FIELDS["asset"] |= {"branch": "text", "hours": "number", "machine_id": "text"}
+CONNECTOR_FIELDS["demand"] |= {"branch_utilisation": "number", "purchase_plans": "list"}
+CONNECTOR_FIELDS["condition"] |= {"damage_claims": "list"}
