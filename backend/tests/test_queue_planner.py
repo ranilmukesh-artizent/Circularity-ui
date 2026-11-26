@@ -118,7 +118,8 @@ def test_tf_08_order_filled_once():
     assert len(holders) == 1, {i: _dest(i) for i in (first, second)}
     loser = next(i for i in (first, second) if i != holders[0])
     assert [(x["order"], x["to"]) for x in _plan(loser)["lost"]] == [("L-1", holders[0])]
-    assert _plan(holders[0])["holds"] == "L-1" and _plan(loser)["holds"] is None
+    # the loser never holds L-1; on a synced stack it may hold another live order (a fleet renewal), on a fresh one none
+    assert _plan(holders[0])["holds"] == "L-1" and _plan(loser)["holds"] != "L-1"
     page = client.get(f"/api/screens/case/{loser}", headers=h("planner-a")).json()
     assert page["plan"]["lost"][0]["order"] == "L-1"
 
