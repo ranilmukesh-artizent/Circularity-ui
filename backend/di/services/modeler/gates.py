@@ -145,7 +145,7 @@ def _fact(case: Mapping[str, Any], pack: Pack, path: str) -> Any:
     cur: Any = case
     for part in path.split("."):
         if not isinstance(cur, Mapping) or part not in cur:
-            return None
+            return case.get(path)  # a flat dotted name: a replayed unit keeps `market` as its region (P9-10.14)
         cur = cur[part]
     return cur
 

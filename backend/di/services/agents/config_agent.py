@@ -7,7 +7,9 @@
                                                       research additions and the shared ones (P9-10.11)
 
 A person describes a business in words; the agent turns the controls they state into customer overlay operations
-(`di.services.modeler.overlay`, I-4: tighten, add_approver, add_step, shortcut, set_param), places the answer to the pack's
+(`di.services.modeler.overlay`, I-4: tighten, add_approver, add_step, shortcut, set_param; a sentence like "Resale of
+current-generation cards needs approval from network planning" is `add_approver` with a new guardrail, P9-10.14,
+`di.services.modeler.plain_guardrail`), places the answer to the pack's
 one clarifying question, and marks every operation the person did not state as assumed. It writes configuration, never code:
 `ChangeSet` has `extra="forbid"` and no field that holds a script or an expression. A weaker value on a guardrail or a skip of a
 compliance check is never an operation: it goes to `blocked` with the guardrail named. The whole set is validated by
@@ -35,6 +37,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 from rapidfuzz import fuzz, utils
 
+from di.services.modeler import plain_guardrail
 from di.services.modeler.compile import CompiledRule
 from di.services.modeler.gates import catalogue, pack_gates
 from di.services.modeler.overlay import AddApprover, AddStep, OverlayError, OverlayOp, Shortcut, Tighten, apply_overlay, parse_ops
@@ -566,6 +569,12 @@ def _stated(text: str, reading: Reading, p: Pack) -> tuple[list[OverlayOp], list
     blocked: list[Blocked] = []
     roles = {c.text: str(c.value) for c in reading.controls if c.kind == "role"}
     for clause in _clauses(text):
+        if (
+            plain := plain_guardrail.read_clause(clause, p)
+        ) is not None:  # a guardrail stated in words, or a waiver of one (P9-10.14)
+            ops += [plain.op] if plain.op is not None else []
+            blocked += [Blocked(text=msg, guardrail=name) for msg, name in plain.refused]
+            continue
         if m := _SKIP.search(clause):
             op, bad = _skip(clause, m.group("what"), p)
             ops += [op] if op else []
@@ -704,6 +713,11 @@ def _accept(draft: ModelDraft, text: str, reading: Reading, packs: list[Pack], a
             if bad not in blocked:
                 blocked.append(bad)
             continue
+        if isinstance(o, AddApprover) and o.guardrail_id is not None:  # a guardrail the model read from the words (P9-10.14)
+            if any(isinstance(d, AddApprover) and d.guardrail_id == o.guardrail_id for d in det_ops):
+                continue  # the code's reading of the same sentence wins
+            if why := plain_guardrail.vouches(o, p, text):
+                raise ChangeSetError(why, o.id)
         tagged.append((o, o.id in model_assumed))
     mq = draft.question
     question: Question | None = None

@@ -22,7 +22,7 @@ five operations and the stage graph need neither.
 from collections.abc import Mapping, Sequence
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 from di.services.modeler.gates import Cond, pack_gates
 from di.services.modeler.pack import Diversion, Pack, PackGuardrail
@@ -45,10 +45,48 @@ class Tighten(_Op):
     seen: float
 
 
+class RouteIs(BaseModel):
+    """The route a customer approval guardrail holds a recommendation of (an id of the pack's routes, or one of its classes)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    route: str
+
+
+class GuardWhen(BaseModel):
+    """Where a customer approval guardrail applies: the route and the case facts, every one of which must hold."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    all: list[RouteIs | Cond] = Field(min_length=1)
+
+
 class AddApprover(_Op):
+    """Two shapes. `target` and `role`: one more approver on a guardrail of the pack. `guardrail_id`, `type`, `stage`, `when`,
+    `approver` and `text`: a new Approval guardrail of the customer's (P9-10.14), stated in words; it adds a check, it never
+    changes one of the pack, so it cannot weaken anything."""
+
     op: Literal["add_approver"]
-    target: str
-    role: str
+    target: str = ""
+    role: str = ""
+    guardrail_id: str | None = None
+    type: Literal["Approval"] | None = None
+    stage: Literal["decide"] | None = None  # stage 5: an approval is given for the route finally recommended
+    when: GuardWhen | None = None
+    approver: str | None = None
+    text: str = ""
+
+    @model_validator(mode="after")
+    def _one_shape(self) -> "AddApprover":
+        new = (self.guardrail_id, self.type, self.stage, self.when, self.approver)
+        if self.guardrail_id is None:
+            if any(x is not None for x in new) or self.text:
+                raise ValueError("a new guardrail needs guardrail_id, type, stage, when and approver")
+            if not (self.target and self.role):
+                raise ValueError("add_approver needs a target and a role")
+        elif any(x is None for x in new) or not self.text or self.target or self.role:
+            raise ValueError("a new guardrail is guardrail_id, type, stage, when, approver and text, with no target or role")
+        return self
 
 
 class AddStep(_Op):
@@ -93,7 +131,8 @@ def ops_json(ops: Sequence[OverlayOp]) -> list[dict[str, Any]]:
 
 class OverlayError(ValueError):
     """A refused operation: `op_id`, `code` (weakens, locked, not_editable, skips_compliance, unknown_target,
-    out_of_range), the message of the registry, and for a skipped compliance rule `guardrail` (its id, for the audit)."""
+    out_of_range, duplicate), the message of the registry, and for a skipped compliance rule `guardrail` (its id, for the
+    audit)."""
 
     def __init__(self, op_id: str, code: str, message: str, guardrail: str | None = None) -> None:
         self.op_id, self.code, self.message, self.guardrail = op_id, code, message, guardrail
@@ -206,7 +245,38 @@ def _tighten(pack: Pack, op: Tighten) -> Pack:
     return _replace(pack, g.model_copy(update={"param": param.model_copy(update={"value": op.value})}))
 
 
+def route_of(pack: Pack, name: str) -> str | None:
+    """The pack's route the name is: an id, else a class when it has one route of it."""
+    if any(r.id == name for r in pack.routes):
+        return name
+    by_class = [r.id for r in pack.routes if name in r.classes]
+    return by_class[0] if len(by_class) == 1 else None
+
+
+def _new_guardrail(pack: Pack, op: AddApprover) -> Pack:
+    """A customer Approval guardrail: unlocked, at Decide, approved by a role of the pack, with its scope kept as an approval
+    diversion that `decide_case` reads (it holds the recommendation of that route for the person)."""
+    gid, who, scope = str(op.guardrail_id), str(op.approver), op.when
+    if scope is None or who not in pack.roles:
+        raise _unknown(op.id, who, pack)
+    taken = {g.id for g in pack.guardrails} | {d.guardrail_id for d in pack.diversions if d.guardrail_id}
+    if gid in taken or not gid.startswith("AP-"):
+        raise OverlayError(op.id, "duplicate", f"{gid} is not a new approval guardrail id: ids start AP- and are not in use.")
+    routes = [r for r in scope.all if isinstance(r, RouteIs)]
+    route = route_of(pack, routes[0].route) if len(routes) == 1 else None
+    if route is None:
+        raise _unknown(op.id, routes[0].route if routes else "route", pack)
+    g = PackGuardrail(id=gid, text=op.text, owner=who, type="Approval", stage="decide", locked=False, approvers=[who])
+    d = Diversion(
+        op_id=op.id, stage="decide", when=[c.model_dump() for c in scope.all if isinstance(c, Cond)], kind="approval",
+        step=op.text, owner_role=who, route=route, guardrail_id=gid,
+    )  # fmt: skip
+    return pack.model_copy(update={"guardrails": [*pack.guardrails, g], "diversions": [*pack.diversions, d]})
+
+
 def _add_approver(pack: Pack, op: AddApprover) -> Pack:
+    if op.guardrail_id is not None:
+        return _new_guardrail(pack, op)
     g = _guardrail(pack, op.target)
     if g is None:
         raise _unknown(op.id, op.target, pack)
@@ -300,6 +370,12 @@ def _rebase_one(op: OverlayOp, old: Pack, new: Pack) -> tuple[OverlayOp | None, 
     if isinstance(op, SetParam):
         kept, conflict = _rebase_param(op, old, new)
         return kept, conflict, None
+    if isinstance(op, AddApprover) and op.guardrail_id is not None:  # a new guardrail: it still applies to the new base, or not
+        try:
+            _new_guardrail(new, op)
+        except OverlayError as e:
+            return None, Conflict(op_id=op.id, kind="target_gone", message=e.message, mine=op.id), None
+        return op, None, None
     if isinstance(op, AddApprover):
         if _guardrail(new, op.target) is None:
             return None, _gone(op.id, op.target, new, op.role), None

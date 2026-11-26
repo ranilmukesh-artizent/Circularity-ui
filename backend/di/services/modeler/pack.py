@@ -186,15 +186,17 @@ class CustomerLayer(_Part):
 
 
 class Diversion(_Part):
-    """One customer step or shortcut, written by `apply_overlay` (P9-1.3); never present in a pack file."""
+    """One customer step, shortcut or approval, written by `apply_overlay` (P9-1.3); never present in a pack file."""
 
     op_id: str
     stage: StageKey
     when: list[dict[str, Any]] = Field(default_factory=list)
-    kind: Literal["step", "shortcut"]
-    step: str | None = None
+    kind: Literal["step", "shortcut", "approval"]
+    step: str | None = None  # a step's words; an approval's sentence
     to: str | None = None
     owner_role: str = ""
+    route: str | None = None  # an approval: the route it holds a recommendation of (P9-10.14)
+    guardrail_id: str | None = None  # an approval: the customer's guardrail it was written for
 
 
 class DataSystem(_Part):

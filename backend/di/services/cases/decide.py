@@ -54,6 +54,7 @@ from di.services.engine.evaluate import apply_business, build_routes
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.engine.routes import POLICY, Route, fail, rank_routes
+from di.services.modeler import plain_guardrail
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
 from di.services.modeler.gates import (
@@ -198,6 +199,20 @@ def _matches(d: Diversion, case: Mapping[str, Any], pack: Pack) -> bool:
         effect=GateEffectDef(kind="require_step"), owner="", citation="", legal_review="pending",
     )  # fmt: skip
     return triggered(probe, case, pack)
+
+
+def _diversion_view(c: Mapping[str, Any], pack: Pack, session: Session | None, kind: str) -> Mapping[str, Any]:
+    """The case as a customer diversion's `when` reads it. A telecom unit's market, demand and asset facts are in the store, not
+    on the case (`telecom_facts` lays them in the valuer's copy), so a diversion on `market.generation` (P9-10.14) reads them
+    laid under what the case holds. The case itself is not changed; a pack without diversions costs nothing."""
+    if kind != "telecom_network" or session is None or not pack.diversions:
+        return c
+    laid = telecom_facts.overlay(session, dict(c)).get("valuer") or {}
+    view = dict(c)
+    for group in telecom_facts.GROUPS:
+        if isinstance(laid.get(group), Mapping):
+            view[group] = {**laid[group], **(c[group] if isinstance(c.get(group), Mapping) else {})}
+    return view
 
 
 def _decorate(t: Template, routes: list[Route]) -> None:
@@ -516,7 +531,8 @@ def decide_case(
     apply_gate_results(routes, results)  # the gates' results fail the routes they block
     apply_disclosures(routes, results)  # a title brand is disclosed on every route (P9-9.8)
     # (compliance: `rules` above are the compiled rules that break no locked guardrail)
-    diversions = [d for d in pack.diversions if _matches(d, c, pack)]  # 4. diversions, then the business rules
+    view = _diversion_view(c, pack, session, kind)
+    diversions = [d for d in pack.diversions if _matches(d, view, pack)]  # 4. diversions, then the business rules
     steps = [
         {"gate": d.op_id, "step": d.step, "owner": d.owner_role, "stage": d.stage, "kind": "diversion"}
         for d in diversions
@@ -549,7 +565,7 @@ def decide_case(
         hold=c.get("gateHold"), trace=TRACE, as_of=as_of, extra=_extra(rec, valued.figures),
         case_fields={k: c[k] for k in GATE_KEYS if k in c}, ticket=_ticket_of(valued.ticket, rec),
         approval=approval,
-        approvals=_approvals(valued, rec),
+        approvals=[*_approvals(valued, rec), *_customer_approvals(diversions, rec, pack)],
         evidence=_evidence(valued, rec, pack, as_of),
     )  # fmt: skip
 
@@ -582,6 +598,28 @@ def _evidence(valued: _Valued, rec: Route | None, pack: Pack, as_of: datetime | 
     if kind == "medical_rental":
         return medical_rental.evidence_lines(valued.facts, best, pack, as_of)
     return []
+
+
+def _customer_approvals(diversions: Sequence[Diversion], rec: Route | None, pack: Pack) -> list[dict[str, Any]]:
+    """The customer's approval guardrails (P9-10.14, TN-14: "resale of current-generation cards needs approval from network
+    planning") that hold the route finally recommended: each is a failed approval check for its owner, with the sentence as the
+    reason, the route and the words of the item (the vocabulary's). A guardrail of another route holds nothing (R20: last)."""
+    if rec is None:
+        return []
+    routes = {rec["id"], rec["id"].split(":", 1)[0]}
+    out: list[dict[str, Any]] = []
+    for d in diversions:
+        if d.kind != "approval" or d.route not in routes or d.guardrail_id is None:
+            continue
+        what = f"{d.step}. Recommended: {rec['plan']}, worth ${rec['net']:,.0f}."
+        out.append(
+            {
+                "id": d.guardrail_id, "kind": "guardrail", "owner": d.owner_role, "route": rec["id"], "passed": False,
+                "reason": d.step, "cause": what,
+                "action": plain_guardrail.action_of(pack.key, d.guardrail_id) or "Approve or decline",
+            }
+        )  # fmt: skip
+    return out
 
 
 def _approvals(valued: _Valued, rec: Route | None) -> list[dict[str, Any]]:

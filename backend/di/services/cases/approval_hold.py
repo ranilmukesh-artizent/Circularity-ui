@@ -2,7 +2,8 @@
 entry I-20 `process.open_item`).
 
     sync(s, case, pack)       one open `approval` item per approval limit the case's decision is over (`case["approvalHolds"]`
-                              of kind `value`, set by `decide.write_back`), none once it is not: a used car whose recon
+                              of kind `value`, or `guardrail` for a customer's guardrail stated in words, P9-10.14, set by
+                              `decide.write_back`), none once it is not: a used car whose recon
                               estimate is over AP-UC-RECON waits for the used-car manager (role Approver)
     close_for(...)            the person's `decision.approve`, `decision.override` or `decision.decline` closes the item with
                               who did it (the hooks are `di.services.actions.approval_items`)
@@ -24,7 +25,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.services.cases import process
+from di.services.cases import export_approval, process
 from di.services.modeler.pack import Pack
 
 # the work_item kinds are fixed by migration 0033 (exception, needs_info, step): My work shows an `AP-` step as an approval
@@ -37,10 +38,12 @@ def _money(v: Any) -> str:
 
 
 def _holds(case: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    return [h for h in case.get("approvalHolds") or [] if isinstance(h, Mapping) and h.get("kind") == "value"]
+    return [h for h in case.get("approvalHolds") or [] if isinstance(h, Mapping) and h.get("kind") in ("value", "guardrail")]
 
 
 def _cause(case: Mapping[str, Any], hold: Mapping[str, Any]) -> str:
+    if hold.get("kind") == "guardrail":  # a customer's approval guardrail stated in words (P9-10.14): its own cause
+        return str(hold["cause"])
     rec = case.get("recommendation") or {}
     return (
         f"{hold['reason']}. Retail gross after recon {_money(hold.get('retail_after_recon'))}, auction gross "
@@ -63,7 +66,9 @@ def sync(s: Session, case: Mapping[str, Any], pack: Pack) -> None:
     open_ = _open(s, cid)
     holds = {str(h["id"]): h for h in _holds(case)} if case.get("stage") != "closed" else {}
     for type_, item in open_.items():
-        if type_ not in holds:
+        if (
+            type_ not in holds and type_ != export_approval.ITEM_TYPE
+        ):  # the export approval is its gate's (P9-10.8), not a limit's
             process.close_item(s, item, "Within the limit", "system")
     for type_, h in holds.items():
         if type_ in open_:
