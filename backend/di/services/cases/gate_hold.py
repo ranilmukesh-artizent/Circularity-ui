@@ -36,7 +36,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.services.cases import contract_line, lifecycle, recall_evidence, store, telematics, title_evidence
+from di.services.cases import contract_line, decon_evidence, lifecycle, recall_evidence, store, telematics, title_evidence
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
 from di.services.modeler.gates import GateResult, apply_gate_results, catalogue, evaluate_gates, pack_gates
@@ -53,7 +53,8 @@ EVIDENCE_MISSING = "evidence_missing"  # the type of the exception item a hold o
 EXCEPTION_OF = {
     "G-CON-2": "no_active_contract",
     "G-VEH-TITLE": "EX-UC-LIEN",
-}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8)
+    "G-MED-DECON": "EX-MR-DECON",
+}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8, P9-11.6)
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
@@ -97,6 +98,8 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
             case["title"] = title
         else:
             case.pop("title", None)
+    if case.get("template") == "medical_rental":  # the device's decontamination record, for G-MED-DECON (P9-11.6)
+        recs.extend(decon_evidence.evidence(s, case.get("assetId")))
     if recs or "evidenceRecords" in case:
         case["evidenceRecords"] = recs
     _bound.set((s, str(case.get("id"))))

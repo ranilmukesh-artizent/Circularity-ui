@@ -57,6 +57,12 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   inspection read, never computed here: `condition.read_grade` (the pack's grade mapping) makes the `grade` evidence
   record, kept in `vehicle.inspection` with its source and age; without a complete inspection it is an estimate with
   confidence 0.70, which holds the decision for `confidence`.
+- **One case per tag** (plan 9, P9-11.6, MR-04). The same mechanism, as the `OneCase` profile of the template (`ONE_CASE`):
+  a `medical_rental` case is keyed by the device (`asset_key` is `schema.tag_key(org, tag)`, the reason `rental_return`).
+  Its facts (`tag`, `hospital`, `depot`, `checked_in_at`, `source`; the canonical `asset` gives the ones the event leaves
+  out, and the minimum facts `asset_tag` and `return_date` come from them) are kept as the list `rental.facts`, each with
+  its source and age. A second event for the same tag joins the open case under the intake lock, as for a car. The
+  decontamination gate G-MED-DECON reads the device's record (`di.services.cases.decon_evidence`) and holds the case.
 - **Record.** A stage log row "Case opened from <reason>" and a domain event `case.opened`.
 
 The case reads (live rules, the active model, PLM) sit above the case store; this is the one place a case is opened from
@@ -102,7 +108,7 @@ from di.services.modeler.valuers import amount, device, tool_fleet
 from di.services.modeler.valuers.rng import mulberry32
 
 REASONS = ("rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap", "service_order", "pool_excess",
-           "contract_refresh", "service_ticket")  # fmt: skip
+           "contract_refresh", "service_ticket", "rental_return")  # fmt: skip
 REFRESH_FLOW = "contract_refresh"  # the flow of a refresh case (P9-5.1): opened for a contract, not valued as a return
 
 
@@ -184,10 +190,36 @@ def existing(s: Session, asset_key: str, reason: str) -> str | None:
     return row[0] if row else None
 
 
-# ---------------------------------------------------------------- used cars (P9-9.7)
+# ---------------------------------------------------------------- one case per physical asset (P9-9.7, P9-11.6)
+@dataclasses.dataclass(frozen=True)
+class OneCase:
+    """A template whose open case is keyed by the asset itself (a car by its VIN, a rental device by its tag): `group` is the
+    case field that keeps the asset's id (`id_fact`) and its `facts`; `sources` the source an event's facts come from by
+    reason; `fields` maps a fact to the canonical `asset` field that gives its source and age; `derived` fills facts the
+    canonical record implies (the pack's minimum facts)."""
+
+    group: str
+    id_fact: str
+    sources: Mapping[str, str]
+    fields: Mapping[str, str]
+    # fact -> the fact it is copied from (a `*date` fact keeps the first 10 characters)
+    derived: Mapping[str, str] = dataclasses.field(default_factory=dict)
+
+
 CAR_TEMPLATE = "used_cars"
-CAR_SOURCE = {"lease_end": "uc_lease", "trade_in": "uc_dms"}  # the source an event's facts come from unless it names one
-CAR_FIELDS = {"vin": "vin", "mileage": "mileage_at_return"}  # a case fact -> the `asset` field that gives its source and age
+RENTAL_TEMPLATE = "medical_rental"
+ONE_CASE = {
+    CAR_TEMPLATE: OneCase(
+        "vehicle", "vin", {"lease_end": "uc_lease", "trade_in": "uc_dms"}, {"vin": "vin", "mileage": "mileage_at_return"}
+    ),
+    RENTAL_TEMPLATE: OneCase(
+        "rental", "tag", {"rental_return": "mr_rental"},
+        {"tag": "tag", "hospital": "hospital", "depot": "depot", "checked_in_at": "checked_in_at"},
+        {"asset_tag": "tag", "return_date": "checked_in_at"},
+    ),
+}  # fmt: skip
+CAR_SOURCE = ONE_CASE[CAR_TEMPLATE].sources
+CAR_FIELDS = ONE_CASE[CAR_TEMPLATE].fields
 OPEN_STAGES = ("none", "awaiting_approval")  # a joined event values the case again only while no one has acted on it
 
 
@@ -197,29 +229,34 @@ def _newest(rec: Mapping[str, Any] | None, field: str, source: str) -> datetime 
     return max(r["fetched_at"] for r in rows) if rows else None
 
 
-def car_known(s: Session, key: str) -> dict[str, Any]:
-    """The used-car facts the canonical `asset` of the car holds (`vin`, `mileage`)."""
+def one_known(s: Session, p: OneCase, key: str) -> dict[str, Any]:
+    """The facts the canonical `asset` of the car or device holds (a car's `vin`, `mileage`; a device's `tag`, `hospital`,
+    `depot`, `checked_in_at`), and the facts the profile derives from them."""
     data = (canonical.get(s, "asset", key) or {}).get("data") or {}
-    return {n: data[f] for n, f in CAR_FIELDS.items() if data.get(f) is not None}
+    out = {n: data[f] for n, f in p.fields.items() if data.get(f) is not None}
+    for n, src in p.derived.items():
+        if out.get(src) is not None:
+            out[n] = str(out[src])[:10] if n.endswith("date") else out[src]
+    return out
 
 
-def car_event(i: Mapping[str, Any], facts: Mapping[str, Any]) -> tuple[str, datetime]:
-    """The source and time of an event for a car: what the input names, else the reason's source and now."""
+def one_event(i: Mapping[str, Any], facts: Mapping[str, Any], p: OneCase) -> tuple[str, datetime]:
+    """The source and time of an event for the asset: what the input names, else the reason's source and now."""
     at = parse_time(i.get("at")) or clock.now()
-    return str(i.get("source") or facts.get("source") or CAR_SOURCE.get(i["reason"], "")), at
+    return str(i.get("source") or facts.get("source") or p.sources.get(i["reason"], "")), at
 
 
 def _age_days(at: datetime) -> float:
     return round(max(0.0, (clock.now() - at).total_seconds()) / 86400, 1)
 
 
-def car_facts(s: Session, key: str, facts: Mapping[str, Any], source: str, at: datetime) -> list[dict[str, Any]]:
+def one_facts(s: Session, p: OneCase, key: str, facts: Mapping[str, Any], source: str, at: datetime) -> list[dict[str, Any]]:
     """Each fact with its source and age (in days, at the clock): when the event's source wrote the fact's canonical field,
     that write's time; else the event's."""
     asset = canonical.get(s, "asset", key)
     out: list[dict[str, Any]] = []
     for name, value in facts.items():
-        when = (_newest(asset, CAR_FIELDS[name], source) if name in CAR_FIELDS else None) or at
+        when = (_newest(asset, p.fields[name], source) if name in p.fields else None) or at
         out.append({"fact": name, "value": value, "source": source, "at": when.isoformat(), "ageDays": _age_days(when)})
     return out
 
@@ -521,28 +558,31 @@ def _value(s: Session, c: store.Case, facts: dict[str, Any]) -> None:
     c["stage"] = "awaiting_approval" if c["recommendation"] else STAGES[0]
 
 
-def car_case(s: Session, asset_key: str) -> str | None:
-    """The open (not closed) used-car case of the car, if any."""
+def one_open(s: Session, template: str, asset_key: str) -> str | None:
+    """The open (not closed) case of the template for the car or device, if any."""
     row = s.execute(
         text(
             "SELECT id FROM case_record WHERE stage <> 'closed' AND data ->> 'template' = :t AND data ->> 'assetId' = :a "
             "ORDER BY id LIMIT 1"
         ),
-        {"t": CAR_TEMPLATE, "a": asset_key},
+        {"t": template, "a": asset_key},
     ).first()
     return row[0] if row else None
 
 
-def _join_car(s: Session, case_id: str, i: dict[str, Any], facts: dict[str, Any], at: datetime, actor: str) -> store.Case:
-    """A second event for a car joins its open case (P9-9.7): its facts are added with their own source and age, the event
-    is listed in `intake.joined`, the case is valued again while no one has acted on it, and the stage log says so."""
+def _join_one(
+    s: Session, p: OneCase, case_id: str, i: dict[str, Any], facts: dict[str, Any], at: datetime, actor: str
+) -> store.Case:
+    """A second event for a car or device joins its open case (P9-9.7, P9-11.6): its facts are added with their own source
+    and age, the event is listed in `intake.joined`, the case is valued again while no one has acted on it, and the stage
+    log says so."""
     c = store.get(s, case_id, for_update=True)
-    if c is None:  # not reached: car_case just found it under the same lock
+    if c is None:  # not reached: one_open just found it under the same lock
         raise ActionError("not_found", f"No case {case_id}.")
     by = i.get("by") or actor
-    c.setdefault("vehicle", {"vin": facts.get("vin"), "facts": []})["facts"] += car_facts(
-        s, i["asset_key"], facts, facts["source"], at
-    )  # appended: the car's facts from each source stay, the newest last
+    c.setdefault(p.group, {p.id_fact: facts.get(p.id_fact), "facts": []})["facts"] += one_facts(
+        s, p, i["asset_key"], facts, facts["source"], at
+    )  # appended: the asset's facts from each source stay, the newest last
     c["intake"].setdefault("joined", []).append(
         {"key": intake_key(i.get("dedupe_as") or i["asset_key"], i["reason"]), "reason": i["reason"], "by": by,
          "source": facts["source"], "at": at.astimezone(UTC).isoformat()}
@@ -577,12 +617,12 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if dup := existing(s, i.get("dedupe_as") or i["asset_key"], i["reason"]):
         raise ActionError("duplicate", f"{dup} is already open for {i['asset_key']} ({i['reason']}).")
     facts = dict(i.get("facts") or {})
-    car = i["template_key"] == CAR_TEMPLATE
-    if car:
-        source, at = car_event(i, facts)
-        if joined := car_case(s, i["asset_key"]):
-            return _join_car(s, joined, i, facts | {"source": source}, at, actor)
-        facts = car_known(s, i["asset_key"]) | facts | {"source": source}
+    one = ONE_CASE.get(i["template_key"])  # a car or a rental device: one case for the asset (P9-9.7, P9-11.6)
+    if one is not None:
+        source, at = one_event(i, facts, one)
+        if joined := one_open(s, i["template_key"], i["asset_key"]):
+            return _join_one(s, one, joined, i, facts | {"source": source}, at, actor)
+        facts = one_known(s, one, i["asset_key"]) | facts | {"source": source}
     case_id = _next_id(s)
     if i["template_key"] == "tool_fleet":
         facts = tool_return_facts(facts, i["asset_key"], i["reason"])
@@ -592,8 +632,8 @@ def open_case(s: Session, i: dict[str, Any], actor: str, *, account_id: str | No
     if gone := missing_fields(s, i, known):
         raise ActionError("validation_error", f"The case needs {', '.join(gone)} (the pack's minimum facts).")
     c = _base(case_id, i, known, i.get("by") or actor)
-    if car:
-        c["vehicle"] = {"vin": facts.get("vin"), "facts": car_facts(s, i["asset_key"], facts, source, at)}
+    if one is not None:
+        c[one.group] = {one.id_fact: facts.get(one.id_fact), "facts": one_facts(s, one, i["asset_key"], facts, source, at)}
     kept = ("serial", "contract_id", "line_id", "flow", "serviceDesk")  # a return's (P9-3.4), a ticket's (P9-4.3)
     c |= {k: known[k] for k in kept if known.get(k) is not None}
     if is_refresh(c):

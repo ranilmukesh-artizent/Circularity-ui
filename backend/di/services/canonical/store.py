@@ -14,7 +14,8 @@ is the canonical value while the resolution holds; when a value changes, a new c
 dropped. Manual Import rows (di/connectors/manual.py) are ordinary facts from source `manual` (resource `import`).
 
 Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateRecheck` job for its asset, and so does a
-`condition.wipe_certificate` (a device's data-wipe certificate, P9-6.7). A `condition`
+`condition.wipe_certificate` (a device's data-wipe certificate, P9-6.7); a rental device's decontamination facts
+(`DECON_FIELDS`, P9-11.6) re-check the `medical_rental` cases held on it. A `condition`
 `grade` or `test_result` fact (the workbench grade, P9-3.5) enqueues a `case.reevaluate` job for each open tool-fleet case
 of that serial.
 """
@@ -46,6 +47,7 @@ TITLE_FIELDS = (
     "title_brand",
     "payoff_confirmed",
 )  # a car's title facts (P9-9.8)
+DECON_FIELDS = ("decon_ended_at", "decon_started_at", "decon_record_ref", "decon_result")  # a device's decontamination (P9-11.6)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"
 
 
@@ -147,6 +149,18 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
                 "AND data ->> 'template' = 'used_cars' AND jsonb_typeof(data -> 'gateHold') = 'object'"
             ),
             {"k": titles},
+        ).scalars()
+        for asset_key in sorted(held):
+            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # a device's decontamination record re-checks the rental cases held on it (plan 9, P9-11.6): one recheck job per device
+    decons = sorted({f.key for f in facts if f.model == "condition" and f.field in DECON_FIELDS})
+    if decons:
+        held = session.execute(
+            text(
+                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
+                "AND data ->> 'template' = 'medical_rental' AND jsonb_typeof(data -> 'gateHold') = 'object'"
+            ),
+            {"k": decons},
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
