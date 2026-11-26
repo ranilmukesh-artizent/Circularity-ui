@@ -15,6 +15,13 @@ pipeline (AGENTS.md rules 8-10). A verb without an action id answers 405 `not_su
 caller, oldest first, as dicts; the router pages them (`limit`, `cursor`). It enforces access itself: it raises
 `ApiError` (403, 404) or returns only the rows the account may see. `get(ctx, id)` returns the row or None (404).
 `fields` lists the body keys create and update accept (empty: not checked, the action's own validation decides).
+
+Three optional extras serve actions that name the row differently (task 3):
+- `update_actions` maps a name to an action id: `PATCH /{id} {"action": "<name>", ...}` runs that action (a PATCH
+  without `action` runs `update`). The body is checked against the chosen action's own inputs.
+- `id_keys` maps an action id to the input key that carries the row id (default `id_field`; "" sends no id).
+- `from_row` maps an input key to a key of the row `get` returned, for actions that also need another field of the
+  row (a scenario's delete needs its case id).
 """
 
 from collections.abc import Callable
@@ -36,6 +43,9 @@ class Resource:
     why_not: dict[str, str] = field(default_factory=dict)  # verb ("create", "update", "delete") -> why it is not supported
     fields: tuple[str, ...] = ()  # body keys create and update accept; empty: not checked here
     filters: tuple[str, ...] = ()  # query parameters list accepts besides limit and cursor
+    update_actions: dict[str, str] = field(default_factory=dict)  # PATCH {"action": name} -> action id
+    id_keys: dict[str, str] = field(default_factory=dict)  # action id -> input key of the row id ("": none)
+    from_row: dict[str, str] = field(default_factory=dict)  # input key -> key of the row, added to update and delete
 
 
 REGISTRY: dict[str, Resource] = {}
@@ -43,3 +53,7 @@ REGISTRY: dict[str, Resource] = {}
 
 def register(r: Resource) -> None:
     REGISTRY[r.name] = r
+
+
+# the real registrations (plan 3 task 3), one module per group; each calls register() at import
+from di.resources import admin, cases, fabric, state_collections, workflows  # noqa: E402, F401

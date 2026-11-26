@@ -116,6 +116,32 @@ def test_a_pipeline_refusal_keeps_its_status():
     assert r.status_code == 409 and r.json()["error"]["code"] == "conflict"
 
 
+def test_patch_runs_the_named_action_with_the_id_under_its_own_key_and_the_row_fields():
+    register(
+        Resource(
+            name="dispatch", list=_list, get=_get, create=None, update=None, delete="dispatch.drop", id_field="pid",
+            update_actions={"rename": "dispatch.rename", "ping": "dispatch.ping"},
+            id_keys={"dispatch.ping": "", "dispatch.drop": "target"}, from_row={"kind": "kind"},
+        )
+    )  # fmt: skip
+    try:
+        assert client.patch("/api/v1/dispatch/P-1", json={"action": "rename", "name": "z"}, headers=h("admin")).status_code == 200
+        assert client.patch("/api/v1/dispatch/P-1", json={"action": "ping"}, headers=h("admin")).status_code == 200
+        assert client.delete("/api/v1/dispatch/P-2", headers=h("admin")).status_code == 200
+        assert CALLS == [
+            ("dispatch.rename", {"name": "z", "kind": "a", "pid": "P-1"}),
+            ("dispatch.ping", {"kind": "a"}),
+            ("dispatch.drop", {"kind": "b", "target": "P-2"}),
+        ]
+        r = client.patch("/api/v1/dispatch/P-1", json={"action": "nope"}, headers=h("admin"))
+        assert r.status_code == 422 and "ping, rename" in r.json()["error"]["message"]
+        r = client.patch("/api/v1/dispatch/P-1", json={"name": "z"}, headers=h("admin"))
+        assert r.status_code == 422 and "Say which action" in r.json()["error"]["message"]
+        assert len(CALLS) == 3
+    finally:
+        REGISTRY.pop("dispatch", None)
+
+
 def test_an_api_error_in_a_read_is_answered_with_its_status():
     def deny(ctx, q):
         raise ApiError("out_of_scope", "Not for you.", 403)

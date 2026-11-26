@@ -13,16 +13,19 @@ the resource has no action for answers 405 `not_supported` with the resource's r
 naming it, before any action runs. Registered after the specific routers (tasks), so `/api/v1/tasks` keeps its own.
 """
 
+import re
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Request
 from fastapi.responses import JSONResponse
 
+from di.core import golden
 from di.core.deps import CurrentPrincipal, DbSession
 from di.core.errors import ApiError
 from di.resources import REGISTRY, Resource
 from di.services import agent_credentials
 from di.services.actions.pipeline import ERROR_STATUS, Actor, CallContext, invoke
+from di.services.actions.registry import ACTIONS
 
 router = APIRouter(prefix="/api/v1", tags=["Resources"])
 
@@ -58,9 +61,12 @@ def _ctx(p: Any, session: Any) -> CallContext:
     return CallContext(actor=Actor(account=p.account, ctx=p.ctx), session=session)
 
 
-def _check_fields(r: Resource, body: dict[str, Any]) -> None:
+def _check_fields(r: Resource, body: dict[str, Any], action: str) -> None:
+    """Unknown body keys are a 422 naming them: against `fields`, else (none declared) against the action's own inputs."""
     if r.fields and (bad := sorted(set(body) - set(r.fields))):
         raise ApiError("validation_error", f"Unknown field {', '.join(bad)}. Accepted: {', '.join(r.fields)}.", 422)
+    if not r.fields:
+        _check_action_fields(action, body, r.id_keys.get(action, r.id_field))
 
 
 def _run(action: str, body: dict[str, Any], p: Any, session: Any, status: int) -> JSONResponse:
@@ -76,6 +82,38 @@ def _run(action: str, body: dict[str, Any], p: Any, session: Any, status: int) -
     session.rollback()
     code = result["error"]["code"]
     return JSONResponse(result, 422 if code == "validation_error" else ERROR_STATUS.get(code, 400))
+
+
+_INPUTS: dict[str, set[str] | None] = {}
+
+
+def _input_keys(action_id: str) -> set[str] | None:
+    """The input keys an action declares (a `$[n].input` reference in the catalogue is followed); None: not known,
+    so the action's own validation decides."""
+    if action_id not in _INPUTS:
+        a = ACTIONS.get(action_id)
+        keys: set[str] = set(a.input) - {"$ref"} if a else set()
+        catalogue = golden.load("actions_catalog")
+        entry = next((x for x in catalogue if x["id"] == action_id), None)
+        ref = ((entry or {}).get("input") or {}).get("$ref")
+        if isinstance(ref, str) and (m := re.fullmatch(r"\$\[(\d+)\]\.input", ref)):
+            keys |= set(catalogue[int(m[1])]["input"]) - {"$ref"}
+        _INPUTS[action_id] = keys or None
+    return _INPUTS[action_id]
+
+
+def _check_action_fields(action_id: str, body: dict[str, Any], id_key: str) -> None:
+    allowed = _input_keys(action_id)
+    if allowed is not None and (bad := sorted(set(body) - allowed - {id_key})):
+        raise ApiError("validation_error", f"Unknown field {', '.join(bad)}. Accepted: {', '.join(sorted(allowed))}.", 422)
+
+
+def _input(r: Resource, action: str, rid: str, body: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
+    """The action's input: the body, the row's extra fields, then the row id under the key the action reads."""
+    out = {**body, **{k: row.get(src) for k, src in r.from_row.items()}}
+    if key := r.id_keys.get(action, r.id_field):
+        out[key] = rid
+    return out
 
 
 def _object(body: Any) -> dict[str, Any]:
@@ -118,21 +156,32 @@ def create_row(name: str, p: CurrentPrincipal, session: DbSession, body: Annotat
     if isinstance(action, JSONResponse):
         return action
     b = _object(body)
-    _check_fields(r, b)
+    _check_fields(r, b, action)
     return _run(action, b, p, session, 201)
 
 
 @router.patch("/{name}/{rid}")
 def update_row(name: str, rid: str, p: CurrentPrincipal, session: DbSession, body: Annotated[Any, Body()] = None):
     r = _resource(name)
-    action = _action(r, "update")
-    if isinstance(action, JSONResponse):
-        return action
     b = _object(body)
-    _check_fields(r, b)
-    if r.get(_ctx(p, session), rid) is None:
+    if r.update_actions and "action" in b:
+        chosen = b["action"]
+        if chosen not in r.update_actions:
+            raise ApiError("validation_error", f"Unknown action {chosen}. Accepted: {', '.join(sorted(r.update_actions))}.", 422)
+        action = r.update_actions[chosen]
+        b = {k: v for k, v in b.items() if k != "action"}
+        _check_action_fields(action, b, r.id_keys.get(action, r.id_field))
+    elif r.update:
+        action = r.update
+        _check_fields(r, b, action)
+    elif r.update_actions:
+        raise ApiError("validation_error", f"Say which action: one of {', '.join(sorted(r.update_actions))}.", 422)
+    else:
+        return _action(r, "update")  # 405 with the reason
+    row = r.get(_ctx(p, session), rid)
+    if row is None:
         raise ApiError("not_found", f"No {name} {rid}.", 404)
-    return _run(action, {**b, r.id_field: rid}, p, session, 200)
+    return _run(action, _input(r, action, rid, b, row), p, session, 200)
 
 
 @router.delete("/{name}/{rid}")
@@ -141,6 +190,7 @@ def delete_row(name: str, rid: str, p: CurrentPrincipal, session: DbSession):
     action = _action(r, "delete")
     if isinstance(action, JSONResponse):
         return action
-    if r.get(_ctx(p, session), rid) is None:
+    row = r.get(_ctx(p, session), rid)
+    if row is None:
         raise ApiError("not_found", f"No {name} {rid}.", 404)
-    return _run(action, {r.id_field: rid}, p, session, 200)
+    return _run(action, _input(r, action, rid, {}, row), p, session, 200)
