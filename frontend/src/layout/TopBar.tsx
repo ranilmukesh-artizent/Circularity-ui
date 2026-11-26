@@ -10,7 +10,7 @@ import { Modal } from '../components/Overlay';
 import { toast } from '../components/toast';
 import { useAction } from '../hooks/useAction';
 import { toggleTheme, useTheme } from '../utils/theme';
-import { openAsk } from '../utils/askBus';
+import { openAssistant } from '../utils/askBus';
 
 /** Close a <details> menu when the user clicks outside it. */
 function useOutsideClose(ref: React.RefObject<HTMLDetailsElement>) {
@@ -134,7 +134,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
             )}
           </div>
         </details>
-        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => openAsk()}>
+        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => openAssistant()}>
           <Icon name="spark" />
         </button>
         <button className="iconbtn" aria-label="Toggle theme" onClick={toggleTheme}>

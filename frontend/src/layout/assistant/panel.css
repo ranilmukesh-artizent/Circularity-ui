@@ -1,0 +1,70 @@
+/*
+ * Structure of the one assistant panel (plan 10, 2.2 and 4.3): layout, scrolling and the plain look of its parts, so the
+ * panel works before the token and visual layer (src/styles/assistant.css, T7) lands. Every rule is wrapped in :where()
+ * (zero specificity): the same class in assistant.css always wins. Tokens are read with fallbacks.
+ */
+:root { --afpw: 400px; }
+
+:where(.as-panel) {
+  display: flex; flex-direction: column; min-height: 0; background: var(--panel); color: var(--ink);
+  font-size: 14px; line-height: 1.5;
+}
+:where(.as-panel.as-dock) {
+  position: fixed; top: 0; right: 0; bottom: 0; width: var(--afpw); max-width: 100vw; z-index: 45;
+  border-left: 1px solid var(--line); box-shadow: var(--shadow);
+}
+/* docked at 1280px and wider: part of the layout, no shadow */
+:where(.as-dockwrap.docked .as-panel.as-dock) { box-shadow: none; }
+:where(.as-panel.pinned) { height: 100%; width: 100%; }
+@media (max-width: 700px) {
+  :where(.as-panel.as-dock) { width: 100vw; border-left: 0; }
+  /* 16px stops iOS zooming into the field */
+  :where(.as-comp textarea) { font-size: 16px; }
+}
+:where(.as-panel button) { touch-action: manipulation; }
+
+:where(.as-head) { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: var(--as-pad, 16px) var(--as-pad, 16px) 4px; }
+:where(.as-head h2) { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--f-display); font-size: 15px; font-weight: 600; }
+:where(.as-head h2 svg) { width: 20px; height: 20px; }
+:where(.as-ctx) { margin: 0; padding: 0 var(--as-pad, 16px) 10px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+
+:where(.as-log) { flex: 1; min-height: 0; overflow: auto; padding: 0 var(--as-pad, 16px); overscroll-behavior: contain; }
+:where(.as-turn) { padding: var(--as-gap, 20px) 0; border-bottom: 1px solid var(--line2); }
+:where(.as-turn:last-child) { border-bottom: 0; }
+:where(.as-user) { margin: 0 0 4px; font-weight: 600; overflow-wrap: anywhere; }
+:where(.as-status) { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); font-feature-settings: 'tnum'; }
+:where(.as-status.blocked) { color: var(--as-block, var(--bad)); }
+:where(.as-status.failed) { color: var(--as-block, var(--bad)); }
+:where(.as-status.held) { color: var(--as-hold, var(--warn)); }
+:where(.as-text) { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 72ch; }
+:where(.as-note, .as-basis) { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+:where(.as-sub) { margin-top: 8px; }
+:where(.as-next, .as-starters, .as-card-b) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+:where(.as-empty) { padding: var(--as-gap, 20px) 0; }
+:where(.as-error) { margin: 8px 0 0; color: var(--as-block, var(--bad)); font-size: 13px; }
+
+:where(.as-audit) { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+:where(.as-audit summary) { cursor: pointer; }
+:where(.as-audit ul) { margin: 4px 0 0; padding-left: 16px; }
+:where(.as-audit .mono, .as-ans .mono) { font-family: var(--f-mono); font-size: 12px; }
+
+/* a boxed object: only the preview card is boxed, no shadow, nothing nested */
+:where(.as-card) { margin-top: 12px; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: var(--as-radius, 8px); }
+:where(.as-card-t) { margin: 0 0 2px; font-family: var(--f-display); font-size: 14px; font-weight: 650; }
+:where(.as-card-h) { margin: 12px 0 2px; font-size: 12.5px; font-weight: 600; color: var(--ink2); }
+:where(.as-card p) { margin: 0; }
+:where(.as-prov) { display: inline-block; padding: 2px 6px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); border-radius: 4px; }
+
+:where(.as-comp) { display: flex; flex-direction: column; gap: 8px; padding: var(--as-pad, 16px); border-top: 1px solid var(--line); }
+:where(.as-comp textarea) { width: 100%; resize: none; padding: 8px 10px; font: inherit; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+:where(.as-comp-b) { display: flex; justify-content: flex-end; gap: 8px; }
+:where(.as-modes) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+:where(.as-mode) {
+  min-height: 28px; padding: 2px 10px; font: inherit; font-size: 12.5px; color: var(--ink2); cursor: pointer;
+  background: transparent; border: 1px solid var(--line); border-radius: 6px; touch-action: manipulation;
+}
+:where(.as-mode.on) { color: var(--ink); background: var(--panel2); border-color: var(--ink); font-weight: 600; }
+:where(.as-mode.off) { color: var(--muted); cursor: not-allowed; opacity: .6; }
+:where(.as-limits) { margin-left: auto; font-size: 12px; color: var(--muted); }
+:where(.as-hint, .as-queue) { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 12.5px; color: var(--muted); }
+:where(.as-hint .lnk) { padding: 0; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; background: none; border: 0; cursor: pointer; }

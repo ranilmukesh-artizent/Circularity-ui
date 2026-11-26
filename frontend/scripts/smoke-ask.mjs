@@ -20,16 +20,16 @@ await page.waitForTimeout(1500);
 await page.goto(base + '/' + at);
 await page.waitForTimeout(1500);
 await page.keyboard.press('Control+j');
-if (!(await page.$('aside.afp:not([hidden])'))) {
+if (!(await page.$('aside.as-panel'))) {
   console.log('Ctrl+J did not open the panel here; using the top bar button. Page errors so far:', errors);
   await page.click('button.frask');
 }
-await page.waitForSelector('aside.afp:not([hidden])', { timeout: 5000 });
-console.log('context:', await page.$$eval('.afctx .chip', (c) => c.map((x) => x.textContent)));
-await page.fill('#afq', question);
+await page.waitForSelector('aside.as-panel', { timeout: 5000 });
+console.log('context:', await page.$$eval('.as-ctx', (c) => c.map((x) => x.textContent)));
+await page.fill('#as-q-dock', question);
 await page.keyboard.press('Enter');
-await page.waitForFunction(() => ![...document.querySelectorAll('aside.afp button')].some((b) => b.textContent === 'Stop'), null, { timeout: 90000 });
-const turn = await page.$eval('aside.afp .afm:last-child', (n) => n.innerText);
+await page.waitForFunction(() => ![...document.querySelectorAll('aside.as-panel button')].some((b) => b.textContent === 'Stop'), null, { timeout: 90000 });
+const turn = await page.$eval('aside.as-panel .as-turn:last-child', (n) => n.innerText);
 console.log('---\n' + turn + '\n---');
 console.log('page errors:', errors);
 await browser.close();

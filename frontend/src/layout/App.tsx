@@ -10,7 +10,7 @@ import { SignInPage } from '../pages/SignInPage';
 import { Boundary } from '../components/Boundary';
 import { useTheme } from '../utils/theme';
 import { toast, Toasts } from '../components/toast';
-import { AskPanel } from './AskPanel';
+import { AssistantDock } from './assistant/AssistantDock';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
@@ -105,7 +105,7 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
         </div>
         <div className="frscrim" aria-hidden="true" onClick={() => setMenu(false)} />
       </div>
-      <AskPanel route={route} />
+      <AssistantDock />
       <Toasts />
     </>
   );
