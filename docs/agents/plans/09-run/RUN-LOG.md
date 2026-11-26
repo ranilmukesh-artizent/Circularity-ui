@@ -203,3 +203,4 @@ unattended". Times are local (IST).
 | 26 Nov 17:24 | P9-11.15 merged. 9.18/10.15/11.15 committed by the lead after a shutdown stopped the writers mid-check |
 | 26 Nov 18:48 | P9-9.19 merged. Questions in code (di.services.questions.used_cars). Saved views, role sharing and the days_in_stock alert not built: DV-13 has none to reuse. |
 | 26 Nov 18:48 | P9-11.16 merged. Adapter medical_rental_system adds decon_lines to the turnaround fact (additive). WQ-MR-2 reads the pack's shared replay sample rows (not tenant data). Written code-first, no red run. |
+| 26 Nov 18:52 | P9-10.16 merged. Registrations outside the file list (queue, steps, common, decide route steps, policy manageRequisitions, forbidden requisition.reduce). Not wired yet: case battery/downstream facts from bench and recycler records; the agent does not prepare requisition.reduce itself. Code-first, no red run. |

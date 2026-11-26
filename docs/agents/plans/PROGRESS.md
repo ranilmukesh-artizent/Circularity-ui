@@ -322,6 +322,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-11.15 service planning around regional demand | this commit | batch 15 impacted run on di_w9 (11 files incl. DV-08, suggest_proposal, mr_service_gates, catalog_hygiene) green in 144 s; ruff, mypy, lint-imports green after cb5fd3d | done |
 | 2026-11-26 | 09 · P9-9.19 used-car worked analytics questions | this commit | wt-check 9 test_uc_analytics, test_mr_analytics, test_device_analytics: all passed (pytest, ruff, mypy, lint-imports) | done |
 | 2026-11-26 | 09 · P9-11.16 turnaround alert and medical worked questions | this commit | wt-check 9 test_uc_analytics, test_mr_analytics, test_device_analytics: all passed (pytest, ruff, mypy, lint-imports) | done |
+| 2026-11-26 | 09 · P9-10.16 telecom follow-through battery lanes and recycling | this commit | wt-check 9 on 20 files (tn/mr/uc/tf routing and follow-through, decide, instructions, steps, queue, policy, proposals, po_golden): all passed; lint, tsc, vitest, eslint ok | done |
 
 ## Decisions taken without the user (to review)
 
