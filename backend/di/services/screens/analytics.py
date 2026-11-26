@@ -78,7 +78,6 @@ from di.repositories.packs import active_pack, published_keys
 from di.services import questions  # noqa: F401  (registers every pack's worked questions)
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import implement
-from di.services.device import analytics as worked
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.modeler import kpis
 from di.services.modeler.pack import Pack, pack_keys
