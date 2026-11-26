@@ -112,6 +112,33 @@ def test_adapter_vehicle_auction_sales_and_results_make_no_fact():
 
 
 # ------------------------------------------------------------------ a sync against the mock
+def _asset_key() -> str:
+    with SessionLocal() as s:
+        row = s.execute(
+            text("SELECT key FROM canonical WHERE model = 'asset' AND data ->> 'vin' = :v AND starts_with(key, :p)"),
+            {"v": vin(1), "p": f"{ORG}:"},
+        ).first()
+    assert row is not None, "the lease system's car is missing"
+    return row.key
+
+
+def _days_to_next_sale(centre: str) -> int:
+    """Days to the next sale of a return centre by source-sim's simulated clock, read from the mock itself.
+
+    The mock's sales have fixed dates and its clock runs on (and other tests move it), so the number of days is
+    not a constant: 6 on a fresh clock, fewer later. The test expects what the mock's own sales list says now.
+    """
+    url = SIM + PATHS["uc_auction"].replace("/fees", "/sales")
+    rows, offset = [], 0
+    while offset is not None:  # {"items", "next", "total"}: next is the following offset or null
+        body = httpx.get(url, params={"offset": offset}, headers=KEYS[SID], timeout=10).json()
+        rows += body["items"]
+        offset = body["next"]
+    days = [r["daysAhead"] for r in rows if r["returnCenter"] == centre]
+    assert days, f"no sale to come for {centre}"
+    return min(days)
+
+
 @needs_mock
 def test_adapters_auction_pricing_map_facts():
     """Lease system first (VIN ...001's return centre), then the auction platform and the pricing guide."""
@@ -126,7 +153,8 @@ def test_adapters_auction_pricing_map_facts():
     data = market["data"]
     assert (data["retail_guide_price"], data["wholesale_guide_price"]) == (24000, 21500)
     assert (data["auction_sell_fee"], data["auction_transport"], data["salvage_bid"]) == (325, 120, 2100)
-    assert data["auction_next_sale_days"] == 6 and data["salvage_buyer"] in {"SB-1", "SB-2", "SB-3"}
+    assert data["salvage_buyer"] in {"SB-1", "SB-2", "SB-3"}
+    assert data["auction_next_sale_days"] == _days_to_next_sale(canonical("asset", _asset_key())["data"]["return_center"])
     assert market["provenance"]["salvage_bid"][0]["source_id"] == SID
     assert market["provenance"]["retail_guide_price"][0]["source_id"] == "uc_price"
     assert canonical("market", vin_key(ORG, vin(8)))["data"]["salvage_bid"] == 3900
