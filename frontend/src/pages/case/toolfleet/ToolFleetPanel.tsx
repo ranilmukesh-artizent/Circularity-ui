@@ -13,7 +13,7 @@ export function ToolFleetPanel({ caseId }: { caseId: string }) {
   return (
     <Panel title="Tool fleet" sub={`${v.flow} · pack v${v.pack_version}`}>
       <GradeSection grade={v.grade} />
-      <LifeSection life={v.life ?? null} />
+      <LifeSection life={v.life ?? null} disagreement={v.disagreement ?? null} />
       <PathsSection paths={v.paths} best={v.best} second={v.second} standard={v.standard} uplift={v.uplift} />
       <GatesSection gates={v.gates} />
       <QuarantineCard caseId={caseId} q={v.quarantine ?? null} mayRelease={can('releaseQuarantine')} />

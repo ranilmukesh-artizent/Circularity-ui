@@ -26,7 +26,7 @@
  *   node frontend/scripts/smoke-p9-3.mjs http://localhost:5173
  *   bash scripts/dev/reset.sh
  * (hold the api test lock meanwhile). Screenshots of a failing step go to SMOKE_OUT (default: <OS temp>/smoke-p9-3).
- * The last line is "smoke-p9-3: all 6 steps passed".
+ * The last line is "smoke-p9-3: all 8 steps passed".
  */
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -343,6 +343,21 @@ await step('6 Life: CMH-48213 reads its wear index and the remaining life of its
   );
   return `${wti}; ${rul}`;
 });
+// ---------------------------------------------------------------- 8
+await step('8 Disagreement: a tool whose grade and wear agree shows no flag; one that disagrees shows the line and its exception', async () => {
+  const admin = await as('admin');
+  const r = await must(admin, 'cases.list', { q: 'CMH-48213', limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for CMH-48213');
+  const view = await getJson(admin, '/api/screens/toolfleet/' + row.id);
+  // CMH-48213 is graded by an estimate here, and an estimate never triggers a disagreement
+  if (view.grade.source === 'estimate' && view.disagreement) throw new Error('an estimated grade must not flag a disagreement');
+  await admin.goto(`${base}/#/product/${row.id}/overview`);
+  await admin.locator('#view').waitFor();
+  const flagged = await admin.locator('[data-testid="tf-disagreement"]').count();
+  if (!!view.disagreement !== flagged > 0) throw new Error('the Overview and the screen API disagree about the flag');
+  return view.disagreement ? view.disagreement.text : 'no disagreement (estimate grade)';
+});
 
 // ---------------------------------------------------------------- 9
 await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines', async () => {
@@ -368,4 +383,4 @@ if (errors.length) {
   say('FAIL page errors:', errors.slice(0, 5).join(' | '));
   process.exit(1);
 }
-say('smoke-p9-3: all 6 steps passed');
+say('smoke-p9-3: all 8 steps passed');

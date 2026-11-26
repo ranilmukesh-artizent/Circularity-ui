@@ -1827,10 +1827,10 @@
     "action": "Post the fault for the tool"
    },
    {
-    "id": "grade_wear_disagree",
+    "id": "grade_wear_disagreement",
     "label": "Telematics and inspection disagree",
-    "owner_role": "Engineer",
-    "action": "Re-inspect the tool"
+    "owner_role": "Quality",
+    "action": "Re-inspect the tool, or confirm the grade with the telematics"
    },
    {
     "id": "repair_over_limit",

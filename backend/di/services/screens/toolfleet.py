@@ -13,6 +13,8 @@ GET /api/screens/toolfleet/{case_id}
     rul_tool, rul_tool_hours, weakest, per_component: [{name, used_hours, consumed_pct, rul_pct, source}], confidence (High,
     Medium, Low), range ([low, high] RUL_tool without telematics, else null), inputs, table_version, rule_version}`; null
     for a case with neither telematics hours nor months on contract (it keeps its own inputs).
+    `disagreement` (P9-3.11) is `{text, components}` when the workbench grade and the wear index disagree (an exception item for
+    Quality is open and the decision waits for a person), else null.
     `paths` (P9-3.12) are the six valued paths in the pack's order, `{k, name, ok, net, gross, cost, hold, why, lines: [{type,
     label, basis, amt}], dest}` (`dest` the named order it fills: a fleet renewal, sales order, bid, pool request or repair
     orders), against the org's live named demand (`di.repositories.tool_demand`); `best` is the recommended path, `second`
@@ -116,6 +118,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "quarantine": fleet_evidence.quarantine_of(c),
         "gates": [_gate(g, now, params) for g in c.get("gates") or []],
         "life": c.get("life"),
+        "disagreement": c.get("disagreement"),
         **_paths(s, c),
         "plan": None,
         "approval": None,

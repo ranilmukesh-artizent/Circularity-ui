@@ -1,4 +1,4 @@
-import type { LifeView } from '../../../api/toolFleet';
+import type { DisagreementView, LifeView } from '../../../api/toolFleet';
 
 /** "WTI 65": the wear index of the tool, 0 (new) to 100 (worn out). */
 export const wtiLine = (l: LifeView): string => `WTI ${l.wti}`;
@@ -14,10 +14,15 @@ const CHIP: Record<LifeView['confidence'], string> = { High: 'ok', Medium: 'warn
 
 /** The wear and remaining life of a tool (plan 9, P9-3.9, TF-06): the wear index, the remaining life, a row per component and
  * the confidence. The numbers are computed on the server (rated life from PLM, else the pack's table); nothing is worded by a model. */
-export function LifeSection({ life }: { life: LifeView | null }) {
+export function LifeSection({ life, disagreement = null }: { life: LifeView | null; disagreement?: DisagreementView | null }) {
   if (!life) return null;
   return (
     <section aria-label="Wear and remaining life" data-testid="tf-life" style={{ marginTop: 8 }}>
+      {disagreement && (
+        <p className="chip warn" role="alert" data-testid="tf-disagreement" style={{ margin: '0 0 4px' }}>
+          {disagreement.text}. A person from Quality decides.
+        </p>
+      )}
       <p style={{ margin: 0 }}>
         <b data-testid="tf-life-wti">{wtiLine(life)}</b> · <b data-testid="tf-life-rul">{rulLine(life)}</b>{' '}
         <span className={`chip ${CHIP[life.confidence]}`} data-testid="tf-life-confidence">{confidenceLine(life)}</span>

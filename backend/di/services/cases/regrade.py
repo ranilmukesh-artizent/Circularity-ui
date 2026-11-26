@@ -9,11 +9,15 @@ The evidence type `workbench_grade` is the pack's `data.mappings` row: canonical
 `di.services.modeler.valuers.tool_inputs` (pure); this module only reads and writes the case's own fields:
 `valuer` (grade, estGrade) and `grade` (what the case shows: the workbench grade, else the estimate).
 
+`apply` also keeps `disagreement` on the case ({text, components}, P9-3.11: the workbench grade against the wear index,
+`tool_life.disagreement`; the condition record's `damage_code` says the tool is damaged), or removes it. The exception item it
+opens is `gate_hold.sync_item`.
+
 Never does: grade anything, move a stage or write to the canonical store. A late grade reaches an open case through the
 job `case.reevaluate` (canonical.store.apply enqueues it; `replan.on_graded` runs it).
 """
 
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Any, Literal
 
 from sqlalchemy.orm import Session
@@ -22,7 +26,7 @@ from di.core import clock
 from di.services.canonical import store as canonical
 from di.services.cases import life_evidence
 from di.services.modeler.evidence import Evidence, parse_time
-from di.services.modeler.valuers import tool_inputs
+from di.services.modeler.valuers import tool_inputs, tool_life
 
 FIELDS = ("grade", "test_result", "inspection_ref", "graded_at")
 
@@ -54,4 +58,20 @@ def apply(s: Session, c: MutableMapping[str, Any]) -> bool:
     c["valuer"], c["grade"] = vc, shown
     if vc.get("life") is not None:  # the computed life (P9-3.9): what the case shows and the decision records
         c["rul"], c["partRul"], c["life"] = vc["rul"], vc["partRul"], vc["life"]
-    return changed
+    before = c.get("disagreement")
+    _sync_disagreement(s, c, ev)
+    return changed or before != c.get("disagreement")
+
+
+def _sync_disagreement(s: Session, c: MutableMapping[str, Any], ev: Mapping[str, Evidence | None]) -> None:
+    """`c["disagreement"]` is the telematics-against-grade disagreement of the case, or absent (an estimate never triggers it)."""
+    c.pop("disagreement", None)
+    if not isinstance(c.get("life"), dict):
+        return
+    grade = tool_inputs.grade_of(ev, str(c["valuer"].get("estGrade") or "C"))
+    damage = bool(
+        ((canonical.get(s, "condition", str(c.get("serial") or c.get("assetId"))) or {}).get("data") or {}).get("damage_code")
+    )
+    d = tool_life.disagreement(grade, tool_life.life_from_dict(c["life"]), damage)
+    if d is not None:
+        c["disagreement"] = {"text": d.text, "components": d.components}
