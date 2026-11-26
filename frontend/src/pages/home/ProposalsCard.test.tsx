@@ -58,7 +58,8 @@ describe('ProposalsCard', () => {
     draw();
     const t = host.textContent!;
     for (const s of ['Proposals for you', 'Request evidence', 'RT-1051', 'The inspection report is missing.', 'Inbox proposer']) expect(t).toContain(s);
-    await act(async () => button('Accept').click());
+    act(() => button('Accept, runs as you').click());
+    await act(async () => button('Run as me').click());
     expect(m.accept).toHaveBeenCalledWith(7);
   });
 
@@ -66,8 +67,8 @@ describe('ProposalsCard', () => {
     m.list = [{ ...P, id: 9, action: 'requisition.reduce', title: 'Reduce purchase requisition', case_id: 'RT-1048', input: { case_id: 'RT-1048', req_id: 'PR-3302', qty: 1 } }];
     draw();
     expect(host.textContent).toContain('Reduce purchase requisition');
-    expect(button('Accept')).toBeTruthy();
-    expect(button('Reject')).toBeTruthy();
+    expect(button('Accept, runs as you')).toBeTruthy();
+    expect(button('Reject…')).toBeTruthy();
   });
 
   it('shows why the hold policy held it (plan 9 P9-2.4), and nothing for a proposal held before', () => {
@@ -82,18 +83,18 @@ describe('ProposalsCard', () => {
   it("the person's own agent's proposal: no Accept (the server refuses it), a note, Reject stays", () => {
     m.list = [{ ...P, own: true }];
     draw();
-    expect(button('Accept')).toBeUndefined();
+    expect(button('Accept, runs as you')).toBeUndefined();
     expect(host.textContent).toContain("Your agent's proposal: another person accepts it.");
-    expect(button('Reject')).toBeDefined();
+    expect(button('Reject…')).toBeDefined();
   });
 
   it('reject asks for a reason first', async () => {
     m.list = [P];
     draw();
-    act(() => button('Reject').click());
+    act(() => button('Reject…').click());
     expect(m.reject).not.toHaveBeenCalled();
     const ta = document.querySelector('textarea')!;
-    const confirm = [...document.querySelectorAll('button')].filter((b) => b.textContent === 'Reject').at(-1)!;
+    const confirm = [...document.querySelectorAll('button')].filter((b) => b.textContent === 'Reject proposal').at(-1)!;
     expect(confirm.disabled).toBe(true); // no reason yet
     act(() => {
       const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;

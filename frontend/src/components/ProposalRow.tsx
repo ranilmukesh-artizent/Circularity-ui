@@ -5,7 +5,7 @@
  * confirming step that names it), Reject asks for a reason (`proposal.reject`). When the agent acted for the
  * signed-in person (`own`) Accept is replaced by a note: another person accepts it (maker-checker, AGENTS.md rule 10).
  */
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { OWN_PROPOSAL_NOTE, reasonText, type HoldReason } from '../api/agents';
 import { acceptProposal, rejectProposal, rgTime, type HomeProposal } from '../api/home';
 import { useAction } from '../hooks/useAction';
@@ -39,7 +39,11 @@ export const runHref = (runId: string): string => '#/agents?run=' + encodeURICom
 export function ProposalRow({ p, id }: { p: HomeProposal; id?: string }) {
   const action = useAction();
   const uid = useId();
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
   const [step, setStep] = useState<'idle' | 'accept' | 'reject'>('idle');
+  useEffect(() => {
+    if (step === 'reject') reasonRef.current?.focus();
+  }, [step]);
   const [reason, setReason] = useState('');
   const [err, setErr] = useState('');
   const accept = async () => {
@@ -73,7 +77,7 @@ export function ProposalRow({ p, id }: { p: HomeProposal; id?: string }) {
         {step === 'reject' && (
           <span className="fld">
             <label htmlFor={uid}>Why not? The agent's owner sees this.</label>
-            <textarea id={uid} name="reason" autoComplete="off" autoFocus maxLength={300} rows={2} value={reason} onChange={(e) => { setReason(e.target.value); setErr(''); }} />
+            <textarea id={uid} name="reason" autoComplete="off" ref={reasonRef} maxLength={300} rows={2} value={reason} onChange={(e) => { setReason(e.target.value); setErr(''); }} />
             <span className="err" role="alert" hidden={!err}>{err}</span>
           </span>
         )}
