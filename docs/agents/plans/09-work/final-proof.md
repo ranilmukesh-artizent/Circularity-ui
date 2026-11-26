@@ -14,7 +14,7 @@ script is unchanged).
 
 | # | Command | Result |
 |---|---|---|
-| 1 | `bash scripts/dev/story-matrix.sh` (all phases) | pending writer 44 |
+| 1 | `bash scripts/dev/story-matrix.sh` (all phases) | `story-matrix: 159 rows, 481 tests, 0 missing` |
 | 2a | `FRESH_SMOKE=1 bash scripts/dev/fresh-clone.sh` (dev images, project `circfresh`) | `fresh-clone (dev): PASSED (HEAD a088f6dd)`; fresh database ran every migration; `/api/screens/case/RT-1048` 200 (20526 bytes), 401 without a token; `admin: 70 routes, 0 failing`, `OK smoke-pages.mjs admin` |
 | 2b | `bash scripts/dev/fresh-clone.sh --prod` (reported by the lead's 13.12 agent earlier on 27 Nov, not rerun here) | `fresh-clone (prod): PASSED (HEAD 66066b0c)`; stack healthy after 168 s; doctor, health, admin sign-in and RT-1048 OK (`FRESH_SMOKE=0`). The dev run also passed on `e15cd015`. |
 | 3a | `bash scripts/trial/build.sh` | built `2026.11.26-a088f6dd`: `images.tar.gz` 404M, `.tar.gz` 407M, `.zip` 407M, no `.env` in the package |
@@ -34,5 +34,5 @@ The `circfresh` and `circtrialcheck` containers, networks and volumes were remov
 
 ## Open
 
-- Story matrix: pending writer 44.
+- Story matrix: `story-matrix: 159 rows, 481 tests, 0 missing` (after UC-20, ec6e588d).
 - Re-run build and check if P9-13.13 changes `docs/guides/users/` (the package copies them).
