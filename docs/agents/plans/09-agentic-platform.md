@@ -1018,7 +1018,7 @@ each story went.
 - [x] P9-10.14 Current-generation resale guardrail in plain words
 - [x] P9-10.15 Cross-region transfer alert and suggestion
 - [x] P9-10.16 Telecom follow-through battery lanes and recycling
-- [ ] P9-10.17 Telecom close and learn with worked questions
+- [x] P9-10.17 Telecom close and learn with worked questions
 - [ ] P9-10.18 Telecom demo smoke
 - [ ] P9-10.19 Phase 10 gate
 - [x] P9-11.1 Medical rental pack data file
@@ -1037,7 +1037,7 @@ each story went.
 - [x] P9-11.14 Retire under 5 years guardrail in plain words
 - [x] P9-11.15 Service planning around regional demand
 - [x] P9-11.16 Turnaround alert and medical worked questions
-- [ ] P9-11.17 Medical follow-through hospital evidence and close
+- [x] P9-11.17 Medical follow-through hospital evidence and close
 - [ ] P9-11.18 Medical rental demo smoke
 - [ ] P9-11.19 Phase 11 gate
 - [ ] P9-12.1 Extend the standard valuer with conditions and decay
