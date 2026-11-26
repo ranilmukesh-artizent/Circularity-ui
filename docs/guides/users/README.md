@@ -66,11 +66,25 @@ simulations, as in the rest of the demo.
 | Used vehicles (lease and trade-in) | car | retail, auction, dealer trade, salvage | fixed-asset retirement, lease residual, reporting evidence |
 | Telecom network equipment | unit | redeploy, spare, resell, harvest, recycle | fixed-asset retirement, reporting evidence |
 | Medical rental (hospital equipment) | device | re-rent, service then re-rent, refurbish, retire | fixed-asset retirement, lease residual, reporting evidence |
-| IT asset disposition (IT lease end) | asset | redeploy, return to lessor, resell, harvest, recycle | none yet |
-| Rental and construction fleets (landing) | machine | re-rent, rebuild, branch transfer, retail, auction, dealer, parts, scrap | none yet |
+| IT asset disposition (IT lease end) | asset | redeploy, return to lessor, resell, harvest, recycle | none (sanitisation per serial, manifest reconciliation) |
+| Rental and construction fleets | machine | re-rent, rebuild, branch transfer, retail, auction, dealer, parts, scrap | damage recovery at close |
+| Telecom CPE (home routers, set-top boxes) | device | refurbish and redeploy, broker, harvest, recycle | none (decisions are per lot) |
+| EV and industrial batteries | pack | reuse, remanufacture, repurpose, recycle | none (battery passport, safe lanes) |
+| Automotive cores (remanufacturing) | core | reman, harvest, broker, scrap | core credit settlement, fraud hold |
+| Medical capital equipment | device | refurbish and resell, resell as is, harvest, recycle | none (regulatory assessment) |
+| Serialised retail returns | item | buy now, offers, auction, market, wholesale, donate, recycle, exit | reporting evidence |
 
-The packs are in `backend/di/services/modeler/packs/`. The industrial pack in the full pack format and the other
-segments of phase 12 are still landing.
+Every pack is also a template in the Modeler and in the pickers (templates, Add source, Records import), so a Planner
+can start a flow from any of them. The industrial pack is now in the same full pack format as the others; its numbers
+and texts are unchanged. Each pack has its own demo data and mock systems, and the pickers list the packs the server
+knows. The packs are in `backend/di/services/modeler/packs/`.
+
+Two things worth knowing about the new packs:
+
+- **Medical capital:** a case needs a regulatory assessment before it can be resold. A Planner records it on the case
+  (**Record assessment**); the recorded line shows who recorded it and when.
+- **Automotive cores:** a core with a fraud flag is held. An **Approver** or **Admin** releases the hold with a reason
+  (it needs the permission to approve decisions); a Planner is refused and an agent never can.
 
 What the phase-13 close adds, by role (each guide has the steps):
 
@@ -89,12 +103,25 @@ What the phase-13 close adds, by role (each guide has the steps):
 > treatment codes, sustainability reporting) are orientation only. Kinective's Legal team reviews them before anyone
 > relies on them or offers them to a customer.
 
-## One assistant (plan 10, in progress)
+## One assistant (plan 10)
 
-Ask Circularity, the Modeler's assistant and Compose's helper are being merged into one assistant dock that knows
-which page and which draft you are on, proposes changes and applies them only when you approve. This is a front-end
-change in progress ([plan 10](../../agents/plans/10-unified-assistant-ux.md)); until it lands the three keep working as
-described in the role guides.
+Ask Circularity, the Modeler's assistant, the Describe dialog and Compose's helper are now one assistant. Open it with
+the spark button in the top bar or **Ctrl+J**; in the Modeler it sits pinned in its own column. It shows which page,
+case and draft it is reading. Three modes, chosen under the box:
+
+- **Ask:** read-only answers with their sources.
+- **Change flow:** describe a change; it shows a checked, simulated preview card and applies it to the draft only when
+  you press the button, with **Undo** while the draft is unchanged.
+- **Set up:** draft a flow, mappings or a composition from a prompt.
+
+Every step shows a status line while it works, and a sentence typed in the wrong mode gets a hint, not an error. The
+assistant never approves, publishes or changes access: what it prepares waits for a person
+([plan 10](../../agents/plans/10-unified-assistant-ux.md)).
+
+**Agent activity** (linked from Home and My work): what each agent did (held, accepted, rejected, refused, run), with
+filters for kind, agent, pack and case. It is read-only and shows only the tenants and warehouse you may see. On a
+case, **Run the agent on this case** lets an Admin, Planner or Approver start a propose-only autopilot run of an enabled
+agent: every write it prepares is held for a person.
 
 ## Things every role has
 
@@ -108,8 +135,8 @@ described in the role guides.
 - **Audit & Provenance**: every fetch with its source (*Fetch log*) and evidence without provenance (*Evidence gaps*;
   not for Warehouse Managers).
 - **Reports**, **Data Checks** and **Settings** (profile, theme, region and agent options).
-- **Ask Circularity** (the spark button in the top bar, or Ctrl+J): ask questions in plain words. It only reads; it
-  never approves or changes anything.
+- **The assistant** (the spark button in the top bar, or Ctrl+J; *Ask Circularity* in Ask mode): ask questions in plain
+  words. In Ask mode it only reads; in the other modes it proposes and a person applies. It never approves anything.
 
 ## Rules that hold for everyone
 

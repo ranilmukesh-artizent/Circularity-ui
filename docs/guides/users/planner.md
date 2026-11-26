@@ -75,7 +75,8 @@ accepts it (maker-checker).
 1. Open a case *Awaiting approval*. Stage 6 (**Decide**) shows the recommendation.
 2. Read the tabs: *Decision packet* (what would be approved), *Compare outcomes* (every route with its net value,
    range and gate results), *Why this outcome*, *Evidence*, *How it was predicted*, *Demand*.
-3. Ask **Ask Circularity** (Ctrl+J) anything you want explained, in plain words.
+3. Ask the assistant (Ctrl+J, Ask mode) anything you want explained, in plain words. **Run the agent on this case** (on
+   the case Overview) starts a propose-only autopilot run: whatever it prepares is held for a person.
 4. Press **Submit RT-… for review**. "The Approver gets it in their inbox and approves, edits or declines it in stage
    7." Nothing is sent to any system yet.
 
@@ -139,11 +140,14 @@ path, scope, owner; **Delete rule**). Changes save automatically as a draft of t
 says what blocks a submit (for example a rule that breaks a guardrail) and what is only a warning (for example two
 rules that conflict).
 
-**The assistant.** In **Assistant**, describe a change in plain words, for example "Never send grade D motors to
-resale", and press **Send**. The assistant turns it into a checked, simulated proposal, drawn dashed on the canvas
-with its checks and its impact against your current draft. **Approve · AI applies it** puts it into your draft (it is
-your own edit, recorded as "Proposed by the assistant: …"); **Dismiss** drops it. A change that would touch a
-guardrail is refused in red. Nothing changes until you apply it.
+**The assistant.** The assistant is pinned in the column beside the canvas (it is the same assistant as Ctrl+J, with
+the Modeler's flow and draft as its context). In **Change flow** mode, describe a change in plain words, for example
+"Never send grade D motors to resale", and press **Propose**. It turns the sentence into a checked, simulated preview
+card, drawn dashed on the canvas with its checks and its impact against your current draft. Applying the card puts it
+into your draft (it is your own edit, recorded as "Proposed by the assistant: …") and offers **Undo** while the draft is
+unchanged; dismissing drops it. A change that would touch a guardrail is refused in red. Nothing changes until you
+apply it. **Set up** mode drafts a whole flow or composition from a description (this replaced the *Describe your
+business* dialog), and **Ask** answers questions about the flow, for example why a rule is blocking.
 
 **Impact.** **Simulate on open queue** runs your draft against the open decisions and shows which would change and
 the value impact against the published flow.
@@ -167,6 +171,38 @@ and the fitted models (outcomes, error figures, factors, who fitted them, promot
 press **Fit a candidate** to fit one on the confirmed outcomes; then **Propose promotion**. A different person (an
 Approver or Admin) approves the promotion; you cannot approve a model you fitted or proposed. See
 [Approvals](../approvals.md#6-model-promotion).
+
+### Compose: set up a pack for an organisation (five steps)
+
+**Compose** (in the Modeler; the assistant's Set up mode opens it) takes one pack to a live flow for one organisation
+as a single object that a different person approves. The steps show their state (to do, done, sent back):
+
+1. **Describe:** say in plain words what the business does. The agent shows what it read (drafted by a model when one
+   is available, always checked by the rules) and drafts the changes to the pack as a list of typed operations. The
+   rules refuse a change that loosens a locked guardrail or skips a compliance check, and say why.
+2. **Mapping:** each system the pack needs is listed with its status. A system with no adapter yet is added **from the
+   adapter registry**; the field mapping uses the suggestions and the five choices ([developer.md](developer.md)). A
+   field still waiting for its system owner blocks the submit.
+3. **Agents:** per stage, how far the agent may go and its confidence threshold (0.65 to 0.85), with value and bulk
+   limits. Outside that range the submit is refused.
+4. **Approve:** you press **Submit**; the page lists what blocks it, if anything. A different person approves, or sends
+   a step back with a reason ([approver.md](approver.md)). A sent-back step shows the reason pinned to it, and the node
+   it is about.
+5. **Publish:** after approval, a person with the right starts a canary in one region at a share of cases; the **replay
+   report** (route mix, straight-through rate, approvals and exceptions a day, uplift with its band) and the rollout
+   state show on the same step. See [executive.md](executive.md) for reading them.
+
+A **test run** card runs sample cases through the draft without saving anything.
+
+**Decision tables.** For packs with per-market rules (the tool fleet's service desk), **Tables** in the Modeler holds a
+rate card and a decision table per market. Pick the market and a version, change the values or the rows (first match
+wins), **Test**, save a draft and submit it. A different person approves it (maker-checker); each version has the dates
+it is in force. Tables are data checked by code, not free text. A table can also go out in steps (an Approver starts it):
+its canary sends a
+share of one market's cases to the new version, and compares them with the rest at a standard quote, which is the
+first other market of the pack in the same currency (for example Germany when the canary is in France). A table canary
+needs a finished replay of the flow first, has no automatic pause (pause it yourself) and cannot be taken straight to
+everyone; roll it back, or replace it with the next version.
 
 ### Cases of the other industries
 

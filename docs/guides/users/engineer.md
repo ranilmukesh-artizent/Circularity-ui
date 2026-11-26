@@ -81,6 +81,14 @@ step then shows that it is waiting for the evidence. When the facility has repor
 case, mass, material, treatment code and a source reference. When nothing is missing any more, the case closes. Waste and
 reporting rules are orientation only: Kinective's Legal team reviews them before anyone relies on them.
 
+### 6b. When you are named as a system owner
+
+A connection's **system owner** is a named person. When someone asks for production access or write-back on a system
+you own, or asks you a question about one of its fields while mapping it (**Ask the owner**), an item opens in **My
+work**. For access, **Approve**, or **Decline** with a reason; the requester never approves their own request, and an
+Admin can answer for any system. For a field question, answer in the thread; the mapping stays blocked until you do.
+Nothing reaches the system in production until you approve.
+
 ### 7. Read the data behind a case
 
 - **Asset intelligence**: condition, product, eligibility and data tabs for one asset.

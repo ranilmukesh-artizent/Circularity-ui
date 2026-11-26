@@ -78,6 +78,9 @@ Packs with a fixed asset or a customer credit add close steps ([README](README.m
   grade received, and compares it with the amount the ERP posted. If they differ to the cent, an item opens for you and
   the case waits. Resolve it with one of two resolutions, accept the ERP's amount or send the credit again
   under the same key, and add a note of at least 15 characters. An agent cannot resolve it; it is your decision.
+- **Core credit** (automotive cores). The credit owed for an accepted core is compared with what the ERP posted in the
+  same way and resolved the same way. A core with a fraud flag is held before this: an Approver or Admin releases it
+  ([approver.md](approver.md)), not Finance.
 
 These accounting references are orientation only. Finance and Kinective's Legal team confirm them before anyone relies
 on them.
