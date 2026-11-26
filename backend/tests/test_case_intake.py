@@ -22,6 +22,8 @@ from di.services.modeler.valuers.routes_adapter import to_routes
 from tests import starting
 from tests.helpers import call, tool_case_facts
 
+pytestmark = pytest.mark.usefixtures("no_synced_demand")
+
 MOTOR = {"cls": "motor", "grade": "B", "age": 4, "qty": 1, "demand": {"site": "Site 2", "confirmed": True}}
 
 
