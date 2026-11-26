@@ -64,6 +64,8 @@ case opens for it, beside the demo's 128 book cases (di.services.cases.store).
   Its facts (`tag`, `hospital`, `depot`, `checked_in_at`, `source`; the canonical `asset` gives the ones the event leaves
   out, and the minimum facts `asset_tag` and `return_date` come from them) are kept as the list `rental.facts`, each with
   its source and age. A second event for the same tag joins the open case under the intake lock, as for a car. The
+  The device facts the valuer prices on (`cls`, `age_years`, `book_value`, `residual_sale_value`, `repair_estimate`) come
+  from the canonical `asset`, `market` and `intervention` records the same way (P9-11.10), an event's own facts winning. The
   decontamination gate G-MED-DECON reads the device's record (`di.services.cases.decon_evidence`) and holds the case.
 - **One case per serial** (plan 9, P9-10.6, TN-04). A `telecom_network` case is keyed by the unit (`asset_key` is
   `schema.serial_key(org, serial)`, the reason `decommission`, one event per unit of a removal job). Its facts (`serial`,
@@ -212,6 +214,9 @@ class OneCase:
     fields: Mapping[str, str]
     # fact -> the fact it is copied from (a `*date` fact keeps the first 10 characters)
     derived: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    # fact -> (canonical model, field) for a fact the asset's other records hold (a device's `residual_sale_value` on `market`,
+    # `repair_estimate` on `intervention`; P9-11.10)
+    other: Mapping[str, tuple[str, str]] = dataclasses.field(default_factory=dict)
 
 
 CAR_TEMPLATE = "used_cars"
@@ -222,8 +227,10 @@ ONE_CASE = {
     ),
     RENTAL_TEMPLATE: OneCase(
         "rental", "tag", {"rental_return": "mr_rental"},
-        {"tag": "tag", "hospital": "hospital", "depot": "depot", "checked_in_at": "checked_in_at"},
+        {"tag": "tag", "hospital": "hospital", "depot": "depot", "checked_in_at": "checked_in_at", "cls": "device_class",
+         "age_years": "age_years", "book_value": "book_value"},
         {"asset_tag": "tag", "return_date": "checked_in_at"},
+        {"residual_sale_value": ("market", "residual_sale_value"), "repair_estimate": ("intervention", "repair_estimate")},
     ),
 }  # fmt: skip
 CAR_SOURCE = ONE_CASE[CAR_TEMPLATE].sources
@@ -242,6 +249,9 @@ def one_known(s: Session, p: OneCase, key: str) -> dict[str, Any]:
     `depot`, `checked_in_at`), and the facts the profile derives from them."""
     data = (canonical.get(s, "asset", key) or {}).get("data") or {}
     out = {n: data[f] for n, f in p.fields.items() if data.get(f) is not None}
+    for n, (model, f) in p.other.items():
+        if (v := ((canonical.get(s, model, key) or {}).get("data") or {}).get(f)) is not None:
+            out[n] = v
     for n, src in p.derived.items():
         if out.get(src) is not None:
             out[n] = str(out[src])[:10] if n.endswith("date") else out[src]

@@ -5,6 +5,7 @@
 
 The canonical `condition` record of the device (key `schema.tag_key`) holds what the biomedical service system (`mr_biomed`)
 wrote: `certification_expiry`, `pm_due`, `functional_test`, `electrical_safety`, `notes`, `correction_open`, `correction_ref`;
+`servicing_assessment` (the refurbishment assessment: G-MED-REFURB evidence);
 the `demand` record holds the open requests (`rental_requests`, the rental system), the `asset` record the device class. They
 become:
 
@@ -89,7 +90,7 @@ def evidence(s: Session, case: Mapping[str, Any]) -> tuple[list[dict[str, Any]],
         return [], {}
     cond = canonical.get(s, "condition", str(key))
     data = (cond or {}).get("data") or {}
-    if cond is None or not any(data.get(f) is not None for f in (*SERVICE_FIELDS, "correction_open")):
+    if cond is None or not any(data.get(f) is not None for f in (*SERVICE_FIELDS, "correction_open", "servicing_assessment")):
         return [], {}
     asset = ((canonical.get(s, "asset", str(key)) or {}).get("data")) or {}
     recs: list[dict[str, Any]] = []
@@ -117,6 +118,12 @@ def evidence(s: Session, case: Mapping[str, Any]) -> tuple[list[dict[str, Any]],
                 "result": "fail" if data.get("correction_open") else "pass",
                 "value": {"notice_id": notice if isinstance(notice, str) else None, "correction_ref": data.get("correction_ref")},
             })  # fmt: skip
+    if data.get("servicing_assessment") is not None:  # servicing, remanufacturing or full_refurbishment (P9-11.10)
+        src, at = _newest(cond, "servicing_assessment")
+        if at is not None:
+            recs.append({"type": "servicing_assessment", "source": src or SOURCE, "at": at.isoformat(),
+                         "result": "fail" if data["servicing_assessment"] in medical.FULL else "pass",
+                         "value": {"assessment": data["servicing_assessment"]}})  # fmt: skip
     reqs = _requests(s, str(key), asset.get("device_class"))
     keys["rentalRequests"] = reqs
     checks = medical.request_checks(data, reqs)
