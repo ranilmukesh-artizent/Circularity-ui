@@ -121,6 +121,8 @@ EXTRA_SYSTEMS: tuple[System, ...] = (
     # Plan 9 P9-12.2: the ITAD segment's IT service management / CMDB and ITAD logistics, synthetic vendor mocks
     System("it_cmdb", "IT service management and CMDB (synthetic)", "itsm_cmdb", "vendor", "/itsm-cmdb"),
     System("it_logistics", "ITAD logistics and chain of custody (synthetic)", "itad_logistics", "vendor", "/itad-logistics"),
+    # Plan 9 P9-12.10: the serialised retail returns segment's returns portal, a synthetic vendor mock
+    System("b2c_ret", "Retail returns portal (synthetic)", "retail_returns", "vendor", "/retail-returns"),
     # Plan 9 P9-9.13: the used-car segment's legacy body-shop system, synthetic, with no di adapter (built from its API spec)
     System("uc_bodyshop", "Legacy body-shop system (synthetic)", "body_shop_legacy", "generic-rest", "/body-shop"),
 )

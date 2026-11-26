@@ -1,0 +1,763 @@
+{
+ "key": "b2c_serial",
+ "name": "Serialised retail returns",
+ "version": "1.0.0",
+ "unit": "items",
+ "author_role": "channel_ops",
+ "prefix": "B2C",
+ "industry": "Retail returns",
+ "regions": [
+  "US",
+  "EU"
+ ],
+ "legal_review": {
+  "status": "pending"
+ },
+ "data_licence": "synthetic, no third-party data",
+ "flows": [
+  {
+   "key": "returns",
+   "name": "Serialised retail returns"
+  }
+ ],
+ "prompts": [
+  "Returned phones and tablets are valued by the device channels. Returned apparel and footwear are donated or recycled; an unsold item is never destroyed unless an allowed exception is on file. Only items with a serial enter.",
+  "Value every returned item on its channels",
+  "Never destroy unsold apparel or footwear"
+ ],
+ "clarify": null,
+ "classes": [
+  {
+   "id": "phone",
+   "name": "Phone",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "tablet",
+   "name": "Tablet",
+   "attrs": {
+    "serialised": true,
+    "has_media": true,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "apparel",
+   "name": "Apparel",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  },
+  {
+   "id": "footwear",
+   "name": "Footwear",
+   "attrs": {
+    "serialised": true,
+    "has_media": false,
+    "hazardous": false,
+    "regulated": false,
+    "patient_data": false
+   },
+   "new_price": null
+  }
+ ],
+ "grades": {
+  "scale": [
+   "A",
+   "B",
+   "C",
+   "D"
+  ],
+  "graded_by": "read",
+  "map_from": {}
+ },
+ "stages": [
+  {
+   "key": "receive",
+   "label": "Return received",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "match",
+   "label": "Check the serial",
+   "agent": "Intake",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "condition",
+   "label": "Grade the item",
+   "agent": "Condition",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "value",
+   "label": "Value each route",
+   "agent": "Valuation",
+   "autonomy": "alone",
+   "confidence": 0.75
+  },
+  {
+   "key": "decide",
+   "label": "Decide the route",
+   "agent": "Routing",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "execute",
+   "label": "List, donate or recycle",
+   "agent": "Follow-through",
+   "autonomy": "limits",
+   "confidence": 0.75
+  },
+  {
+   "key": "close",
+   "label": "Settle and learn",
+   "agent": "Analytics",
+   "autonomy": "alone",
+   "confidence": 0.75
+  }
+ ],
+ "routes": [
+  {
+   "id": "buynow",
+   "name": "Buy Now",
+   "app": "Storefront \u00b7 30-day window",
+   "owner": "channel_ops",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "offers",
+   "name": "Offers",
+   "app": "Offer management \u00b7 21 days",
+   "owner": "channel_ops",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "auction",
+   "name": "Auction",
+   "app": "Auction platform \u00b7 7 days \u00b7 unsold fallback",
+   "owner": "channel_ops",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "market",
+   "name": "Marketplace",
+   "app": "Marketplace connector \u00b7 45 days",
+   "owner": "channel_ops",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "wholesale",
+   "name": "Wholesale lot",
+   "app": "Wholesale buyers \u00b7 10 days \u00b7 Recover cases only",
+   "owner": "channel_ops",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [],
+   "recover_only": true
+  },
+  {
+   "id": "donate",
+   "name": "Donate",
+   "app": "Donation partner",
+   "owner": "channel_ops",
+   "lead_days": 10,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "Recycling partner",
+   "owner": "logistics_lead",
+   "lead_days": 10,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": []
+  },
+  {
+   "id": "exit",
+   "name": "Destroy or dispose",
+   "app": "Disposal partner",
+   "owner": "compliance",
+   "lead_days": 10,
+   "classes": [
+    "exit"
+   ],
+   "instructions": []
+  }
+ ],
+ "guardrails": [
+  {
+   "id": "GR-D1",
+   "text": "Certified data wipe before any listing",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "condition",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "wipe|certificate",
+     "skip|without|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "GR-D7",
+   "text": "Blacklist and lock check before any sale",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "match",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "blacklist|activation lock|lock check|registry check",
+     "skip|without|remove|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  },
+  {
+   "id": "G-ESPR-1",
+   "text": "Unsold apparel and footwear are never destroyed: reuse, donation or recycling first",
+   "owner": "compliance",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "destroy|destruction|dispose",
+     "skip|without|allow|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": null
+  }
+ ],
+ "gates": [
+  {
+   "id": "G-DEV-WIPE",
+   "params": {
+    "guardrail": "GR-D1",
+    "when": [
+     {
+      "fact": "valuer.imei",
+      "op": "exists",
+      "value": true
+     }
+    ],
+    "exception": "missing_wipe_certificates",
+    "kept_routes": [
+     "recycle"
+    ]
+   },
+   "active": true
+  },
+  {
+   "id": "G-DEV-LOCK",
+   "params": {
+    "recheck_days": 7,
+    "locked_routes": [],
+    "exception": "blacklist_hit"
+   },
+   "active": true
+  },
+  {
+   "id": "G-ESPR-1",
+   "params": {
+    "stage": 5,
+    "locked": true,
+    "routes": [
+     "exit"
+    ],
+    "classes": [
+     "apparel",
+     "footwear"
+    ],
+    "allowed_exceptions": [
+     "safety",
+     "health",
+     "ip_rights",
+     "unfit_for_reuse"
+    ],
+    "legal_review": "Research summary, not legal advice. Kinective's Legal team must review this gate before the pack ships."
+   },
+   "active": true
+  }
+ ],
+ "dims": [
+  {
+   "key": "brand",
+   "label": "Brand",
+   "kind": "set",
+   "values": [
+    "Apple",
+    "Samsung",
+    "Google",
+    "Motorola"
+   ],
+   "fields": []
+  },
+  {
+   "key": "grade",
+   "label": "Grade",
+   "kind": "set",
+   "values": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "fields": []
+  },
+  {
+   "key": "band",
+   "label": "Age band",
+   "kind": "set",
+   "values": [
+    "0-24m",
+    "25-48m",
+    "49m+"
+   ],
+   "fields": []
+  },
+  {
+   "key": "itemClass",
+   "label": "Item class",
+   "kind": "set",
+   "values": [
+    "phone",
+    "tablet",
+    "apparel",
+    "footwear"
+   ],
+   "fields": [
+    "valuer.itemClass"
+   ]
+  }
+ ],
+ "actors": [
+  [
+   "chops",
+   "Channel Ops lead",
+   "Channel Ops lead"
+  ],
+  [
+   "rlog",
+   "Logistics lead",
+   "Logistics lead"
+  ],
+  [
+   "rcomp",
+   "Compliance",
+   "Compliance"
+  ]
+ ],
+ "wording": {
+  "every": "every item",
+  "phrases": [
+   {
+    "key": "brand",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "grade",
+    "fmt": "grade {}",
+    "joiner": "/",
+    "words": {}
+   },
+   {
+    "key": "band",
+    "fmt": "{} age",
+    "joiner": " or ",
+    "words": {}
+   },
+   {
+    "key": "itemClass",
+    "fmt": "{}",
+    "joiner": " or ",
+    "words": {
+     "phone": "phones",
+     "tablet": "tablets",
+     "apparel": "apparel",
+     "footwear": "footwear"
+    }
+   }
+  ],
+  "path_names": {
+   "buynow": "Buy Now",
+   "offers": "Offers",
+   "auction": "Auction",
+   "market": "Marketplace",
+   "wholesale": "Wholesale lot",
+   "donate": "Donate",
+   "recycle": "Recycle",
+   "exit": "Destroy or dispose"
+  }
+ },
+ "customer_layer": {
+  "editable": {
+   "G-DEV-LOCK": [
+    "threshold",
+    "mode",
+    "approver",
+    "scope",
+    "exception",
+    "suspend-until"
+   ]
+  },
+  "params": {},
+  "sample_diversions": [
+   {
+    "text": "unsold footwear: ask for a second check before donating",
+    "op": {
+     "id": "DV-B2C-CHECK",
+     "op": "add_step",
+     "stage": "decide",
+     "step": "Second check before donating",
+     "owner_role": "compliance",
+     "when": [
+      {
+       "fact": "valuer.itemClass",
+       "op": "eq",
+       "value": "footwear"
+      }
+     ]
+    },
+    "blocked": false,
+    "reason": "Adds a step at Decide the route; no gate is skipped."
+   },
+   {
+    "text": "unsold apparel: skip the destruction check",
+    "op": {
+     "id": "DV-B2C-SKIP",
+     "op": "shortcut",
+     "stage": "value",
+     "to": "execute",
+     "when": [
+      {
+       "fact": "valuer.itemClass",
+       "op": "eq",
+       "value": "apparel"
+      }
+     ]
+    },
+    "blocked": true,
+    "reason": "Blocked: this skips the compliance guardrail G-ESPR-1, the ban on destroying unsold apparel and footwear."
+   }
+  ],
+  "merge_rule": "stricter_wins"
+ },
+ "diversions": [],
+ "data": {
+  "systems": [
+   {
+    "type": "b2c_ret",
+    "name": "Retail returns portal",
+    "adapter": "registry",
+    "system_of_record": true
+   },
+   {
+    "type": "erp",
+    "name": "ERP",
+    "adapter": "registry",
+    "system_of_record": false
+   }
+  ],
+  "entities": [
+   {
+    "name": "Returned item",
+    "canonical": "asset"
+   }
+  ],
+  "mappings": [
+   {
+    "kind": "intake_trigger",
+    "source": "b2c_ret",
+    "resource": "returns",
+    "when": null,
+    "reason": "rma",
+    "key": "serial"
+   }
+  ],
+  "min_fields": [],
+  "record_match": null
+ },
+ "valuer": {
+  "kind": "standard",
+  "carbon": {
+   "set": "cfs-2026.2",
+   "d_rule": "demand"
+  },
+  "params": {
+   "params": {
+    "plugin": "b2c_serial",
+    "device_channels": [
+     "buynow",
+     "offers",
+     "auction",
+     "market",
+     "wholesale"
+    ],
+    "donate_share": 0.1,
+    "donate_cost": 4,
+    "recycle_share": 0.03,
+    "recycle_cost": 2,
+    "exit_share": 0.01,
+    "exit_cost": 1.5
+   },
+   "lines": [
+    {
+     "route": "donate",
+     "type": "v",
+     "label": "Donation value",
+     "basis": "share of the reference value",
+     "amount": {
+      "mul": [
+       {
+        "field": "ref"
+       },
+       {
+        "param": "donate_share"
+       }
+      ]
+     },
+     "kind": "sale"
+    },
+    {
+     "route": "donate",
+     "type": "c",
+     "label": "Collection and transfer",
+     "basis": "a unit",
+     "amount": {
+      "param": "donate_cost"
+     },
+     "kind": "fees"
+    },
+    {
+     "route": "recycle",
+     "type": "v",
+     "label": "Recovered material",
+     "basis": "share of the reference value",
+     "amount": {
+      "mul": [
+       {
+        "field": "ref"
+       },
+       {
+        "param": "recycle_share"
+       }
+      ]
+     },
+     "kind": "material"
+    },
+    {
+     "route": "recycle",
+     "type": "c",
+     "label": "Recycling fee",
+     "basis": "a unit",
+     "amount": {
+      "param": "recycle_cost"
+     },
+     "kind": "fees"
+    },
+    {
+     "route": "exit",
+     "type": "v",
+     "label": "Salvage value",
+     "basis": "share of the reference value",
+     "amount": {
+      "mul": [
+       {
+        "field": "ref"
+       },
+       {
+        "param": "exit_share"
+       }
+      ]
+     },
+     "kind": "material"
+    },
+    {
+     "route": "exit",
+     "type": "c",
+     "label": "Disposal fee",
+     "basis": "a unit",
+     "amount": {
+      "param": "exit_cost"
+     },
+     "kind": "fees"
+    }
+   ]
+  }
+ },
+ "replay": {
+  "dataset": null,
+  "example": null
+ },
+ "runtime": {
+  "exception_types": [
+   {
+    "id": "not_serialised",
+    "label": "Item without a serial",
+    "owner_role": "logistics_lead",
+    "action": "Find the serial or return the item to the store"
+   },
+   {
+    "id": "blacklist_hit",
+    "label": "Blacklist or lock check hit",
+    "owner_role": "compliance",
+    "action": "Hold the device; release only with a newer registry check"
+   },
+   {
+    "id": "missing_wipe_certificates",
+    "label": "Missing wipe certificate",
+    "owner_role": "compliance",
+    "action": "Hold the device until the certificate arrives"
+   }
+  ],
+  "suggestion_rules": [],
+  "sla_hours": {
+   "exception": 24,
+   "needs_info": 48
+  },
+  "escalate_to": null
+ },
+ "kpis": [
+  {
+   "id": "recovery_per_item",
+   "label": "Recovery per item",
+   "definition": "realised net after route costs / items",
+   "measure": {
+    "kind": "avg",
+    "of": "recommendation.net",
+    "unit": "$"
+   },
+   "trend": "monthly"
+  },
+  {
+   "id": "donate_rate",
+   "label": "Donation share",
+   "definition": "items donated / items",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "destruction_blocked",
+   "label": "Destruction blocked",
+   "definition": "unsold apparel and footwear held back from disposal / unsold items",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "straight_through_pct",
+   "label": "Straight-through share",
+   "definition": "items decided with no person in the loop / items",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "wipe_compliance",
+   "label": "Data-wipe compliance",
+   "definition": "devices sold with a wipe certificate / devices sold",
+   "measure": null,
+   "trend": "monthly"
+  },
+  {
+   "id": "days_to_settle",
+   "label": "Days to settle",
+   "definition": "receipt to settlement",
+   "measure": null,
+   "trend": "monthly"
+  }
+ ],
+ "analytics": [
+  {
+   "question": "Which route do returned items go to?",
+   "chart": "bar",
+   "query": {
+    "group_by": "recommendation.id",
+    "measure": {
+     "kind": "count"
+    }
+   }
+  },
+  {
+   "question": "How much is recovered per item class?",
+   "chart": "bar",
+   "query": {
+    "group_by": "asset.item_class",
+    "measure": {
+     "kind": "avg",
+     "of": "recommendation.net"
+    }
+   }
+  }
+ ],
+ "stories": [
+  "NS-B2C-01",
+  "NS-B2C-02"
+ ],
+ "close": {
+  "credit_settlement": false,
+  "credit_table": {},
+  "reporting": [
+   "G-REP-1"
+  ]
+ },
+ "roles": {
+  "channel_ops": "Planner",
+  "logistics_lead": "Warehouse Manager",
+  "compliance": "Approver",
+  "finance": "Finance"
+ }
+}
