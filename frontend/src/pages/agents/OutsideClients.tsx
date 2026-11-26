@@ -53,7 +53,7 @@ export function OutsideClients({ agents }: { agents: AgentRow[] }) {
         <label htmlFor="oc-uris">Redirect URIs (one per line, exact)</label>
         <textarea id="oc-uris" value={uris} onChange={(e) => setUris(e.target.value)} rows={2} style={{ width: '100%' }} />
         <label htmlFor="oc-agent">Acts as</label>
-        <select id="oc-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+        <select className="sel" id="oc-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
           {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
         <div>
