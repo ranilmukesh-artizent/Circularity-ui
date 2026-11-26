@@ -171,3 +171,8 @@ unattended". Times are local (IST).
 | 26 Nov 08:04 | P9-7.3 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
 | 26 Nov 08:04 | P9-7.5 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
 | 26 Nov 08:04 | P9-10.7 merged. Batch b7; gate wiring for 9.9/10.7/11.7 merged by the lead. |
+| 26 Nov 09:02 | P9-7.4 merged. Batch b8 with lane B P9-3.11/3.12/4.10/5.2; api image rebuilt (lightgbm, mapie). |
+| 26 Nov 09:02 | P9-7.6 merged. Batch b8 with lane B P9-3.11/3.12/4.10/5.2; api image rebuilt (lightgbm, mapie). |
+| 26 Nov 09:02 | P9-8.19 merged. Batch b8 with lane B P9-3.11/3.12/4.10/5.2; api image rebuilt (lightgbm, mapie). |
+| 26 Nov 09:02 | P9-10.8 merged. Batch b8 with lane B P9-3.11/3.12/4.10/5.2; api image rebuilt (lightgbm, mapie). |
+| 26 Nov 09:02 | P9-9.10 merged. Batch b8 with lane B P9-3.11/3.12/4.10/5.2; api image rebuilt (lightgbm, mapie). |

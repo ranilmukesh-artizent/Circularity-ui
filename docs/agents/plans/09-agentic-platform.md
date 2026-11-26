@@ -925,9 +925,9 @@ each story went.
 - [x] P9-7.1 Import a history batch with checks
 - [x] P9-7.2 As-of replay with the four measures
 - [x] P9-7.3 Publish in steps with canary by region and share
-- [ ] P9-7.4 Canary report and automatic pause
+- [x] P9-7.4 Canary report and automatic pause
 - [x] P9-7.5 Replay honours queue capacity by date
-- [ ] P9-7.6 Back-test report page with PDF export
+- [x] P9-7.6 Back-test report page with PDF export
 - [ ] P9-7.7 FR market canary for service desk tables
 - [ ] P9-7.8 Phase 7 demo smoke script
 - [ ] P9-7.9 Phase 7 gate
@@ -949,7 +949,7 @@ each story went.
 - [x] P9-8.16 Decision table editor in the Modeler
 - [x] P9-8.17 Composition object with maker-checker
 - [x] P9-8.18 Compose describe and adapter mapping steps
-- [ ] P9-8.19 Compose test run shows where cases stopped
+- [x] P9-8.19 Compose test run shows where cases stopped
 - [ ] P9-8.20 Compose agent mapping, approve and publish steps
 - [x] P9-8.21 DMN and BPMN export from the Modeler
 - [ ] P9-8.22 Compose demo smoke
@@ -963,7 +963,7 @@ each story went.
 - [x] P9-9.7 One case per VIN with the inspection read
 - [x] P9-9.8 Title finance and title brand gates
 - [x] P9-9.9 Odometer and open recall gates
-- [ ] P9-9.10 Used-car channel valuer net of costs
+- [x] P9-9.10 Used-car channel valuer net of costs
 - [ ] P9-9.11 Lot choice and recon approval
 - [ ] P9-9.12 Compose draft from the used-car prompt
 - [ ] P9-9.13 Used-car mappings and legacy body-shop connector
@@ -983,7 +983,7 @@ each story went.
 - [x] P9-10.5 Broker marketplace and recycler portal mocks
 - [x] P9-10.6 One case per serial with inventory match gate
 - [x] P9-10.7 Configuration wipe and covered equipment gates
-- [ ] P9-10.8 Export control gate and trade compliance approval
+- [x] P9-10.8 Export control gate and trade compliance approval
 - [ ] P9-10.9 Telecom five-route valuer
 - [ ] P9-10.10 Spares before new and site-swap matching
 - [ ] P9-10.11 Compose draft from the telecom prompt
