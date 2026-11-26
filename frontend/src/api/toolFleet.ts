@@ -93,6 +93,24 @@ export interface PathView {
   dest: { id: string; who: string; kind?: string } | null;
 }
 
+/** The org's open tool returns planned together, as this return sees it (P9-3.13, TF-08); headline is the order it takes or the reason it lost one. */
+export interface PlanView {
+  /** the named order the plan gives this return, null when none */
+  holds: string | null;
+  headline: string | null;
+  /** the orders this return competes for, and a short kind for each ('lease renewal', 'sales order' ...) */
+  contested: string[];
+  kinds: Record<string, string>;
+  /** the orders this return wanted and the plan gave to another case, with what that case gains from it */
+  lost: { order: string; to: string; gain: number }[];
+  /** the queue's total net, first come first served's, and the plan's gain over it */
+  total: number;
+  fcfs: number;
+  gain: number;
+  slots: number;
+  refurb_n: number;
+}
+
 export interface ToolFleetView {
   case_id: string;
   pack_version: string;
@@ -112,7 +130,7 @@ export interface ToolFleetView {
   second?: string | null;
   standard?: string;
   uplift?: number | null;
-  plan: unknown | null;
+  plan: PlanView | null;
   approval: unknown | null;
   followThrough: unknown | null;
 }

@@ -44,7 +44,7 @@ from di.core import clock
 from di.core.auth import Principal
 from di.repositories.context import load_case
 from di.repositories.packs import active_pack
-from di.services.cases import intake, regrade
+from di.services.cases import intake, regrade, replan, tool_queue
 from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.valuers import fleet_evidence, tool_fleet, tool_inputs
 
@@ -99,6 +99,33 @@ def _paths(s: Session, c: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _plan(s: Session, c: dict[str, Any]) -> dict[str, Any] | None:
+    """The case's place in its org's open queue plan (P9-3.13, TF-08): `holds` the named order the plan gives it, `lost` the
+    orders it wanted and the plan gave to another case (`order`, `to`, `gain` of the winner), `contested` the orders it competes
+    for with a short `kinds` name each, `headline` "This return takes FC-30117-R" or the planner's reason it lost one ("FC-30117-R
+    (Brightline Mechanical) is planned for RT-1102, where it adds more across the queue", as the case's route says it), and the
+    queue's `total` net, `fcfs` (first come, first served), `gain` of the plan over it, `slots` and `refurb_n`. Null for a case
+    in no queue."""
+    place = replan.queue_plan(s, c)
+    if place is None:
+        return None
+    org = tool_queue.plan_of(s, c["owner"])
+    headline = f"This return takes {place['holds']}" if place["holds"] else None
+    if headline is None and place["lost"]:
+        order = place["lost"][0]
+        reasons = (str(r.get("failReason", "")) for r in c.get("routes") or [])
+        said = next((x for x in reasons if x.startswith(order["order"] + " ")), None)
+        headline = said or f"{order['order']} goes to {order['to']}, where it adds more across the queue"
+    return place | {
+        "headline": headline,
+        "total": round(org["total"], 2),
+        "fcfs": round(org["fcfs"], 2),
+        "gain": round(org["gain"], 2),
+        "slots": org["slots"],
+        "refurb_n": org["refurb_n"],
+    }
+
+
 def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
     """The panel's read for one tool-fleet case (module docstring)."""
     c = load_case(principal, s, case_id, "product", "case")
@@ -120,7 +147,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "life": c.get("life"),
         "disagreement": c.get("disagreement"),
         **_paths(s, c),
-        "plan": None,
+        "plan": _plan(s, c),
         "approval": None,
         "followThrough": None,
     }
