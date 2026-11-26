@@ -576,7 +576,33 @@ def lessee_charge(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # 
     return _uc_post(s, "uc_lease", f"{UC_LEASE}/charges", ins, body, "chargeId", step=False)
 
 
+def security_inspection(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """A core-site unit's security inspection (P9-10.12, diversion DV-TN-CORE): a person's checklist step at Wipe and test.
+    No system is written to, so nothing is sent: the step is acknowledged by the simulated adapter and a person ticks it."""
+    raise NotApplicable("a person's checklist step: no system write")
+
+
+def firmware_upgrade(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
+    """The test bench (tn_bench): POST /refurb-orders {serial, kind: firmware}, the firmware upgrade of a unit behind
+    (P9-10.12, diversion DV-TN-FW). The bench deduplicates on the serial: sending it twice gives the one order."""
+    serial = str(c.get("serial") or c.get("assetId") or "").rpartition(":")[2]
+    if not serial:
+        raise NotApplicable("no unit serial to order the upgrade for")
+    body = {"serial": serial, "kind": "firmware"}
+    cl = client(s, "tn_bench")
+    try:
+        r = cl.request("POST", "/refurb-orders", json=body)
+    except SourceError as e:
+        raise _refused(e) from e
+    finally:
+        cl.close()
+    order_id = r.json().get("orderId")
+    return Sent([{"call": "POST refurb-orders", "body": body}], order_id, {"orderId": order_id, "serial": serial})
+
+
 WRITERS = {
+    "security_inspection": security_inspection,
+    "firmware_upgrade": firmware_upgrade,
     "residual": residual,
     "lessee_charge": lessee_charge,
     "recon_order": recon_order,
