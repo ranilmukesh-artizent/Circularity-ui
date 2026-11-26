@@ -102,3 +102,4 @@ reset, rebase, clean or `checkout --`. Do not start other agents.
 - what the lead must run after the merge (serial-only tests, selftest);
 - anything you could not do;
 - any decision you took that the spec did not make, and the docs pages you read.
+- Never docker rm/stop/kill a container you did not start, and never drop a database other than di_w<k>.

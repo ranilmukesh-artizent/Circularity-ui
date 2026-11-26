@@ -643,8 +643,268 @@
     "carbon_d": {
      "redeploy": 1,
      "against": "a named request"
+    },
+    "harvest_share": 0.4
+   },
+   "tables": {
+    "residual_start": {
+     "laptop": 0.35,
+     "desktop": 0.2,
+     "server": 0.3,
+     "network": 0.25
     }
-   }
+   },
+   "lines": [
+    {
+     "route": "redeploy",
+     "type": "v",
+     "label": "Value of reuse (a purchase avoided)",
+     "basis": "new price x residual, decayed monthly",
+     "amount": {
+      "decay": {
+       "start": {
+        "mul": [
+         {
+          "field": "market.new_price"
+         },
+         {
+          "table": "residual_start",
+          "by": [
+           "asset.asset_class"
+          ]
+         }
+        ]
+       },
+       "monthly": {
+        "param": "residual_monthly_decay"
+       },
+       "months": {
+        "field": "asset.months_in_stock"
+       }
+      }
+     }
+    },
+    {
+     "route": "redeploy",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per unit",
+     "amount": {
+      "param": "logistics_per_unit"
+     }
+    },
+    {
+     "route": "return_to_lessor",
+     "type": "v",
+     "label": "Lease return (no resale value)",
+     "basis": "the contract decides",
+     "amount": {
+      "const": 0
+     }
+    },
+    {
+     "route": "return_to_lessor",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per unit",
+     "amount": {
+      "param": "logistics_per_unit"
+     }
+    },
+    {
+     "route": "resell",
+     "type": "v",
+     "label": "Resale value",
+     "basis": "new price x residual start by class, decayed monthly over the months in stock",
+     "amount": {
+      "decay": {
+       "start": {
+        "mul": [
+         {
+          "field": "market.new_price"
+         },
+         {
+          "table": "residual_start",
+          "by": [
+           "asset.asset_class"
+          ]
+         }
+        ]
+       },
+       "monthly": {
+        "param": "residual_monthly_decay"
+       },
+       "months": {
+        "field": "asset.months_in_stock"
+       }
+      }
+     }
+    },
+    {
+     "route": "resell",
+     "type": "c",
+     "label": "Resale fee",
+     "basis": "share of the resale value",
+     "amount": {
+      "mul": [
+       {
+        "decay": {
+         "start": {
+          "mul": [
+           {
+            "field": "market.new_price"
+           },
+           {
+            "table": "residual_start",
+            "by": [
+             "asset.asset_class"
+            ]
+           }
+          ]
+         },
+         "monthly": {
+          "param": "residual_monthly_decay"
+         },
+         "months": {
+          "field": "asset.months_in_stock"
+         }
+        }
+       },
+       {
+        "param": "resell_fee_pct"
+       }
+      ]
+     }
+    },
+    {
+     "route": "resell",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per unit",
+     "amount": {
+      "param": "logistics_per_unit"
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "v",
+     "label": "Parts value",
+     "basis": "share of the decayed resale value",
+     "amount": {
+      "mul": [
+       {
+        "decay": {
+         "start": {
+          "mul": [
+           {
+            "field": "market.new_price"
+           },
+           {
+            "table": "residual_start",
+            "by": [
+             "asset.asset_class"
+            ]
+           }
+          ]
+         },
+         "monthly": {
+          "param": "residual_monthly_decay"
+         },
+         "months": {
+          "field": "asset.months_in_stock"
+         }
+        }
+       },
+       {
+        "param": "harvest_share"
+       }
+      ]
+     }
+    },
+    {
+     "route": "harvest",
+     "type": "c",
+     "label": "Logistics",
+     "basis": "per unit",
+     "amount": {
+      "param": "logistics_per_unit"
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "v",
+     "label": "Material recovery",
+     "basis": "no resale value",
+     "amount": {
+      "const": 0
+     }
+    },
+    {
+     "route": "recycle",
+     "type": "c",
+     "label": "Recycling fee",
+     "basis": "per unit",
+     "amount": {
+      "param": "recycle_fee"
+     }
+    }
+   ],
+   "routes": [
+    {
+     "route": "return_to_lessor",
+     "eligible_if": {
+      "fact": "asset.lessor_return_required",
+      "op": "eq",
+      "value": true
+     },
+     "ineligible_reason": "The lease does not require a return"
+    },
+    {
+     "route": "redeploy",
+     "eligible_if": {
+      "fact": "asset.lessor_return_required",
+      "op": "ne",
+      "value": true
+     },
+     "ineligible_reason": "The lease says return to the lessor"
+    },
+    {
+     "route": "harvest",
+     "eligible_if": {
+      "fact": "asset.lessor_return_required",
+      "op": "ne",
+      "value": true
+     },
+     "ineligible_reason": "The lease says return to the lessor"
+    },
+    {
+     "route": "recycle",
+     "eligible_if": {
+      "fact": "asset.lessor_return_required",
+      "op": "ne",
+      "value": true
+     },
+     "ineligible_reason": "The lease says return to the lessor"
+    },
+    {
+     "route": "resell",
+     "eligible_if": {
+      "all": [
+       {
+        "fact": "asset.lessor_return_required",
+        "op": "ne",
+        "value": true
+       },
+       {
+        "fact": "asset.consent_to_resell",
+        "op": "ne",
+        "value": false
+       }
+      ]
+     },
+     "ineligible_reason": "The lease says return to the lessor, or the lessor has not consented to a resale"
+    }
+   ]
   }
  },
  "replay": {
@@ -906,7 +1166,18 @@
     "action": "Check the serial against the pickup request and the CMDB"
    }
   ],
-  "suggestion_rules": [],
+  "suggestion_rules": [
+   {
+    "id": "SR-IT-AGE",
+    "kind": "suggestion",
+    "label": "Stock 2 months or more: move ageing stock to wholesale",
+    "params": {
+     "months_in_stock_ge": 2
+    },
+    "route": "resell",
+    "order": "oldest value first"
+   }
+  ],
   "sla_hours": {
    "exception": 24
   },

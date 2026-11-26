@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from di.core.db import engine
 from di.services.modeler.flow import default_flow
-from di.services.modeler.templates import TEMPLATE_KEYS, load_template
+from di.services.modeler.templates import load_template, template_keys
 from tests import flowkit
 from tests.flowkit import ok, with_rule
 from tests.helpers import call, client, h
@@ -32,7 +32,7 @@ def _get(acct: str, **params):
 
 def test_modeler_screen_for_planner():
     out = _get("planner-a").json()
-    assert [t["key"] for t in out["templates"]] == list(TEMPLATE_KEYS)
+    assert [t["key"] for t in out["templates"]] == list(template_keys())
     assert out["org"] == "Customer A" and "Customer A" in out["orgs"]
     assert not {"workspace", "Customer B", "Customer C"} & set(out["orgs"])
     f = out["flow"]

@@ -1,5 +1,5 @@
 /* The Modeler page (plan 8, MVP-4.4/4.5): canvas, inspector and panels, on the demo's tokens. */
-.mdl-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.mdl-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; padding: 4px 16px; min-height: var(--mdl-bar-h, 48px); border-bottom: 1px solid var(--line); }
 .mdl-bar .grow { flex: 1; }
 .mdl-st.draft { background: var(--panel3); color: var(--ink2); }
 .mdl-st.review { background: var(--warn-soft); color: var(--warn); }
@@ -10,6 +10,7 @@
 .mdl-lower { margin-top: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .mdl-hist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; font-size: 12.5px; }
 .mdl-canvas { height: 560px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); overflow: hidden; }
+.mdl-canvaswrap .mdl-canvas { height: 100%; border: 0; border-radius: 0; }
 .mdl-canvas .graphbox { min-height: 0; }
 .mdl-canvas .react-flow__node-band { pointer-events: none; }
 .mdl-bandbox { background: var(--panel3); border: 1px dashed var(--line); border-radius: 12px; }
@@ -71,3 +72,74 @@
 .mdl-table-editor tr[data-matched='true'] td { background: var(--ok-soft, var(--panel2)); }
 .mdl-table-editor ul.mdl-msg { margin: 0; padding-left: 24px; }
 @media (max-width: 1100px) { .mdl-main { grid-template-columns: minmax(0, 1fr); } }
+
+/* Plan 10 T4: the agent-first layout. Pinned agent column, canvas and rail sit edge to edge on 1px hairlines: no gaps,
+   radii or shadows between them. Sizes come from the --mdl-* tokens (assistant.css, T7); the fallbacks are the spec's. */
+.page:has(.mdl-page) { max-width: none; padding: 0; }
+.mdl-page { --mdl-top: 57px; }
+.mdl-head { padding: 16px 24px 0; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+.mdl-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.mdl-title h1 { margin: 0; font: 700 28px/1.2 var(--f-display, inherit); }
+.mdl-tabs { display: flex; gap: 24px; overflow-x: auto; margin-bottom: -1px; }
+.mdl-tabs a { display: inline-flex; align-items: center; height: 40px; color: var(--muted); font-weight: 600; font-size: 14px; text-decoration: none;
+  border-bottom: 2px solid transparent; white-space: nowrap; touch-action: manipulation; }
+.mdl-tabs a:hover { color: var(--ink); }
+.mdl-tabs a[aria-current='page'] { color: var(--ink); border-bottom-color: var(--ink); }
+.mdl-tabs a:focus-visible, .mdl-strip button:focus-visible, .mdl-steps button:focus-visible, .mdl-agent-bar:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 4px; }
+.mdl-bar .mdl-life { gap: 12px; }
+.mdl-steps { display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mdl-steps li + li::before { content: '›'; color: var(--muted); margin-right: 4px; }
+.mdl-steps li { display: inline-flex; align-items: center; }
+.mdl-steps button { border: 0; background: none; padding: 4px 6px; min-height: 24px; font-size: 12.5px; color: var(--muted); border-radius: 4px; touch-action: manipulation; }
+.mdl-steps button:hover { color: var(--ink); }
+.mdl-steps button.on { color: var(--ink); font-weight: 700; background: var(--panel3); }
+
+.mdl-cols { display: grid; grid-template-columns: var(--mdl-agent-w, 384px) minmax(0, 1fr) auto;
+  height: max(520px, calc(100vh - var(--mdl-top) - var(--mdl-head, 168px))); }
+.mdl-cols[data-tab]:not([data-tab='flow']) { height: max(520px, calc(100vh - var(--mdl-top) - var(--mdl-head, 168px) + var(--mdl-bar-h, 48px))); }
+.mdl-agent { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--line); overflow: hidden; }
+.mdl-agent-bar { display: none; }
+.mdl-agent-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.mdl-agent-body > * { flex: 1; min-height: 0; }
+.mdl-center { min-width: 0; min-height: 0; position: relative; overflow: hidden; background: var(--panel2); }
+.mdl-canvaswrap { position: relative; height: 100%; }
+.mdl-add { position: absolute; right: 232px; bottom: 16px; z-index: 4; }
+.mdl-drawer { position: absolute; inset: 0 0 auto 0; max-height: 80%; overflow: auto; z-index: 6; padding: 16px 24px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.mdl-drawer-x { position: absolute; top: 8px; right: 16px; z-index: 1; }
+.mdl-sub { height: 100%; overflow: auto; padding: 24px; display: grid; gap: 32px; align-content: start; background: var(--bg); }
+.mdl-sub > * { max-width: 1080px; width: 100%; }
+
+.mdl-rail { position: relative; display: flex; flex-direction: row-reverse; min-height: 0; width: var(--mdl-strip-w, 44px); background: var(--panel); border-left: 1px solid var(--line); }
+.mdl-strip { flex: none; width: var(--mdl-strip-w, 44px); display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 16px; }
+.mdl-strip button { position: relative; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--muted); touch-action: manipulation; }
+.mdl-strip button svg { width: 20px; height: 20px; }
+.mdl-strip button:hover { color: var(--ink); background: var(--panel2); }
+.mdl-strip button[aria-selected='true'] { color: var(--ink); background: var(--panel3); }
+.mdl-badge { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; background: var(--bad); color: var(--bg); font-feature-settings: 'tnum'; }
+.mdl-rail-panel { width: var(--mdl-rail-w, 340px); min-height: 0; overflow: auto; padding: 20px; display: grid; gap: 24px; align-content: start; background: var(--panel);
+  border-right: 1px solid var(--line); position: absolute; top: 0; bottom: 0; right: var(--mdl-strip-w, 44px); z-index: 7; }
+.mdl-rail-panel .panel, .mdl-rail-panel .mdl-insp { border: 0; border-radius: 0; background: none; padding: 0; }
+.mdl-rail-panel .panel > .ph { padding: 0 0 8px; }
+.mdl-rail-panel .panel > .pb { padding: 0; }
+.mdl-rail-intro { margin: 0; color: var(--ink2); font-size: 13.5px; line-height: 1.45; }
+
+@media (min-width: 1600px) {
+  .mdl-rail { width: auto; }
+  .mdl-rail-panel { position: static; }
+}
+@media (max-width: 1279px) {
+  .mdl-cols { grid-template-columns: var(--mdl-agent-w-sm, 320px) minmax(0, 1fr) auto; }
+}
+@media (max-width: 1099px) {
+  .mdl-cols, .mdl-cols[data-tab]:not([data-tab='flow']) { display: block; height: auto; }
+  .mdl-agent { border-right: 0; border-bottom: 1px solid var(--line); }
+  .mdl-agent-bar { display: block; width: 100%; height: 56px; padding: 0 16px; text-align: left; border: 0; background: var(--panel); font-weight: 600; color: var(--ink); touch-action: manipulation; }
+  .mdl-agent[data-open='false'] .mdl-agent-body { display: none; }
+  .mdl-agent[data-open='true'] { height: 70vh; }
+  .mdl-center { height: max(520px, 70vh); }
+  .mdl-rail { width: auto; flex-direction: column; border-left: 0; border-top: 1px solid var(--line); }
+  .mdl-strip { width: auto; flex-direction: row; padding: 8px 16px; }
+  .mdl-rail-panel { position: static; width: auto; border-right: 0; }
+  .mdl-add { right: 16px; }
+}

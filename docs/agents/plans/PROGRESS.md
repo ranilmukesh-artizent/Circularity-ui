@@ -337,6 +337,10 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-26 | 09 · P9-13.5 close only with reporting evidence | this commit | own tests on lead-merge: passed (wt-check 9); lint and web ok | done |
 | 2026-11-26 | 09 · P9-13.10 oAuth for outside MCP clients | this commit | 3 api test files, ruff, mypy, lint-imports, tsc, vitest, eslint green | done |
 | 2026-11-26 | 09 · P9-12.4 rental fleet pack with re-rent rebuild or sell | this commit | api: 35 pass (only known po_golden fail), source-sim test_equipment_rental 5 pass, lint green | done |
+| 2026-11-27 | 09 · P9-12.3 iTAD sanitisation per serial and residual decay | this commit | ns_it_sanitisation, itad_paths, pack_itad, ns_it_manifest, standard_valuer, gates, pack_format green; lint green | done |
+| 2026-11-27 | 09 · P9-12.7 battery pack with passport and safe lanes | this commit | pack_battery, ns_bat, battery_paths, gates, pack_format green; sim test_battery_bms 9 (with core_returns) pass; lint green | done |
+| 2026-11-27 | 09 · P9-12.8 automotive cores pack with acceptance and fraud hold | this commit | pack_auto_core, ns_core, auto_core_paths, gates, pack_format green; sim test_core_returns pass; lint green | done |
+| 2026-11-27 | 09 · P9-13.6 core credit settlement with ERP match | this commit | ns_core_credit, x16_credit_settlement, ns_core, auto_core_paths, pack_auto_core green; lint green | done |
 
 ## Decisions taken without the user (to review)
 
@@ -436,3 +440,8 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
   - Re-check at the wave gate. If it is still slow, look for open stream connections exhausting the thread pool.
 - **Process:** an agent ran `git stash`/pop on the shared tree at 15:07 UTC. It wiped and then restored other agents'
   edits; the affected agents re-applied theirs. Every agent is now forbidden to use stash, reset or checkout.
+| 2026-11-27 | 03 · Task 1-2 gzip and the generic CRUD router | this commit | test_gzip, test_resources green (202 passed in the combined run) | done |
+| 2026-11-27 | 03 · Task 3 register the resources | this commit | test_resources_groups green | done |
+| 2026-11-27 | 03 · Task 4 the missing write handlers (source.connect) | this commit | test_source_connect, test_resources_groups green; test_fabric_sources deferred to the final gate | done |
+| 2026-11-27 | 05 · Task 1-4 OpenTelemetry setup, worker and job traces, Ask GenAI spans, MCP spans | this commit | test_otel, test_otel_genai, test_otel_mcp, test_jobs, test_ask, test_ask_chain green; test_mcp_server deferred to the final gate; main stack needs `docker compose build api worker` | done |
+| 2026-11-27 | 05 · Task 5 local backend and docs | this commit | files; live trace check pending user approval of the image pull; default `docker compose config` unchanged | done |

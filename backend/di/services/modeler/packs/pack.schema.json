@@ -420,7 +420,8 @@
       "quote_mismatch",
       "repeat_returns",
       "refund_before_receipt",
-      "serial_not_on_contract"
+      "serial_not_on_contract",
+      "dealer_rejects"
      ],
      "title": "Signal",
      "type": "string"

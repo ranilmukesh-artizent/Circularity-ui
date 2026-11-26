@@ -61,7 +61,7 @@ from di.services.modeler.compile import compile_flow
 from di.services.modeler.flow import PO_FLOW, Flow
 from di.services.modeler.pack import load_pack, pack_keys
 from di.services.modeler.stages import STAGE_KEYS, STAGE_LABELS
-from di.services.modeler.templates import TEMPLATE_KEYS, Template, load_template
+from di.services.modeler.templates import Template, load_template, template_keys
 
 LOG_SQL = (
     "SELECT at, actor, role, action, input FROM action_journal WHERE NOT undone AND ("
@@ -144,7 +144,7 @@ def _packs(p: Principal, s: Session) -> dict[str, Any]:
     """The pack versions the account may see, and the templates a case can be opened with."""
     keys = sorted(set(pack_keys()) | set(pack_repo.stored_keys(s)))
     published = pack_repo.published_keys(s)
-    out, names = [], {k: load_template(k).name for k in TEMPLATE_KEYS}
+    out, names = [], {k: load_template(k).name for k in template_keys()}
     for k in keys:
         versions = [v for v in pack_repo.versions(s, k) if v["org_unit_id"] is None or _org_ok(p, v["org_unit_id"])]
         newest = pack_repo.rows(s, k)
@@ -163,7 +163,7 @@ def _packs(p: Principal, s: Session) -> dict[str, Any]:
 def page(p: Principal, s: Session, template: str | None = None, org: str | None = None) -> dict[str, Any]:
     p.require_page("modeler")
     key = template or "industrial"
-    if key not in TEMPLATE_KEYS:
+    if key not in template_keys():
         raise HTTPException(404, {"code": "not_found", "message": f"No template {key}."})
     all_units = units(s)
     orgs = [u for u in all_units if _org_ok(p, u)]
@@ -181,7 +181,7 @@ def page(p: Principal, s: Session, template: str | None = None, org: str | None 
     versions = [dataclasses.asdict(v) | {"published_at": v.published_at.isoformat() if v.published_at else None}
                 for v in repo.versions(s, f.id)]  # fmt: skip
     return {
-        "templates": [{"key": k, "name": load_template(k).name} for k in TEMPLATE_KEYS],
+        "templates": [{"key": k, "name": load_template(k).name} for k in template_keys()],
         "org": org,
         "orgs": orgs,
         "flow": _flow(f),

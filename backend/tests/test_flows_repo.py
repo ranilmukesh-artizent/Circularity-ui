@@ -9,7 +9,7 @@ import di.models
 from di.core.db import SessionLocal, engine
 from di.repositories import flows
 from di.services.modeler.flow import default_flow
-from di.services.modeler.templates import TEMPLATE_KEYS, load_template
+from di.services.modeler.templates import load_template, template_keys
 
 SITE = "MVP31 site"
 
@@ -36,7 +36,7 @@ def company_flow():
 def test_seeded_flows():
     with SessionLocal() as s:
         rows = [f for f in flows.flows(s, {"workspace"}) if f.org_unit_id == "workspace"]
-    assert sorted(f.template_key for f in rows) == sorted(TEMPLATE_KEYS)
+    assert sorted(f.template_key for f in rows) == sorted(template_keys())
     for f in rows:
         t = load_template(f.template_key)
         assert (f.name, f.status, f.ver, f.dver, f.draft) == (t.name, "pub", 1, None, None)

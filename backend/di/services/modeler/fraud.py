@@ -18,6 +18,8 @@ signal by data only when it reads an evidence type:
     repeat_returns          `params.n` or more cases for the same asset key in `params.days` days (`history`, see below)
     refund_before_receipt   a `refund_record` whose `value.refunded_at` is before its `value.received_at`
     serial_not_on_contract  a `contract_clause` record with `value.serial_listed` false
+    dealer_rejects          a `dealer_history` record whose `value.rejected["<days>"]` (rejected returns of the dealer in that
+                            window) is `params.n` or more (P9-12.8: the repeat returner of the cores pack)
 
 `history` maps a window in days (as text, "90") to the number of cases of the asset key in that window, the current case
 included (di.repositories.fraud_history). Asset keys are serials or salted hashes: no customer name, address or account
@@ -36,9 +38,11 @@ from di.services.modeler.evidence import Evidence, evidence_of, parse_time
 if TYPE_CHECKING:
     from di.services.modeler.pack import Pack
 
-SignalId = Literal["blacklisted", "quote_mismatch", "repeat_returns", "refund_before_receipt", "serial_not_on_contract"]
+SignalId = Literal[
+    "blacklisted", "quote_mismatch", "repeat_returns", "refund_before_receipt", "serial_not_on_contract", "dealer_rejects"
+]
 SIGNALS: tuple[SignalId, ...] = (
-    "blacklisted", "quote_mismatch", "repeat_returns", "refund_before_receipt", "serial_not_on_contract",
+    "blacklisted", "quote_mismatch", "repeat_returns", "refund_before_receipt", "serial_not_on_contract", "dealer_rejects",
 )  # fmt: skip
 THRESHOLD_PARAM = "fraud.threshold"  # the key of `customer_layer.params` a pack publishes to let a customer move the threshold
 QUOTE_FIELDS = ("model", "capacity")
@@ -55,12 +59,12 @@ class FraudRule(BaseModel):
 
     @model_validator(mode="after")
     def _window(self) -> "FraudRule":
-        if self.signal == "repeat_returns":
+        if self.signal in ("repeat_returns", "dealer_rejects"):
             n, days = self.params.get("n"), self.params.get("days")
             if not (isinstance(n, int) and isinstance(days, int) and not isinstance(n, bool) and not isinstance(days, bool)):
-                raise ValueError(f"{self.id}: repeat_returns needs whole-number params n and days")
+                raise ValueError(f"{self.id}: {self.signal} needs whole-number params n and days")
             if n < 2 or days < 1:
-                raise ValueError(f"{self.id}: repeat_returns needs n of at least 2 and days of at least 1")
+                raise ValueError(f"{self.id}: {self.signal} needs n of at least 2 and days of at least 1")
         return self
 
 
@@ -169,9 +173,17 @@ def _serial_not_on_contract(rule: FraudRule, case: Mapping[str, Any], history: M
     return Signal(rule.id, off, off, e.source if e and e.source else rule.source, e.at if e else None)
 
 
+def _dealer_rejects(rule: FraudRule, case: Mapping[str, Any], history: Mapping[str, int]) -> Signal:  # noqa: ARG001
+    e = _record(case, "dealer_history")
+    counts = e.value.get("rejected") if e else None
+    n = int(counts.get(str(rule.params["days"]), 0)) if isinstance(counts, Mapping) else 0
+    return Signal(rule.id, n >= int(rule.params["n"]), n, e.source if e and e.source else rule.source, e.at if e else None)
+
+
 _READERS = {
     "blacklisted": _blacklisted, "quote_mismatch": _quote_mismatch, "repeat_returns": _repeat_returns,
     "refund_before_receipt": _refund_before_receipt, "serial_not_on_contract": _serial_not_on_contract,
+    "dealer_rejects": _dealer_rejects,
 }  # fmt: skip
 
 

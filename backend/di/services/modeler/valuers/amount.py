@@ -83,7 +83,7 @@ def lookup(case: Mapping[str, Any], path: str) -> Any:
     cur: Any = case
     for part in path.split("."):
         if not isinstance(cur, Mapping) or part not in cur:
-            return None
+            return case.get(path)  # a flat dotted name, as a replayed history row keeps its facts (P9-12.3)
         cur = cur[part]
     return cur
 

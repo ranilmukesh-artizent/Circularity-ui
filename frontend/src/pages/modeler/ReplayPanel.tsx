@@ -7,14 +7,14 @@ import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { constraintLine, finished, headline, upliftLine, versionLabel } from './replayReport';
 
-/** The packs history can be replayed for (the pack of the template on screen). */
-export const REPLAY_PACKS = ['tool_fleet', 'device'];
+/** The one pack history is not replayed for: the industrial pack's numbers come from the engine (the server refuses it). */
+export const NO_REPLAY_PACKS = ['industrial'];
 
 /** "2025-10-01 to 2026-09-28", or a dash when no row was good. */
 export const periodLine = (b: Pick<BatchView, 'period'>): string => (b.period ? `${b.period[0]} to ${b.period[1]}` : '—');
 
-/** Show the panel to the roles that run or read replays, for the packs that have one. */
-export const showReplay = (s: ModelerScreen): boolean => REPLAY_PACKS.includes(s.template.key) && can('runReplay');
+/** Show the panel to the roles that run or read replays, for every pack but the industrial one. */
+export const showReplay = (s: ModelerScreen): boolean => !NO_REPLAY_PACKS.includes(s.template.key) && can('runReplay');
 
 /**
  * Replay (plan 9, P9-7.1 and P9-7.2, story X-06): import a CSV of past decisions for this pack and org unit. The file is read in

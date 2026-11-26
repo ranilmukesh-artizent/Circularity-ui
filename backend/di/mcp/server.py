@@ -16,10 +16,13 @@
   `X-Tenant` from its HTTP request (the SDK hands the request to the handler) and goes to di.mcp.policy.call_tool,
   which resolves the account afresh (as every /api request does), checks, runs and logs the call. The database work
   runs in a worker thread, off the event loop.
+- **Telemetry (plan 5):** the SDK wraps every request in its own SERVER span (`tools/call {tool}`); `_observe` adds the
+  call's outcome and the histogram `mcp.server.operation.duration`.
 """
 
 import contextlib
 import json
+import time
 from collections.abc import AsyncIterator, MutableMapping
 from typing import Any
 
@@ -29,10 +32,12 @@ from fastapi import FastAPI
 from mcp.server import Server, ServerRequestContext
 from mcp.server.streamable_http_manager import StreamableHTTPASGIApp, StreamableHTTPSessionManager
 from mcp.server.transport_security import TransportSecuritySettings
+from opentelemetry import trace
 from starlette.datastructures import Headers
 from starlette.routing import Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
+from di import telemetry
 from di.core.db import SessionLocal
 from di.core.errors import envelope
 from di.mcp import oauth, policy
@@ -69,6 +74,21 @@ def _bearer(headers: Headers) -> str | None:
     return token.strip() or None if scheme.lower() == "bearer" else None
 
 
+def _observe(tool: str, answer: dict, seconds: float) -> None:
+    """Plan 5: what di adds to the SDK's span `tools/call {tool}` (mcp.server._otel, on by default: the SERVER span with
+    mcp.method.name, gen_ai.tool.name, jsonrpc.request.id, the parent from `params._meta` and `error.type=tool_error` when
+    the result is an error): the call's outcome ("ok", "held for approval", "denied · …"), and one sample of the histogram
+    `mcp.server.operation.duration`. No argument, result or token is recorded. A no-op while telemetry is off."""
+    if not telemetry.enabled():
+        return
+    outcome = str(answer.get("outcome") or ("ok" if answer.get("ok") else "error"))
+    trace.get_current_span().set_attribute("di.mcp.outcome", outcome)
+    attrs: dict[str, Any] = {"mcp.method.name": "tools/call", "gen_ai.tool.name": tool}
+    if not answer.get("ok"):
+        attrs["error.type"] = "tool_error"
+    telemetry.record_duration("mcp.server.operation.duration", seconds, attrs, "Duration of an MCP request on the server")
+
+
 async def call_tool(ctx: ServerRequestContext, params: types.CallToolRequestParams) -> types.CallToolResult:
     headers = ctx.request.headers if ctx.request is not None else Headers()
     who = policy.Caller(token=_bearer(headers), agent_id=headers.get(AGENT_HEADER), tenant=headers.get(TENANT_HEADER))
@@ -77,7 +97,9 @@ async def call_tool(ctx: ServerRequestContext, params: types.CallToolRequestPara
         with SessionLocal() as s:
             return policy.call_tool(s, who, params.name, params.arguments)
 
+    t0 = time.monotonic()
     answer = await anyio.to_thread.run_sync(run)
+    _observe(params.name, answer, time.monotonic() - t0)
     return types.CallToolResult(
         content=[types.TextContent(text=policy.text_of(answer))],
         structured_content=answer,

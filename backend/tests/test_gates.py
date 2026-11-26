@@ -1,5 +1,5 @@
-"""P9-1.2 (I-2, I-3): the gate catalogue (43 gates: B section 5, G-CON-2, G-DEV-QUOTE), evidence records and the pure evaluation
-of a case's gates. The hold and the release on evidence are in test_gate_hold.py."""
+"""P9-1.2 (I-2, I-3): the gate catalogue (44 gates: B section 5, G-CON-2, G-DEV-QUOTE, CORE-ACCEPT), evidence records and the
+pure evaluation of a case's gates. The hold and the release on evidence are in test_gate_hold.py."""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -34,7 +34,7 @@ B5_IDS = [
     "G-DATA-1", "G-DATA-2", "G-DATA-3", "G-DS-1", "G-DS-2", "G-WEEE-1", "G-WEEE-2", "G-WASTE-1", "G-WASTE-2",
     "G-BAT-1", "G-BAT-2", "G-BAT-3", "G-BAT-4", "G-BAT-5",
     "G-MED-1", "G-MED-2", "G-MED-3", "G-ESPR-1", "G-DPP-1", "G-CON-1", "G-CON-2", "G-SAFE-1",
-    "G-REP-1", "G-REP-2", "G-REP-3",
+    "G-REP-1", "G-REP-2", "G-REP-3", "CORE-ACCEPT",
 ]  # fmt: skip
 
 
@@ -63,7 +63,7 @@ def _routes() -> list[dict[str, Any]]:
 
 def test_x_03_gate_has_typed_fields():
     cat = catalogue()
-    assert len(cat) == 43  # 41 of research B section 5, G-CON-2 (P9-3.6) and G-DEV-QUOTE (P9-6.5)
+    assert len(cat) == 44  # 41 of research B section 5, G-CON-2 (P9-3.6), G-DEV-QUOTE (P9-6.5), CORE-ACCEPT (P9-12.8)
     assert list(cat) == B5_IDS
     for g in cat.values():
         assert (
@@ -77,7 +77,7 @@ def test_x_03_gate_has_typed_fields():
         ), g.id
         assert g.legal_review == "pending"
         assert all(e in EVIDENCE_TYPES for e in g.evidence), g.id
-    assert {g.type for g in cat.values()} == {"Compliance", "Data quality"}
+    assert {g.type for g in cat.values()} == {"Compliance", "Data quality", "Threshold"}  # Threshold: CORE-ACCEPT (P9-12.8)
     # the two entries the spec fixes
     wipe = cat["G-DEV-WIPE"]
     assert (wipe.stage, wipe.trigger.routes, wipe.trigger.when, wipe.evidence, wipe.owner) == (
@@ -183,7 +183,9 @@ def test_x_03_trigger_facts_and_classes():
     got = evaluate_gates(_case(media={"sanitisable": False}, carbon=12.5), p)
     assert [r.gate_id for r in got] == ["G-DATA-1", "G-DATA-2", "G-REP-3"]
     assert got[1].effect.kind == "require_step" and got[1].effect.step == "Destroy the media"
-    assert got[2].effect.kind == "close_block" and got[2].effect.routes == ("buynow", "offers", "auction", "market", "wholesale")
+    assert got[2].effect.kind == "close_block"
+    # "any": every route of the device pack (lane B added repair_sell, parts, recycle and replacement)
+    assert got[2].effect.routes == tuple(r.id for r in p.routes)
     # a gate whose route classes the pack has no route for is not listed (the device pack sells only)
     assert evaluate_gates(_case(), _with_gates("device", "G-MED-REFURB")) == []
 
@@ -242,8 +244,10 @@ def test_shipped_packs_have_only_the_gates_a_phase_switched_on():
             "telecom_network": ["G-NET-INV", "G-NET-CFG", "G-NET-EXP", "G-NET-COV", "G-BAT-4", "G-DS-1", "G-WEEE-2"],
             "itad": ["G-DATA-1", "G-DATA-2", "G-CON-1", "G-DS-1", "G-WEEE-2"],  # P9-12.2, data only
             "rental_fleet": ["G-SAFE-1", "G-DS-1"],  # P9-12.4, data only
+            "auto_core": ["CORE-ACCEPT"],  # P9-12.8, data only
+            "battery": ["G-BAT-1", "G-BAT-2", "G-BAT-3", "G-BAT-4", "G-BAT-5"],  # P9-12.7, data only
         }.get(k, []), k
-        if k in ("used_cars", "medical_rental", "telecom_network", "itad", "rental_fleet"):
+        if k in ("used_cars", "medical_rental", "telecom_network", "itad", "rental_fleet", "auto_core", "battery"):
             continue  # their gates fire on a bare case by design; phases 9 to 11 test them
         got = evaluate_gates({"cls": "x"}, load_pack(k))
         # the tool fleet's contract right (P9-3.6) applies to every case: with no contract line it fails
