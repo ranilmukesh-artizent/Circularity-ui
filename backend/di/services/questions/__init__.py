@@ -7,5 +7,21 @@ the device pack's own questions are in `di.services.device.analytics`. Importing
 Writes nothing.
 """
 
-from di.services.device import analytics  # noqa: F401  (the device pack's own questions)
+from di.services.cases import mr_turnaround as _mt
+from di.services.device import analytics
 from di.services.questions import medical_rental, telecom_network, used_cars  # noqa: F401
+
+#: The worked questions of each pack that has any (ids in `analytics.REGISTRY`); the Packs tab lists the selected pack's own.
+PACK_QUESTIONS: dict[str, tuple[str, ...]] = {
+    "device": ("price_after_launch", "disputes_by_partner"),
+    "used_cars": ("wq_uc_1", "wq_uc_2"),
+    "telecom_network": ("wq_tn_1", "wq_tn_2"),
+    "medical_rental": (_mt.QUESTION_ID, "retired_earliest"),
+}
+
+
+def worked_questions(pack_key: str) -> list[dict[str, str]]:
+    """[{id, question}] of the pack's worked questions, in order; empty for a pack with none."""
+    return [
+        {"id": i, "question": analytics.REGISTRY[i].question} for i in PACK_QUESTIONS.get(pack_key, ()) if i in analytics.REGISTRY
+    ]

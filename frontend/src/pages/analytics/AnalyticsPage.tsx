@@ -23,8 +23,6 @@ import { toast } from '../../components/toast';
 import { downloadCsv } from '../../utils/csv';
 import { BacktestSection } from './BacktestReport';
 import { PacksTab } from './PackView';
-import { PackQuestions } from './PackQuestionsView';
-import { RenewalSection } from './RenewalReport';
 import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
 
 // View state survives leaving and coming back, as the demo's S.fA and S.drill do.
@@ -155,8 +153,6 @@ export function AnalyticsPage({ route, query }: PageProps) {
         </div>
         <div style={{ marginBottom: 12 }}>{tabs}</div>
         <PacksTab />
-        <PackQuestions />
-        <RenewalSection />
       </>
     );
   }

@@ -205,6 +205,21 @@ def test_x_09_pack_view_is_for_analytics_accounts_and_tenant_scoped():
     assert industrial["kpis"] == [] and industrial["questions"] == []
 
 
+def test_ui30_pack_view_defaults_and_follows_the_pack():
+    r = client.get("/api/screens/analytics/pack", headers=h("admin"))
+    assert r.status_code == 200, r.text
+    first = r.json()
+    assert first["packs"][0]["key"] == "industrial" and first["key"] == "industrial"  # no pack has cases: the primary one
+    assert first["worked_questions"] == [] and first["renewals"] is False
+    _open("tool_fleet", "T-CMH-30", TOOLS[0])
+    got = client.get("/api/screens/analytics/pack", headers=h("admin")).json()
+    assert got["key"] == "tool_fleet" and got["cases"] >= 1 and got["renewals"] is True  # the first pack with data
+    device = _pack_view("device")
+    assert [q["id"] for q in device["worked_questions"]] == ["price_after_launch", "disputes_by_partner"]
+    assert device["renewals"] is False
+    assert [q["id"] for q in _pack_view("used_cars")["worked_questions"]] == ["wq_uc_1", "wq_uc_2"]
+
+
 def test_x_09_stage_agents_on_case():
     cid = _open("tool_fleet", "T-CMH-5", TOOLS[0])
     r = client.get(f"/api/screens/case/{cid}", headers=h("planner-a"))

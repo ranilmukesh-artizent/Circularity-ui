@@ -6,11 +6,21 @@ import {
 } from '../../api/analytics';
 import { money } from '../../api/format';
 import { onActivateKey } from '../../utils/keys';
+import './analytics.css';
 
 export interface Drill { title: string; fn: (r: ClosedRow) => boolean }
 type OnDrill = (d: Drill) => void;
 
 const fix = (n: number) => +n.toFixed(2);
+/** A route's chart colour: a theme token (analytics.css) with 3:1 against the card in both themes, whatever colour the server sent. */
+const routeColor = (id: string, fallback: string) => `var(--rt-${id}, ${fallback})`;
+
+/** A category label on two lines (the chart's text is large, so a long name wraps instead of colliding with its neighbour). */
+function Cat({ x, y, text }: { x: number; y: number; text: string }) {
+  const i = text.indexOf(' ');
+  const [a, b] = i < 0 ? [text, ''] : [text.slice(0, i), text.slice(i + 1)];
+  return <text x={x} y={y} textAnchor="middle"><tspan x={x}>{a}</tspan>{b && <tspan x={x} dy="1.15em">{b}</tspan>}</text>;
+}
 const allReconciled: Drill = { title: 'All reconciled decisions', fn: (r) => r.status === 'reconciled' };
 export const drills = {
   all: allReconciled,
@@ -25,11 +35,11 @@ function keyAct(f: () => void) {
 export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
   const rc = m.rc;
   const steps = routes().map((rt) => ({ id: rt.id, l: rt.short, v: sum(rc.filter((r) => r.route === rt.id).map((r) => (r.actual ?? 0) - r.baseline)) }));
-  const W = 900, H = 340, L = 56, B = 44, T = 18, n = steps.length + 2, bw = (W - L - 10) / n;
+  const W = 720, H = 360, L = 64, B = 52, T = 22, n = steps.length + 2, bw = (W - L - 10) / n;
   const max = m.act * 1.04 || 1, sc = (v: number) => T + (H - T - B) * (1 - v / max);
   let run = m.base;
   return (
-    <svg className="ch" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Recovery waterfall from baseline to Circularity, by route">
+    <svg className="ch big" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Recovery waterfall from baseline to Circularity, by route">
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <g key={f}>
           <line className="gl" x1={L} x2={W} y1={fix(sc((max * f) / 1.04))} y2={fix(sc((max * f) / 1.04))} />
@@ -41,7 +51,7 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
         <rect x={L + 4} y={fix(sc(m.base))} width={bw - 10} height={Math.max(0, fix(H - B - sc(m.base)))} fill="var(--chart5)" />
       </g>
       <text x={fix(L + bw / 2)} y={fix(sc(m.base) - 6)} textAnchor="middle" className="lbl">{kfmt(m.base)}</text>
-      <text x={fix(L + bw / 2)} y={H - B + 16} textAnchor="middle">Baseline</text>
+      <Cat x={fix(L + bw / 2)} y={H - B + 18} text="Baseline" />
       {steps.map((s, i) => {
         const x = L + (i + 1) * bw, y0 = sc(run), y1 = sc(run + s.v);
         run += s.v;
@@ -53,7 +63,7 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
               <rect x={fix(x + 4)} y={fix(Math.min(y0, y1))} width={fix(bw - 10)} height={fix(Math.max(2, Math.abs(y0 - y1)))} fill={s.v >= 0 ? 'var(--yellow)' : 'var(--bad)'} stroke="rgba(0,0,0,.3)" />
             </g>
             <text x={fix(x + bw / 2)} y={fix(Math.min(y0, y1) - 6)} textAnchor="middle" className="lbl">{(s.v >= 0 ? '+' : '') + kfmt(s.v)}</text>
-            <text x={fix(x + bw / 2)} y={H - B + 16} textAnchor="middle">{s.l}</text>
+            <Cat x={fix(x + bw / 2)} y={H - B + 18} text={s.l} />
           </g>
         );
       })}
@@ -65,7 +75,7 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
               <rect x={fix(x + 4)} y={fix(sc(m.act))} width={fix(bw - 10)} height={Math.max(0, fix(H - B - sc(m.act)))} fill="var(--chart1)" />
             </g>
             <text x={fix(x + bw / 2)} y={fix(sc(m.act) - 6)} textAnchor="middle" className="lbl">{kfmt(m.act)}</text>
-            <text x={fix(x + bw / 2)} y={H - B + 16} textAnchor="middle">With Circularity</text>
+            <Cat x={fix(x + bw / 2)} y={H - B + 18} text="With Circularity" />
           </>
         );
       })()}
@@ -97,7 +107,7 @@ export function MixChart({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDril
                 if (!n) return null;
                 const tip = `${M[i]} · ${rt.name}: ${n} (${Math.round((n / a.length) * 100)}%)`;
                 return (
-                  <rect key={rt.id} className="clk" x={fix(L + i * bw + 6)} y={fix(y1)} width={fix(bw - 12)} height={fix(y0 - y1)} fill={rt.color} stroke="var(--panel)" strokeWidth=".8" data-tip={tip}
+                  <rect key={rt.id} className="clk" x={fix(L + i * bw + 6)} y={fix(y1)} width={fix(bw - 12)} height={fix(y0 - y1)} fill={routeColor(rt.id, rt.color)} stroke="var(--panel)" strokeWidth=".8" data-tip={tip}
                     onClick={() => onDrill({ title: rt.name + ' · ' + M[i], fn: (r) => r.route === rt.id && r.mi === i && (r.status === 'reconciled' || r.status === 'pending') })}>
                     <title>{tip}</title>
                   </rect>
@@ -108,7 +118,7 @@ export function MixChart({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDril
           );
         })}
       </svg>
-      <div className="legend">{R.map((r) => <span key={r.id}><i style={{ background: r.color }} />{r.short}</span>)}</div>
+      <div className="legend">{R.map((r) => <span key={r.id}><i style={{ background: routeColor(r.id, r.color) }} />{r.short}</span>)}</div>
     </>
   );
 }
@@ -122,7 +132,7 @@ export function Funnel({ rows, m, onDrill }: { rows: ClosedRow[]; m: Metrics; on
     ['Reconciled', m.rc.length, 'Actuals linked to the decision', { title: 'Reconciled decisions', fn: (r) => r.status === 'reconciled' }],
   ];
   return (
-    <>
+    <div className="an-funnel">
       {st.map((s, i) => (
         <div key={s[0]} style={{ marginBottom: 12 }}>
           <div className="row between">
@@ -145,7 +155,7 @@ export function Funnel({ rows, m, onDrill }: { rows: ClosedRow[]; m: Metrics; on
       <div className="callout info">
         <b>Not failures:</b> {m.pend} decisions are still pending, {m.canc} lost demand and {m.exp} offers expired. Pending cases stay pending until their evidence is complete.
       </div>
-    </>
+    </div>
   );
 }
 
@@ -246,7 +256,7 @@ export function Heat({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDrill })
 export function PoolChart({ rows }: { rows: ClosedRow[] }) {
   const M = months();
   const pr = rows.filter((r) => r.pool && r.status === 'reconciled');
-  const W = 900, H = 220, L = 44, B = 28, T = 8, bw = (W - L) / 12;
+  const W = 500, H = 230, L = 48, B = 30, T = 8, bw = (W - L) / 12;
   const by = M.map((_, i) => ({ g: sum(pr.filter((r) => r.mi === i).map((r) => r.pool!.g)), o: sum(pr.filter((r) => r.mi === i).map((r) => r.pool!.o)) }));
   const mx = Math.max(1, ...by.map((b) => b.o)), sc = (v: number) => T + (H - T - B) * (1 - v / mx);
   const tg = sum(pr.map((r) => r.pool!.g)), to = sum(pr.map((r) => r.pool!.o));
@@ -256,7 +266,7 @@ export function PoolChart({ rows }: { rows: ClosedRow[] }) {
         <span className="chip ok">+{kfmt(to - tg)} ({tg ? ((to / tg - 1) * 100).toFixed(1) : 0}%)</span>
         <span className="note">{pr.length} pooled decisions: per-asset greedy {kfmt(tg)} vs pool-optimized {kfmt(to)}</span>
       </div>
-      <svg className="ch" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Pool efficiency by month">
+      <svg className="ch pool" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Pool efficiency by month">
         {[0, 0.5, 1].map((f) => (
           <g key={f}><line className="gl" x1={L} x2={W} y1={fix(sc(mx * f))} y2={fix(sc(mx * f))} /><text x={L - 6} y={fix(sc(mx * f) + 4)} textAnchor="end">{kfmt(mx * f)}</text></g>
         ))}
