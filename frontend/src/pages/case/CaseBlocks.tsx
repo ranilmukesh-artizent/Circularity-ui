@@ -5,12 +5,13 @@
  */
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
-  exTs, refList, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock, type Source, type StageTag,
+  exTs, refList, refreshEvidence, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock, type Source, type StageTag,
 } from '../../api/case';
 import { money } from '../../api/format';
 import { IconTile } from '../../components/kit/IconTile';
 import { KeyedStatus, type StatusTable } from '../../components/kit/StatusPill';
 import { VendorLogo } from '../../components/kit/VendorLogo';
+import { useAction } from '../../hooks/useAction';
 import { caseActions } from './caseActions';
 
 export const hue = (h: string, k?: number) => ({ '--c': `var(--h-${h})`, ...(k != null ? { '--k': k } : {}) }) as CSSProperties;
@@ -55,6 +56,20 @@ export function StProv({ k, sys, src, estimate }: { k: string; sys: string; src:
 export const EstimateBadge = () => (
   <span className="aszb mod" data-prov="estimate" data-tip="An estimate, not a recorded read: the inspection is missing or not done yet. The decision is held until a person confirms it.">estimate</span>
 );
+/** The evidence types a gate that is stale or has no check on file can have re-run at the source (`evidence.refresh`, P9-9.9). */
+export const REFRESHABLE = ['recall_check'];
+/** The evidence type of a failed gate's stale evidence that can be re-checked, or null. */
+export const staleType = (g: { passed: boolean; missingTypes?: string[] }): string | null =>
+  g.passed ? null : ((g.missingTypes ?? []).find((t) => REFRESHABLE.includes(t)) ?? null);
+/** "Re-check" beside a stale evidence fact: runs the check again at its source; the page shows the new result. */
+export function RecheckButton({ caseId, type }: { caseId: string; type: string }) {
+  const act = useAction();
+  return (
+    <button type="button" className="btn sm" data-recheck={type} disabled={act.pending} onClick={() => { void act.run(() => refreshEvidence(caseId, type)); }}>
+      {act.pending ? 'Re-checking…' : 'Re-check'}
+    </button>
+  );
+}
 /** What a route must disclose to a buyer, from the gates (a title brand, P9-9.8): one line per route, nothing when none. */
 export function Disclosures({ r }: { r: { disclosures?: string[] } }) {
   if (!r.disclosures?.length) return null;

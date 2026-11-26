@@ -46,7 +46,10 @@ TITLE_FIELDS = (
     "lien_release_ref",
     "title_brand",
     "payoff_confirmed",
-)  # a car's title facts (P9-9.8)
+    "odometer_statement_ref",
+    "odometer_not_actual",
+    "odometer_photo_reading",
+)  # a car's title facts (P9-9.8), and the odometer facts that release a car held for a second inspection (P9-9.9)
 DECON_FIELDS = ("decon_ended_at", "decon_started_at", "decon_record_ref", "decon_result")  # a device's decontamination (P9-11.6)
 INVENTORY_FIELDS = ("inventory_status", "model", "site")  # a unit's inventory facts (P9-10.6)
 OVERRIDE_RESOURCE = "conflict"  # a person's choice in the Conflict Queue (provenance.resource); imports are "import"

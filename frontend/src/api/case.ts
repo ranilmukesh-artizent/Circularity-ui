@@ -9,6 +9,7 @@
  * Formatting, the what-if assumptions and the remembered tabs are frontend-only (backend/di/services/screens/case.py has the
  * mapping table).
  */
+import { invoke } from './actions';
 import type { PackStage } from './analytics';
 import { ApiError, cached, invalidate, ref, withQuery } from './client';
 import type { DeviceView } from './device';
@@ -42,6 +43,8 @@ export interface GateRow {
   id: string; name: string; type: string; stage: string; stageLabel: string; passed: boolean;
   kind: 'block' | 'require_step' | 'require_approval' | 'close_block' | 'disclose'; routes: string[]; routeNames: string[]; hold: boolean;
   step: string | null; owner: string; evidence: GateEvidenceOnFile[]; missing: string[]; reason: string; locked: boolean;
+  /** the evidence type ids behind `missing` ("recall_check": a check that is stale or not on file, P9-9.9) */
+  missingTypes?: string[];
 }
 /** A case held until evidence arrives; `batch` names the lot batch it was opened in. */
 export interface GateHold { gates: string[]; since: string; batch: string | null }
@@ -435,6 +438,12 @@ export function scenChanged(): string[] {
 }
 /** Confidence of a route (tiConf). */
 export const confidence = (a: CaseAnalysis, r: Route): string => a.routes.find((x) => x.id === r.id && x.plan === r.plan)?.conf ?? 'Medium';
+/**
+ * Re-run one evidence check of a car's case at its source (P9-9.9, story UC-08): a recall check older than 30 days. The server
+ * looks the VIN up again, stores the result and values the case again; it never changes an approved decision.
+ */
+export const refreshEvidence = (caseId: string, evidenceType: string) =>
+  invoke<{ case_id: string; evidence_type: string; checked_at: string }>('evidence.refresh', { case_id: caseId, evidence_type: evidenceType });
 /** The evidence snapshot, one item per evidence (cxEvidence). */
 export interface SnapshotItem { k: string; label: string; ready: boolean; available: boolean; value: string; system: string; record: string; fetchedAt: string }
 export function snapshotItems(c: CaseRec, a: CaseAnalysis): SnapshotItem[] {

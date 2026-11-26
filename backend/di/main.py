@@ -13,6 +13,7 @@ import di.services.actions.connections  # registers action handlers (registry.*,
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
 import di.services.actions.engine  # registers action handlers
+import di.services.actions.evidence_refresh  # registers evidence.refresh (re-run a recall check; plan 9 P9-9.9)
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)
 import di.services.actions.execution  # registers action handlers
 import di.services.actions.fraud  # registers action handlers (fraud.hold, release, reject, simulate; plan 9)

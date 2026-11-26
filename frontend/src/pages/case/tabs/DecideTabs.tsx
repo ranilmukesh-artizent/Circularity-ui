@@ -16,7 +16,7 @@ import { onActivateKey } from '../../../utils/keys';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { openExSrc, openExSrcAll, openModels, openSources, openTrace } from '../CaseDrawers';
-import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, Stp, Tbl } from '../CaseBlocks';
+import { AfBadge, CasePanel, ExMethod, ProvB, RangeBar, RecheckButton, Stp, Tbl, staleType } from '../CaseBlocks';
 import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseActions';
 import { useCaseUi } from '../CaseContext';
 import { gateLine, holdLine } from '../gates';
@@ -535,7 +535,7 @@ export function GatesBlock({ c }: { c: CaseRec }) {
       <div className="evgrid">{rows.map((g) => (
         <div key={g.id} className={'ev ' + (g.passed ? 'ready' : 'missing')}>
           <span className="ic" aria-hidden="true">{g.passed ? '✓' : '!'}</span>
-          <div><b>{g.name} <span className="chip">{g.type}</span> <span className="chip">{g.stageLabel}</span></b><small>{gateLine(g)}</small></div>
+          <div><b>{g.name} <span className="chip">{g.type}</span> <span className="chip">{g.stageLabel}</span></b><small>{gateLine(g)}</small>{staleType(g) && <RecheckButton caseId={c.id} type={staleType(g)!} />}</div>
           <em>{g.owner}</em>
         </div>
       ))}</div>

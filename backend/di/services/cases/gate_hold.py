@@ -45,6 +45,7 @@ from di.services.cases import (
     store,
     telematics,
     title_evidence,
+    vehicle_evidence,
 )
 from di.services.engine.routes import Route
 from di.services.modeler.evidence import evidence_of, label_of, records_of
@@ -64,7 +65,8 @@ EXCEPTION_OF = {
     "G-VEH-TITLE": "EX-UC-LIEN",
     "G-MED-DECON": "EX-MR-DECON",
     "G-NET-INV": "EX-TN-INV",
-}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8, P9-10.6, P9-11.6)
+    "G-VEH-ODO": "EX-UC-ODO",
+}  # a hold by a gate opens an item of this type (P9-3.6, P9-9.8, P9-9.9, P9-10.6, P9-11.6)
 QUARANTINE_ITEM = (
     "recall_quarantine"  # the item a failed recall check G-TOOL-REC keeps open while the tool is quarantined (P9-3.7)
 )
@@ -108,6 +110,13 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
             case["title"] = title
         else:
             case.pop("title", None)
+        car_recs, odometer, recall = vehicle_evidence.evidence(s, case.get("assetId"))  # odometer and recall check (P9-9.9)
+        recs.extend(car_recs)
+        for key, facts in (("odometer", odometer), ("recall", recall)):
+            if facts:
+                case[key] = facts
+            else:
+                case.pop(key, None)
     if case.get("template") == "medical_rental":  # the device's decontamination record, for G-MED-DECON (P9-11.6)
         recs.extend(decon_evidence.evidence(s, case.get("assetId")))
     if case.get("template") == "telecom_network":  # the network inventory's record of the unit, for G-NET-INV (P9-10.6)
@@ -149,7 +158,8 @@ def _rows(case: Mapping[str, Any], pack: Pack, results: Sequence[GateResult], as
             "id": g.id, "name": g.name, "type": g.type, "stage": g.stage, "stageLabel": STAGE_LABELS[g.stage],
             "passed": r.passed, "kind": r.effect.kind, "routes": list(r.effect.routes),
             "routeNames": [names[i] for i in r.effect.routes if i in names], "hold": r.effect.hold, "step": r.effect.step,
-            "owner": g.owner, "evidence": on_file, "missing": [label_of(t) for t in r.evidence_missing], "reason": r.reason,
+            "owner": g.owner, "evidence": on_file, "missing": [label_of(t) for t in r.evidence_missing],
+            "missingTypes": list(r.evidence_missing), "reason": r.reason,
             "locked": g.locked, "guardrail": g.params.get("guardrail"),
         })  # fmt: skip
     return out
