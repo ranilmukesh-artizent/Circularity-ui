@@ -14,7 +14,7 @@
  *   3  The used car of VIN SYNUC000000000044 (its pack needs replacing) opens a battery case linked from it; the battery case shows
  *      "Battery passport not yet required (from 18 Feb 2027, indicative)" (action: the car's case.open; the battery assessment
  *      is asked of the inspection mock and its clock moves one day, then uc_insp syncs).
- *   4  The core C-0004 (declared an alternator, a starter arrived) is held for fraud review; planner.a releases it with a reason
+ *   4  The core C-0004 (declared an alternator, a starter arrived) is held for fraud review; approver releases it with a reason
  *      on the case page (action: case.open).
  *   5  A medical capital device for another market with no UDI (SYN-MC-0005) shows "UDI missing"; engineer records the assessment
  *      "servicing" on its case page (Record assessment) (action: case.open).
@@ -262,7 +262,7 @@ await step(`3 The battery case linked from VIN ...044 shows "${NOT_YET}"`, async
 });
 
 // ---------------------------------------------------------------- 4
-await step('4 A core with a family mismatch is held; planner.a releases it with a reason', async () => {
+await step('4 A core with a family mismatch is held; approver releases it with a reason', async () => {
   // C-0004: declared ALT-1450, a starter (STR-2210) arrived: the signal part_family_mismatch of the core returns system (core_ret)
   const id = await openCase('auto_core', serialKey('C-0004'), 'manual', { family: 'alternator', deposit: 85 });
   const p = await as('planner.a');
@@ -276,12 +276,14 @@ await step('4 A core with a family mismatch is held; planner.a releases it with 
     p,
   );
   if (!/part_family_mismatch/.test(await p.innerText('[data-testid="fraud-hold"]'))) throw new Error('the hold does not name the signal part_family_mismatch');
-  await p.locator('#fraud-reason').fill('Checked the photos with the dealer; the part is the declared one.');
-  await p.getByRole('button', { name: 'Release', exact: true }).click();
-  await waitText(p, new RegExp(`${id} released from fraud review`), 'no "released from fraud review" confirmation (does planner.a hold approval rights?)', UI);
-  const c = await caseOf(p, id);
+  const ap = await as('approver'); // fraud.release needs approve.decisions: planner.a only sees the hold
+  await open(ap, `${base}/#/product/${id}/overview`);
+  await ap.locator('#fraud-reason').fill('Checked the photos with the dealer; the part is the declared one.');
+  await ap.getByRole('button', { name: 'Release', exact: true }).click();
+  await waitText(ap, new RegExp(`${id} released from fraud review`), 'no "released from fraud review" confirmation', UI);
+  const c = await caseOf(ap, id);
   if (c.fraud?.status !== 'released') throw new Error(`the hold of ${id} is "${c.fraud?.status}", not released`);
-  return `${id} held (part_family_mismatch), released by planner.a`;
+  return `${id} held (part_family_mismatch), seen by planner.a, released by approver`;
 });
 
 // ---------------------------------------------------------------- 5
