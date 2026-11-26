@@ -16,7 +16,9 @@ import { canPage, canRoute } from './session';
 import { bump } from './store';
 
 
-export type SrcStatus = 'live' | 'stale' | 'manual' | 'unavailable';
+/** An extra mock system of a pack (UI audit gaps 10 and 11): registered with source.reconnect; always synthetic. */
+export interface PackSystem { id: string; name: string; vendor: string; type: string; pack: string; pack_name: string; registered: boolean }
+export type SrcStatus ='live' | 'stale' | 'manual' | 'unavailable';
 export interface SyncRun { id: string; ts: number; trigger: string; rows: number; dur: number; result: string; note: string }
 export interface AuditEntry { ver: string; who: string; ts: number; change: string }
 export interface Source {
@@ -82,7 +84,7 @@ interface Detail {
 interface OverviewAnswer {
   integrations: (Omit<Integration, 'src' | 'c'> & { src: string | null; catalog: string | null })[];
   recommendations: (Omit<Rec, 's' | 'c'> & { source: string | null; catalog: string | null })[];
-  catalog: CatalogItem[]; available: string[];
+  catalog: CatalogItem[]; available: string[]; pack_systems?: PackSystem[];
 }
 interface MapAnswer {
   kpis: { workflows_published: number }; exceptions: MapException[]; activity: SmLog[]; open_conflicts: number; hourly: HourBucket[]; totals: Totals;
@@ -167,6 +169,8 @@ export function catalog(): CatalogItem[] {
   const ids = new Set(sources().map((s) => s.id));
   return ref('CATALOG').map((c) => ({ ...c, connected: ids.has(c.id) }));
 }
+/** The extra mock systems of every pack (UI audit gaps 10 and 11), in pack order; none before the overview has loaded. */
+export const packSystems = (): PackSystem[] => overview()?.pack_systems ?? [];
 export const frCats = (): string[] => ref('FR_CATS');
 export const frDecisions = (): [string, string, string[]][] => ref('FR_DEC');
 export const intSub = (tab: string): string => ref('FR_INT_SUB')[tab] ?? '';

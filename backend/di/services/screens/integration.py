@@ -67,7 +67,7 @@ Facade (frontend/src/api/integration.ts) → here, export by export:
   tableCount, fieldCount, wfUsing, srcChannels, catOf (each in `health`), connected (status not unavailable)
 - endpoint GET /sources/{id}: syncHistory (`sync_history`), series, failedRecords (`failed`, and `health.failed7`),
   srcModels (`models`), tableModel for one source (`table_model`), commentsOf('src:<id>') (`comments`)
-- endpoint GET /overview: integrations, recommendations, available, catalog
+- endpoint GET /overview: integrations, recommendations, available, catalog, pack_systems (the extra mock systems by pack)
 - endpoint GET /map: exceptions, smLog (`activity`), totals and hourly, and for accounts without Tables or Models
   mappings, allMappings, srcModels (`source_models`), tableModel and tableModelIds (`table_models`)
 - endpoint GET /tables: tableModel, tableModelIds
@@ -95,7 +95,7 @@ from typing import Literal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.connectors import manual, mapping
+from di.connectors import extra, manual, mapping
 from di.core import golden
 from di.core.auth import Principal
 from di.repositories.constants import MAP_TARGET, MAPPINGS
@@ -105,6 +105,7 @@ from di.repositories.packs import active_pack, published_keys
 from di.repositories.workflows import monitor_stats, wf_stat
 from di.services.actions.decisions import comments
 from di.services.engine.jsmath import js_round
+from di.services.modeler.pack import load_pack, pack_keys
 from di.services.modeler.templates import TEMPLATE_KEYS, load_template
 
 CANON: list[dict] = golden.load("canonical")["models"]
@@ -133,6 +134,14 @@ def src_models(s: dict, maps: dict[str, list] | None = None) -> dict[str, list]:
 def _catalog(f: Fabric) -> list[dict]:
     """CATALOG, each marked connected when a source with its id exists."""
     return [c | {"connected": c["id"] in f.by_id} for c in CATALOG]
+
+
+def _pack_systems(session: Session) -> list[dict]:
+    """The mock systems beyond the demo's 21 (di.connectors.extra), each with its pack's key and name, in pack order: the
+    Connection Fabric lists them grouped by pack and registers one with source.reconnect. Every one is synthetic."""
+    keys = pack_keys()
+    rows = [x for x in extra.systems(session) if x["pack"] in keys]
+    return [x | {"pack_name": load_pack(x["pack"]).name} for x in sorted(rows, key=lambda r: (keys.index(r["pack"]), r["name"]))]
 
 
 def _integration_status(f: Fabric, s: dict) -> str:
@@ -263,6 +272,7 @@ def overview(session: Session, p: Principal) -> dict:
         "integrations": integrations,
         "recommendations": _recommendations(f, available),
         "catalog": catalog,
+        "pack_systems": _pack_systems(session),
         "available": [c["id"] for c in available],
         "connected": [s["id"] for s in f.sources if s["status"] != "unavailable"],
         "attention": [s["id"] for s in f.sources if f.needs_attention(s)],
