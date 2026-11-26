@@ -9,7 +9,8 @@ the price confidence reads both. P9-6.11 adds `bid_per_unit`: the best net a uni
 model and grade that is collecting bids (the wholesale channel then values the device at that bid). P9-6.13 adds `listing`:
 the channel, days listed and offers of the device's live listing, which a rule's scope reads (`listChannel`, `listDaysMin`,
 `offersMax`); `refresh_listing` keeps it current on every valuation. P9-6.14 adds `model_age_months`, which a customer's
-diversion reads (grade C of a model over 36 months goes to wholesale). Later tasks add replacement demand.
+diversion reads (grade C of a model over 36 months goes to wholesale). P9-6.18 keeps a proposed price candidate's band on the
+case (`priceShadow`, `record_price_shadow`; it decides nothing). Later tasks add replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -22,9 +23,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.repositories import device_lots, device_market, device_tradeins
+from di.repositories import device_lots, device_market, device_tradeins, model_versions
 from di.services.canonical import store as canonical
 from di.services.device import lock, verify, wipe
+from di.services.engine.predictor import Predictor
 from di.services.modeler.pack import load_pack
 
 AGE_MONTHS = {"0-24m": 12.0, "25-48m": 36.0, "49m+": 60.0}  # the midpoint of each age band, as the price model's rows have it
@@ -77,6 +79,38 @@ def refresh_listing(s: Session, case: dict[str, Any], as_of: date) -> None:
     lot = case.get("valuer")
     if isinstance(lot, dict) and lot.get("imei") and isinstance(lot.get("inputs"), dict):
         lot["inputs"]["listing"] = listing_view(s, str(lot["imei"]), as_of)
+    record_price_shadow(s, case, as_of)  # a proposed price candidate's band, beside the active model's (P9-6.18)
+
+
+def record_price_shadow(s: Session, case: dict[str, Any], as_of: date) -> None:
+    """While a price candidate is proposed, the candidate's band of each channel is kept on the case (`priceShadow`) beside the
+    active model's, as of today's valuation (P9-6.18). Nothing reads it but the shadow's statistics: the case's channels, prices
+    and net are the active model's, as before. Without a proposed candidate the case is left as it is."""
+    lot = case.get("valuer")
+    if not isinstance(lot, dict) or not lot.get("imei") or lot.get("ref") is None:
+        return
+    cand = model_versions.proposed(s, "device", "price")
+    if cand is None or not cand.factors:
+        return
+    from di.services.actions.models import price_predictor  # lazily: the actions package imports this module
+    from di.services.engine.predictor import FormulaPredictor
+    from di.services.models.price import ModelPredictor, PriceModel
+
+    imei = str(lot["imei"])
+    cond = (canonical.get(s, "condition", imei_key(imei)) or {}).get("data") or {}
+    point = device_market.feed_price(s, str(lot["sku_key"]), str(lot["grade"]), as_of) if lot.get("sku_key") else None
+    week = point.week if point else None
+    base = FormulaPredictor()
+    shadow = ModelPredictor(base, PriceModel.load(cand.factors[0]["artefact"]), cand.id)
+    active = price_predictor(s, base)
+
+    def bands(pred: Predictor) -> dict[str, dict[str, float]]:
+        return {ch: {k: b[k] for k in ("p10", "p50", "p90")} for ch, b in price_bands(s, lot, cond, week, pred).items()}
+
+    case["priceShadow"] = {
+        "model_id": cand.id, "at": as_of.isoformat(), "imei": imei, "bands": bands(shadow),
+        "active": {"model_id": getattr(active, "model_id", None), "bands": bands(active)},
+    }  # fmt: skip
 
 
 def model_age_months(s: Session, model: str | None, as_of: date) -> float | None:
@@ -108,11 +142,12 @@ def sales_of_sku(s: Session, sku_key: str, as_of: date, days: int = 90) -> int:
 
 
 def price_bands(
-    s: Session, case: Mapping[str, Any], cond: Mapping[str, Any], feed_week: date | None
+    s: Session, case: Mapping[str, Any], cond: Mapping[str, Any], feed_week: date | None, predictor: Predictor | None = None
 ) -> dict[str, dict[str, Any]]:
     """The price band of each of the pack's Recover channels for the device `case` (a lot with an IMEI; a PO lot has none): the
-    active price model's (`price_predictor`), else the feed's reference value at the channel's index with no interval. A channel
-    the formulas cannot price (the wholesale lot without a model) has none: the valuer estimates it."""
+    active price model's (`price_predictor`; `predictor` replaces it, for a shadow), else the feed's reference value at the
+    channel's index with no interval. A channel the formulas cannot price (the wholesale lot without a model) has none: the
+    valuer estimates it."""
     if not case.get("imei") or case.get("ref") is None:
         return {}
     # lazily: the actions package imports the case intake, which imports this module
@@ -122,7 +157,7 @@ def price_bands(
     from di.services.models.price import battery_band
 
     base = FormulaPredictor()
-    pred = price_predictor(s, base)
+    pred = predictor or price_predictor(s, base)
     pct, fails = cond.get("battery_health_pct"), cond.get("functional_fails")
     age = next((str(m[3]) for m in device.DMOD if m[1] == case.get("model")), None)
     facts = {
@@ -133,7 +168,7 @@ def price_bands(
     }  # fmt: skip
     out: dict[str, dict[str, Any]] = {}
     for ch in device.RECOVER:
-        if pred is base and ch == "wholesale":
+        if isinstance(pred, FormulaPredictor) and ch == "wholesale":
             continue
         b = pred.channel_price(facts, ch)
         week = b.feed_week or feed_week

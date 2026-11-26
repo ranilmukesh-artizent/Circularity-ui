@@ -22,7 +22,8 @@
 Maker-checker as for decision flows (Domain spec D7): the person who fitted a model, or who proposed it, cannot promote
 it, and an agent never proposes or promotes one (di.services.agents.forbidden.FORBIDDEN_ACTIONS; the guards refuse a prepared call
 too). `promote_block` and `propose_block` say why a person may not, for the guards and the Agents page's Models panel
-(di.services.screens.agents.models). An active model calibrates the predictor of new intake cases only
+(di.services.screens.agents.models). A price model is promoted only after `min_shadow` (the device pack's, 30) evaluations
+were shadowed (P9-6.18, di.services.device.price_shadow). An active model calibrates the predictor of new intake cases only
 (`intake_predictor`); the cases opened from the engine's book keep their routes.
 """
 
@@ -94,8 +95,9 @@ def propose_block(m: ModelRow) -> str | None:
     return f"{m.id} is already proposed." if proposal_of(m) else None
 
 
-def promote_block(m: ModelRow, actor: str) -> str | None:
-    """Why `actor` cannot promote the model (the permission aside), or None: maker-checker, then the proposal."""
+def promote_block(m: ModelRow, actor: str, s: Session | None = None) -> str | None:
+    """Why `actor` cannot promote the model (the permission aside), or None: maker-checker, then the proposal, then, for a
+    price model (with a session to count in), the shadowed evaluations it needs first (P9-6.18, `price_shadow`)."""
     if m.status != "candidate":
         return f"{m.id} is not a candidate."
     if m.created_by == actor:
@@ -103,7 +105,15 @@ def promote_block(m: ModelRow, actor: str) -> str | None:
     p = proposal_of(m)
     if p is None:
         return f"Propose {m.id} for promotion first."
-    return PROPOSER_CHECKER if p.get("by") == actor else None
+    if p.get("by") == actor:
+        return PROPOSER_CHECKER
+    if m.kind == "price" and s is not None:
+        from di.services.device import price_shadow
+
+        n, need = price_shadow.shadow_count(s, m.id), price_shadow.min_shadow()
+        if n < need:
+            return price_shadow.block_text(n, need)
+    return None
 
 
 ACTIONS.setdefault(
@@ -412,7 +422,7 @@ def promote_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None
         return "not_found", f"No model {i['id']}."
     if ctx.preparer:
         return "approval_required", "Models are promoted only by a person."
-    block = promote_block(m, ctx.actor.id)
+    block = promote_block(m, ctx.actor.id, ctx.session)
     return ("conflict", block) if block else None
 
 

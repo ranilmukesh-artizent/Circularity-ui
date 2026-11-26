@@ -60,6 +60,12 @@ def _listing_channels(s: Session, ids: set[str]) -> dict[str, str]:
     return {r.listing_id: _CHANNEL.get(str(r.channel).strip().lower(), "other") for r in rows}
 
 
+def sale_channel(s: Session, sale: device_market.SaleRow) -> str:
+    """The price model's channel of a settled sale: the listing's, `wholesale` for a lot sale, else `other`."""
+    channels = _listing_channels(s, {sale.listing_id}) if sale.listing_id else {}
+    return channels.get(sale.listing_id or "") or ("wholesale" if sale.lot_ref else "other")
+
+
 def training_rows(s: Session, as_of: date) -> list[TrainRow]:
     sales = device_market.sales(s, FROM, as_of)
     imeis = {i for x in sales for i in x.imeis}

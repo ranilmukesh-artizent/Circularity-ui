@@ -134,6 +134,7 @@ def made(monkeypatch):
     with SessionLocal() as s:
         for i in ids:
             s.execute(text("DELETE FROM model_version WHERE id = :i"), {"i": i})
+        s.execute(text("DELETE FROM case_record WHERE id LIKE 'PM-SHADOW-%'"))
         s.commit()
 
 
@@ -178,6 +179,18 @@ def test_price_model_maker_cannot_approve_r21(made):
     assert call("model.propose", {"id": mid}, "admin")["ok"]  # proposed by someone other than the maker
     assert call("model.promote", {"id": mid}, "planner-a")["ok"] is False  # the maker (and without approve.flows)
     assert call("model.promote", {"id": mid}, "admin")["error"]["message"] == PROPOSER_CHECKER  # the proposer
+    refused = call("model.promote", {"id": mid}, "approver")  # P9-6.18: not before it was shadowed on 30 evaluations
+    assert refused["error"]["message"] == "A price model is shadowed on 30 evaluations before promotion (0 so far)."
+    with SessionLocal() as s:
+        for k in range(30):
+            s.execute(
+                text(
+                    "INSERT INTO case_record (id, owner, location, stage, data) "
+                    "VALUES (:i, 'Customer A', 'x', 'intake', CAST(:d AS jsonb))"
+                ),
+                {"i": f"PM-SHADOW-{k}", "d": json.dumps({"id": f"PM-SHADOW-{k}", "priceShadow": {"model_id": mid}})},
+            )
+        s.commit()
     ok = call("model.promote", {"id": mid}, "approver")
     assert ok["ok"], ok
     with SessionLocal() as s:

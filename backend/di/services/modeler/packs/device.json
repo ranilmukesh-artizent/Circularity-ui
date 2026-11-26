@@ -743,6 +743,9 @@
     "auction",
     "wholesale"
    ],
+   "price_shadow": {
+    "min_shadow": 30
+   },
    "ageing": {
     "offers_to_auction_days": 14,
     "offers_choices": [

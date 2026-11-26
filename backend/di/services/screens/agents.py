@@ -43,7 +43,10 @@ are the signed-in person's actions.
                    blocks  why the signed-in person may not propose or approve it (its permission, maker-checker, not
                            proposed yet, already proposed), else null: the buttons show the reason, the actions check
                            again (di.services.actions.models)
-        can        {fit, promote}: manageFlows (fit and propose) and approve.flows (approve the promotion)
+                   metrics.shadow  (a price candidate, P9-6.18) {n, min, settled, mae, coverage, mae_active, coverage_active}:
+                           the evaluations it was shadowed on and its error against the active model's on the settled ones
+                           (di.services.device.price_shadow); a price model is promotable from `min` evaluations
+        can      {fit, promote}: manageFlows (fit and propose) and approve.flows (approve the promotion)
         repairAccuracy  (plan 9, P9-4.5) the repair estimate replayed on held-out repairs: {rows: [{org_unit_id | null,
                    model_class, as_of, n, mae, mae_share, coverage, auto_share, instant}] (newest per org unit and class,
                    only tenants the person sees), bar: {min_coverage, max_mae_share, holdout_weeks} (GR-S1),
@@ -74,6 +77,7 @@ from di.services.agents import proposals, registry
 from di.services.agents.catalog import catalog
 from di.services.agents.journey import journey
 from di.services.agents.stage_context import STAGE_IDS
+from di.services.device import price_shadow
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
 from di.services.modeler.templates import TEMPLATE_KEYS
@@ -196,8 +200,12 @@ def models(p: Principal, s: Session) -> dict[str, Any]:
         if m.status == "candidate":
             blocks = {
                 "propose": propose_block(m) if can_fit else "Only a Planner or Admin proposes a model for promotion.",
-                "promote": promote_block(m, p.account.id) if can_promote else "Only an Approver or Admin approves a promotion.",
+                "promote": (
+                    promote_block(m, p.account.id, s) if can_promote else "Only an Approver or Admin approves a promotion."
+                ),
             }
+        if m.kind == "price" and m.status == "candidate":  # P9-6.18: the shadow beside the model's own held-out metrics
+            metrics["shadow"] = price_shadow.stats(s, m.id)
         out.append({**j, "metrics": metrics, "proposal": proposal_of(m), "blocks": blocks})
     can = {"fit": can_fit, "promote": can_promote}
     acc = _repair_accuracy(p, s)
