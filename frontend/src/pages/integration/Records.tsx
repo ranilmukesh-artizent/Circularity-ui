@@ -17,7 +17,7 @@ import { useAction } from '../../hooks/useAction';
 import { JsonView } from '../../components/kit/JsonView';
 import { Kpi } from '../../components/kit/Kpi';
 import { canMgr, NOMGR } from './FabricContext';
-import { sum } from './fabricFormat';
+import { recordLabel, sum } from './fabricFormat';
 
 /* ---- Canonical models ---- */
 export function Models() {
@@ -171,7 +171,8 @@ export function Conflicts() {
         <Kpi ic="checks" h="int" v={P.closed} l="Resolved or escalated" />
         <Kpi ic="graph" h="money" v={P.systems} l="Systems involved" />
       </div>
-      <p className="ink2" style={{ marginTop: 0, maxWidth: '75ch' }}>
+      <p className="ink2" style={{ marginTop: 14, maxWidth: '75ch' }}>
+        Open conflicts come first. The sidebar badge counts only the open conflicts that hold up a pending decision; the figures here count every open one.{' '}
         When two systems disagree, Circularity names the source with authority, flags the conflict and holds any dependent route. It does not pick silently.
       </p>
       <div className="grid g3">
@@ -179,7 +180,7 @@ export function Conflicts() {
           <div className="panel" key={c.id} style={{ borderTop: '4px solid ' + (c.status === 'open' ? 'var(--bad)' : 'var(--ok)') }}>
             <div className="ph"><h3>{c.kind}</h3><span className={'chip ' + (c.status === 'open' ? 'bad' : 'ok')}>{c.status === 'open' ? 'Open · ' + c.since : 'Resolved'}</span></div>
             <div className="pb">
-              <b>{c.asset}</b>
+              <RecordName k={c.asset} />
               <div className="grid g2" style={{ margin: '10px 0' }}>
                 <div className="panel flat" style={{ padding: 8 }}><div className="note">{c.a.src}</div><b>{c.a.val}</b></div>
                 <div className="panel flat" style={{ padding: 8 }}><div className="note">{c.b.src}</div><b>{c.b.val}</b></div>
@@ -236,6 +237,16 @@ export function Conflicts() {
         </div>
       )}
     </>
+  );
+}
+
+function RecordName({ k }: { k: string }) {
+  const r = recordLabel(k);
+  return (
+    <div>
+      <b>{r.name}</b>{r.scope && <span className="note"> · {r.scope}</span>}
+      {r.scope && <div className="note mono" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>{k}</div>}
+    </div>
   );
 }
 

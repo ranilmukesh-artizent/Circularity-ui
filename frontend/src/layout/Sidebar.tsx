@@ -69,6 +69,13 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
   };
   const isOpen = (id: string) => open[id] ?? id === page;
 
+  // Keep the current section in view: the menu scrolls under the footer, so the last child (Manual Import) can sit hidden (UI QA 26).
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = navRef.current?.querySelector<HTMLElement>('.nsl[aria-current="page"]');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, [sectionKey, open]);
+
   let lastSection = '';
   const rows: JSX.Element[] = [];
   groups.forEach((g) => {
@@ -104,7 +111,7 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
         <Icon name="search" />
         <span>Search</span>
       </button>
-      <nav className="nav frnav" aria-label="Pages">
+      <nav ref={navRef} className="nav frnav" aria-label="Pages">
         {rows}
       </nav>
       <div className="frfoot">
@@ -175,7 +182,7 @@ function Group({ g, active, open, onToggle, sectionKey, counts, badges }: {
             <a key={k.id} className="nsl" href={k.href} aria-current={sectionKey === g.id + '/' + k.id ? 'page' : undefined}>
               {k.label}
               {k.badge && badges.sections[k.badge] ? (
-                <span className={'cnt2' + (k.badge !== 'conf' || badges.sections[k.badge] > 0 ? ' bad' : '')}>{badges.sections[k.badge]}</span>
+                <span className={'cnt2' + (k.badge !== 'conf' || badges.sections[k.badge] > 0 ? ' bad' : '')} title={k.badge === 'conf' ? `${badges.sections[k.badge]} open conflicts hold a decision. The Conflict Queue lists every open conflict.` : undefined}>{badges.sections[k.badge]}</span>
               ) : null}
             </a>
           ))}

@@ -270,13 +270,13 @@ function Matrix({ list, onSel }: { list: Source[]; onSel: (id: string) => void }
 function SyncTable({ s, n }: { s: Source; n: number }) {
   const L = syncHistory(s);
   return L.length ? (
-    <table className="t static tight">
+    <div className="tw"><table className="t static tight">
       <tbody>
         {L.slice(0, n).map((r, i) => (
           <tr key={i}><td className="num nowrap">{when(r.ts)}</td><td>{r.ok ? <FabricStatus k="success" /> : <FabricStatus k="failed" />}</td><td className="r num">{fmtN(r.rows)} records</td><td className="r num note">{String(r.dur)}</td></tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   ) : <p className="note">No syncs yet.</p>;
 }
 
@@ -294,8 +294,8 @@ function SmPanel({ s, tab, setTab }: { s?: Source; tab: string; setTab: (t: stri
   else if (tab === 'fld') body = (
     <>
       {M.length ? (
-        <table className="t static tight"><thead><tr><th>Source field</th><th>Canonical field</th></tr></thead>
-          <tbody>{M.map((r, i) => <tr key={i}><td className="mono">{r[0]}</td><td className="mono">{r[2]}</td></tr>)}</tbody></table>
+        <div className="tw"><table className="t static tight"><thead><tr><th>Source field</th><th>Canonical field</th></tr></thead>
+          <tbody>{M.map((r, i) => <tr key={i}><td className="mono">{r[0]}</td><td className="mono">{r[2]}</td></tr>)}</tbody></table></div>
       ) : <p className="note">No field mapping defined yet.</p>}
       {canMgr() && <button className="btn sm" onClick={() => ui.openSource(s.id, 'map')}>Suggest mappings</button>}
     </>

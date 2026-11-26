@@ -4,6 +4,7 @@
 import { Fragment, useState } from 'react';
 import { useBackend } from '../../api/useBackend';
 import { failedRecords, hourly, latency, monitorWorkflows, slaMinutes, sources, srcAge, srcFailing, successRate, totals, wfStat, workflows } from '../../api/integration';
+import { ago, nowMs } from '../../api/workflows';
 import { toast } from '../../components/toast';
 import { Kpi } from '../../components/kit/Kpi';
 import { Panel } from '../../components/kit/Panel';
@@ -12,10 +13,6 @@ import { useInt } from './FabricContext';
 import { fmtN, sum } from './fabricFormat';
 import { FabricStatus } from './FabricStatus';
 
-const ago = (ms: number) => {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return s < 60 ? s + ' sec ago' : s < 3600 ? Math.floor(s / 60) + ' min ago' : s < 172800 ? Math.floor(s / 3600) + ' h ago' : Math.floor(s / 86400) + ' days ago';
-};
 const hh2 = (i: number) => String(i).padStart(2, '0') + ':00';
 
 export function Monitor() {
@@ -99,7 +96,7 @@ export function Monitor() {
                         </td>
                         <td className="r num">{w.runs24}</td>
                         <td className={'r num ' + (w.ok24 / w.runs24 < 0.9 ? 'neg' : '')}>{Math.round((w.ok24 / w.runs24) * 100)}%</td>
-                        <td>{w.last ? <><FabricStatus k={st === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(Date.now() - w.last.ts)}</span></> : '—'}</td>
+                        <td>{w.last ? <><FabricStatus k={st === 'failed' ? 'failed' : 'success'} /> <span className="note">{ago(nowMs() - w.last.ts)}</span></> : '—'}</td>
                         <td className="r num">{w.avg == null ? '—' : w.avg + ' s'}</td>
                         <td className="r num">{w.p95 == null ? '—' : w.p95 + ' s'}</td>
                       </tr>
