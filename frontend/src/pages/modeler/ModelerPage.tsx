@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
 import type { ActionResult, Check, FlowGraph, ModelerScreen } from '../../api/types';
@@ -37,10 +37,15 @@ export const AUTOSAVE_MS = 2000;
 export function ModelerPage({ query }: PageProps) {
   useBackend();
   const nav = useNavigate();
-  // the template and org live in the URL, so a link ("Open in Set up" from the assistant) can change them while the page is open
+  // the template and org live in the URL, so a link ("Open in Set up" from the assistant) can change them while the page is
+  // open. The picks change at once, the screen they read follows: while a template loads (2 to 6 s) the page, the pickers
+  // and the last flow stay on screen (useDeferredValue keeps the old render when the new one suspends) instead of one "Loading…".
   const template = query.get('template') ?? '';
   const org = query.get('org') ?? '';
-  const s = useModeler(template, org);
+  const shownTemplate = useDeferredValue(template);
+  const shownOrg = useDeferredValue(org);
+  const loading = shownTemplate !== template || shownOrg !== org;
+  const s = useModeler(shownTemplate, shownOrg);
   const compose = composeParam(query.get('compose'));
   const tabs = visibleTabs({ managePacks: can('managePacks'), template: s.template.key });
   const tab = pageTab(query.get('tab'), compose, tabs);
@@ -64,26 +69,36 @@ export function ModelerPage({ query }: PageProps) {
       <header className="mdl-head">
         <div className="mdl-title">
           <h1>Modeler</h1>
-          <div className="row">
-            <label className="sr" htmlFor="mdl-tpl">Template</label>
-            <select id="mdl-tpl" value={s.template.key} onChange={(e) => pick('template', e.target.value)}>
-              {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
-            </select>
-            <label className="sr" htmlFor="mdl-org">Organisation</label>
-            <select id="mdl-org" value={s.org} onChange={(e) => pick('org', e.target.value)}>
-              {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+          <div className="mdl-picks" aria-busy={loading}>
+            <div className="mdl-pick">
+              <label htmlFor="mdl-tpl">Template</label>
+              <select id="mdl-tpl" value={template || s.template.key} onChange={(e) => pick('template', e.target.value)}>
+                {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+              </select>
+            </div>
+            <div className="mdl-pick">
+              <label htmlFor="mdl-org">Organisation</label>
+              <select id="mdl-org" value={org || s.org} onChange={(e) => pick('org', e.target.value)}>
+                {s.orgs.map((o) => <option key={o} value={o}>{orgLabel(o)}</option>)}
+              </select>
+            </div>
+            {loading && <span className="note mdl-pick-note" role="status">Loading the flow…</span>}
           </div>
         </div>
         <ModelerTabs tabs={tabs} active={tab} search={searchFor} />
       </header>
-      <ModelerBody key={s.flow.id} s={s} tab={tab} compose={compose} />
+      <div className="mdl-bodywrap" data-loading={loading}>
+        <ModelerBody key={s.flow.id} s={s} tab={tab} compose={compose} />
+      </div>
     </div>
   );
 }
 
 /** The pinned assistant's mode on each tab (plan 10, 3.3): Change flow on Flow (Ask without edit rights), Set up on Set up, else Ask. */
 const TAB_MODE: Record<PageTab, AssistantMode | undefined> = { flow: undefined, setup: 'setup', layer: 'ask', policies: 'ask', tables: 'ask', packs: 'ask' };
+
+/** An org id for people: `workspace` reads "Workspace"; the value stays the id. */
+const orgLabel = (id: string) => id.charAt(0).toUpperCase() + id.slice(1).replace(/[_-]+/g, ' ');
 
 /** `?compose=<id>` opens the Set up tab on that composition. */
 const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
@@ -268,7 +283,7 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
           {!editable && !s.can.fork && <span className="note">Read only</span>}
         </div>
       )}
-      <div className="mdl-cols" data-tab={tab}>
+      <div className="mdl-cols" data-tab={tab} data-rail={flowTab && rail.open ? 'open' : 'closed'}>
         <section className="mdl-agent" data-open={agentOpen} aria-label="Ask Circularity">
           <button type="button" className="mdl-agent-bar" aria-expanded={agentOpen} onClick={() => setAgentOpen((o) => !o)}>
             Ask Circularity{proposal ? ' · 1 proposal' : ''}{blocking > 0 ? ` · ${blocking} blocking` : ''}

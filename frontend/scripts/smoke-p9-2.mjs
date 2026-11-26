@@ -149,6 +149,8 @@ const modeler = async (p, template, org) => {
       await p.waitForFunction(([s, v]) => document.querySelector(s)?.value === v, [sel, want]);
     }
   }
+  // the picks change at once; the flow they read follows: wait until it is shown
+  await p.locator('.mdl-picks[aria-busy="false"]').waitFor({ timeout: 60000 });
 };
 
 /** Start a playbook run from the Agents page (Admin): the Start run form of the Runs section. */

@@ -110,9 +110,6 @@
 .mdl-sub > * { max-width: 1080px; width: 100%; }
 
 .mdl-rail { position: relative; display: flex; flex-direction: row-reverse; min-height: 0; width: var(--mdl-strip-w, 44px); background: var(--panel); border-left: 1px solid var(--line); }
-/* assistant.css gives .mdl-rail the look of an open panel (padding, grid, scroll); in this layout the rail is the strip plus
-   the panel beside it, so the host itself has none of that: the strip stays inside its 44px and off the canvas (T8) */
-.mdl-cols > .mdl-rail { padding: 0; gap: 0; display: flex; overflow: visible; }
 .mdl-strip { flex: none; width: var(--mdl-strip-w, 44px); display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 16px; }
 .mdl-strip button { position: relative; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--muted); touch-action: manipulation; }
 .mdl-strip button svg { width: 20px; height: 20px; }
@@ -127,6 +124,11 @@
 .mdl-rail-panel .panel > .ph { padding: 0 0 8px; }
 .mdl-rail-panel .panel > .pb { padding: 0; }
 .mdl-rail-intro { margin: 0; color: var(--ink2); font-size: 13.5px; line-height: 1.45; }
+/* below 1600px an open rail panel lies over the canvas's right edge: Add rule and the minimap move left of it (T8) */
+@media (min-width: 1100px) and (max-width: 1599px) {
+  .mdl-cols[data-rail='open'] .mdl-add { right: calc(232px + var(--mdl-rail-w, 340px)); }
+  .mdl-cols[data-rail='open'] .mdl-canvas .react-flow__panel.right { right: var(--mdl-rail-w, 340px); }
+}
 
 @media (min-width: 1600px) {
   .mdl-rail { width: auto; }
@@ -147,3 +149,87 @@
   .mdl-rail-panel { position: static; width: auto; border-right: 0; border-left: 0; box-shadow: none; }
   .mdl-add { right: 16px; }
 }
+
+/* Plan 10 follow-up (QA A items 4 to 12): pickers, Compose body, guardrail cards, labelled forms, inspector sections.
+   Spacing is on the 4/8 scale; text 12px or more; control height 32px. */
+.mdl-picks { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.mdl-pick { display: flex; align-items: center; gap: 8px; }
+.mdl-pick label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.mdl-pick select { min-width: 176px; height: 32px; }
+.mdl-picks { position: relative; }
+.mdl-pick-note { position: absolute; right: 0; top: calc(100% + 4px); white-space: nowrap; }
+.mdl-picks { align-items: center; }
+.mdl-bodywrap { transition: opacity .15s ease-out; }
+.mdl-bodywrap[data-loading='true'] { opacity: .55; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .mdl-bodywrap { transition: none; } }
+
+/* labelled form fields: label above, hint under, controls the same height */
+.mdl-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.mdl-form + .mdl-form { margin-top: 12px; }
+.mdl-field { display: grid; gap: 4px; min-width: 160px; flex: 0 1 200px; align-content: start; }
+.mdl-field.wide { flex: 1 1 280px; }
+.mdl-field > label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.mdl-field > .hint { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.mdl-field input:not([type='checkbox']), .mdl-field select { height: 32px; width: 100%; box-sizing: border-box; min-width: 0; }
+.mdl-form-go { align-self: flex-start; padding-top: 20px; display: flex; gap: 8px; align-items: center; }
+.mdl-form-foot { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.mdl-why { font-size: 12px; color: var(--muted); }
+.mdl-sub .btn.pri[disabled], .mdl-sub .btn.pri[aria-disabled='true'], .mdl-sub label.btn.pri.off { background: var(--panel3); border-color: var(--line); color: var(--muted); opacity: 1; cursor: not-allowed; }
+.mdl-sub .btn:focus-visible, .mdl-sub select:focus-visible, .mdl-sub input:focus-visible, .mdl-sub textarea:focus-visible, .mdl-chk1 input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mdl-sub .mdl-prop { padding: 16px; gap: 12px; }
+.mdl-sub .mdl-prop > .label { font-weight: 700; color: var(--ink2); }
+.mdl-sub .panel > .pb { display: grid; gap: 16px; padding: 20px; }
+.mdl-sub .panel > .pb > * { margin-top: 0; margin-bottom: 0; }
+.mdl-sub .panel > .pb > h4 { margin-top: 8px; font-size: 14px; }
+.mdl-sub .panel > .ph { padding: 16px 20px; }
+.mdl-sub .mdl-row:empty { display: none; }
+.mdl-sub .mdl-hist { margin: 0; gap: 8px; font-size: 13px; }
+.mdl-sub .mdl-hist > li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.mdl-sub .mdl-hist .btn { margin-left: 4px; }
+
+/* guardrails of the customer layer: one card each */
+.mdl-grs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.mdl-gr { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px 16px; display: grid; gap: 8px; }
+.mdl-gr-head { display: flex; align-items: center; gap: 8px; }
+.mdl-gr-text { margin: 0; font-size: 14px; line-height: 1.4; }
+.mdl-gr-ctl { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: center; }
+.mdl-gr-ctl legend { float: left; padding: 0 12px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.mdl-chk1 { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; min-height: 24px; }
+.mdl-chk1:has(input:disabled) { color: var(--muted); }
+.mdl-gr-ap { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; border-top: 1px solid var(--line2, var(--line)); padding-top: 12px; }
+.mdl-gr-ap .mdl-field { flex: 0 1 240px; }
+.mdl-gr-ap .btn { align-self: flex-end; }
+.mdl-gr-ap .mdl-why { align-self: center; }
+
+/* packs */
+.mdl-packs-import { align-items: flex-start; }
+.mdl-pack h4 { margin: 0 0 4px; font-size: 14px; }
+.mdl-pack + .mdl-pack { padding-top: 12px; border-top: 1px solid var(--line2, var(--line)); }
+
+/* Compose: skeleton in the size of the content */
+.cmp .pb { display: grid; gap: 16px; }
+.cmp-skel { display: grid; gap: 12px; }
+.cmp-skel i { display: block; background: var(--panel3); border-radius: 6px; animation: cmp-pulse 1.4s ease-in-out infinite; }
+.cmp-skel-tabs { display: flex; gap: 8px; }
+.cmp-skel-tabs i { width: 96px; height: 32px; border-radius: 8px; }
+.cmp-skel-line { height: 14px; }
+.cmp-skel-line.w60 { width: 60%; } .cmp-skel-line.w75 { width: 75%; } .cmp-skel-line.w90 { width: 90%; }
+.cmp-skel-block { height: 96px; border-radius: 8px; }
+@keyframes cmp-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .cmp-skel i { animation: none; } }
+.cmp-step { margin-top: 0; gap: 12px; }
+.cmp-text { min-height: 120px; padding: 12px; }
+
+/* the rule inspector: sections with a title, controls full width */
+.mdl-isec { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line2, var(--line)); }
+.mdl-rail .mdl-insp .mdl-isec > h4, .mdl-isec > h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.mdl-isec > .note { margin: 0; }
+.mdl-iform { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mdl-insp .mdl-f { gap: 4px; font-size: 12px; }
+.mdl-insp .mdl-f > span, .mdl-insp .mdl-f > legend { color: var(--ink2); font-weight: 600; }
+.mdl-insp .mdl-f select, .mdl-insp .mdl-f input:not([type='checkbox']) { height: 32px; width: 100%; box-sizing: border-box; min-width: 0; }
+.mdl-insp fieldset.mdl-f { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 12px; }
+.mdl-insp fieldset.mdl-f legend { padding: 0 4px; }
+.mdl-insp .mdl-chk { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 4px 12px; }
+.mdl-insp .mdl-chk label { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; font-size: 13px; }
+.mdl-insp .mdl-read { font-size: 13.5px; line-height: 1.4; padding: 8px 12px; background: var(--panel2); border-radius: 8px; }

@@ -206,7 +206,7 @@ await step('1 Connect the seven used-car systems, sync them and open the cars as
     });
   for (const n of CARS) {
     let r = await openCar(n);
-    if (!r.ok && /pack/i.test(JSON.stringify(r))) {
+    if (!r.ok && /pack|template/i.test(JSON.stringify(r))) { // "No pack" before packs as templates, "The template is one of" after
       // the pack of the org is published by people first (admin imports, approver approves): the shipped pack, as the api tests do
       const { readFileSync } = await import('node:fs');
       const doc = JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs/used_cars.json'), 'utf8'));

@@ -196,7 +196,7 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
     });
   for (const n of Object.keys(UNITS).map(Number)) {
     let r = await openUnit(n);
-    if (!r.ok && /pack/i.test(JSON.stringify(r))) {
+    if (!r.ok && /pack|template/i.test(JSON.stringify(r))) { // "No pack" before packs as templates, "The template is one of" after
       // the pack of the org is published by people first (admin imports, approver approves): the shipped pack, as the api tests do
       const doc = JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs/telecom_network.json'), 'utf8'));
       doc.version = '1.4.1';

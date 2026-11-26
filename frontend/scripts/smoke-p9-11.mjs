@@ -187,7 +187,7 @@ await step('1 Connect the six rental systems, sync them, open the devices as cas
     });
   for (const k of Object.keys(TAGS)) {
     let r = await openDevice(k);
-    if (!r.ok && /pack/i.test(JSON.stringify(r))) {
+    if (!r.ok && /pack|template/i.test(JSON.stringify(r))) { // "No pack" before packs as templates, "The template is one of" after
       // the pack of the org is published by people first (admin imports, approver approves): the shipped pack, as the api tests do
       const doc = JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs/medical_rental.json'), 'utf8'));
       doc.version = '1.9.1';
