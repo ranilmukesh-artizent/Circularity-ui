@@ -692,3 +692,14 @@ CONNECTOR_FIELDS["condition"] |= {
     "wipe_verified_at": "date",
 }
 CONNECTOR_FIELDS["asset"] |= {"weight_kg": "number"}
+# Spares planning (plan 9, P9-10.4), written by the extra adapter tn_spares: on `market`, the catalogue's new_price and
+# generation; on `demand`, per org unit, region and model, spares_target, use_probability, need_6m and the open
+# requisitions (a list); on `asset` (keyed by `serial_key`), idle_days of a spares pool unit.
+CONNECTOR_FIELDS["market"] |= {"generation": "text", "new_price": "number"}
+CONNECTOR_FIELDS["demand"] |= {
+    "need_6m": "number",
+    "requisitions": "list",
+    "spares_target": "number",
+    "use_probability": "number",
+}
+CONNECTOR_FIELDS["asset"] |= {"idle_days": "number"}
