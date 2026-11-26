@@ -671,3 +671,24 @@ CONNECTOR_FIELDS["asset"] |= {
     "site_kind": "text",
 }
 CONNECTOR_FIELDS["demand"] |= {"site_demand": "object"}
+
+# Telecom test bench (plan 9, P9-10.3), written by the extra adapter tn_bench, keyed by `serial_key`: on `condition`, the
+# bench tests (bench_passed, bench_total), the firmware and the latest one (firmware, firmware_latest, firmware_major_gap),
+# the data wipe and its evidence (wipe_status, wipe_attempts, wipe_scope, wipe_certificate_ref, wipe_verified_at), the boards
+# and the battery; on `asset`, weight_kg.
+CONNECTOR_FIELDS["condition"] |= {
+    "battery_chemistry": "text",
+    "battery_damaged": "bool",
+    "bench_passed": "number",
+    "bench_total": "number",
+    "boards": "list",
+    "firmware": "text",
+    "firmware_latest": "text",
+    "firmware_major_gap": "number",
+    "wipe_attempts": "number",
+    "wipe_certificate_ref": "ref",
+    "wipe_scope": "list",
+    "wipe_status": "text",
+    "wipe_verified_at": "date",
+}
+CONNECTOR_FIELDS["asset"] |= {"weight_kg": "number"}
