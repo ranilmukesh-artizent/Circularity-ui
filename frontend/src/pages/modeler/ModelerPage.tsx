@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
 import type { ActionResult, Check, FlowGraph, ModelerScreen } from '../../api/types';
@@ -36,7 +36,12 @@ export function ModelerPage({ query }: PageProps) {
   useBackend();
   const [template, setTemplate] = useState(query.get('template') ?? '');
   const [org, setOrg] = useState(query.get('org') ?? '');
-  const s = useModeler(template, org);
+  // The picks change at once, the screen they read follows: while a template loads (2 to 6 s) the page, the pickers and the
+  // last flow stay on screen (useDeferredValue keeps the old render when the new one suspends) instead of one "Loading…".
+  const shownTemplate = useDeferredValue(template);
+  const shownOrg = useDeferredValue(org);
+  const loading = shownTemplate !== template || shownOrg !== org;
+  const s = useModeler(shownTemplate, shownOrg);
   const compose = composeParam(query.get('compose'));
   const tabs = visibleTabs({ managePacks: can('managePacks'), template: s.template.key });
   const tab = pageTab(query.get('tab'), compose, tabs);
@@ -53,25 +58,35 @@ export function ModelerPage({ query }: PageProps) {
       <header className="mdl-head">
         <div className="mdl-title">
           <h1>Modeler</h1>
-          <div className="row">
-            <label className="sr" htmlFor="mdl-tpl">Template</label>
-            <select id="mdl-tpl" value={s.template.key} onChange={(e) => setTemplate(e.target.value)}>
-              {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
-            </select>
-            <label className="sr" htmlFor="mdl-org">Organisation</label>
-            <select id="mdl-org" value={s.org} onChange={(e) => setOrg(e.target.value)}>
-              {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+          <div className="mdl-picks" aria-busy={loading}>
+            <div className="mdl-pick">
+              <label htmlFor="mdl-tpl">Template</label>
+              <select id="mdl-tpl" value={template || s.template.key} onChange={(e) => setTemplate(e.target.value)}>
+                {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+              </select>
+            </div>
+            <div className="mdl-pick">
+              <label htmlFor="mdl-org">Organisation</label>
+              <select id="mdl-org" value={org || s.org} onChange={(e) => setOrg(e.target.value)}>
+                {s.orgs.map((o) => <option key={o} value={o}>{orgLabel(o)}</option>)}
+              </select>
+            </div>
+            {loading && <span className="note mdl-pick-note" role="status">Loading the flow…</span>}
           </div>
         </div>
         <ModelerTabs tabs={tabs} active={tab} search={searchFor} />
       </header>
-      <ModelerBody key={s.flow.id} s={s} tab={tab} compose={compose} />
+      <div className="mdl-bodywrap" data-loading={loading}>
+        <ModelerBody key={s.flow.id} s={s} tab={tab} compose={compose} />
+      </div>
     </div>
   );
 }
 
 /** `?compose=<id>` opens the Set up tab on that composition. */
+/** An org id for people: `workspace` reads "Workspace"; the value stays the id. */
+const orgLabel = (id: string) => id.charAt(0).toUpperCase() + id.slice(1).replace(/[_-]+/g, ' ');
+
 const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
 
 
