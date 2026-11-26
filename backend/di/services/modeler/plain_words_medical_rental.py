@@ -1,8 +1,8 @@
 """What a plain-words guardrail of the medical rental pack may name (plan 9, P9-11.14, story MR-11; `plain_guardrail.Vocab`).
 
 The routes by the words a rental fleet director uses, the age of a device as the asset system serves it (`asset.age_years`,
-years from the in-service date) and the words of the work item a retirement approval opens. "Retiring a device younger than 5 years needs
-approval from clinical engineering" becomes the guardrail `AP-MR-RETIRE5`: the retire route, `asset.age_years < 5`, approved by
+years from the in-service date) and the words of the work item a retirement approval opens. "Retiring a device younger
+than 5 years needs approval from clinical engineering" becomes the guardrail `AP-MR-RETIRE5`: the retire route, `asset.age_years < 5`, approved by
 `clinical_engineering` (a role of the pack). The roles are the pack's; nothing else is named here. Compliance wording the pack
 holds is reviewed by Kinective's Legal team before it is relied on.
 

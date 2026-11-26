@@ -649,7 +649,6 @@ def battery_assessment(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent
     return Sent([{"call": "POST battery-assessments", "body": body}], ref, {"assessmentId": ref, "vin": vin})
 
 
-
 def list_device(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: ARG001 - every writer takes (session, instruction, case, previous)
     """Device market: POST /listings, the received device on its channel at the forecast P50 (P9-6.12). The listing id is
     made from the case and the channel (`<case id>:<channel>`), so a repeat is the market's own 409: the first listing is

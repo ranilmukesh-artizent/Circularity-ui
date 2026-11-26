@@ -184,9 +184,7 @@ def tick() -> int:
     with SessionLocal() as s:
         due = queue.simulated_due(s)
     for ins in due:
-        if (
-            ins["kind"] in OWN_KINDS
-        ):  # no plan step to acknowledge: the simulated write is done when due
+        if ins["kind"] in OWN_KINDS:  # no plan step to acknowledge: the simulated write is done when due
             with SessionLocal() as s:
                 _update(s, ins["id"], status="acknowledged")
                 s.commit()
