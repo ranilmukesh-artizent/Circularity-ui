@@ -1,78 +1,100 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { applyProposal, applySuggestion, forkFlow, saveDraft, useModeler, type Proposal, type RuleSuggestion } from '../../api/modeler';
-import type { Check, FlowGraph, ModelerScreen } from '../../api/types';
+import { Link } from 'react-router';
+import { forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
+import type { ActionResult, Check, FlowGraph, ModelerScreen } from '../../api/types';
 import { can, currentAccount } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { ModelsPanel } from '../agents/ModelsPanel';
+import { AssistantPanel } from '../../layout/assistant/AssistantPanel';
+import { registerSurface } from '../../utils/workSurface';
 import type { PageProps } from '../registry';
-import { AssistantPanel } from './AssistantPanel';
-import { ChecksPanel } from './ChecksPanel';
 import { ComposePanel } from './compose/ComposePanel';
 import { FlowCanvas } from './FlowCanvas';
-import { FlowInspector } from './FlowInspector';
 import { addRule, connect, disconnect, moveNode, nextRid, removeNode, updateRule } from './flowEdit';
-import { HistoryPanel } from './HistoryPanel';
-import { ImpactPanel } from './ImpactPanel';
-import { LifecycleBar } from './LifecycleBar';
+import { LifecycleBar, type RolloutStepId } from './LifecycleBar';
+import { ModelerRail } from './ModelerRail';
+import { ModelerTabs, pageTab, visibleTabs, type PageTab } from './ModelerTabs';
 import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
+import { afterCheckClick, afterEsc, afterPick, afterSelect, afterSurfaceSelect, initialRail, type RailState, type RailTab } from './railTab';
 import { ReplayPanel, showReplay } from './ReplayPanel';
-import { RolloutPanel, showRollout } from './RolloutPanel';
+import { RolloutPanel } from './RolloutPanel';
 import { StandingPolicyPanel } from './StandingPolicyPanel';
-import { SuggestionsPanel } from './SuggestionsPanel';
 import { TablesPanel } from './TablesPanel';
 import './modeler.css';
 
 /** Edits are saved as a draft this long after the last one (as workflow drafts are, decision log 2026-11-21). */
 export const AUTOSAVE_MS = 2000;
 
-/** The Modeler (plan 8, MVP-4.4): a decision flow per template and org unit, edited on a canvas and saved as a draft. */
+/**
+ * The Modeler (plan 8, MVP-4.4; plan 10 section 3): agent-first. The pinned assistant column is the first thing on the
+ * page, the canvas fills the height beside it, and the rail (Inspector, Checks, Impact, History) is a strip at the right edge.
+ * Secondary work (customer layer, policies, tables, packs, set-up) is on page tabs, in the URL as `?tab=`.
+ */
 export function ModelerPage({ query }: PageProps) {
   useBackend();
   const [template, setTemplate] = useState(query.get('template') ?? '');
   const [org, setOrg] = useState(query.get('org') ?? '');
   const s = useModeler(template, org);
+  const compose = composeParam(query.get('compose'));
+  const tabs = visibleTabs({ managePacks: can('managePacks'), template: s.template.key });
+  const tab = pageTab(query.get('tab'), compose, tabs);
+  /** The query for a tab link: the other parameters stay, Flow is the absence of `?tab=`. */
+  const searchFor = (id: PageTab) => {
+    const q = new URLSearchParams(query);
+    if (id === 'flow') q.delete('tab');
+    else q.set('tab', id);
+    const str = q.toString();
+    return str ? '?' + str : '';
+  };
   return (
-    <div className="frpage mdl" id="modeler">
-      <div className="phead frph">
-        <div>
+    <div className="mdl mdl-page" id="modeler">
+      <header className="mdl-head">
+        <div className="mdl-title">
           <h1>Modeler</h1>
-          <p>The decision process and its business rules. Locked guardrails and the core prediction stay fixed; rules change which path a decision may take.</p>
+          <div className="row">
+            <label className="sr" htmlFor="mdl-tpl">Template</label>
+            <select id="mdl-tpl" value={s.template.key} onChange={(e) => setTemplate(e.target.value)}>
+              {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+            </select>
+            <label className="sr" htmlFor="mdl-org">Organisation</label>
+            <select id="mdl-org" value={s.org} onChange={(e) => setOrg(e.target.value)}>
+              {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
         </div>
-        <div className="row">
-          <label className="sr" htmlFor="mdl-tpl">Template</label>
-          <select id="mdl-tpl" value={s.template.key} onChange={(e) => setTemplate(e.target.value)}>
-            {s.templates.map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
-          </select>
-          <label className="sr" htmlFor="mdl-org">Organisation</label>
-          <select id="mdl-org" value={s.org} onChange={(e) => setOrg(e.target.value)}>
-            {s.orgs.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </div>
-      </div>
-      <ModelerBody key={s.flow.id} s={s} compose0={composeParam(query.get('compose'))} />
+        <ModelerTabs tabs={tabs} active={tab} search={searchFor} />
+      </header>
+      <ModelerBody key={s.flow.id} s={s} tab={tab} compose={compose} />
     </div>
   );
 }
 
-/** `?compose=<id>` opens the Compose panel on that composition. */
+/** `?compose=<id>` opens the Set up tab on that composition. */
 const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
 
-function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | null }) {
-  const [composing, setComposing] = useState(compose0 != null);
-  const [composeId, setComposeId] = useState<number | null>(compose0);
+
+function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; compose: number | null }) {
+  const [composeId, setComposeId] = useState<number | null>(compose);
   const editable = s.can.edit;
   const action = useAction();
   const [graph, setGraph] = useState<FlowGraph>(s.flow.graph);
   const [checks, setChecks] = useState<Check[]>(s.checks);
   const [sel, setSel] = useState<string | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [rail, setRail] = useState<RailState>(() => initialRail(window.innerWidth));
+  const [drawer, setDrawer] = useState<'rollout' | 'replay' | null>(null);
+  const [agentOpen, setAgentOpen] = useState(false);
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(graph);
   latest.current = graph;
+
+  // a ?compose= link that arrives while the page is open points Set up at that composition
+  useEffect(() => {
+    if (compose != null) setComposeId(compose);
+  }, [compose]);
 
   // the server's copy wins while nothing is waiting to be saved (another person's change, a lifecycle step)
   const server = JSON.stringify(s.flow.graph);
@@ -113,10 +135,15 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
     setGraph(g);
     schedule();
   };
+  /** A step was selected (on the canvas or by the assistant): the rail shows it unless another tab is pinned. */
+  const select = (id: string | null) => {
+    setSel(id);
+    setRail((r) => afterSelect(r, id));
+  };
 
   const remove = (id: string) => {
     edit(removeNode(graph, id));
-    setSel(null);
+    select(null);
   };
 
   const fork = async () => {
@@ -127,62 +154,128 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
     const rid = nextRid(graph, s.template.pre);
     const g = addRule(graph, rid, currentAccount()?.role ?? '');
     edit(g);
-    setSel(g.nodes.at(-1)?.id ?? null);
+    select(g.nodes.at(-1)?.id ?? null);
   };
 
   /** Save a proposed graph as the draft (the person's own saveDraft), then show it with its new rule selected. */
-  const applyGraph = async (g: FlowGraph | null, nodeId: string | null, call: () => ReturnType<typeof saveDraft>) => {
+  const applyGraph = async (g: FlowGraph | null, nodeId: string | null, call: () => Promise<ActionResult<{ checks: Check[] }>>) => {
     if (!g) return false;
     await flush();
     const r = await action.run(call);
     if (!r.ok) return false;
     setGraph(g);
     setChecks(r.output.checks);
-    setSel(nodeId);
+    setProposal(null);
+    select(nodeId);
     return true;
   };
-  /** Apply the assistant's proposal, with the assistant's note. */
-  const apply = (p: Proposal) => applyGraph(p.graph, p.node_id, () => applyProposal(s.flow.id, p));
-  /** Apply a rule suggested by overrides (audit U8): into the draft only, never published. */
-  const applySug = (sg: RuleSuggestion) => applyGraph(sg.proposal.graph, sg.proposal.node_id, () => applySuggestion(s.flow.id, sg));
+
+  // The assistant column works on what this page registers (plan 10, section 5). The handle reads the latest closures
+  // through a ref, so it is registered again only when what it names changes.
+  const hold = useRef({ flush, applyGraph, setProposal, surfaceSelect: (id: string | null, t?: 'inspector' | 'history') => {
+    setSel(id);
+    setRail((r) => afterSurfaceSelect(r, id, t));
+  } });
+  hold.current = { flush, applyGraph, setProposal, surfaceSelect: hold.current.surfaceSelect };
+  useEffect(() => {
+    if (tab === 'flow') {
+      registerSurface({
+        kind: 'flow', flowId: s.flow.id, name: s.flow.name, template: s.template.key, org: s.org, canEdit: editable, draftVer: s.flow.dver,
+        graph: () => latest.current,
+        flush: () => hold.current.flush(),
+        showProposal: (p) => hold.current.setProposal(p),
+        applyGraph: (g, nodeId, call) => hold.current.applyGraph(g, nodeId, call),
+        select: (id, t) => hold.current.surfaceSelect(id, t),
+      });
+    } else if (tab === 'setup') registerSurface({ kind: 'compose', id: composeId, org: s.org, pack: s.template.key });
+    else registerSurface(null);
+  }, [tab, s.flow.id, s.flow.name, s.flow.dver, s.template.key, s.org, editable, composeId]);
+  useEffect(() => () => registerSurface(null), []);
+
   // a proposal is drawn on the canvas (dashed) until it is applied or dismissed
   const shown = proposal?.graph ?? graph;
-
   const bad = new Set(checks.filter((c) => c.level === 'fail' && c.node_id).map((c) => c.node_id as string));
+  const blocking = checks.filter((c) => c.level === 'fail').length;
   const node = shown.nodes.find((n) => n.id === sel) ?? null;
+  const flowTab = tab === 'flow';
+
+  // Esc closes the rollout drawer
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(null);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawer]);
+  const openStep = (k: RolloutStepId) => setDrawer(k === 'replay' && showReplay(s) ? 'replay' : 'rollout');
+
+  const central = () => {
+    switch (tab) {
+      case 'layer': return <OverlayPanel s={s} />;
+      case 'policies': return <StandingPolicyPanel s={s} />;
+      case 'tables': return <TablesPanel s={s} />;
+      case 'packs': return <PacksPanel s={s} />;
+      case 'setup': return <ComposePanel org={s.org} pack={s.template.key} id={composeId} onId={setComposeId} onClose={() => undefined} />;
+      default: return null;
+    }
+  };
 
   return (
     <>
-      <div className="mdl-bar">
-        <span className="chip line">{s.flow.name} · {s.flow.org_unit_id}</span>
-        <LifecycleBar s={s} flush={flush} />
-        {s.flow.org_unit_id !== s.org && <span className="note">{s.org} uses this flow from {s.flow.org_unit_id}.</span>}
-        <span className="grow" />
-        {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
-        {can('managePacks') && <button className="btn sm" aria-pressed={composing} onClick={() => setComposing((v) => !v)}>Compose</button>}
-        {editable && <button className="btn sm pri" onClick={add}>Add rule</button>}
-        {!editable && !s.can.fork && <span className="note">Read only</span>}
-      </div>
-      {showRollout(s) && <RolloutPanel s={s} />}
-      {composing && <ComposePanel org={s.org} pack={s.template.key} id={composeId} onId={setComposeId} onClose={() => setComposing(false)} />}
-      <div className="mdl-main">
-        <FlowCanvas
-          s={s}
-          graph={shown}
-          selected={sel}
-          bad={proposal?.kind === 'blocked' && proposal.node_id ? new Set([...bad, proposal.node_id]) : bad}
-          proposed={proposal?.node_id ?? null}
-          editable={editable && !proposal}
-          onSelect={setSel}
-          onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
-          onMoved={schedule}
-          onConnect={(a, b) => edit(connect(graph, a, b))}
-          onRemove={remove}
-          onDisconnect={(id) => edit(disconnect(graph, id))}
-        />
-        <div className="mdl-side">
-          <FlowInspector
+      {flowTab && (
+        <div className="mdl-bar">
+          <span className="chip line">{s.flow.name} · {s.flow.org_unit_id}</span>
+          <LifecycleBar s={s} flush={flush} blocking={blocking} onStep={openStep} />
+          {s.flow.org_unit_id !== s.org && <span className="note">{s.org} uses this flow from {s.flow.org_unit_id}.</span>}
+          <span className="grow" />
+          {currentAccount()?.role !== 'Finance' && <Link className="note" to="/agents">Models used by this flow: Agents › Models</Link>}
+          {s.can.fork && <button className="btn sm" disabled={action.pending} onClick={fork}>Give {s.org} its own flow</button>}
+          {!editable && !s.can.fork && <span className="note">Read only</span>}
+        </div>
+      )}
+      <div className="mdl-cols" data-tab={tab}>
+        <section className="mdl-agent" data-open={agentOpen} aria-label="Ask Circularity">
+          <button type="button" className="mdl-agent-bar" aria-expanded={agentOpen} onClick={() => setAgentOpen((o) => !o)}>
+            Ask Circularity{proposal ? ' · 1 proposal' : ''}{blocking > 0 ? ` · ${blocking} blocking` : ''}
+          </button>
+          <div className="mdl-agent-body">
+            <AssistantPanel host="pinned" />
+          </div>
+        </section>
+        <div className="mdl-center">
+          {flowTab ? (
+            <div className="mdl-canvaswrap">
+              <FlowCanvas
+                s={s}
+                graph={shown}
+                selected={sel}
+                bad={proposal?.kind === 'blocked' && proposal.node_id ? new Set([...bad, proposal.node_id]) : bad}
+                proposed={proposal?.node_id ?? null}
+                editable={editable && !proposal}
+                onSelect={select}
+                onMove={(id, x, y) => editable && setGraph((g) => moveNode(g, id, x, y))}
+                onMoved={schedule}
+                onConnect={(a, b) => edit(connect(graph, a, b))}
+                onRemove={remove}
+                onDisconnect={(id) => edit(disconnect(graph, id))}
+              />
+              {editable && <button type="button" className="btn sm pri mdl-add" onClick={add}>Add rule</button>}
+              {drawer && (
+                <div className="mdl-drawer" role="region" aria-label={drawer === 'replay' ? 'Replay' : 'Rollout'}>
+                  <button type="button" className="btn sm ghost mdl-drawer-x" onClick={() => setDrawer(null)}>Close</button>
+                  {drawer === 'replay' ? <ReplayPanel s={s} /> : <RolloutPanel s={s} />}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mdl-sub">{central()}</div>
+          )}
+        </div>
+        {flowTab && (
+          <ModelerRail
             s={s}
+            state={rail}
+            onPick={(t: RailTab) => setRail((r) => afterPick(r, t))}
+            onEsc={() => setRail(afterEsc)}
             graph={shown}
             node={node}
             editable={editable && !proposal}
@@ -190,30 +283,15 @@ function ModelerBody({ s, compose0 }: { s: ModelerScreen; compose0: number | nul
             onConnect={(a, b) => edit(connect(graph, a, b))}
             onDisconnect={(id) => edit(disconnect(graph, id))}
             onRemove={remove}
+            checks={checks}
+            onCheck={(id) => {
+              setSel(id);
+              setRail(afterCheckClick());
+            }}
+            draft={graph}
           />
-          <AssistantPanel s={s} proposal={proposal} onProposal={setProposal} onApply={apply} />
-          <ChecksPanel checks={checks} onSelect={setSel} />
-        </div>
+        )}
       </div>
-      <div className="mdl-main mdl-lower">
-        <ImpactPanel s={s} graph={graph} />
-        <HistoryPanel s={s} />
-      </div>
-      {(s.can.edit || s.can.approve) && (
-        <div className="mdl-main mdl-lower">
-          <SuggestionsPanel s={s} onApply={applySug} />
-        </div>
-      )}
-      <div className="mdl-main mdl-lower" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
-        <OverlayPanel s={s} />
-      </div>
-      <div className="mdl-main mdl-lower" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
-        <PacksPanel s={s} />
-      </div>
-      <StandingPolicyPanel s={s} />
-      {s.template.key === 'tool_fleet' && <TablesPanel s={s} />}
-      {showReplay(s) && <ReplayPanel s={s} />}
-      {currentAccount()?.role !== 'Finance' && <ModelsPanel />}
     </>
   );
 }
