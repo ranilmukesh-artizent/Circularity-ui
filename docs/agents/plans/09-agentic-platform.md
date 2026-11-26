@@ -346,11 +346,26 @@ writer. A task is about an hour of code; it must not take three hours of checks.
   fine.
 - **No second stack.** Browser smokes run on the main stack; no writer starts its own Compose project.
 - **Smokes never block writers (26 Nov, the user: smokes took three quarters of the day).** A phase whose tasks are
-  merged and whose impacted tests pass counts as done for the tasks after it: the next writers start at once, even
-  when the spec lists that phase's gate as a dependency. The demo smokes of several phases run as one batch, in the
-  background, while writers work (reset and `wait-idle.sh` before each); a smoke failure becomes a fix task like any
-  other, never a reason to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand:
-  the second failure goes to a writer.
+  merged and whose own tests pass counts as done for the tasks after it: the next writers start at once, even when
+  the spec lists that phase's gate as a dependency. A smoke failure becomes a fix task like any other, never a reason
+  to stop dispatching. The lead never spends more than one smoke run fixing a selector by hand: the second failure
+  goes to a subagent.
+
+### Testing model (26 Nov, the user; overrides the gate tasks' own steps)
+
+Code, test, iterate, merge. Phases that passed are not tested again.
+- **A task** runs only its own new tests, plus the test file of a module it changed when that file exists. Nothing
+  else: no tests of older phases, no "related" suites.
+- **A merge batch** (the lead) runs only the merged tasks' own test files, once, plus lint on the changed files. When
+  two tasks touched the same shared file, add that file's own test file. No other old tests.
+- **One check every two phases** replaces the per-phase gates (3.22, 4.13, 5.9, 6.21, 7.9, 8.23, …): after both
+  phases' tasks are merged, the api `parallel-suite.sh` once and the demo smokes of those two phases, run by
+  subagents in the background (one owns the main stack for the smokes). Failures are split into fix tasks and fixed
+  by writers in parallel; only the failing tests are re-run, then the gate boxes of both phases are ticked. The gate
+  tasks' reviews (`review-phase-N.md`) are written by one reviewer subagent for the pair. Pairs: 3+4, 5+6, 7+8, 9+10,
+  11+12, 13 alone. The serial `full-suite.sh` runs once, at the end of the plan.
+- **Shared core** (`di/core`, migrations, conftest, `actions/pipeline.py`): when a merge changes one of these, the
+  lead adds the `parallel-suite.sh` once for that batch, in the background, and keeps dispatching.
 - **Idle servers stay quiet.** The main stack runs with `DEV_POLLING=0` during a run (the reloaders' file polling cost
   about two cores); `lead-verify.sh` restarts the containers anyway.
 - **Stop means stop.** After stopping a backgrounded verify, also kill its script and `docker rm -f` its
