@@ -12,9 +12,9 @@ from datetime import datetime
 from typing import Any
 
 from di.services.modeler.pack import Pack
-from di.services.modeler.valuers import standard
+from di.services.modeler.valuers import standard, used_cars
 from di.services.modeler.valuers.tool_fleet import PathValue
 
 ValuerFn = Callable[[Mapping[str, Any], Pack, datetime | None], list[PathValue]]
 
-VALUERS: dict[str, ValuerFn] = {"standard": standard.value_routes}
+VALUERS: dict[str, ValuerFn] = {"standard": standard.value_routes, "used_cars": used_cars.value_routes}

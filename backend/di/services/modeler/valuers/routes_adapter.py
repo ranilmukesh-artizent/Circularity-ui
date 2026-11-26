@@ -69,7 +69,10 @@ def to_routes(t: Template, values: Sequence[PathValue | ChannelValue]) -> list[R
     out = []
     for v in values:
         p = t.path(v["k"])
-        name = p.name if p else service_desk.NAMES.get(v["k"], v["k"])
+        dest = cast(PathValue, v).get("dest") if "lines" in v else None
+        name = (dest or {}).get("name") or (
+            p.name if p else service_desk.NAMES.get(v["k"], v["k"])
+        )  # a value names its route (P9-9.10)
         r = mk_route({"id": v["k"], "plan": name, "terms": _terms(v), "why": v["why"]})
         r["co2"] = v["co2"]
         r["co2Prov"] = v["co2Prov"]

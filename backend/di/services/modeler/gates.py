@@ -213,8 +213,10 @@ def apply_gate_results(routes: list[Route], results: Sequence[GateResult]) -> No
         if res.passed or res.effect.kind != "block":
             continue
         for r in routes:
-            if r["id"] in res.effect.routes and not r["excluded"]:
-                fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {dict(res.route_reasons).get(r['id'], res.reason)}")
+            base = r["id"].split(":", 1)[0]  # `retail:<lot>` is the retail channel (P9-9.10)
+            if base in res.effect.routes and not r["excluded"]:
+                reasons = dict(res.route_reasons)
+                fail(r, POLICY, f"{catalogue()[res.gate_id].name}: {reasons.get(r['id'], reasons.get(base, res.reason))}")
 
 
 def apply_disclosures(routes: list[Route], results: Sequence[GateResult]) -> None:

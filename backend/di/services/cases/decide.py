@@ -347,6 +347,13 @@ def _extra(rec: Route | None, figures: Mapping[str, Mapping[str, float]]) -> Map
     return {"cash": float(v["cash"]), "days": float(v["days"])} if v else {"cash": 0.0, "days": 0.0}
 
 
+def _valuer_kind(pack: Pack) -> str:
+    """The `VALUERS` key a pack is valued by: a standard pack that names a code plug-in (`valuer.params.params.plugin`, P9-9.10)
+    is valued by it, else the pack's valuer kind."""
+    plugin = (pack.valuer.params.get("params") or {}).get("plugin") if pack.valuer.kind == "standard" else None
+    return str(plugin) if plugin in VALUERS else pack.valuer.kind
+
+
 # ---------------------------------------------------------------- the decider
 def decide_case(
     case_or_facts: str | Mapping[str, Any],
@@ -377,7 +384,7 @@ def decide_case(
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)
-    kind = pack.valuer.kind
+    kind = _valuer_kind(pack)
     if kind == "industrial":
         valued = _Valued(_industrial(before, session), None)
     elif kind == "tool_fleet":  # 2. valuation, then the queue plan, over the routes the gates left eligible

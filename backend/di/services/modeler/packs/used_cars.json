@@ -822,6 +822,7 @@
      "D": 0.85
     },
     "mileage_factor_per_10k_over_band": -0.015,
+    "mileage_band_tops": [40000, 80000, 120000],
     "carbon_d": {
      "retail": 0.05,
      "auction": 0.05,
