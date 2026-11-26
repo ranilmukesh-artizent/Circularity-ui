@@ -4,17 +4,17 @@
  * suggested next steps through a preview card (2.3) and the audit line (2.9), moved from the old AskPanel. Ask never
  * acts: a next step runs only on the person's own "Run it", through invoke() like any other click.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { invoke } from '../../../api/actions';
-import { ask as askApi, type AskCard, type AskNext } from '../../../api/ask';
+import { ask as askApi, askStartersFor, type AskCard, type AskNext, type AskStarters } from '../../../api/ask';
 import { ref } from '../../../api/client';
 import { can, canPage, currentAccount } from '../../../api/session';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { askContext } from '../context';
 import { PreviewCard } from '../PreviewCard';
-import { statusLine, statusText } from '../status';
+import { argsText, selectStarters, startersQuery, toolWords, usedLine } from './starters';
 import { applyAskEvent, askData } from '../turns';
 import type { AssistantContext, AssistantMode, ModeDef, Turn } from '../types';
 
@@ -29,15 +29,10 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 function starters(): string[] {
   const role = currentAccount()?.role ?? '';
   try {
-    return (ref('AF_STARTERS')[role] ?? []).slice(0, 4);
+    return ref('AF_STARTERS')[role] ?? [];
   } catch {
     return [];
   }
-}
-
-/** Up to two questions from what the person is looking at (2.10). */
-export function contextStarters(ctx: AssistantContext): string[] {
-  return ctx.caseId ? [`Why this route for ${ctx.caseId}?`] : [];
 }
 
 export const askMode: ModeDef = {
@@ -62,7 +57,16 @@ export const askMode: ModeDef = {
 };
 
 function AskEmpty({ ctx, ask }: { ctx: AssistantContext; ask: (text: string) => void }) {
-  const list = [...starters(), ...contextStarters(ctx)];
+  const [server, setServer] = useState<AskStarters>({ pack: null, starters: [] });
+  const { page, section, case_id } = startersQuery(ctx);
+  useEffect(() => {
+    let live = true;
+    askStartersFor({ page, section, case_id }).then((r) => live && setServer(r), () => live && setServer({ pack: null, starters: [] }));
+    return () => {
+      live = false;
+    };
+  }, [page, section, case_id]);
+  const list = selectStarters(starters(), server, ctx);
   return (
     <div className="as-empty">
       <p className="as-note">Answers from your data, within what your role may see. Ask never changes anything.</p>
@@ -136,12 +140,13 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
       )}
       {d.tools.length > 0 && (
         <details className="as-audit">
-          <summary>Lookups ({d.tools.length})</summary>
+          <summary>{usedLine(d.tools)}</summary>
           <ul aria-label="Lookups">
             {d.tools.map((x, i) => (
               <li key={i} title={x.message ?? ''}>
-                <span className="mono">{x.name}</span>{' '}
-                {statusText(statusLine({ name: x.name, phase: x.ok ? 'done' : 'refused', args: x.args, message: x.message }))}
+                {cap(toolWords(x.name))}
+                {argsText(x.args ?? {}) && <> · <span className="mono">{argsText(x.args ?? {})}</span></>}
+                {!x.ok && <> · refused{x.message ? ': ' + x.message : ''}</>}
               </li>
             ))}
           </ul>
@@ -243,7 +248,7 @@ function Card({ c, q, onNext }: { c: AskCard; q: string; onNext: (n: AskNext) =>
   if (c.type === 'briefing' && Array.isArray(d.lines))
     return (
       <ul className="aflines">
-        {d.lines.map((l: unknown, i: number) => <li key={i}>{typeof l === 'string' ? l : String((l as { t?: string }).t ?? JSON.stringify(l))}</li>)}
+        {d.lines.map((l: unknown, i: number) => <li key={i}>{typeof l === 'string' ? l : String((l as { text?: string; t?: string }).text ?? (l as { t?: string }).t ?? JSON.stringify(l))}</li>)}
       </ul>
     );
   const title = d.title ?? d.label ?? d.case_id ?? d.id;
