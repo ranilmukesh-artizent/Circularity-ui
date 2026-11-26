@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { packQuestion, type PackAnswer, type PackViewData } from '../../api/analytics';
 import { Panel } from '../../components/kit/Panel';
 import { answerTitle, plot } from './packQuestions';
+import { SavedViewsList, SaveViewForm } from './SavedViews';
 
 const W = 520, H = 150, PAD = 24;
 
@@ -70,7 +71,7 @@ function Chosen({ id }: { id: string }) {
 
 /** Analytics › Packs, "Questions": the selected pack's worked questions; choosing one asks `device.question` for it.
  *  Nothing is drawn for a pack with none. Remount per pack (key) so a chosen question never outlives its pack. */
-export function PackQuestions({ pack }: { pack: Pick<PackViewData, 'name' | 'worked_questions'> }) {
+export function PackQuestions({ pack }: { pack: Pick<PackViewData, 'key' | 'name' | 'worked_questions'> }) {
   const [id, setId] = useState('');
   if (pack.worked_questions.length === 0) return null;
   return (
@@ -82,6 +83,8 @@ export function PackQuestions({ pack }: { pack: Pick<PackViewData, 'name' | 'wor
           ))}
         </div>
         {id ? <Chosen id={id} /> : <p className="note" style={{ margin: 0 }}>Choose a question.</p>}
+        {id && <SaveViewForm key={id} pack={pack.key} questionId={id} question={pack.worked_questions.find((q) => q.id === id)?.question ?? id} />}
+        <SavedViewsList pack={pack.key} />
       </Panel>
     </section>
   );

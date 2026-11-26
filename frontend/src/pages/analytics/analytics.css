@@ -27,3 +27,17 @@
 
 /* Pipeline bars: the baseline grey in light mode (solid ink looked heavier than the rest); dark mode keeps the global rule. */
 .an-funnel .bar > i { background: var(--chart5); }
+
+/* Saved views (P9-9.19): the save form, then one card per view with its share and alert controls. Theme tokens only. */
+.sv-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.sv-form .fld, .sv-set .fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sv-form .fld label, .sv-set .fld label { font-size: 12px; color: var(--muted); }
+.sv-form .fld input { min-width: min(100%, 260px); }
+.sv-h { font-size: 14px; margin: 0 0 8px; }
+.sv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sv-row { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel); }
+.sv-controls { display: grid; gap: 12px; margin-top: 8px; }
+.sv-set { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.sv-set legend { font-size: 12px; font-weight: 600; padding: 0; margin-bottom: 4px; }
+.sv-check { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; font-size: 13px; }
+.sv-set input:focus-visible, .sv-set select:focus-visible, .sv-form input:focus-visible, .sv-form select:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }

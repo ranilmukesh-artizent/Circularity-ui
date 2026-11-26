@@ -3,8 +3,9 @@
  * GET /api/screens/analytics (rows, metrics, model_stats, telemetry_unavailable, orgs), the read action
  * analytics.models, and the reference lists (di/services/screens/analytics.py has the mapping).
  */
-import { read } from './actions';
+import { invoke, read } from './actions';
 import { cached, packClasses, ref, withQuery } from './client';
+import type { ActionResult } from './types';
 import { view } from './view';
 
 export interface Override { rec: string; exec: string; reason: string; cf: number; delta: number }
@@ -180,3 +181,22 @@ export interface PackAnswer {
 }
 /** The action `device.question {question_id}`, over the records the account may see (the same call Ask makes). */
 export const packQuestion = (id: string): PackAnswer => read<PackAnswer>('device.question', { question_id: id });
+
+// ---------------------------------------------------------------- saved views (plan 9, P9-9.19, UC-20)
+export type AlertOp = '>' | '>=' | '<' | '<=';
+export interface ViewAlert { measure: string; op: AlertOp; threshold: number }
+/** A saved worked question (view.list): `mine` is false for a view shared with the account's role; `measures` are what an alert may watch. */
+export interface SavedView {
+  id: number; org_unit_id: string; owner: string; pack: string; question_id: string; question: string; name: string;
+  params: Record<string, unknown>; shared_with_roles: string[]; alert: ViewAlert | null; alert_active: boolean; mine: boolean; measures: string[];
+}
+/** The views the account owns or that are shared with its role (the read action view.list; an agent may read it too). */
+export const savedViews = (): SavedView[] => read<{ views: SavedView[] }>('view.list').views;
+/** Save a worked question as a view of an org unit (view.save: Admin, Planner, Approver, Executive, Finance, Engineer). */
+export const saveView = (orgUnit: string, pack: string, questionId: string, name: string): Promise<ActionResult<SavedView>> =>
+  invoke<SavedView>('view.save', { org_unit_id: orgUnit, pack, question_id: questionId, name, params: {} });
+/** Replace the roles a view is shared with (view.share: its owner only; never an agent). */
+export const shareView = (id: number, roles: string[]): Promise<ActionResult<SavedView>> => invoke<SavedView>('view.share', { view_id: id, roles });
+/** Set the one alert of a view, or clear it (view.setAlert: its owner only; an agent's call is held for a person). */
+export const setViewAlert = (id: number, alert: ViewAlert | null): Promise<ActionResult<SavedView>> =>
+  invoke<SavedView>('view.setAlert', alert ? { view_id: id, ...alert } : { view_id: id, clear: true });
