@@ -11,6 +11,10 @@ a valid one passes and `certificate_ref` is in the result text, which the decisi
 ("Recycler certificate <ref> valid to <date>").
 G-WEEE-2: when the site's region is in `params.regions` (EU), a missing category or weight fails the route with
 "WEEE category and weight required for an EU site". Neither judges a case with no `downstream` record (None).
+X-14 (P9-13.3): a case with `vendors` (the canonical vendor records) is judged first by `vendor_qualification.qualify` for each
+gated route that names `downstream_roles`: blocked when no vendor of those roles qualifies on the decision date (the reason is the
+first excluded vendor's, with the date), passed with the best one's name, standard, reference and date; a route with no vendor of
+its role on record is left to the `downstream` read above.
 Never does: read the store or the clock, choose a vendor, or write a case. R2v3, e-Stewards and Directive 2012/19/EU are research
 summaries: Kinective's Legal team reviews the wording before it is relied on.
 """
@@ -21,6 +25,7 @@ from typing import Any
 from di.services.modeler.evidence import parse_time
 from di.services.modeler.gates import CHECKS, GateDef, GateEffect, GateResult
 from di.services.modeler.pack import Pack
+from di.services.modeler.vendor_qualification import qualify
 
 VENDOR_GATE = "G-DS-1"
 WEEE_GATE = "G-WEEE-2"
@@ -32,8 +37,39 @@ def _routes(gate: GateDef, pack: Pack) -> tuple[str, ...]:
     return tuple(r.id for r in pack.routes if r.id in want)
 
 
+def _qualified(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
+    """G-DS-1 on the vendor records (P9-13.3): a gated route (the gate's routes that name `downstream_roles`) is blocked when no
+    vendor of its roles qualifies on the decision date, with the first excluded reason; None when no route names a role."""
+    want = _routes(gate, pack)
+    gated = [r for r in pack.routes if r.id in want and r.downstream_roles]
+    now = parse_time(case.get("gateNow"))  # `gate_hold` reads every case at its decision date
+    if now is None:
+        return None
+    vendors = [v for v in case["vendors"] if isinstance(v, Mapping)]
+    blocked: list[tuple[str, str]] = []
+    passed = ""
+    for r in gated:
+        checks = qualify(vendors, {"downstream_roles": r.downstream_roles}, now.date())
+        if not checks:  # no vendor of the role on record: the store says nothing, the recycler portal's `downstream` may
+            continue
+        if ok := next((c for c in checks if c.qualified), None):
+            passed = passed or ok.reason
+        else:
+            blocked.append((r.id, checks[0].reason))
+    if not blocked and not passed:
+        return None
+    if blocked:
+        return GateResult(
+            gate.id, False, GateEffect("block", tuple(i for i, _ in blocked), False, None), (), blocked[0][1],
+            route_reasons=tuple(blocked),
+        )  # fmt: skip
+    return GateResult(gate.id, True, GateEffect("block", (), False, None), (), passed)
+
+
 def check_downstream_vendor(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
-    """G-DS-1 (module docstring)."""
+    """G-DS-1 (module docstring). A case with `vendors` (the canonical records) is judged by `qualify` (P9-13.3)."""
+    if isinstance(case.get("vendors"), list) and (own := _qualified(case, pack, gate)) is not None:
+        return own
     d = case.get("downstream")
     if not isinstance(d, Mapping) or not d.get("vendor_id"):
         return None

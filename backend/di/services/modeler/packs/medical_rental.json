@@ -223,6 +223,9 @@
    "classes": [
     "recycle"
    ],
+   "downstream_roles": [
+    "recycler"
+   ],
    "instructions": [
     "data_sanitisation",
     "disposal_collection",

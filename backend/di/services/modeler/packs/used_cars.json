@@ -184,6 +184,9 @@
    "classes": [
     "recycle"
    ],
+   "downstream_roles": [
+    "salvage_buyer"
+   ],
    "instructions": [
     "infotainment_reset",
     "salvage_sale"

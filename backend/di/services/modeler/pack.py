@@ -100,6 +100,8 @@ class PackRoute(_Part):
     lead_days: int | None = None
     classes: list[RouteClass]
     instructions: list[str] = Field(default_factory=list)
+    # the vendor roles the route hands the asset to (`recycler`, `parts_broker`): G-DS-1 qualifies one of them (P9-13.3)
+    downstream_roles: list[str] = Field(default_factory=list)
     # a route the pack values and gates for one kind of case only (device wholesale: Recover cases). It is not a path of the
     # pack's default flow, so what is derived from the flow (templates, parser, sample history) leaves it out (P9-6.10 fix).
     recover_only: bool = False

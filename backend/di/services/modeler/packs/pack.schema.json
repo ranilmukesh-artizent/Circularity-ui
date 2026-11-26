@@ -882,6 +882,13 @@
      "title": "Instructions",
      "type": "array"
     },
+    "downstream_roles": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Downstream Roles",
+     "type": "array"
+    },
     "recover_only": {
      "default": false,
      "title": "Recover Only",

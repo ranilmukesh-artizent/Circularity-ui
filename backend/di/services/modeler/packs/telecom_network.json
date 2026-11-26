@@ -229,6 +229,9 @@
    "classes": [
     "parts"
    ],
+   "downstream_roles": [
+    "parts_broker"
+   ],
    "instructions": [
     "teardown"
    ]
@@ -241,6 +244,9 @@
    "lead_days": 10,
    "classes": [
     "recycle"
+   ],
+   "downstream_roles": [
+    "recycler"
    ],
    "instructions": [
     "recycler_pickup"

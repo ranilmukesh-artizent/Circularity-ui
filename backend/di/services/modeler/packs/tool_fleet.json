@@ -236,6 +236,9 @@
    "classes": [
     "parts"
    ],
+   "downstream_roles": [
+    "parts_broker"
+   ],
    "instructions": []
   },
   {
@@ -247,6 +250,9 @@
    "classes": [
     "recycle",
     "exit"
+   ],
+   "downstream_roles": [
+    "recycler"
    ],
    "instructions": []
   }

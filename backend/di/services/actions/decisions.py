@@ -405,6 +405,9 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
         key,
     )  # fmt: skip
     why = f"{'Override approved' if is_ov else 'Approved'} under {ref}" + (f" · {i['rationale']}" if approver else "")
+    vc = c.get("vendorCheck")
+    if isinstance(vc, dict) and vc.get("route") == str(t.get("id", "")).split(":", 1)[0]:  # the qualified vendor (P9-13.3, X-14)
+        why += f" · vendor {vc['name']} {vc['cert_ref']}"
     lifecycle.move(ctx.session, c, "approved", why + (f" on behalf of {cover['for']}" if cover else ""), ctx.actor.id)
     instructions.queue_first(ctx.session, c)  # B13b: the first step goes to its system (when sending is on)
     out = {"case_id": c["id"], "ref": ref, "route": t["plan"], "net": t["net"], "override": is_ov, "sent_to": steps[0]["sys"]}
