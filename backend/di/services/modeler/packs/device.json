@@ -167,7 +167,8 @@
    "classes": [
     "sale"
    ],
-   "instructions": []
+   "instructions": [],
+   "recover_only": true
   }
  ],
  "guardrails": [
