@@ -30,9 +30,25 @@ def _start():
 def test_reference_is_the_demos_constants():
     r = client.get("/api/screens/reference")  # the sign-in page reads it before anyone signs in
     assert r.status_code == 200
-    assert starting.strict(r.json()) == starting.strict(REF)
+    # PACK_CLASSES is the one list that is not the demo's: the packs' own classes (UI audit gap 8)
+    assert starting.strict({k: v for k, v in r.json().items() if k != "PACK_CLASSES"}) == starting.strict(REF)
     for acct in ("planner-b", "wm-1", "admin"):
         assert client.get("/api/screens/reference", headers=h(acct)).json() == r.json()
+
+
+def test_ui_audit_8_pack_classes_name_every_pack_class_without_touching_the_demos_classes():
+    from di.services.modeler.pack import load_pack, pack_keys
+
+    r = client.get("/api/screens/reference", params={"names": "CLASSES,PACK_CLASSES"}).json()
+    assert r["CLASSES"] == REF["CLASSES"]  # the demo's six classes are unchanged
+    pc = r["PACK_CLASSES"]
+    for k in ("car_ice", "radio", "infusion_pump", "CMH", "phone"):
+        assert k in pc, k
+    assert pc["car_ice"] == {"label": "Car (combustion)", "pack": "used_cars", "pack_name": load_pack("used_cars").name}
+    assert not set(pc) & set(REF["CLASSES"])  # a demo class keeps its own entry
+    for key in pack_keys():
+        for cl in load_pack(key).classes:
+            assert cl.id in pc or cl.id in REF["CLASSES"], (key, cl.id)
 
 
 def test_reference_by_name():

@@ -9,6 +9,7 @@ import {
 } from '../../api/product';
 import { Icon } from '../../components/Icon';
 import { onActivateKey } from '../../utils/keys';
+import { photoSrc } from '../case/photo';
 import { Thumb } from './AssetChips';
 
 // ---------- context: the asset in view and the page's view state ----------
@@ -24,8 +25,7 @@ export const useMoney = () => {
   return (v: number) => asMoney(v, local);
 };
 
-const AS_IMG: Record<string, string> = { motor: 'motor', pump: 'pump', control: 'control', drill: 'powertool', batch: 'powertool', it: 'it' };
-export const photoSrc = (cls: string) => 'assets/products/' + AS_IMG[cls] + '.webp';
+export { photoSrc };
 
 export function Panel({ t, tab, cls, badge, id, children }: { t: ReactNode; tab?: string; cls?: string; badge?: ReactNode; id?: string; children: ReactNode }) {
   const { openTab } = useAsset();

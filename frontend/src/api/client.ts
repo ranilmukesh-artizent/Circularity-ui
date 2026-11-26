@@ -198,6 +198,14 @@ export function ref<K extends keyof Reference>(name: K): Reference[K] {
   if (!(name in reference)) throw new Error(`No reference list ${name}.`);
   return reference[name] as Reference[K];
 }
+/** The classes the packs add to the demo's (PACK_CLASSES); none when the list is not served (an older di-api). */
+export function packClasses(): Reference['PACK_CLASSES'] {
+  return reference?.PACK_CLASSES ?? {};
+}
+/** An asset class's name wherever a page says "asset class": the demo's, else its pack's, else the id itself. */
+export function classLabelOf(cls: string): string {
+  return reference?.CLASSES?.[cls]?.label ?? packClasses()[cls]?.label ?? cls;
+}
 
 // ---------------------------------------------------------------- the read cache (TanStack Query, step E6)
 // Design: docs/agents/plans/e6-tanstack-design.md. The facade reads in render (not in hooks), so the QueryClient is
