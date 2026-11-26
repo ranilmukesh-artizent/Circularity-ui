@@ -413,10 +413,14 @@ def test_the_demo_reset_removes_the_approvals_of_the_sources_it_removes():
 
     with engine.begin() as conn:
         conn.execute(
-            text("INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner) VALUES ('zz_reset_1', 'V', 'erp', 'live', 0, '{}', 'o')")
+            text(
+                "INSERT INTO source_system (id, vendor, type, status, interval_min, authority, owner) VALUES ('zz_reset_1', 'V', 'erp', 'live', 0, '{}', 'o')"
+            )
         )
         conn.execute(
-            text("INSERT INTO connection_approval (source_id, environment, access, requested_by, owner, status, decided_by) VALUES ('zz_reset_1', 'production', 'read', 'developer', 'engineer', 'approved', 'engineer')")
+            text(
+                "INSERT INTO connection_approval (source_id, environment, access, requested_by, owner, status, decided_by) VALUES ('zz_reset_1', 'production', 'read', 'developer', 'engineer', 'approved', 'engineer')"
+            )
         )
     try:
         with engine.begin() as conn:
