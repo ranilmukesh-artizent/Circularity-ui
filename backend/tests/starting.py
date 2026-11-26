@@ -142,6 +142,7 @@ def _reset_flows(conn: Connection) -> None:
     """Plan 8 MVP-3.1: only the seeded published default flow of each template on `workspace`, at version 1, with no
     history, drafts or shadow rows (as migration 0021 seeds them)."""
     conn.execute(text("DELETE FROM rollout"))  # plan 9 P9-7.3: no canary (its assignments go with it)
+    conn.execute(text("DELETE FROM replay_run"))  # plan 9 P9-7.2: a replay holds its flow
     conn.execute(text("DELETE FROM shadow_decision"))
     conn.execute(text("DELETE FROM decision_flow_version"))
     conn.execute(text("DELETE FROM decision_flow WHERE org_unit_id <> 'workspace'"))

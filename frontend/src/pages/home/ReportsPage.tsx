@@ -6,7 +6,7 @@ import { allowedTenants } from '../../api/session';
 import { Icon } from '../../components/Icon';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
-import { askSoon } from '../../utils/askBus';
+import { ask, launch } from '../../utils/launchers';
 import { IconTile } from '../../components/kit/IconTile';
 import { HomeHeader } from './HomeHeader';
 
@@ -122,7 +122,7 @@ export function ReportsPage() {
               <div className="frrcf">
                 <span className="note">{rows.length - 1} row{rows.length === 2 ? '' : 's'}</span>
                 <span className="row">
-                  <button className="btn sm" onClick={askSoon}><Icon name="spark" /> Summarise</button>
+                  <button className="btn sm" onClick={() => ask(launch.summariseReport(r.t))}>Summarise</button>
                   <button className="btn sm" onClick={() => pdf(r)}><Icon name="report" /> PDF</button>
                   <button className="btn sm pri" onClick={() => csv(r)}><Icon name="download" /> CSV</button>
                 </span>

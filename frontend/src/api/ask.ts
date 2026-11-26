@@ -17,6 +17,8 @@ export interface AskCard { type: string; data: Record<string, unknown> }
 export interface AskFinal {
   provider: 'groq' | 'fallback' | string;
   model: string | null;
+  /** true when a language model wrote the answer; false when the rules did (the server sends it, service.py) */
+  by_model: boolean;
   fallback_reason: string | null;
   notice: string | null;
   text: string;

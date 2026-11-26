@@ -296,7 +296,7 @@ function SmPanel({ s, tab, setTab }: { s?: Source; tab: string; setTab: (t: stri
         <table className="t static tight"><thead><tr><th>Source field</th><th>Canonical field</th></tr></thead>
           <tbody>{M.map((r, i) => <tr key={i}><td className="mono">{r[0]}</td><td className="mono">{r[2]}</td></tr>)}</tbody></table>
       ) : <p className="note">No field mapping defined yet.</p>}
-      {canMgr() && <button className="btn sm" onClick={() => ui.openSource(s.id, 'map')}><Icon name="spark" /> Suggest mappings</button>}
+      {canMgr() && <button className="btn sm" onClick={() => ui.openSource(s.id, 'map')}>Suggest mappings</button>}
     </>
   );
   else if (tab === 'sync') body = <SyncTable s={s} n={20} />;

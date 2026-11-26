@@ -350,13 +350,14 @@ await step('4b planner-a gives company-x its own flow, applies "Never recycle gr
     await fork.click();
     await waitText(pl, new RegExp(`Industrial returns · ${ORG}`), `${ORG} did not get its own flow`);
   }
-  await pl.fill('#mdl-ask', RULE);
-  await pl.press('#mdl-ask', 'Enter');
-  await waitText(pl, /Proposed change/i, 'the assistant proposed nothing', 30000);
-  const prop = (await pl.locator('.mdl-prop b').first().innerText()).trim();
+  const ask = pl.locator('.mdl-agent textarea'); // plan 10: the pinned agent column replaced the Assistant panel
+  await ask.fill(RULE);
+  await ask.press('Enter');
+  await waitText(pl, /Proposed: /, 'the assistant proposed nothing', 30000);
+  const prop = (await pl.locator('.mdl-agent .as-card-title').first().innerText()).replace(/^Proposed:\s*/, '').trim();
   check(/recycle|material/i.test(prop) && /\bA\b/.test(prop), `the proposal does not read as the rule: "${prop}"`);
-  await pl.getByRole('button', { name: 'Approve · AI applies it' }).click();
-  await waitText(pl, /Applied to the draft/, 'the proposal was not applied');
+  await pl.getByRole('button', { name: 'Apply to draft' }).click();
+  await waitText(pl, /Saved .* to draft/, 'the proposal was not applied');
   st.rule = prop.match(/^[A-Z]+-\d+/)?.[0] ?? null;
   await pl.getByRole('button', { name: 'Simulate on open queue' }).click();
   const sim = (await waitText(pl, /\d+ of \d+ open decisions change[^\n]*/, 'no simulation result'))[0];

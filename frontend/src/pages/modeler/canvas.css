@@ -1,0 +1,50 @@
+/*
+ * The Modeler canvas look (plan 10, T7). Only the Modeler's flow nodes, minimap and dot colour live here; the shared
+ * graph (components/graph/graph.css) and the Workflow Studio canvas are untouched. Every rule is scoped by
+ * `.mdl-canvas` (or the node's own class), so it wins over the older `.mdl-node` rules in modeler.css whatever the
+ * import order. Tokens (--as-*, --mdl-*) come from styles/assistant.css.
+ */
+
+/* the canvas dots: the quieter hairline, not the page's border colour */
+.mdl-canvas .react-flow__background-pattern { fill: var(--line2); }
+
+/* the minimap follows the theme (the library default is a light grey mask, white in dark mode) */
+.mdl-canvas .react-flow__minimap {
+  --xy-minimap-background-color: var(--panel);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--bg) 72%, transparent);
+  --xy-minimap-mask-stroke-color: var(--ink2);
+  --xy-minimap-node-background-color: var(--line);
+  box-shadow: none;
+}
+
+/* node: 8px radius, 12px padding, 8px between the kind line and the label, a hairline, no shadow */
+.mdl-canvas .mdl-node { padding: 12px; gap: 8px; border-radius: 8px; box-shadow: none; }
+.mdl-canvas .mdl-node .hd { font-size: 11.5px; letter-spacing: 0; text-transform: none; min-height: 14px; }
+.mdl-canvas .mdl-node .kind { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.mdl-canvas .mdl-node .kind-ic { width: 14px; height: 14px; flex: none; }
+.mdl-canvas .mdl-node .mdl-key { display: inline-flex; color: var(--muted); }
+.mdl-canvas .mdl-node b { font-size: 12.5px; line-height: 1.3; }
+.mdl-canvas .mdl-node .s, .mdl-canvas .mdl-node .ow { font-size: 11.5px; }
+/* a selected node is ringed in ink: yellow is kept for the one primary action */
+.mdl-canvas .mdl-node.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* the revision mark: a proposed node is drawn like a change on an engineering drawing (dashed outline + the tag) */
+.mdl-canvas .mdl-node.rev { background-color: var(--panel); background-image: linear-gradient(var(--as-rev-bg), var(--as-rev-bg)); }
+.mdl-canvas .mdl-node.prop { border-style: solid; border-color: transparent; }
+.mdl-canvas .mdl-node.prop.bad { border-color: var(--bad); }
+.mdl-node .rev-ol { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mdl-node .rev-ol rect { fill: none; stroke: var(--as-rev); stroke-width: 1.5; width: calc(100% - 1.5px); height: calc(100% - 1.5px); }
+.mdl-node .rev-ol .dash { stroke-dasharray: 5 3; }
+.mdl-node .rev-ol .solid { stroke-dasharray: 100 100; stroke-dashoffset: 100; }
+.mdl-node .rev-tag { position: absolute; top: -9px; left: 10px; z-index: 1; padding: 0 5px; line-height: 16px; font-size: 11px;
+  font-weight: 600; color: var(--as-rev); background: var(--panel2); border: 1px solid var(--as-rev); border-radius: 4px; pointer-events: none; }
+
+/* the one motion (4.4): on apply the outline closes into a solid line and the tag fades; only stroke-dashoffset and opacity move */
+@keyframes rev-close { from { stroke-dashoffset: 100; opacity: 1; } 65% { stroke-dashoffset: 0; opacity: 1; } to { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes rev-out { from { opacity: 1; } to { opacity: 0; } }
+.mdl-node.rev-done .rev-ol .solid { animation: rev-close calc(var(--as-dur) * 1.5) var(--as-ease) both; }
+.mdl-node.rev-done .rev-ol .dash, .mdl-node.rev-done .rev-tag.fade { animation: rev-out var(--as-dur) var(--as-ease) both; }
+@media (prefers-reduced-motion: reduce) {
+  /* the outline simply becomes the node's own solid line */
+  .mdl-node.rev-done .rev-ol, .mdl-node.rev-done .rev-tag { display: none; animation: none; }
+}

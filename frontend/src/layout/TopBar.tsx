@@ -10,7 +10,7 @@ import { Modal } from '../components/Overlay';
 import { toast } from '../components/toast';
 import { useAction } from '../hooks/useAction';
 import { toggleTheme, useTheme } from '../utils/theme';
-import { openAsk } from '../utils/askBus';
+import { openAsk, openAssistant } from '../utils/askBus';
 
 /** Close a <details> menu when the user clicks outside it. */
 function useOutsideClose(ref: React.RefObject<HTMLDetailsElement>) {
@@ -47,14 +47,25 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
       <button className="iconbtn frham" aria-label="Menu" onClick={onMenu}>
         <Icon name="menu" />
       </button>
-      <div className="search frsearch">
+      {/* Nothing searches the records from here, so Enter sends the text to the one assistant (Ask Circularity). */}
+      <form
+        className="search frsearch"
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const input = e.currentTarget.elements.namedItem('gs') as HTMLInputElement;
+          const q = input.value.trim();
+          if (q) openAsk(q);
+          input.value = '';
+        }}
+      >
         <label className="sr" htmlFor="gs">
-          Search or ask
+          Ask Circularity
         </label>
         <Icon name="search" />
-        <input id="gs" type="search" placeholder="Search returns, assets, workflows, or ask anything…" autoComplete="off" />
+        <input id="gs" name="gs" type="search" placeholder="Ask about returns, assets or workflows…" autoComplete="off" />
         <kbd aria-label="Shortcut Ctrl K">Ctrl K</kbd>
-      </div>
+      </form>
       <div className="tools">
         {canPage('product') && (
           <>
@@ -123,7 +134,7 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
             )}
           </div>
         </details>
-        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => openAsk()}>
+        <button className="iconbtn afask frask" aria-label="Ask Circularity (Ctrl+J)" title="Ask Circularity (Ctrl+J)" onClick={() => openAssistant()}>
           <Icon name="spark" />
         </button>
         <button className="iconbtn" aria-label="Toggle theme" onClick={toggleTheme}>

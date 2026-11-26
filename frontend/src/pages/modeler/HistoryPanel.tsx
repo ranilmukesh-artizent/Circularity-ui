@@ -1,10 +1,10 @@
 import { fmtDateYear } from '../../api/format';
 import { exportBpmn, exportDmn, rollbackFlow, type FlowExport } from '../../api/modeler';
 import type { ActionResult, ModelerScreen } from '../../api/types';
-import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { download } from '../../utils/download';
+import { RailSection } from './RailSection';
 
 const VERB: Record<string, string> = {
   'flow.saveDraft': 'Saved draft', 'flow.fork': 'Gave the org its own flow', 'flow.submit': 'Submitted', 'flow.approve': 'Approved',
@@ -23,9 +23,9 @@ export function HistoryPanel({ s }: { s: ModelerScreen }) {
     if (r.ok) download(r.output.filename, r.output.xml, r.output.content_type);
   };
   return (
-    <Panel title="History" sub={'Published v' + s.flow.ver}
-           right={s.can.approve && s.versions.length > 0 ? <button className="btn sm" disabled={action.pending} onClick={rollback}>Roll back to v{s.versions[0].ver}</button> : undefined}>
+    <RailSection title="History" icon="rotate" sub={'Published v' + s.flow.ver}>
       <div className="row">
+        {s.can.approve && s.versions.length > 0 && <button className="btn sm" disabled={action.pending} onClick={rollback}>Roll back to v{s.versions[0].ver}</button>}
         <button className="btn sm" disabled={action.pending} onClick={() => save(exportDmn)}>Export DMN</button>
         <button className="btn sm" disabled={action.pending} onClick={() => save(exportBpmn)}>Export BPMN</button>
       </div>
@@ -47,6 +47,6 @@ export function HistoryPanel({ s }: { s: ModelerScreen }) {
           </li>
         ))}
       </ul>
-    </Panel>
+    </RailSection>
   ); // prettier-ignore
 }

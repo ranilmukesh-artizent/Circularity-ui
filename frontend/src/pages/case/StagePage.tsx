@@ -67,7 +67,7 @@ export function StageBar({ c, view }: { c: CaseRec; view: CaseView }) {
 /** "Notify the owner": the agent drafts an escalation to whoever the stage waits on. */
 function NotifyBtn({ who }: { who: string }) {
   return /Approver|Admin|Planner|Finance|Engineer|Inspection|Engineering/.test(who || '') ? (
-    <button className="btn sm" onClick={caseActions.askSoon}>Notify the owner</button>
+    <button className="btn sm" onClick={() => caseActions.notifyOwner(who)}>Notify the owner</button>
   ) : null;
 }
 
@@ -200,8 +200,8 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
           <p className="stlogos"><StageLogos n={n} src={sources(c)} /></p>
         </div>
         <div className="row stha">
-          <button className="btn afai2" onClick={caseActions.askSoon}><Icon name="spark" /> Ask about this stage</button>
-          {explain && <button className="btn pri cxxbtn" onClick={() => ui.openExplain(c.id)}>✦ Explain this decision</button>}
+          <button className="btn afai2" onClick={() => caseActions.askAboutStage(c.id, n, S1.t)}>Ask about this stage</button>
+          {explain && <button className="btn pri cxxbtn" onClick={() => ui.openExplain(c.id)}>Explain this decision</button>}
           {(n === 6 || n === 7) && <button className="btn" id="afPackBtn" onClick={() => caseActions.downloadPack(c.id)}>Evidence pack</button>}
         </div>
       </header>
@@ -238,7 +238,7 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
         <div className="stside">
           {d.mean && reached && (
             <section className="stmean" id="stMean" aria-labelledby="stMeanH">
-              <IconTile ic="spark" h={ph.h} cls="sm" />
+              <IconTile ic="info" h={ph.h} cls="sm" />
               <div><h2 id="stMeanH">What it means</h2><p>{d.mean}</p></div>
             </section>
           )}
@@ -330,7 +330,7 @@ export function StageFoot({ c, view, pri }: { c: CaseRec; view: CaseView; pri: b
       <span className="stpos">Stage {n} of 10</span>
       <a className="btn ghost sm" href={href(id, 'overview')}>Overview</a>
       <p className="stsug">
-        <span className="jgk"><Icon name="spark" /> Agent suggests</span> <b>{sug}</b>
+        <span className="jgk"><Icon name="bot" /> Agent suggests</span> <b>{sug}</b>
         {nx.n && nx.n !== n && nx.kind !== 'done' ? <> <span className="note">(stage {nx.n})</span></> : null} {btn}
       </p>
       {n < 10 ? (

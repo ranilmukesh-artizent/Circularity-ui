@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { saveOverlay, submitOverlay, useSimNodes } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen, OverlayParam, ScopeDim } from '../../api/types';
+import { Icon } from '../../components/Icon';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { flowText, LockIcon, nodeTitle, TTAG } from './FlowCanvas';
@@ -70,7 +71,7 @@ export function FlowInspector({ s, graph, node, editable, onRule, onConnect, onD
   if (!node) {
     return (
       <div className="mdl-insp">
-        <h3>Inspector</h3>
+        <h3><Icon name="info" /> Inspector</h3>
         <p className="note">Select a step. Drag steps to move them; add a business rule with Add rule. Locked steps are the core prediction, the guardrails and owner approval: they can be moved but not edited or removed.</p>
         <PackParams s={s} />
       </div>

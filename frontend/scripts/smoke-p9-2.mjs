@@ -16,9 +16,9 @@
  *      page reads "Approved by policy SP-..." and its History tab lists "Approve by standing policy".
  *   6  a device case (Customer A) is held for fraud review with a blacklist signal: its page shows "Held for fraud review"
  *      with the signal and its source; approver releases it with a reason.
- *   7  planner.a: Modeler > tool_fleet > Customer A > "Describe your business": the first sample prompt of the pack, "Read
- *      it", the one question answered, the change set, "Sent for approval as proposal N"; admin's Agents page lists the
- *      held `overlay.save` proposal of the configuration agent.
+ *   7  planner.a: Modeler > tool_fleet > Customer A > Set up (plan 10: Ask Circularity's Set up mode replaced the "Describe
+ *      your business" dialog, so no `config.draft` proposal any more): the first sample prompt of the pack, the one question
+ *      answered, "Drafted N changes" as plain sentences, "Open in Set up" shows the composition.
  *   8  GET /.well-known/oauth-protected-resource (page.request) returns JSON with `resource`.
  *
  * Where this script calls the app's own action as the signed-in person instead of using a control, the UI has none:
@@ -48,6 +48,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describeInAssistant, openInSetup } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const apiBase = process.env.API_URL || `http://localhost:${process.env.API_PORT || 8000}`;
@@ -354,27 +355,25 @@ await step('6 Device case: held for fraud review with its signal, approver relea
 });
 
 // ---------------------------------------------------------------- 7
-await step('7 Describe your business: change set sent for approval, proposal from the configuration agent', async () => {
+await step('7 Describe your business in Ask Circularity (Set up): a draft composition, the question answered, plain sentences', async () => {
   const prompt = JSON.parse(readFileSync(packFile, 'utf-8')).prompts?.[0];
   if (!prompt) throw new Error(`${packFile} has no sample prompt`);
   const pl = await as('planner.a');
   await modeler(pl, 'tool_fleet', 'Customer A');
-  await pl.getByRole('button', { name: 'Describe your business' }).click();
-  const dlg = pl.locator('[role=dialog]');
-  await dlg.locator('textarea[aria-label="Describe your business"]').fill(prompt);
-  await dlg.getByRole('button', { name: 'Read it' }).click();
-  await expectText(pl, /Matched pack: tool_fleet/, '[role=dialog]');
+  // plan 10: no dialog; the Compose panel's launcher opens the assistant in Set up (the Set up tab of the new layout, or the Compose button)
+  await pl.getByRole('tab', { name: 'Set up', exact: true }).or(pl.getByRole('button', { name: 'Compose', exact: true })).first().click();
+  const id = await describeInAssistant(pl, { timeout: 120000 });
+  await expectText(pl, /Matched pack: tool_fleet|Nearest pack: tool_fleet/, '.st-turn');
   // the one question: its options are the buttons beside Skip; pick the first
-  const skip = dlg.getByRole('button', { name: 'Skip', exact: true });
+  const skip = pl.locator('.st-turn').last().getByRole('button', { name: 'Skip', exact: true });
   await skip.waitFor();
   await skip.locator('xpath=..').locator('button').first().click();
-  await expectText(pl, /Change set for tool_fleet v/, '[role=dialog]');
-  const sent = await expectText(pl, /Sent for approval as proposal \d+/, '[role=dialog]');
-  const assumed = await dlg.locator('.chip', { hasText: 'assumed' }).count();
-  const ad = await as('admin');
-  await go(ad, 'agents');
-  await expectText(ad, 'overlay.save', '#agProps');
-  return `${sent.match(/proposal \d+/)[0]}, ${assumed} assumed badge(s)`;
+  await expectText(pl, /Drafted (\d+ changes?|no changes)/, '.st-turn');
+  const turn = pl.locator('.st-turn').last();
+  if (/[{}]/.test(await turn.innerText())) throw new Error('the Set up turn shows JSON braces instead of plain sentences');
+  const assumed = await turn.locator('.chip', { hasText: 'assumed' }).count();
+  await openInSetup(pl, 60000);
+  return `composition ${id}, ${assumed} assumed badge(s)`;
 });
 
 // ---------------------------------------------------------------- 8

@@ -1,0 +1,17 @@
+/* Set up mode of the assistant (plan 10, T3). Sentence case, hairlines instead of boxes, no shadows; colours from the tokens of
+   assistant.css (T7) with the app's tokens as the fallback. */
+.st-turn { display: grid; gap: 8px; font-size: 13.5px; line-height: 1.45; }
+.st-turn p { margin: 0; }
+.st-line { color: var(--ink); }
+.st-amber { color: var(--as-hold, var(--warn)); }
+.st-basis { font-size: 12.5px; color: var(--muted); }
+.st-title { margin: 8px 0 0; font: 600 14px/1.3 var(--f-display, inherit); }
+.st-turn .cmp-ops { margin: 0; padding-left: 18px; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.st-question { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-left: 3px solid var(--as-hold, var(--warn)); border-radius: var(--as-radius, 8px); background: var(--panel2); }
+.st-q { font-weight: 600; }
+.st-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 4px; }
+.st-empty { display: grid; gap: 12px; font-size: 13.5px; line-height: 1.45; }
+.st-empty p { margin: 0; }
+.st-starters { display: grid; gap: 8px; }
+.st-starters .st-start.btn { display: block; width: 100%; text-align: left; white-space: normal; height: auto; min-height: 32px; padding: 6px 10px; line-height: 1.4; overflow-wrap: anywhere; }

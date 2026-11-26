@@ -103,7 +103,7 @@ export function Overview() {
               <FabricStatus k={x.st} />
               <span className="row">
                 <button className="lnk" onClick={() => toast('Why ' + x.v + ' is recommended: ' + x.why + ' Ranked from open gaps in your evidence and workflows; nothing is connected or changed until you choose Connect or Manage.', 7000)}>
-                  <Icon name="spark" /> Why recommended
+                  Why recommended
                 </button>
                 <button className={'btn sm ' + (x.btn === 'Connect' ? 'pri' : '')} onClick={() => recAct(x)}>{x.btn}</button>
               </span>

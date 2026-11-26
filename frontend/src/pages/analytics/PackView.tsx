@@ -21,7 +21,7 @@ export function PackKpiTiles({ kpis }: { kpis: PackKpi[] }) {
     <div className="frkpis" aria-label="Pack KPIs">
       {kpis.map((k) => (
         <Kpi
-          key={k.id} ic="spark" h="int" k={k.id} v={kpiValue(k)} l={k.label} sub={k.error ?? (k.value === null ? k.definition : undefined)}
+          key={k.id} ic="gauge" h="int" k={k.id} v={kpiValue(k)} l={k.label} sub={k.error ?? (k.value === null ? k.definition : undefined)}
           sp={k.trend.map((t) => t.value)}
         />
       ))}

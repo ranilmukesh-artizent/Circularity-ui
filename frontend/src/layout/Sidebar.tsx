@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { logos, navBadge, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
 import { currentAccount, roleAvatar, signInEmail } from '../api/session';
 import { Icon } from '../components/Icon';
+import { collapseOnModeler, keepOpen, keptOpen } from './sidebarRail';
 
 const OPEN_KEY = 'circ-react-nav-open';
 const loadOpen = (): Record<string, boolean> => {
@@ -25,6 +26,37 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
   const groups = navigation();
   const counts = navCounts();
   const badges = navBadges();
+
+  // The Modeler starts with the icon sidebar below 1600px (plan 10, 3.2) and gives the full one back on leaving, unless
+  // the person opened it there. The ref stops a double effect run (StrictMode) from toggling twice.
+  const autoRail = useRef(false);
+  useEffect(() => {
+    if (!autoRail.current && collapseOnModeler(page, window.innerWidth, rail, keptOpen())) {
+      autoRail.current = true;
+      onRail();
+    } else if (autoRail.current && page !== 'modeler') {
+      autoRail.current = false;
+      onRail();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a change of page decides
+  }, [page]);
+  const railClick = () => {
+    if (page === 'modeler' && rail) keepOpen(); // opened by hand on the Modeler: keep it open there
+    autoRail.current = false; // the person's choice from now on
+    onRail();
+  };
+
+  // One search: Ctrl K (Cmd K) focuses the top bar's box.
+  useEffect(() => {
+    const f = (ev: KeyboardEvent) => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+        ev.preventDefault();
+        document.getElementById('gs')?.focus();
+      }
+    };
+    document.addEventListener('keydown', f);
+    return () => document.removeEventListener('keydown', f);
+  }, []);
 
   const toggle = (id: string) => {
     const next = { ...open, [id]: !isOpen(id) };
@@ -64,14 +96,13 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
           <img className="frlg dk" src={logos().dark} alt="Artizent" />
           <img className="frlg lt" src={logos().light} alt="Artizent" />
         </a>
-        <button className="railbtn" aria-pressed={rail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={onRail}>
+        <button className="railbtn" aria-pressed={rail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={railClick}>
           <Icon name="railc" />
         </button>
       </div>
-      <button className="frms" aria-label="Search, run a command or ask (Ctrl+K)" data-label="Search" onClick={() => document.getElementById('gs')?.focus()}>
+      <button className="frms" aria-label="Search or ask" data-label="Search" onClick={() => document.getElementById('gs')?.focus()}>
         <Icon name="search" />
-        <span>Search…</span>
-        <kbd>Ctrl K</kbd>
+        <span>Search</span>
       </button>
       <nav className="nav frnav" aria-label="Pages">
         {rows}

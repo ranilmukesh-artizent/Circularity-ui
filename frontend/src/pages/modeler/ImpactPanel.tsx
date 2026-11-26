@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { simulateFlow } from '../../api/modeler';
 import type { FlowGraph, ModelerScreen, SimResult } from '../../api/types';
-import { Panel } from '../../components/kit/Panel';
+import { RailSection } from './RailSection';
 import { toast } from '../../components/toast';
 import { formatImpact, poMoney, tradeOff } from './impact';
 import { WhatIf } from './WhatIf';
@@ -23,12 +23,15 @@ export function ImpactPanel({ s, graph }: { s: ModelerScreen; graph: FlowGraph }
   };
   const note = sim && tradeOff(sim);
   return (
-    <Panel title="Impact" sub="This draft against the published flow" cls="mdl-impact"
-           right={<button className="btn sm" disabled={busy} onClick={run}>Simulate on open queue</button>}>
+    <>
+    <RailSection title="Impact" icon="trend" sub="This draft against the published flow" cls="mdl-impact">
+      <div className="row">
+        <button className="btn sm" disabled={busy} onClick={run}>Simulate on open queue</button>
+      </div>
       {!sim && <p className="note">Simulate to see which open decisions this draft would change.</p>}
       {sim && (
         <>
-          <p data-impact>Impact vs published: <b className={sim.dv >= 0 ? 'good' : 'bad'}>{formatImpact(sim)}</b></p>
+          <p className="mdl-impact-line" data-impact>Impact vs published: <b className={sim.dv >= 0 ? 'good' : 'bad'}>{formatImpact(sim)}</b></p>
           {note && <p className="note">{note}</p>}
           <div className="mdl-flips">
             <ul>
@@ -42,7 +45,8 @@ export function ImpactPanel({ s, graph }: { s: ModelerScreen; graph: FlowGraph }
           </div>
         </>
       )}
-      {s.template.key === 'tool_fleet' && <WhatIf s={s} graph={graph} />}
-    </Panel>
+    </RailSection>
+    {s.template.key === 'tool_fleet' && <WhatIf s={s} graph={graph} />}
+    </>
   ); // prettier-ignore
 }

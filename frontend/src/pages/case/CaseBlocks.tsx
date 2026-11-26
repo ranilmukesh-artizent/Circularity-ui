@@ -180,7 +180,7 @@ export function StageLogos({ n, src }: { n: number; src: Record<string, Source> 
       {stages()[n - 1].sys.map((s) => {
         const so = src[ST_SYS[s]];
         if (!so) {
-          if (s === 'Circularity') return <span key={s} className="stsy"><IconTile ic="spark" h="agent" cls="xs" /><span>Circularity</span></span>;
+          if (s === 'Circularity') return <span key={s} className="stsy"><IconTile ic="bot" h="agent" cls="xs" /><span>Circularity</span></span>;
           return <span key={s} className="stsy"><span>{s}</span></span>;
         }
         if (seen.has(so.id)) return null;

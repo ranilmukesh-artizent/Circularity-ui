@@ -1,22 +1,20 @@
 /**
- * Opening Ask Circularity from anywhere: openAsk() opens the panel, optionally with a question to ask at once.
- * Pages call this instead of showing their own panel; AskPanel (src/layout/AskPanel.tsx) listens.
+ * Opening Ask Circularity from anywhere: openAssistant({ mode, question }) opens the one assistant (plan 10), in the
+ * Ctrl+J dock or, on the Modeler, in the pinned column. Pages call this instead of showing their own panel;
+ * AssistantDock (src/layout/assistant/AssistantDock.tsx) listens. openAsk(q) stays as the Ask-mode alias.
  */
 import type { OpenRequest } from '../layout/assistant/types';
 
-type Listener =(req: { question?: string; nonce: number }) => void;
-const listeners = new Set<Listener>();
 let nonce = 0;
 
 export function openAsk(question?: string): void {
-  nonce++;
-  listeners.forEach((l) => l({ question, nonce }));
+  openAssistant({ mode: 'ask', question });
 }
 
 /** openAsk for an onClick: a click passes an event, not a question, so only a string is asked. */
 export const askSoon = (q?: unknown): void => openAsk(typeof q === 'string' ? q : undefined);
 
-/** Plan 10 contract: open the one assistant in a mode, with a question or a compose draft. T1 wires the dock to it. */
+/** Open the one assistant in a mode, with a question or a compose draft. */
 type AssistantListener = (req: OpenRequest & { nonce: number }) => void;
 const assistantListeners = new Set<AssistantListener>();
 
@@ -29,12 +27,5 @@ export function onOpenAssistant(l: AssistantListener): () => void {
   assistantListeners.add(l);
   return () => {
     assistantListeners.delete(l);
-  };
-}
-
-export function onOpenAsk(l: Listener): () => void {
-  listeners.add(l);
-  return () => {
-    listeners.delete(l);
   };
 }

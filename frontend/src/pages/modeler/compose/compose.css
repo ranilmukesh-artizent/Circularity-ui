@@ -11,3 +11,4 @@
 .cmp-ops .chip { margin-left: 6px; }
 .cmp-inline { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); overflow-x: auto; }
 .cmp-state { margin: 0; }
+.cmp-amber { color: var(--as-hold, var(--warn)); }

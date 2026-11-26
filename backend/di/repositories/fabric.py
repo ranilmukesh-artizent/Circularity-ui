@@ -124,7 +124,7 @@ def sla_minutes(s: dict) -> int:
 
 def cred_days(s: dict, now: int) -> int | None:
     """frCredDays: days until the credential expires."""
-    if not s.get("credAt"):
+    if not s.get("credAt") or s.get("credDays") is None:  # a registered extra system has a credential time but no lifetime
         return None
     return js_round((s["credAt"] + s["credDays"] * DAY - now) / DAY)
 
