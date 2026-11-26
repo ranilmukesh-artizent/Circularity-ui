@@ -431,7 +431,7 @@ def tool_input(doc: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
-    """The documents of the org's tool-fleet cases that are not closed, by id."""
+    """The documents of the org's tool-fleet cases that are not closed, in case id order."""
     rows = s.execute(
         text(
             "SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' "
@@ -439,14 +439,22 @@ def open_tool_cases(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
         ),
         {"o": org_unit_id, "f": REFRESH_FLOW},
     ).scalars()
-    return list(rows)
+    return sorted(rows, key=lambda d: str(d["id"]))
 
 
 def tool_queue(s: Session, org_unit_id: str, v: dict[str, Any]) -> ToolQueue:
     """The queue for the valuer input `v` of a case of the org: its open tool-fleet cases plus `v`, with the named
     demand of their classes: the queue's tagged orders (named_demand.for_queue) and the live named demand of the org's
     sources, in days from now (tool_demand.named_demand, P9-3.12; the orders an approved decision holds are not offered)."""
-    cases = [tool_input(d) for d in open_tool_cases(s, org_unit_id) if d["id"] != v["id"]] + [v | {"status": "new"}]
+    others = [tool_input(d) for d in open_tool_cases(s, org_unit_id) if d["id"] != v["id"]]
+    # in case id order, as `tool_queue.open_queue` reads them: two returns that value the same are told apart by their
+    # place in the queue, so every case must see it in one order (else each of two equal returns finds itself last)
+    return queue_of(s, org_unit_id, sorted([*others, v | {"status": "new"}], key=lambda c: str(c["id"])))
+
+
+def queue_of(s: Session, org_unit_id: str, cases: list[dict[str, Any]]) -> ToolQueue:
+    """The queue of the given valuer inputs of the org with the named demand of their classes (`tool_queue` and
+    `tool_queue.open_queue`, P9-3.13)."""
     classes = sorted({c["cls"] for c in cases})
     named = named_demand.for_queue(s, org_unit_id, classes)
     now = clock.now()

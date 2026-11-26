@@ -145,3 +145,24 @@ def test_replan_keeps_approved_holder():
     second = _open("T-QP-6", "A")
     _replan()
     assert _dest(first) == "L-1" and _dest(second) != "L-1"
+
+
+def test_tf_07_synced_renewal_filled_once():
+    """A renewal synced from the fleet source is named demand for every open case of the class: it is filled once, and
+    the case that does not hold it keeps its own order (P9-3.12)."""
+    row = {"kind": "lease", "need_by": "2027-06-01", "lease_rate": 5000, "term_months": 24, "renew": True, "site": "Houston",
+           "tool_class": "CMH", "buyer": "Brightline Mechanical", "contract_ref": "FC-QP"}  # fmt: skip
+    with SessionLocal() as s:
+        canonical.apply(s, "fleet", [Fact("demand", "FC-QP-R", k, v, resource="demand") for k, v in row.items()])
+        s.commit()
+    try:
+        first, second = _open("T-QP-5", "B"), _open("T-QP-6", "A")
+        _replan()
+        dests = {i: _dest(i) for i in (first, second)}
+        assert list(dests.values()).count("FC-QP-R") <= 1, dests
+        assert [_plan(i)["holds"] for i in (first, second)].count("FC-QP-R") == 1, dests
+    finally:
+        with SessionLocal() as s:
+            s.execute(text("DELETE FROM canonical WHERE model = 'demand' AND key = 'FC-QP-R'"))
+            s.execute(text("DELETE FROM provenance WHERE model = 'demand' AND key = 'FC-QP-R'"))
+            s.commit()
