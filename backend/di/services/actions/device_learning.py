@@ -29,7 +29,7 @@ from di.repositories.flows import FlowRow
 from di.services.actions import modeler_suggest as base
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.cases import pack_questions  # noqa: F401  (registers every pack's worked questions)
+from di.services import questions  # noqa: F401  (registers every pack's worked questions)
 from di.services.device import ageing, analytics
 from di.services.modeler.flow import Flow
 from di.services.modeler.suggest import Suggestion

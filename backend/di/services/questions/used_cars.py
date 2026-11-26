@@ -2,6 +2,6 @@
 
 Each question is a pure function of typed rows returning `di.services.device.analytics.Answer`, wrapped in a
 `WorkedQuestion` whose compute loads only the rows its `Scope` allows (R21) and registered with `analytics.register`.
-Imported by `pack_questions`, so the action `device.question` and Ask's `device_question` tool answer it by id.
+Imported by `di.services.questions`, so the action `device.question` and Ask's `device_question` tool answer it by id.
 Filled by P9-9.19; empty until then.
 """

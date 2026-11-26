@@ -169,3 +169,13 @@ def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_
     monkeypatch.setenv("ASK_MODEL_CHAIN", "other:x, groq:m3")
     get_settings.cache_clear()
     assert model_chain(get_settings()) == [("groq", "m3")]
+
+
+def test_chain_of_one_provider_reports_that_provider():
+    """26 Nov: three Groq models in the router made Ask report provider "chain"; a one-provider chain reports the provider."""
+
+    class Other(FakeModel):
+        name = "other"
+
+    assert ChainModel([FakeModel("m1"), FakeModel("m2")]).name == "fake"
+    assert ChainModel([FakeModel("m1"), Other("m2")]).name == "chain"
