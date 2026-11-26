@@ -370,6 +370,46 @@
     "min": 0.0,
     "max": 0.25
    }
+  },
+  {
+   "id": "GR-D10",
+   "text": "A wholesale lot worth more than $25,000 waits for the Commercial manager",
+   "owner": "Commercial manager",
+   "type": "Approval",
+   "stage": "decide",
+   "locked": false,
+   "forbids": [],
+   "protects": [
+    [
+     "lot value|lot limit|wholesale limit",
+     "raise|increase|remove|skip|without|\\bno\\b"
+    ]
+   ],
+   "approvers": [],
+   "param": {
+    "field": "max_value_usd",
+    "value": 25000,
+    "stricter": "lower",
+    "min": 0,
+    "max": 100000
+   }
+  },
+  {
+   "id": "GR-D12",
+   "text": "A wholesale lot is sold only to an approved buyer",
+   "owner": "Channel Ops",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "approved buyer|buyer list|wholesale buyer",
+     "skip|without|\\bno\\b|any buyer"
+    ]
+   ],
+   "approvers": [],
+   "param": null
   }
  ],
  "gates": [
@@ -1326,6 +1366,26 @@
         }
        ]
       }
+     },
+     {
+      "name": "approved_buyers",
+      "title": "approved wholesale buyers",
+      "kind": "rate_card",
+      "versions": [
+       {
+        "valid_from": "2026-01-01",
+        "values": {
+         "US": {
+          "B01": 1,
+          "B02": 1,
+          "B03": 1,
+          "B04": 1,
+          "B05": 0,
+          "B06": 1
+         }
+        }
+       }
+      ]
      }
     ]
    }

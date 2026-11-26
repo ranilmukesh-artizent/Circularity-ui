@@ -38,6 +38,7 @@ FORBIDDEN_ACTIONS = (
     "recall.release",  # plan 9 P9-3.7: only a person releases a recalled tool from quarantine (R21)
     # 25 Nov 2026, the person: agents create, read and update, never delete or approve. These were only held before.
     "flow.discard", "workflow.draft.discard", "mapping.revert", "scenario.delete", "task.cancel",
+    "lot.approve", "lot.reject",  # plan 9 P9-6.11: only a person (or the standing policy) accepts a wholesale lot's bid (R21)
     "payout.decide",  # plan 9 P9-6.8: the payout a customer is paid, above the automatic limit, is decided by a person (R21)
     "rollout.",  # plan 9 P9-7.3: starting, widening, publishing and rolling back a canary are a person's (R21)
     "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
@@ -56,6 +57,7 @@ HELD_FOR_PERSON = (
     "registry.saveEntry",  # plan 9 P9-8.7: an agent's connector draft is held for a person (the adapter author's one proposal)
     "serviceDesk.postFault",  # P9-4.7: the fault found on a draft line re-prices it and re-runs its options; a person posts it
     "nonReturnFee.post",  # P9-3.18: a fee posted to the billing system is a person's; an agent may prepare it
+    "lot.propose",  # P9-6.11: picking a buyer for a lot is proposed by an agent and held; a person accepts it
     "service.book",  # P9-11.7: a service order for a rental device is booked by a person
 )  # a policy draft is a person's (P9-2.5)
 

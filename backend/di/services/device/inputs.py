@@ -5,7 +5,9 @@ whether it is stale), and the value of each of the pack's evidence types (`value
 store and the trade-in hold it today. The case keeps the result as its valuer snapshot (`valuer.inputs`), so every later
 read of the case sees the numbers it was opened with. P9-6.10 adds the price band of each channel (`bands`: the active price
 model's, else the feed's reference value at the pack's channel index with no interval) and the sales of the SKU in 90 days;
-the price confidence reads both. Later tasks add bids, listing and replacement demand.
+the price confidence reads both. P9-6.11 adds `bid_per_unit`: the best net a unit among the approved bids on a lot of the device's
+model and grade that is collecting bids (the wholesale channel then values the device at that bid). Later tasks add listing and
+replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -18,7 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
-from di.repositories import device_market, device_tradeins
+from di.repositories import device_lots, device_market, device_tradeins
 from di.services.canonical import store as canonical
 from di.services.device import lock, verify, wipe
 from di.services.modeler.pack import load_pack
@@ -43,6 +45,8 @@ class DeviceInputs:
     bands: dict[str, dict[str, Any]] = field(default_factory=dict)
     # devices of the SKU sold in the 90 days to `as_of`; None for a lot with no SKU
     sales_90d: int | None = None
+    # the best approved net a unit on a lot of this model and grade that is collecting bids (P9-6.11); None when there is none
+    bid_per_unit: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -98,6 +102,13 @@ def price_bands(
     return out
 
 
+def bid_per_unit(s: Session, case: Mapping[str, Any], as_of: date) -> float | None:
+    """The best approved net a unit on a lot of the received device's model and grade that is collecting bids (P9-6.11)."""
+    if not case.get("imei") or not case.get("model"):
+        return None
+    return device_lots.best_net_per_unit(s, str(case["model"]), str(case["grade"]), as_of)
+
+
 def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
     """The inputs of the device case (or lot dict) `case`, which names `imei`, `sku_key` and `grade`, as of `as_of`."""
     imei = case.get("imei")
@@ -119,4 +130,5 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         wipe=wipe.certificate_view(cond),
         bands=price_bands(s, case, cond, point.week if point else None),
         sales_90d=sales_of_sku(s, str(case["sku_key"]), as_of) if case.get("sku_key") else None,
+        bid_per_unit=bid_per_unit(s, case, as_of),
     )

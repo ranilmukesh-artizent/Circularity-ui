@@ -123,9 +123,12 @@ def test_device_template_equals_po_golden():
     assert t == template_of_pack(load_pack("device"))
     # the wholesale lot (P9-6.10, a Recover channel) is a plan 9 addition, not in the demo
     assert [(p.id, p.name) for p in t.paths if p.id != "wholesale"] == [(p["key"], p["name"]) for p in g["paths"]]
-    # GR-D7 (blacklist, P9-6.6), GR-D8 (price confidence, P9-6.10), GR-D11 (payout limit, P9-6.8), GR-D13 (quote match, P9-6.5):
+    # GR-D7 (blacklist, P9-6.6), GR-D8 (price confidence, P9-6.10), GR-D10 and GR-D12 (wholesale lots, P9-6.11), GR-D11
+    # (payout limit, P9-6.8), GR-D13 (quote match, P9-6.5):
     # plan 9 additions, not in the demo
-    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D11", "GR-D13")]
+    guards = [
+        (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
+    ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     # the demo flow has no wholesale node, so the Recover-only wholesale channel is "removed from the flow" until a flow adds it

@@ -37,9 +37,11 @@ def test_device_pack_matches_golden():
     assert (t.key, t.name, t.pre) == ("device", "Device recommerce", g["pre"])
     # the wholesale lot (P9-6.10, a Recover channel) is a plan 9 addition, not in the demo
     assert [(p.id, p.name) for p in t.paths if p.id != "wholesale"] == [(p["key"], p["name"]) for p in g["paths"]]
-    # GR-D7 (blacklist, P9-6.6), GR-D8 (price confidence, P9-6.10), GR-D11 (payout gap, P9-6.8) and GR-D13 (quote match,
-    # P9-6.5) are plan 9 additions for received devices; the demo has none of them
-    guards = [(x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D11", "GR-D13")]
+    # GR-D7 (blacklist, P9-6.6), GR-D8 (price confidence, P9-6.10), GR-D10 and GR-D12 (wholesale lots, P9-6.11), GR-D11
+    # (payout gap, P9-6.8) and GR-D13 (quote match, P9-6.5) are plan 9 additions for received devices; the demo has none of them
+    guards = [
+        (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
+    ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     assert [d.kind for d in t.dims] == ["set", "set", "set", "min", "min"]

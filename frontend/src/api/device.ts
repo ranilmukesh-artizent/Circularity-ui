@@ -135,3 +135,46 @@ export interface PriceHold { id: string; reason: string; owner: string; signals?
 
 /** The device block of a case, or null for a case that is not a received device (the industrial book, a tool return). */
 export const deviceView = (c: CaseRec): DeviceView | null => c.device ?? null;
+
+/** One bid on a wholesale lot (P9-6.11): what the buyer bids a unit, the fees and logistics a unit that come off it, and the net. */
+export interface LotBid { bid_id: string; buyer_code: string; amount: number; fees: number; logistics: number; net: number }
+
+/** A wholesale lot of received devices (P9-6.11, DV-07). It is idding until a person with manageLots proposes it; the best
+ * bid is computed among the approved buyers (a bid from any other buyer is in dropped, with its reason) and a person with the
+ * Approver role accepts it, never the one who built or proposed it. waits_for says who a proposed lot waits for. */
+export interface LotView {
+  id: string;
+  lot_ref: string;
+  org_unit_id: string | null;
+  model: string;
+  grade: string;
+  units: number;
+  status: 'draft' | 'bidding' | 'proposed' | 'approved' | 'rejected' | 'sold';
+  bids_received: number;
+  best_bid: LotBid | null;
+  dropped: { bid_id: string; buyer_code: string; reason: string }[];
+  value_usd: number | null;
+  created_by: string;
+  proposed_by: string | null;
+  approved_by: string | null;
+  reason: string | null;
+  waits_for: { role: string; owner: string; reason: string } | null;
+  case_ids?: string[];
+}
+
+export interface LotList { lots: LotView[]; me: string; can: { build: boolean; approve: boolean } }
+
+/** lot.list: the lots of the orgs the signed-in person sees (a read action; the card calls it again after each lot action). */
+export const listLots = () => invoke<LotList>('lot.list', {});
+
+/** lot.build: group the org's open wholesale-routed devices into lots and post them for bids. */
+export const buildLots = (orgUnitId: string) => invoke<{ lots: LotView[] }>('lot.build', { org_unit_id: orgUnitId });
+
+/** lot.propose: pick the best approved bid. At or under the limit the standing policy approves it; above, it waits for the Commercial manager. */
+export const proposeLot = (lotId: string) => invoke<{ status: string; approved_by_policy: boolean }>('lot.propose', { lot_id: lotId });
+
+/** lot.approve: a person accepts the proposed bid (not the person who built or proposed the lot). */
+export const approveLot = (lotId: string) => invoke<{ status: string }>('lot.approve', { lot_id: lotId });
+
+/** lot.reject: send a proposed lot back with a reason. */
+export const rejectLot = (lotId: string, reason: string) => invoke<{ status: string }>('lot.reject', { lot_id: lotId, reason });

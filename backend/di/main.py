@@ -12,6 +12,7 @@ import di.services.actions.config_agent  # registers action handlers (config.rea
 import di.services.actions.connections  # registers action handlers (registry.*, connection.*: the adapter registry; plan 9)
 import di.services.actions.decisions  # registers action handlers
 import di.services.actions.device_cases  # registers action handlers (payout.decide; plan 9 P9-6.8)
+import di.services.actions.device_lots  # registers action handlers (lot.build, propose, approve, reject, list; plan 9 P9-6.11)
 import di.services.actions.engine  # registers action handlers
 import di.services.actions.evidence_refresh  # registers evidence.refresh (re-run a recall check; plan 9 P9-9.9)
 import di.services.actions.exceptions  # registers action handlers (exception.explain: the exception assistant; plan 9)

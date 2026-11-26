@@ -911,7 +911,7 @@ each story went.
 - [x] P9-6.8 Payout adjustment within 10 percent
 - [x] P9-6.9 Price model behind the predictor
 - [x] P9-6.10 Price per channel with interval and floor
-- [ ] P9-6.11 Wholesale lots sold to the best approved bid
+- [x] P9-6.11 Wholesale lots sold to the best approved bid
 - [ ] P9-6.12 List, settle and learn from device sales
 - [ ] P9-6.13 Ageing suggestions accepted into rules
 - [ ] P9-6.14 Device customer diversions

@@ -126,6 +126,7 @@ STEP_TPL: dict[str, list[str]] = {
     "offers": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "auction": ["reserve", "sale", "ship", "fulfil", "receipt"],
     "market": ["reserve", "sale", "ship", "fulfil", "receipt"],
+    "wholesale": ["reserve", "sale", "ship", "fulfil", "receipt"],  # plan 9 P9-6.11: a lot sold to the best approved bid
     # a service ticket's options (P9-4.9; the valuer's OPTION_KINDS says the same, tests/test_service_desk_execute.py): a batch's
     # `split` has no plan of its own, the route carries the union of its lines' kinds (`kinds`, below)
     "fix": ["repair", "transport", "finance"],

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { acceptProposal, rejectProposal } from '../../api/agents';
 import { isFraudItem } from '../../api/fraud';
 import { assignItem, draftedBy, draftOwner, explainException, resolveItem, useMyWork, type ExceptionDraft, type WorkItem, type WorkKind } from '../../api/mywork';
-import { accounts } from '../../api/session';
+import { accounts, can } from '../../api/session';
 import { postNonReturnFee } from '../../api/toolFleet';
 import { useBackend } from '../../api/useBackend';
 import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
+import { LotsCard } from './LotsCard';
 import { countsByKind, dueLabel, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
 
 type Dialog = { kind: 'resolve' | 'assign' | 'reject'; item: WorkItem };
@@ -50,6 +51,7 @@ export function MyWorkPage() {
           <PackKpiTiles kpis={s.kpis.filter((x) => x.pack === k)} />
         </section>
       ))}
+      {(can('manageLots') || can('approve.decisions')) && <LotsCard />}
       <div className="row" role="group" aria-label="Filter by kind" style={{ marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         <button className={'chip ' + (kind === 'all' ? 'ok' : 'line')} aria-pressed={kind === 'all'} onClick={() => setKind('all')}>
           All {s.items.length}
