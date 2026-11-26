@@ -41,6 +41,8 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
     `docker compose exec`. They act on the main stack, which belongs to the lead.
   - Never `docker compose run ... api pytest` without `-e DI_DATABASE_URL=` set to your own database: the default is
     the main `di` database, and test setup resets it under the lead's runs (26 Nov, a writer did this mid-smoke).
+  - Save any check output under a file name that carries your writer number (`wt<k>-…`): writers share one
+    scratchpad, and a shared name gets overwritten by a sibling.
   - For a shell-script task, run your new cases directly with stubs, and list what the lead must run.
 - **Model first (R16, 25 Nov).** Anything that reads text, interprets evidence, drafts, explains, plans or writes a
   question runs on the model through `AgentLoop` (I-8) when the router has one, as typed Pydantic AI output. Code checks

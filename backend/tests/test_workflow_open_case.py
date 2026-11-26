@@ -83,7 +83,7 @@ def test_the_block_is_in_the_catalogue_and_the_palette():
     body = client.get("/api/screens/workflows/blocks", headers=h("developer")).json()
     assert [p["id"] for p in body["palette"]] == ["x_case"] and body["palette"][0]["label"] == "Open case"
     assert set(blocks.CASE_REASONS) == {"rma", "lease_end", "trade_in", "contract_end", "iot_alarm", "manual", "swap",
-                                        "service_order", "pool_excess"}  # fmt: skip
+                                        "service_order", "pool_excess", "rental_return"}  # fmt: skip
 
 
 def test_published_ingest_with_open_case_opens_cases(workflow):

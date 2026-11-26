@@ -72,6 +72,7 @@ CASE_REASONS = (
     "swap",
     "service_order",
     "pool_excess",
+    "rental_return",  # a medical rental device back from a hospital (P9-11.6)
 )  # di.services.cases.intake.REASONS
 CURRENCIES = ["USD", "EUR", "INR"]  # the ISO 4217 codes the rate table has rates for (generic.to_usd)
 ZONES = [
