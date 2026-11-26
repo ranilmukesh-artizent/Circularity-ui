@@ -13,6 +13,10 @@ ends -> `upgrade` to the successor; remaining life under 25% -> `swap`; else `ke
 so they live in the table and change only through its maker-checker (a market or customer overlay, P9-5.6's levers). The table's
 `reason` is a template: `{class}`, `{eop}`, `{term_end}`, `{successor}` and `{rul}` are filled here from computed facts.
 
+**Gate before the table (P9-5.8, R20).** A tool a safety recall holds (`recalled=`, G-TOOL-REC) is a `swap` with the
+recall named, whatever the table or a lever says; `price` then swaps it on every route that does not replace it (even "renew as
+it is": a recalled tool is never kept). A tool the gate does not hold is decided by the table as before.
+
 Inputs, all passed in: `lines` (`{serial, cls}`), `life` (serial -> `tool_life.LifeResult` of P9-3.9), `eop` (class -> end of
 parts and successor from `plm.end_of_parts`, P9-3.3) and `next_term_end` (the contract's term end plus its term months). A tool
 with no life result is treated as 100% with Low confidence (nothing is known, so the decision waits). A tool whose life
@@ -61,6 +65,7 @@ class ToolAction:
     confidence: str
     end_of_parts: date | None
     successor: str | None
+    recall: str | None = None  # the safety recall that sends the tool away (G-TOOL-REC), else None
 
 
 def tool_actions(
@@ -71,14 +76,21 @@ def tool_actions(
     evaluator: DecisionTableEvaluator,
     market: str,
     table: JdmTable,
+    recalled: Mapping[str, str] | None = None,
 ) -> list[ToolAction]:
-    """The action of each line (module docstring), in the order of `lines`."""
+    """The action of each line (module docstring), in the order of `lines`. `recalled` (serial -> the recall check's reason)
+    names the tools a safety recall holds: the gate runs before the table (R20), so such a tool is a `swap` whatever its life
+    says and the table is not asked."""
     out: list[ToolAction] = []
     for ln in lines:
         serial, cls = str(ln["serial"]), str(ln.get("cls") or ln.get("tool_class") or "")
         lf = life.get(serial)
         rul, conf = (lf.rul_tool, lf.confidence) if lf is not None else (100, "Low")
         ends, successor = eop.get(cls, (None, None))
+        if recalled and serial in recalled:
+            why = f"{recalled[serial]}: swapped, never kept"
+            out.append(ToolAction(serial, cls, "swap", why, rul, conf, ends, successor, recalled[serial]))
+            continue
         before = ends is not None and ends < next_term_end
         r = evaluator.evaluate(
             table,
@@ -243,7 +255,7 @@ def price(
     cost_share, logistics = rate(fees, "refurb_cost_share"), rate(rate_card, "logistics")
     n = D(term_months)
     out: list[ValueLine] = []
-    current = proposed = saving = swap_cost = new_all = credit_all = D(0)
+    current = proposed = saving = swap_cost = new_all = credit_all = standard = standard_cost = D(0)
     credits: list[Credit] = []
     per: dict[str, list[ToolFee]] = {"proposal": [], STANDARD: [], "upgrade_all": []}
     for a in actions:
@@ -257,7 +269,13 @@ def price(
         months = int(ln.get("months") or 0)
         credit_one = _credit(ev, credit_table, market, a, months, list_price)
         credit_all += credit_one
-        per[STANDARD].append(ToolFee(a.serial, a.cls, "keep", _c(cur), D(0), None))
+        if a.recall:  # a recalled tool is never kept: even renewing as it is swaps it
+            standard += refurb_fee
+            standard_cost += _c(cost_share * list_price + logistics)
+            per[STANDARD].append(ToolFee(a.serial, a.cls, "swap", refurb_fee, D(0), None))
+        else:
+            standard += cur
+            per[STANDARD].append(ToolFee(a.serial, a.cls, "keep", _c(cur), D(0), None))
         per["upgrade_all"].append(ToolFee(a.serial, a.cls, "upgrade", new_fee, credit_one, a.successor))
         if a.action == "keep":
             proposed += cur
@@ -288,7 +306,7 @@ def price(
     w, wo = D(str(p_with)), D(str(p_without))
     nets = {
         "proposal": _c((proposed * n - swap_cost - total) * w),
-        STANDARD: _c(current * n * wo),
+        STANDARD: _c((standard * n - standard_cost) * wo),
         "upgrade_all": _c((new_all * n - credit_all) * w),
     }
     routes = sorted((RouteValue(k, ROUTE_NAMES[k], v, k == STANDARD) for k, v in nets.items()), key=lambda r: (-r.net, r.id))

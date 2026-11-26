@@ -23,6 +23,10 @@ the planner above gives each order to one return, so a return that is planned fo
 second time, and the swap it fills is the demand GR-02 asks of a refurbishment. Only a return with a workbench grade counts
 (GR-C3). Matching proposes; reservations are written on approval (P9-5.5).
 
+The safety recall check (G-TOOL-REC, `fleet_evidence.recall_check`) is a gate and runs before the table and the match (P9-5.8,
+R20): a tool an active notice holds is a `swap` whatever its life (`refresh_actions`), and a stock unit a notice holds is never
+offered to a swap (`refresh_match`).
+
 Owns: reading the queue and planning it. Never does: approve a case or move it to another stage, or call a language model.
 """
 
@@ -38,11 +42,11 @@ from sqlalchemy.orm import Session
 from di.core import clock
 from di.repositories import market_tables as tables_repo
 from di.repositories import plm, unit_reservations
-from di.services.cases import intake, life_evidence, refresh_window, regrade
+from di.services.cases import intake, life_evidence, recall_evidence, refresh_window, regrade
 from di.services.cases import replan as replanner
 from di.services.engine import like_life
 from di.services.modeler.tables import JdmTable, ZenEvaluator
-from di.services.modeler.valuers import contract_refresh, tool_fleet, tool_inputs
+from di.services.modeler.valuers import contract_refresh, fleet_evidence, tool_fleet, tool_inputs
 from di.services.modeler.valuers.tool_fleet import Plan
 
 PACK, FLOW = (
@@ -93,6 +97,17 @@ def refresh_table(s: Session, c: Mapping[str, Any]) -> JdmTable | None:
     return None if row is None else JdmTable.model_validate(row.body)
 
 
+def _notices(s: Session) -> list[Any]:
+    """The safety recall register's notices (canonical `recall`)."""
+    return list(recall_evidence.evidence(s, None, None)["value"]["recalls"])
+
+
+def recalled(notices: list[Any], serial: str, cls: str) -> str | None:
+    """Why the safety recall check holds the serial (the notice named), None when no active notice does (G-TOOL-REC)."""
+    res, _paths, _parts = fleet_evidence.recall_check(serial, cls, notices, None)
+    return None if res.passed else res.reason
+
+
 def refresh_actions(s: Session, c: Mapping[str, Any], table: JdmTable | None = None) -> list[contract_refresh.ToolAction]:
     """The action of each tool of the refresh case `c` (contract_refresh.tool_actions) with the life of its serial, PLM's end of
     parts and the market's table in force today (`table`: a copy of it with the what-if levers moved, P9-5.6); [] without a
@@ -112,8 +127,10 @@ def refresh_actions(s: Session, c: Mapping[str, Any], table: JdmTable | None = N
         if res is not None:
             life[str(ln["serial"])] = res
     eop = {k: plm.end_of_parts(s, org, k) for k in sorted({str(ln.get("cls")) for ln in lines if ln.get("cls")})}
+    notices = _notices(s)
+    held = {str(ln["serial"]): why for ln in lines if (why := recalled(notices, str(ln["serial"]), str(ln.get("cls") or "")))}
     return contract_refresh.tool_actions(
-        lines, life, eop, _add_months(end, int(r.get("term_months") or 0)), ZenEvaluator(), str(market), table,
+        lines, life, eop, _add_months(end, int(r.get("term_months") or 0)), ZenEvaluator(), str(market), table, held,
     )  # fmt: skip
 
 
@@ -149,7 +166,11 @@ def refresh_match(s: Session, org_unit_id: str, overlay: Mapping[str, JdmTable] 
             serial = n.id.split(":", 1)[1]
             needs.append(n)
             meta[n.id] = {"serial": serial, "line": lines.get(serial, {}), "days": days, "customer": r.get("customer") or ""}
-    units = [like_life.Unit(u["id"], u["cls"], u["rul"], "stock") for u in unit_reservations.stock(s)]
+    notices = _notices(s)  # the recall gate first: a unit a notice holds is never offered
+    units = [
+        like_life.Unit(u["id"], u["cls"], u["rul"], "stock") for u in unit_reservations.stock(s)
+        if recalled(notices, str(u["id"]), str(u["cls"])) is None
+    ]  # fmt: skip
     res = like_life.match(needs, units, unit_reservations.held(s, org_unit_id))
     assign, why = dict(res.assign), dict(res.why)
     ruls = {u.id: u.rul for u in units}
