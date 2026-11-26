@@ -60,6 +60,9 @@ def move(s: Session, c: store.Case, to: str, reason: str, actor: str, seq: int |
         p,
     )
     if to == "reeval":
+        # a reservation of the declined or changed decision frees its units (review M2; `unit_reservations.release`, written here
+        # because the cases layer does not import the repositories)
+        s.execute(text("UPDATE unit_reservation SET status = 'released' WHERE case_id = :c AND status = 'held'"), {"c": c["id"]})
         _case_request(s, c["id"])
 
 

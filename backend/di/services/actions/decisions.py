@@ -350,6 +350,16 @@ def _fraud_held(c: dict[str, Any]) -> tuple[str, str] | None:
     return None
 
 
+def _routed_role(i: dict[str, Any], ctx: CallContext, c) -> tuple[str, str] | None:
+    """A contract refresh: the gate that blocks it, and the role its routed approver holds (review M4, M5, M7)."""
+    if not intake.is_refresh(c):
+        return None
+    acct = ctx.actor.account
+    return refresh_decision.block_refusal(c) or (
+        refresh_decision.approver_refusal(ctx.session, c, i.get("route"), acct.role) if acct is not None else None
+    )
+
+
 @guard("decision.approve")
 def approve_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
@@ -357,13 +367,13 @@ def approve_guard(i: dict[str, Any], ctx: CallContext):
     rec = c.get("recommendation")
     if not g and i.get("route") and rec and i["route"] != rec["plan"]:
         g = "conflict", "That route is not the recommendation; use Override."
-    return g or _stale_tables(ctx, c) or _ap_policy(i, ctx, c)
+    return g or _stale_tables(ctx, c) or _routed_role(i, ctx, c) or _ap_policy(i, ctx, c)
 
 
 @guard("decision.override")
 def override_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
-    return _fraud_held(c) or _ap_guard(i, ctx, c) or _stale_tables(ctx, c) or _ap_policy(i, ctx, c)
+    return _fraud_held(c) or _ap_guard(i, ctx, c) or _stale_tables(ctx, c) or _routed_role(i, ctx, c) or _ap_policy(i, ctx, c)
 
 
 def _approve_idem(i: dict[str, Any], ctx: CallContext):

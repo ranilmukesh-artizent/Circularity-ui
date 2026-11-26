@@ -16,7 +16,8 @@ progress (sent cases on the refurb path). `replan` also refreshes the stored rou
 whose result changed, with a journal row by `system` ("Re-planned: <old> -> <new>", di.services.cases.replan.on_opened).
 The decision of a single case (`intake.tool_plan` over `intake.tool_queue`) is the same plan, so its result equals the plan's.
 
-`refresh_match` (P9-5.3): the swaps of every open contract refresh of the org are matched together, so a unit is promised once.
+`refresh_match` (P9-5.3): the swaps of every open contract refresh of the org (not yet approved: stage none, awaiting approval or
+re-evaluation; an approved one holds its units) are matched together, so a unit is promised once.
 First `like_life.match` over the refurbished stock (`unit_reservations.stock`, minus the units held). A swap left over joins
 the returns queue as a named order of kind lease (id `<case>:<serial>`, needed by the contract's end, at the fee of its line):
 the planner above gives each order to one return, so a return that is planned for a pool request or a renewal is not offered a
@@ -136,7 +137,10 @@ def refresh_actions(s: Session, c: Mapping[str, Any], table: JdmTable | None = N
 
 def _open_refresh(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     rows = s.execute(
-        text("SELECT data FROM case_record WHERE owner = :o AND stage <> 'closed' AND data ->> 'flow' = :f ORDER BY id"),
+        text(
+            "SELECT data FROM case_record WHERE owner = :o AND stage IN ('none', 'awaiting_approval', 'reeval') "
+            "AND data ->> 'flow' = :f ORDER BY id"
+        ),
         {"o": org_unit_id, "f": intake.REFRESH_FLOW},
     ).scalars()
     return sorted(rows, key=lambda d: str(d["id"]))
@@ -177,7 +181,10 @@ def refresh_match(s: Session, org_unit_id: str, overlay: Mapping[str, JdmTable] 
     src = dict.fromkeys(assign, "stock")
     left = [n for n in needs if n.id not in assign]
     if left:
-        docs = intake.open_tool_cases(s, org_unit_id)
+        held_now = unit_reservations.held(
+            s, org_unit_id
+        )  # a return held for an approved refresh is not offered again (review M1)
+        docs = [d for d in intake.open_tool_cases(s, org_unit_id) if str(d.get("id")) not in held_now]
         q = intake.queue_of(s, org_unit_id, [intake.tool_input(d) for d in docs]) if docs else None
         if q is not None:
             demand = copy.deepcopy(q.demand)
@@ -217,3 +224,16 @@ def refresh_match(s: Session, org_unit_id: str, overlay: Mapping[str, JdmTable] 
              "source": src.get(n.id) if u else None, "why": None if u else why.get(n.id, "no like-life unit")}
         )  # fmt: skip
     return out
+
+
+def case_match(s: Session, c: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The units of one refresh case: for a case approved (or executing, or closed) the units its sent proposal holds, else its
+    like-life match among the org's cases that still wait (review M1: an approved case no longer takes part in the match)."""
+    if c.get("stage") in ("approved", "executing", "closed"):
+        units = ((c.get("exec") or {}).get("proposal") or {}).get("units") or []
+        return [
+            {"serial": u["serial"], "need_id": u["need_id"], "cls": None, "target": None, "unit_id": u["unit_id"], "rul": None,
+             "distance": None, "source": u.get("source"), "why": None}
+            for u in units
+        ]  # fmt: skip
+    return refresh_match(s, str(c["owner"])).get(str(c["id"]), [])

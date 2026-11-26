@@ -273,7 +273,8 @@ def units_reserve(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # 
             body = {"status": "reserved", "reservedFor": c["id"], "reserveRef": ref, "issuedKey": ins["idem_key"]}
             cl.request("PATCH", f"{PARTS}/refurbished-units/{u['unit_id']}", json=body)
             calls.append({"call": "PATCH refurbished-units/{unitId}", "body": body | {"unitId": u["unit_id"]}})
-    except SourceError as e:
+    except SourceError as e:  # the parts system refused a PATCH: the units held a moment ago are freed (review M2)
+        unit_reservations.release(s, c["id"])
         raise _refused(e) from e
     finally:
         cl.close()

@@ -2,6 +2,7 @@
 
     held(s, org_unit_id) -> frozenset[str]                       the unit ids held now in the org
     hold(s, unit_id, case_id, need_id, by, org_unit_id=None)     hold a unit once; ActionError conflict when it is held
+    release(s, case_id) / consume(s, case_id)                   free the case's held units / mark them given to the customer
     stock(s) -> [{id, cls, rul, grade}]                          graded refurbished stock at the repair centre, available
 
 A unit is held once: a partial unique index on `unit_id` where the status is held, so two contracts that want one unit cannot
@@ -12,9 +13,9 @@ both hold it even when they race. `hold` is called when a person approves a refr
 Never does: approve anything, or decide who gets a unit (di.services.engine.like_life).
 """
 
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import text
+from sqlalchemy import CursorResult, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -57,3 +58,16 @@ def stock(s: Session) -> list[dict[str, Any]]:
         if r.data.get("status") == "available" and r.data.get("grade") and r.data.get("rul_pct") is not None
         and r.data.get("tool_class")
     ]  # fmt: skip
+
+
+def release(s: Session, case_id: str) -> int:
+    """Free every unit the case holds (status `released`): the case was declined, re-evaluated, sent back, lapsed or its
+    reservation step failed. The number of rows freed. In the caller's transaction."""
+    r = s.execute(text("UPDATE unit_reservation SET status = 'released' WHERE case_id = :c AND status = 'held'"), {"c": case_id})
+    return int(cast(CursorResult[Any], r).rowcount or 0)
+
+
+def consume(s: Session, case_id: str) -> int:
+    """The case's held units went to the customer (the contract renewed): status `consumed`, never offered again."""
+    r = s.execute(text("UPDATE unit_reservation SET status = 'consumed' WHERE case_id = :c AND status = 'held'"), {"c": case_id})
+    return int(cast(CursorResult[Any], r).rowcount or 0)

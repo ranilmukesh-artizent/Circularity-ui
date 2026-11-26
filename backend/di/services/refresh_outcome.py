@@ -13,8 +13,10 @@ fee_month} | None}`:
   customer renewed
   on the drafted lines), 0 for a lapse or when nothing was sent;
 - `predicted` is what the proposal said: its renewal likelihood and its fee a month (None without a proposal).
-The latest case of the contract that has no outcome yet is the one written; a case is never changed again once it has one, so a
-repeat sync records nothing. The source is read only (P9-3.1): nothing is written to it. No model step (R16), and no
+The oldest case of the contract that has no outcome yet is the one written; a case is never changed again once it has one, so a
+repeat sync records nothing. A status an earlier term already recorded is not the next term's: the later case takes it only when
+the contract's end date has moved past that case's term (review M6), so a source that keeps `renewed` does not close the next
+term's case on its first sync. The source is read only (P9-3.1): nothing is written to it. No model step (R16), and no
 action: this is
 the system noting a fact it was told, not a person's `outcome.confirm`, which is unchanged and forbidden to agents.
 """
@@ -25,6 +27,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from di.core import clock
+from di.repositories import unit_reservations
 from di.services.cases import store
 
 STATUSES = ("renewed", "lapsed")
@@ -58,6 +61,26 @@ def outcome_of(c: dict[str, Any], status: str, contract_fee: Any, today: str) ->
     }  # fmt: skip
 
 
+def _case_of(s: Session, contract_id: str, data: dict[str, Any]) -> str | None:
+    """The refresh case the contract's status belongs to (module docstring): the oldest of its cases without an outcome, unless an
+    earlier term already recorded this status and the contract has not moved past the case's term."""
+    rows = s.execute(
+        text(
+            "SELECT id, data -> 'refresh' ->> 'term_end' AS term_end, data -> 'renewalOutcome' ->> 'status' AS status "
+            "FROM case_record WHERE data ->> 'flow' = 'contract_refresh' AND data -> 'refresh' ->> 'contract_id' = :c "
+            "ORDER BY data -> 'refresh' ->> 'term_end', id"
+        ),
+        {"c": contract_id},
+    ).all()
+    open_ = [r for r in rows if r.status is None]
+    if not open_:
+        return None
+    case, end = open_[0], str(data.get("end_date") or "")[:10]
+    if any(r.status == data.get("renewal_status") and (r.term_end or "") < (case.term_end or "") for r in rows):
+        return str(case.id) if end > (case.term_end or "") else None  # the same status again: only once the term has been passed
+    return str(case.id)
+
+
 def record(s: Session) -> list[str]:
     """Write the outcome on the refresh case of each renewed or lapsed contract that has one open; the case ids. In the caller's
     transaction."""
@@ -68,13 +91,7 @@ def record(s: Session) -> list[str]:
     ).all()
     done: list[str] = []
     for r in contracts:
-        cid = s.execute(
-            text(
-                "SELECT id FROM case_record WHERE data ->> 'flow' = 'contract_refresh' "
-                "AND data -> 'refresh' ->> 'contract_id' = :c AND data -> 'renewalOutcome' IS NULL ORDER BY id DESC LIMIT 1"
-            ),
-            {"c": r.key},
-        ).scalar()
+        cid = _case_of(s, r.key, r.data)
         if cid is None:
             continue
         c = store.get(s, cid, for_update=True)
@@ -82,5 +99,9 @@ def record(s: Session) -> list[str]:
             continue
         c["renewalOutcome"] = outcome_of(c, r.data["renewal_status"], r.data.get("fee_month"), today)
         store.save(s, c)
+        if r.data["renewal_status"] == "renewed":
+            unit_reservations.consume(s, cid)  # the customer renewed on the swaps: the units are theirs
+        else:
+            unit_reservations.release(s, cid)  # a lapse frees the units for other contracts (review M2)
         done.append(cid)
     return done
