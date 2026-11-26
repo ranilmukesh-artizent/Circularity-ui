@@ -118,6 +118,19 @@ export function canRoute(r: RouteRef): boolean | 'tenant' {
   return !r.a || !(p in ref('RB_SECS')) || canPage(p, r.a);
 }
 
+/**
+ * Is this route a page that exists at all (for some role)? An unknown page or section is "Page not found", not a
+ * silent redirect Home. `known` is the menu's own section ids; a section must be one the demo's RB_SECS lists, or one the
+ * menu shows this account, to count as existing. Pages whose second segment is an id (product, case ids) are not judged.
+ */
+export function isKnownRoute(r: RouteRef, known: string[] = []): boolean {
+  const p = r.page;
+  if (!(p in ref('PAGES') || p in (session()?.pages ?? {}))) return false;
+  const secs = ref('RB_SECS') as Record<string, string[]>;
+  if (!r.a || p === 'product' || p === 'oauth' || !(p in secs)) return true;
+  return secs[p].includes(r.a) || known.includes(r.a);
+}
+
 /** The account's landing route, without the leading "#/" (e.g. "home", "product/received?focus=RT-1048"). */
 export function homeRoute(a: Account | null = currentAccount()): string {
   if (!a) return 'command';

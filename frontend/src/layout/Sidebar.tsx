@@ -72,9 +72,10 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
   // Keep the current section in view: the menu scrolls under the footer, so the last child (Manual Import) can sit hidden (UI QA 26).
   const navRef = useRef<HTMLElement>(null);
   useEffect(() => {
+    navRef.current?.querySelector('.ng.active')?.scrollIntoView({ block: 'nearest' }); // the page you are on (Settings, Audit stay reachable)
     const el = navRef.current?.querySelector<HTMLElement>('.nsl[aria-current="page"]');
     if (el) el.scrollIntoView({ block: 'nearest' });
-  }, [sectionKey, open]);
+  }, [page, sectionKey, open]);
 
   let lastSection = '';
   const rows: JSX.Element[] = [];
