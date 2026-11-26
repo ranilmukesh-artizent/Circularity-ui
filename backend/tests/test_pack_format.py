@@ -127,10 +127,14 @@ def test_device_template_equals_po_golden():
     # (payout limit, P9-6.8), GR-D13 (quote match, P9-6.5):
     # plan 9 additions, not in the demo
     guards = [
-        (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
+        (x.id, x.text, x.owner)
+        for x in t.guardrails
+        if x.id not in ("GR-D7", "GR-D8", "GR-D9", "GR-D10", "GR-D11", "GR-D12", "GR-D13")  # fmt: skip
     ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
-    assert [(d.key, d.label, list(d.values) or None) for d in t.dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
+    # the listing dims (listChannel, listDaysMin, offersMax: ageing rules, P9-6.13) are a plan 9 addition, not in the demo
+    dims = [d for d in t.dims if d.key not in ("listChannel", "listDaysMin", "offersMax")]
+    assert [(d.key, d.label, list(d.values) or None) for d in dims] == [(d["key"], d["label"], d["values"]) for d in g["dims"]]
     # the demo flow has no wholesale node, so the Recover-only wholesale channel is "removed from the flow" until a flow adds it
     rules = [asdict(r) for r in compile_flow(t, default_flow(t)) if r.path != "wholesale"]
     assert rules == [
@@ -165,7 +169,10 @@ def test_stages_are_the_seven():
 def test_route_classes_and_guardrail_types():
     classes = {k: {r.id: list(r.classes) for r in load_pack(k).routes} for k in TEMPLATE_KEYS}
     assert classes["tool_fleet"]["exit"] == ["recycle", "exit"]
-    assert classes["device"] == {c: ["sale"] for c in ("buynow", "offers", "auction", "market", "wholesale")}
+    # repair_sell, parts, recycle (P9-6.15) and replacement (P9-6.16) are the Recover routes of a received device
+    assert classes["device"] == {c: ["sale"] for c in ("buynow", "offers", "auction", "market", "wholesale")} | {
+        "repair_sell": ["sale"], "parts": ["parts"], "recycle": ["recycle"], "replacement": ["reuse"],
+    }  # fmt: skip
     assert classes["industrial"]["extparts"] == ["parts", "sale"]
     d2 = next(g for g in load_pack("device").guardrails if g.id == "GR-D2")
     assert d2.param is not None and (d2.param.field, d2.param.value, d2.param.stricter) == ("floor", 0.55, "higher")

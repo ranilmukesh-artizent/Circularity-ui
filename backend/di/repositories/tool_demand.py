@@ -53,7 +53,8 @@ def _held(s: Session, org_unit_id: str, case_id: str | None) -> set[str]:
     out: set[str] = set()
     for doc in rows:
         i = doc.get("rec_index")
-        dest = (doc["routes"][i].get("dest") or {}) if i is not None and doc.get("routes") else {}
+        route = doc.get("chosen") or (doc["routes"][i] if i is not None and doc.get("routes") else {})  # override: chosen
+        dest = route.get("dest") or {}
         out |= {x.strip() for x in str(dest.get("id") or "").split(",") if x.strip()}
     return out
 

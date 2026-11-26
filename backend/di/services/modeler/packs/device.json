@@ -169,6 +169,54 @@
    ],
    "instructions": [],
    "recover_only": true
+  },
+  {
+   "id": "repair_sell",
+   "name": "Repair then sell",
+   "app": "Depot repair, then the best listing channel · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "sale"
+   ],
+   "instructions": [],
+   "recover_only": true
+  },
+  {
+   "id": "parts",
+   "name": "Parts",
+   "app": "Teardown into service stock · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "parts"
+   ],
+   "instructions": [],
+   "recover_only": true
+  },
+  {
+   "id": "recycle",
+   "name": "Recycle",
+   "app": "Certified recycler with a certificate · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "recycle"
+   ],
+   "instructions": [],
+   "recover_only": true
+  },
+  {
+   "id": "replacement",
+   "name": "Replacement stock",
+   "app": "Replacement stock for an open demand · Recover cases only",
+   "owner": "Channel Ops lead",
+   "lead_days": null,
+   "classes": [
+    "reuse"
+   ],
+   "instructions": [],
+   "recover_only": true
   }
  ],
  "guardrails": [
@@ -411,6 +459,23 @@
    ],
    "approvers": [],
    "param": null
+  },
+  {
+   "id": "GR-D9",
+   "text": "A device is listed only with a genuine-parts declaration",
+   "owner": "Compliance",
+   "type": "Compliance",
+   "stage": "decide",
+   "locked": true,
+   "forbids": [],
+   "protects": [
+    [
+     "parts declaration|genuine parts",
+     "skip|without|\\bno\\b|ignore"
+    ]
+   ],
+   "approvers": [],
+   "param": null
   }
  ],
  "gates": [
@@ -436,7 +501,10 @@
    "id": "G-DEV-LOCK",
    "params": {
     "recheck_days": 7,
-    "locked_routes": [],
+    "locked_routes": [
+     "parts",
+     "recycle"
+    ],
     "exception": "blacklist_hit"
    },
    "active": true
@@ -741,8 +809,49 @@
     "buynow",
     "offers",
     "auction",
-    "wholesale"
+    "wholesale",
+    "repair_sell",
+    "parts",
+    "recycle",
+    "replacement"
    ],
+   "price_shadow": {
+    "min_shadow": 30
+   },
+   "more_routes": {
+    "repair_sell": {
+     "channels": [
+      "buynow",
+      "offers",
+      "auction"
+     ]
+    },
+    "parts": {
+     "value_share": 0.18,
+     "teardown": 6,
+     "days": 14,
+     "lot": 1000
+    },
+    "recycle": {
+     "material": 2.5,
+     "fee": 1,
+     "days": 10,
+     "lot": 1000
+    },
+    "replacement": {
+     "prep": 9,
+     "logistics": 6,
+     "grades": [
+      "A",
+      "B"
+     ],
+     "bands": [
+      "0-24m"
+     ],
+     "days": 3,
+     "lot": 1
+    }
+   },
    "ageing": {
     "offers_to_auction_days": 14,
     "offers_choices": [
@@ -758,7 +867,11 @@
     "offers": "Offers",
     "auction": "Auction",
     "market": "Marketplace",
-    "wholesale": "Wholesale lot"
+    "wholesale": "Wholesale lot",
+    "repair_sell": "Repair then sell",
+    "parts": "Parts",
+    "recycle": "Recycle",
+    "replacement": "Replacement stock"
    },
    "wholesale_index": {
     "A": 0.72,

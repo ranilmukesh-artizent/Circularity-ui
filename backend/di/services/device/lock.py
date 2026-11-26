@@ -13,7 +13,7 @@ The registry (dvreg, synthetic) writes `condition.device_blacklist` (`clear`, `r
 `device_lock` (`on`, `off`), `device_finance` (`clear`, `balance_owed`) and `registry_checked_at`. States, in this order:
 `none` (no check on file) and `stale` (checked longer ago than the gate's `recheck_days`, 7) hold the case until a new check
 arrives; `hit` (blacklist not clear, activation lock on, or a balance owed) fails every channel but the gate's
-`locked_routes` (none until P9-6.15) with "Blacklist or lock check hit (GR-D7): <status>, checked <date>" and opens one
+`locked_routes` (`parts`, `recycle`, P9-6.15) with "Blacklist or lock check hit (GR-D7): <status>, checked <date>" and opens one
 `blacklist_hit` item (role Approver, owner label "Compliance") with the registry evidence; `clear` lets the case go on.
 Only a person releases a hit (`work.resolve`, which agents may not run), and only with a registry check newer than the hit
 that shows the device clear. Only a received device (`valuer.imei`) has the gate; a PO lot has none.
@@ -181,9 +181,10 @@ def gate_check(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult
     if _lot(case) is None:
         return None
     reg = _registry(case)
-    keep = {str(r) for r in gate.params.get("locked_routes") or []}
-    routes = tuple(r.id for r in pack.routes if r.id not in keep)
     state = reg.get("state") or "none"
+    # only a hit leaves the locked routes open (P9-6.15); with no check or a stale one the case waits, and no route is open
+    keep = {str(r) for r in gate.params.get("locked_routes") or []} if state == "hit" else set()
+    routes = tuple(r.id for r in pack.routes if r.id not in keep)
 
     def result(passed: bool, hold: bool, reason: str, missing: tuple[str, ...] = ()) -> GateResult:
         return GateResult(gate.id, passed, GateEffect("block", routes, hold, None), missing, reason)

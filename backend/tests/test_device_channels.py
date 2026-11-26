@@ -54,8 +54,9 @@ def _decide(lot: dict, pack=None) -> Decision:
 def test_dv_06_channels_with_interval_and_feed_date():
     lot = _lot()
     by = {v["k"]: v for v in device.decide(lot)["all"]}
-    assert tuple(by) == CHANNELS
-    for k, v in by.items():
+    assert tuple(by) == (*CHANNELS, *device.EXTRA)  # P9-6.15: repair then sell, parts and recycle follow the four
+    for k in CHANNELS:  # the four sale channels have a band (repair then sell, parts and recycle have none)
+        v = by[k]
         assert v["p10_cash"] < v["cash"] < v["p90_cash"], k
         assert v["feed_week"] == FEED_WEEK and v["model_id"] == "PM-1", k
     assert by["wholesale"]["why"] == "No live bid: index estimate"

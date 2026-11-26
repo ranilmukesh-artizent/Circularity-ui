@@ -59,7 +59,7 @@ from di.services.execution import variance
 from di.services.instructions import queue
 from di.services.modeler import gates as gate_catalogue
 from di.services.modeler.pack import Pack
-from di.services.modeler.valuers import fleet_evidence, tool_carbon, tool_fleet, tool_inputs
+from di.services.modeler.valuers import battery, fleet_evidence, tool_carbon, tool_fleet, tool_inputs
 
 GATE_KEYS = ("id", "name", "passed", "reason", "guardrail", "owner", "kind", "stage", "stageLabel", "hold", "locked")
 
@@ -147,7 +147,7 @@ def _follow_through(s: Session, c: dict[str, Any], pack: Pack) -> dict[str, Any]
 PATH_KEYS = ("k", "name", "ok", "net", "gross", "cost", "hold", "why", "lines", "dest")
 
 
-def _paths(s: Session, c: dict[str, Any]) -> dict[str, Any]:
+def _paths(s: Session, c: dict[str, Any], pack: Pack) -> dict[str, Any]:
     """The six paths of the case (P9-3.12): the valuer's rows in the org's queue plan against the live named demand (the same
     plan the decision was made in), `ok` and `why` as the decision left them (a gate or a rule can exclude a path the valuer
     allows); `best` the recommended path, `second` the next eligible by net, `standard` the default path of the tool's
@@ -155,7 +155,10 @@ def _paths(s: Session, c: dict[str, Any]) -> dict[str, Any]:
     v = intake.valuer_input(c, "tool_fleet")
     if parts := fleet_evidence.blocked_parts(c):
         v["recallParts"] = sorted(parts)
-    dec = intake.tool_plan(intake.tool_queue(s, c["owner"], v), intake.case_rules(s, c))["res"][v["id"]]
+    if v.get("cls") == battery.CLASS:  # a pack has its own valuer, outside the tools' queue plan (P9-3.19)
+        dec = battery.decide(v, pack.valuer.params["battery"])
+    else:
+        dec = intake.tool_plan(intake.tool_queue(s, c["owner"], v), intake.case_rules(s, c))["res"][v["id"]]
     routes = {r["id"]: r for r in c.get("routes") or []}
     rows: list[dict[str, Any]] = []
     for x in dec["all"]:
@@ -242,7 +245,7 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
     params = next((g.params for g in gate_catalogue.pack_gates(pack) if g.id == fleet_evidence.TEL_GATE), {})
     now = clock.now()
     grade = tool_inputs.grade_of(regrade.workbench_evidence(s, c.get("serial") or c["assetId"]), est, now=now)
-    paths = _paths(s, c)
+    paths = _paths(s, c, pack)
     return {
         "case_id": case_id,
         "co2": _carbon(c, pack, paths),

@@ -62,7 +62,8 @@ def band_figures(v: Mapping[str, Any], band: PriceBand | None) -> dict[str, floa
 
 def channels_view(lot: Mapping[str, Any]) -> list[dict[str, Any]]:
     """The case page's channels (facade `ChannelView`): per channel the expected net a unit, days to sell, the P10 to P90 cash
-    (None without a band), the feed week, the model and the valuer's note, best first among the channels the valuer allows."""
+    (None without a band), the feed week, the model and the valuer's note, best first among the channels the valuer allows;
+    `repair` on Repair then sell (P9-6.15)."""
     values = device.decide(dict(lot), [])["all"]
     order = {v["k"]: i for i, v in enumerate(sorted(values, key=lambda v: (not v["ok"], -v["score"])))}
     return [
@@ -77,9 +78,23 @@ def channels_view(lot: Mapping[str, Any]) -> list[dict[str, Any]]:
             "modelId": v.get("model_id"),
             "ok": v["ok"],
             "why": v["why"],
+            **(
+                {"repair": _repair_view(v["repair"])} if "repair" in v else {}
+            ),  # the quote a Repair then sell route rests on (P9-6.15)
+            **(
+                {"replacement": _replacement_view(v["replacement"])} if "replacement" in v else {}
+            ),  # the demand unit a Replacement stock route fills (P9-6.16)
         }  # fmt: skip
         for v in sorted(values, key=lambda v: order[v["k"]])
     ]
+
+
+def _repair_view(q: Mapping[str, Any]) -> dict[str, Any]:
+    return {"repair": q["repair"], "cost": q["cost"], "priceUplift": q["price_uplift"], "days": q["days"]}
+
+
+def _replacement_view(r: Mapping[str, Any]) -> dict[str, Any]:
+    return {"demandId": r["demand_id"], "unitCost": r["unit_cost"], "open": r["open"]}
 
 
 def usd(v: float) -> str:

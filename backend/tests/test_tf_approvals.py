@@ -45,7 +45,7 @@ def _gate(gid: str, passed: bool, reason: str = "") -> SimpleNamespace:
 
 
 def _route(best: dict, age: float = 36, conf: float | None = 0.9, gates=()) -> tool_approval.ApprovalRoute:
-    return tool_approval.route_for_approval(best, {"age": age}, conf, list(gates), PACK)
+    return tool_approval.route_for_approval(best, {"ageMonths": age}, conf, list(gates), PACK)
 
 
 # ------------------------------------------------------------------ the pure route
@@ -99,7 +99,7 @@ def test_tf_09_customer_can_tighten_the_limits(monkeypatch):
         for g in PACK.guardrails
     ]
     tight = PACK.model_copy(update={"guardrails": guards})
-    r = tool_approval.route_for_approval(_best("refurb", 450.0), {"age": 36}, 0.9, [], tight)
+    r = tool_approval.route_for_approval(_best("refurb", 450.0), {"ageMonths": 36}, 0.9, [], tight)
     assert r.reasons == ["Repair $450 is over $400 (GR-14)"]
 
 
@@ -273,3 +273,24 @@ def test_tf_09_view_tenant_boundary():
     c = _dcd_grade_c()
     r = _view(c["id"], "planner.b")
     assert r.status_code == 403 and r.json()["error"]["code"] == "tenant_boundary", r.text
+
+
+def test_tf_09_write_off_age_unknown_or_in_years_is_not_a_young_hold():
+    """Review phase 3 finding 4: a case with no age fact (age 0) or an age in years is not 'Write-off at 0 months'."""
+    best = _best("exit")
+    for case in ({"age": 0}, {}, {"age": 2.0}, {"ageMonths": None, "age": 0}):
+        assert tool_approval.route_for_approval(best, case, 0.9, [], PACK).kind == "policy", case
+    young = tool_approval.route_for_approval(best, {"ageMonths": 18, "age": 1.5}, 0.9, [], PACK)
+    assert young.role == "Service operations"
+
+
+def test_tf_09_age_in_months_comes_from_the_contract_line():
+    serial = "CMH-AP-AGE"
+    with SessionLocal() as s:
+        canonical.apply(s, "fleet", [canonical.Fact("contract_line", serial, "months_on_contract", 18, resource="lines")])
+        s.commit()
+    try:
+        assert _open(serial, "CMH", "B")["ageMonths"] == 18
+        assert _open("CMH-AP-AGE2", "CMH", "B")["ageMonths"] is None  # nothing on file: unknown, never 0
+    finally:
+        starting.reset()

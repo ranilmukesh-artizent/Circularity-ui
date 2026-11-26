@@ -158,14 +158,15 @@ def test_dv_09_a_listing_channel_has_a_list_step_and_wholesale_does_not():
         assert ex_kinds({"id": k, "variant": "listing"}) == ["reserve", "list", "ship", "fulfil", "receipt"]
         assert ex_kinds({"id": k}) == STEP_TPL[k]  # a PO lot: unchanged
     c = _open()
-    assert [r.get("variant") for r in c["routes"]] == ["listing", "listing", "listing", None]  # not the wholesale lot
-    assert [r["id"] for r in c["routes"]] == ["buynow", "offers", "auction", "wholesale"]
+    assert [r.get("variant") for r in c["routes"]] == ["listing"] * 3 + [None] * 5  # not the wholesale lot, nor the other routes
+    ids = [r["id"] for r in c["routes"]]
+    assert ids == ["buynow", "offers", "auction", "wholesale", "repair_sell", "parts", "recycle", "replacement"]
 
 
 def test_dv_09_listing_instruction(monkeypatch, sending):
     c = _open()
     assert _approve(c["id"])["ok"]
-    assert [s["k"] for s in _case(c["id"])["exec"]["steps"]] == ["reserve", "list", "ship", "fulfil", "receipt"]
+    assert [s["k"] for s in _case(c["id"])["exec"]["steps"]] == ["reserve", "list", "ship", "fulfil", "receipt", "credit"]
     _ack(c["id"], 0)  # the reservation is acknowledged: the listing goes next
     with SessionLocal() as s:
         (ins,) = [r for r in queue.for_case(s, c["id"]) if r["kind"] == "list"]
@@ -187,7 +188,7 @@ def test_dv_09_listing_instruction(monkeypatch, sending):
 def test_dv_09_a_wholesale_case_lists_nothing():
     c = _open()
     wholesale = next(r for r in c["routes"] if r["id"] == "wholesale")
-    assert ex_kinds(wholesale) == STEP_TPL["wholesale"] and "list" not in ex_kinds(wholesale)
+    assert ex_kinds(wholesale) == [*STEP_TPL["wholesale"], "credit"] and "list" not in ex_kinds(wholesale)
     assert settle.listing_body(c | {"chosen": wholesale}) is None
 
 
@@ -203,6 +204,7 @@ def test_dv_09_settlement_posts_realised_vs_forecast():
         settle.on_sale(s, _sale(c["id"], price))
         s.commit()
     _ack(c["id"], 4)
+    _ack(c["id"], 5)  # the customer credit memo (P9-13.4)
     got = _case(c["id"])
     st = got["settlement"]
     assert st["price"] == price and st["fees"] == 9.54 and st["buyer_returns"] == 0 and st["sale_id"] == "SAL-T-1"
@@ -250,6 +252,7 @@ def _settled(price: float = 300.0) -> dict:
         settle.on_sale(s, _sale(c["id"], price, fees=9.0))
         s.commit()
     _ack(c["id"], 4)
+    _ack(c["id"], 5)  # the customer credit memo (P9-13.4)
     return _case(c["id"])
 
 

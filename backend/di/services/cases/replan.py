@@ -53,9 +53,11 @@ def queue_plan(s: Session, case: Mapping[str, Any]) -> dict[str, Any] | None:
     """The case's place in the plan of its org's open queue (module docstring); None for a case of another template."""
     if case.get("template") != "tool_fleet" or intake.is_refresh(case):  # a contract refresh is in no queue (P9-5.1)
         return None
+    if case.get("cls") == "BAT":  # a battery pack has its own valuer and is in no queue (P9-3.19)
+        return None
     me = case["id"]
     if case["stage"] in ("approved", "executing"):
-        rec = case.get("recommendation") or {}
+        rec = case.get("chosen") or case.get("recommendation") or {}  # an override takes the chosen route's order
         held = (rec.get("dest") or {}).get("id")
         return {"holds": held, "contested": [], "lost": [], "kinds": {}}
     q = intake.tool_queue(s, case["owner"], intake.valuer_input(case, "tool_fleet"))

@@ -12,6 +12,9 @@ stories CR-04 and CR-05; registry entries I-6, I-10, I-11).
   `decision.approve` (or `decision.override` for another route). They are priced again when the case is opened, re-evaluated
   and submitted, so the approver sees what was submitted. Its `approvalHolds` (GR-C1 credits over the limit to Sales, GR-C2
   everything else to the Fleet desk) keep the standing policy and every agent from approving it.
+- **The gate first (P9-5.8, R20).** GR-07 on the contract (`contract_block`: an open theft claim or damage charge) blocks
+  the proposal before any pricing: no routes, holds or documents, and `refreshBlock` says which gate and why. Recalled tools and
+  units are gated earlier still (`tool_queue`), the holds come last.
 - **The documents.** `refreshProposal[route]` is what that route would send to the customer: the fee a month now and
   offered, the tools' lines (action, fee, credit), the saving, the renewal likelihood and the units matched to the swaps. It is
   JSON and computed; nothing in it is worded by a model (R16 has nothing to route: no `AgentLoop` step). On approval the
@@ -40,7 +43,7 @@ from di.services.cases import intake, lifecycle, store, tool_queue
 from di.services.engine.routes import mk_route, rank_routes, term
 from di.services.modeler import tables
 from di.services.modeler.pack import load_pack
-from di.services.modeler.valuers import contract_refresh, renewal_odds, tool_approval
+from di.services.modeler.valuers import contract_refresh, fleet_evidence, renewal_odds, tool_approval
 from di.services.service_desk.inputs import fx_per_usd
 
 DEFAULT_VALID_DAYS = 14  # when the market's terms name none
@@ -63,13 +66,33 @@ def _match(s: Session, c: dict[str, Any]) -> list[dict[str, Any]]:
     return tool_queue.refresh_match(s, str(c["owner"])).get(str(c["id"]), [])
 
 
+def contract_block(s: Session, c: dict[str, Any]) -> str | None:
+    """GR-07 (gate `G-CON-2`) on the contract's lines: why the contract gives no right to propose, None when it does. An open
+    theft claim or damage charge on a line blocks, as it does for a returned tool (`fleet_evidence.contract_check`); the line's
+    own status is not read (a contract in its window is on contract) and no owner is named."""
+    r = c.get("refresh") or {}
+    rows = s.execute(
+        text("SELECT key, data FROM canonical WHERE model = 'contract_line' AND data ->> 'contract_id' = :c ORDER BY key"),
+        {"c": r.get("contract_id") or c.get("contract_id")},
+    )
+    for row in rows:
+        line = fleet_evidence.line_value(row.data) | {"status": "active"}
+        res = fleet_evidence.contract_check(line, "", str(row.key))
+        if not res.passed:
+            return f"{fleet_evidence.GATE}: {res.reason}"
+    return None
+
+
 def quote(
     s: Session,
     c: dict[str, Any],
     acts: list[contract_refresh.ToolAction] | None = None,
     match: list[dict[str, Any]] | None = None,
 ) -> Quote | None:
-    """The proposal priced and who approves it; None without tools, a market or the market's tables in force."""
+    """The proposal priced and who approves it; None when the contract gate blocks it, and without tools, a market or the
+    market's tables in force."""
+    if contract_block(s, c):  # the gate first (R20): a blocked contract is never priced
+        return None
     r = c.get("refresh") or {}
     market, org, today = r.get("market"), c.get("owner"), clock.now().date()
     acts = tool_queue.refresh_actions(s, c) if acts is None else acts
@@ -128,7 +151,14 @@ def _exists(s: Session, case_id: str) -> bool:
 
 def attach(s: Session, c: dict[str, Any]) -> bool:
     """Price the refresh and make its routes the case's decision (module docstring). A case not stored yet is priced without
-    unit matches (the match reads the stored open cases). False, and the case untouched, when there is nothing to price."""
+    unit matches (the match reads the stored open cases). False, and the case without a decision, when there is nothing to price;
+    a contract the gate blocks (`contract_block`) keeps `refreshBlock` {gate, reason} and no routes, holds or proposal."""
+    if block := contract_block(s, c):
+        for k in ("approvalRoute", "approvalHolds", "refreshProposal"):
+            c.pop(k, None)
+        c["refreshBlock"] = {"gate": fleet_evidence.GATE, "reason": block}
+        return False
+    c.pop("refreshBlock", None)
     q = quote(s, c, match=None if _exists(s, str(c["id"])) else [])
     if q is None:
         return False
@@ -158,6 +188,12 @@ def attach(s: Session, c: dict[str, Any]) -> bool:
     if c.get("stage") in (None, "none"):
         c["stage"] = "awaiting_approval"
     return True
+
+
+def best_of(s: Session, c: dict[str, Any]) -> tuple[str | None, float]:
+    """The best route and its net, to the cent, as the decision is priced (the Modeler's simulation queue reads it)."""
+    q = quote(s, c)
+    return (None, 0.0) if q is None else (q.pricing.best, float(q.pricing.routes[0].net))
 
 
 def units_of(c: dict[str, Any]) -> list[str]:

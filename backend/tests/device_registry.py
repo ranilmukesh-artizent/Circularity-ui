@@ -24,15 +24,27 @@ def seed_wipe(imei: str, *, verification: str = "pass", certificate_id: str | No
 
 
 def seed_registry(
-    imei: str, *, days_ago: float = 1, blacklist: str = "clear", lock: str = "off", finance: str = "clear", wipe: bool = True
+    imei: str,
+    *,
+    days_ago: float = 1,
+    blacklist: str = "clear",
+    lock: str = "off",
+    finance: str = "clear",
+    wipe: bool = True,
+    parts: str | None = "genuine",
 ) -> str:
     """Write the registry check; return its time (ISO). Also a passing wipe certificate unless `wipe` is false, so the
-    tests of the registry gate (and the ones that only want a recommendation) are not held by the wipe gate."""
+    tests of the registry gate (and the ones that only want a recommendation) are not held by the wipe gate, and a genuine
+    parts declaration unless `parts` is None (GR-D9, P9-6.19: no declaration, no listing on Buy Now, Offers or Auction)."""
     at = (clock.now() - timedelta(days=days_ago)).isoformat()
     facts = {"device_blacklist": blacklist, "device_lock": lock, "device_finance": finance, "registry_checked_at": at}
     with SessionLocal() as s:
         canonical.apply(s, "dvreg", [Fact("condition", f"IMEI:{imei}", k, v) for k, v in facts.items()])
         s.commit()
+    if parts is not None:
+        with SessionLocal() as s:
+            canonical.apply(s, "dvlab", [Fact("condition", f"IMEI:{imei}", "parts_status", parts)])
+            s.commit()
     if wipe:
         seed_wipe(imei)
     return at

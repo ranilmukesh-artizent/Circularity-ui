@@ -122,7 +122,7 @@ def test_dv_10_a_shortcut_never_bypasses_a_gate():
     """R20: wholesale is blocked by the wipe and lock gates, so grade C over 36 months still gets no route."""
     d = _decide(_lot(grade="C", age=40.0, clear=False))
     assert "op-2" in d.diversions
-    assert d.route is None and d.recommendation is None and all(r["excluded"] for r in d.routes)
+    assert d.route is None and d.recommendation is None and all(r["excluded"] for r in d.routes if r["id"] != "recycle")
     assert {g.gate_id for g in d.gates if not g.passed} >= {"G-DEV-WIPE", "G-DEV-LOCK"}
 
 

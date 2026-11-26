@@ -15,6 +15,8 @@ proposals (MVP-5.2) answer.
   decided by `decide_case` (P9-1.5, R19), as it is when it opens: a live tool-fleet case in the plan of its org's open
   queue, with named demand (P9-1.4); a sample return in the prototype's live world (its open returns and the inbox),
   which is what keeps a simulation equal to the prototype's.
+- A live contract refresh case (P9-5.8) is in the tool-fleet queue and is priced by `refresh_decision` (its best route and net,
+  to the cent, as the case panel and the decision show them); no flow rule or lever changes it.
 """
 
 import copy
@@ -26,8 +28,9 @@ from di.repositories.context import visible_cases
 from di.repositories.flows import FlowRow, flow_for
 from di.repositories.live_rules import live_pack
 from di.repositories.packs import published_pack
+from di.services import refresh_decision
 from di.services.actions.pipeline import CallContext
-from di.services.cases import gate_hold
+from di.services.cases import gate_hold, intake
 from di.services.cases.decide import WhatIfPlanner, decide_case
 from di.services.cases.lifecycle import STAGES
 from di.services.engine.evaluate import draft_of, evaluate
@@ -103,6 +106,8 @@ def template_decider(ctx: CallContext, f: FlowRow, params: Mapping[str, float] |
 
     def decide(c: Mapping[str, Any], rules: Sequence[CompiledRule]) -> Decision:
         live = _live(c)
+        if live and intake.is_refresh(c):  # a contract refresh is priced by refresh_decision (P9-5.8, R19), not by a flow rule
+            return Decision(*refresh_decision.best_of(ctx.session, dict(c)))
         owner = c["owner"] if live else f.org_unit_id
         if owner not in packs:
             probe = {"template": f.template_key, "owner": owner}

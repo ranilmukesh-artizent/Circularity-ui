@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import text
 
 from di.core.db import SessionLocal, engine
-from di.services.cases import intake, store, tool_queue
+from di.services.cases import intake, replan, store, tool_queue
 from tests import starting
 from tests.helpers import call, client, h, tool_case_facts
 
@@ -142,3 +142,26 @@ def test_tf_08_screen_plan_names_order_loser_and_gain():
     assert q["lost"][0]["to"] == holder
     assert q["headline"] == f"{RENEWAL} (Brightline Mechanical) is planned for {holder}, where it adds more across the queue"
     assert q["kinds"][RENEWAL] == "lease renewal"
+
+
+def test_tf_08_override_holds_the_chosen_order_not_the_recommendation():
+    """Review phase 3 finding 3: after decision.override the order taken is the chosen route's."""
+    from di.repositories import tool_demand
+
+    cid = _open("TQ-OV")
+    with SessionLocal() as s:
+        c = store.get(s, cid, for_update=True)
+        rec_route = c["recommendation"]  # the same object as its entry in `routes`, which store.save indexes
+        other = next(r for r in c["routes"] if r["id"] != rec_route["id"])
+        rec_route["dest"] = {"id": "ORD-REC", "name": "rec"}
+        other["dest"] = {"id": "ORD-CHOSEN", "name": "chosen"}
+        c["chosen"] = dict(other)
+        c["stage"] = "approved"
+        store.save(s, c)
+        s.commit()
+    with SessionLocal() as s:
+        assert tool_demand._held(s, ORG, None) == {"ORD-CHOSEN"}
+        doc = store.get(s, cid)
+        x = intake.tool_input(doc)
+        assert x["order"] == "ORD-CHOSEN" and x["path"] == other["id"]
+        assert replan.queue_plan(s, doc)["holds"] == "ORD-CHOSEN"

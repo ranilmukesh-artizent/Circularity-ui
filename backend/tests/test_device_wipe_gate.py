@@ -101,9 +101,15 @@ def _rechecks() -> int:
     return len(rows)
 
 
+def _sale(c: dict) -> list[dict]:
+    """The routes the wipe gate blocks: not recycle (the gate keeps it, P9-6.15) and not repair then sell without a quote (the
+    valuer's own reason comes first)."""
+    return [r for r in c["routes"] if r["id"] not in ("recycle", "repair_sell", "replacement")]
+
+
 def test_dv_04_no_listing_without_certificate():
     (c,) = _open(1)
-    assert c["routes"] and all(r["excluded"] and GR_D1 in r["failReason"] for r in c["routes"])
+    assert c["routes"] and all(r["excluded"] and (GR_D1 in r["failReason"] or "(GR-D9)" in r["failReason"]) for r in _sale(c))
     assert {r["id"] for r in c["routes"]} >= {"buynow", "offers", "auction"}
     assert c["recommendation"] is None and c["stage"] == "none"
     g = next(x for x in c["gates"] if x["id"] == "G-DEV-WIPE")
@@ -114,7 +120,9 @@ def test_dv_04_no_listing_without_certificate():
 def test_dv_04_incomplete_certificate_is_no_certificate(gone):
     _post(1, **{gone: None})  # a certificate missing one field
     (c,) = _open(1)
-    assert c["gateHold"]["gates"] == ["G-DEV-WIPE"] and all(GR_D1 in r["failReason"] for r in c["routes"])
+    assert c["gateHold"]["gates"] == ["G-DEV-WIPE"] and all(
+        (GR_D1 in r["failReason"] or "(GR-D9)" in r["failReason"]) for r in _sale(c)
+    )
 
 
 def test_dv_04_certificate_clears_the_gate_and_the_page_shows_it():
@@ -149,11 +157,11 @@ def test_dv_04_batch_held_and_auto_released():
 def test_dv_04_failed_verification_adds_step():
     _post(1, verification="fail")
     (c,) = _open(1)
-    assert all(r["excluded"] and "verification" in r["failReason"] for r in c["routes"])
+    assert all(r["excluded"] and ("verification" in r["failReason"] or "(GR-D9)" in r["failReason"]) for r in _sale(c))
     assert c["requiredSteps"] == [
         {"gate": "G-DEV-WIPE", "step": "Wipe verification failed: re-run the wipe or destroy the storage", "owner": "Compliance"}
     ]
-    assert c["recommendation"] is None
+    assert (c["recommendation"] or {}).get("id") in (None, "recycle")  # a failed wipe may only be recycled (P9-6.15)
     d = client.get(f"/api/screens/case/{c['id']}", headers=h("admin")).json()["case"]["device"]["wipe"]
     assert d["state"] == "failed"
 

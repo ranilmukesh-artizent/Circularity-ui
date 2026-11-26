@@ -170,3 +170,16 @@ def test_tf_16_a_battery_case_leaves_the_tools_queue_as_it_was(world):
         again = store.get(s, alone["id"])
     assert set(plan["res"]) == {alone["id"]}  # the pack is not in the plan, the tool is planned as before
     assert (again["recommendation"]["id"], again["recommendation"]["net"]) == before
+
+
+def test_tf_16_battery_case_panel_serves_without_a_plan(world):
+    """Review phase 3 finding 2: the tool-fleet panel of a BAT case read the tools' class table and answered 500."""
+    from tests.helpers import client, h
+
+    c = _open("BAT-48001", {"cls": "BAT", "site": "Houston", "soh": 76, "sohRead": "2026-10-28", "dem": {"proj": POOL}})
+    r = client.get(f"/api/screens/toolfleet/{c['id']}", headers=h("admin"))
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["plan"] is None
+    assert [p["k"] for p in body["paths"]] == ["release", "redeploy", "resell", "exit"]
+    assert body["best"] == "resell" and body["standard"] == "exit"

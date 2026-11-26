@@ -222,6 +222,7 @@ def test_dv_07_approve_approves_the_member_cases_and_reject_needs_a_reason():
         "ship",
         "fulfil",
         "receipt",
+        "credit",  # the customer credit memo (P9-13.4)
     ]  # the sale plan
     again = call("lot.approve", {"lot_id": lot}, "approver")
     assert again["ok"] is False and again["error"]["code"] == "conflict"

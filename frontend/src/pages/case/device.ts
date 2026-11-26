@@ -1,6 +1,6 @@
 /** Wording of the case page's Device tab (P9-6.4, DV-01) over the `device` block of a case. */
 import { money } from '../../api/format';
-import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, SettlementView, WipeView } from '../../api/device';
+import type { ChannelView, DeviceView, DiversionView, PayoutView, QuoteCheck, QuoteRow, RegistryView, RepairQuote, ReplacementView, SettlementView, WipeView } from '../../api/device';
 
 /** "iPhone 14 · 128 GB · declared B · quote $410 · partner P01"; a bulk lot: "20 devices · batch BATCH-0020 · grade B · partner P01". */
 export function deviceLine(v: DeviceView): string {
@@ -105,13 +105,39 @@ export function payoutState(p: PayoutView): string {
   return `Adjusted by the table: ${p.table}`;
 }
 
+/** What a channel's reason adds (P9-6.19, DV-15): "not allowed: <why>" for a channel a check excluded, the guardrail note
+ * ("Parts declared non-genuine (GR-D9)") of an allowed one; other reasons ("Best open bid") stay in the row's tooltip. */
+const reason = (v: Pick<ChannelView, 'ok' | 'why'>): string =>
+  !v.ok ? (v.why ? `not allowed: ${v.why}` : 'not allowed') : /\(GR-D\d+\)/.test(v.why) ? v.why : '';
+
 /** "Buy Now · $312 net · 11.6 days · $280–$335 · feed 5 Oct 2026" (P9-6.10): a channel's expected net a unit, days to sell, the
  * P10 to P90 cash and the feed week, the last two only when the channel was priced from a band; the model follows its id. */
 export function channelRow(v: ChannelView): string {
   const band = v.p10 != null && v.p90 != null ? `${money(v.p10)}–${money(v.p90)}` : '';
   const feed = v.feedWeek ? `feed ${day(v.feedWeek)}` : '';
-  return [v.name, `${money(v.cash)} net`, `${v.days.toFixed(1)} days`, band, feed, v.modelId ? `model ${v.modelId}` : '', v.ok ? '' : 'not allowed']
+  return [v.name, `${money(v.cash)} net`, `${v.days.toFixed(1)} days`, band, feed, v.modelId ? `model ${v.modelId}` : '', reason(v)]
     .filter(Boolean).join(' · ');
+}
+
+/** "battery swap +$28 price, −$24 cost, +5 days" (P9-6.15, DV-11): what a repair quote adds to the price, costs and takes. */
+export function evidenceLine(q: RepairQuote): string {
+  const n = (v: number) => String(Number(v.toFixed(2)));
+  return `${q.repair.toLowerCase()} +$${n(q.priceUplift)} price, −$${n(q.cost)} cost, +${n(q.days)} days`;
+}
+
+/** "Replacement stock · avoids $340 purchase" (P9-6.16, DV-12): the purchase this device saves by filling an open demand. */
+export function replacementLine(r: ReplacementView): string {
+  return `Replacement stock · avoids ${usd(r.unitCost)} purchase`;
+}
+
+/** "5 units wanted" or "1 unit wanted": the demand units still open (not yet reserved by another case). */
+export function demandLine(r: ReplacementView): string {
+  return `${r.open} ${r.open === 1 ? 'unit' : 'units'} wanted`;
+}
+
+/** The Channels tab's line of the Replacement stock route: "Replacement stock · avoids $340 purchase · 5 units wanted · $325 net · 3.0 days". */
+export function replacementRow(v: ChannelView & { replacement: ReplacementView }): string {
+  return [replacementLine(v.replacement), demandLine(v.replacement), `${money(v.cash)} net`, `${v.days.toFixed(1)} days`].join(' · ');
 }
 
 /** "98.6%" for a sale at 0.986 of the forecast, "90%" at 0.9 (one decimal, no trailing zero). */

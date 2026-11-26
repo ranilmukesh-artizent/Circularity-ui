@@ -381,6 +381,31 @@ def enqueue_device_ageing() -> None:
         s.commit()
 
 
+@handler("device.priceRefit")
+def _device_price_refit(payload: dict[str, Any]) -> None:
+    """The retrained price model (plan 9, P9-6.18): when 200 sales settled since the active model's window, a candidate is
+    fitted as the system (di.services.device.price_shadow.refit). It never proposes or promotes: a person does, after the
+    candidate was shadowed. `payload.today` (an ISO date) is for tests; the day is the workspace clock's."""
+    from di.core import clock
+    from di.services.device import price_shadow
+
+    today = date.fromisoformat(payload["today"]) if payload.get("today") else clock.now().date()
+    with SessionLocal() as s:
+        fitted = price_shadow.refit(s, today)
+        s.commit()
+    log.info("price refit %s: %s", today, fitted or "not due")
+
+
+def enqueue_price_refit() -> None:
+    """Queue the day's `device.priceRefit` job (once per simulated day; the dedupe key holds)."""
+    from di.core import clock
+
+    today = clock.now().date()
+    with SessionLocal() as s:
+        jobs.enqueue(s, "device.priceRefit", {}, priority=200, dedupe_key=f"device.priceRefit:{today.isoformat()}")
+        s.commit()
+
+
 @handler("case.gateRecheck")
 def _gate_recheck(payload: dict[str, Any]) -> None:
     """Gate evidence landed for an asset (a `compliance` fact, canonical.apply): the cases held for it are valued again
@@ -523,6 +548,10 @@ def periodic() -> None:
         enqueue_device_ageing()
     except Exception:
         log.exception("queueing the device ageing job failed")
+    try:
+        enqueue_price_refit()
+    except Exception:
+        log.exception("queueing the price refit job failed")
     tick_triggers()  # first: a lost workflow run is closed ("worker lost") before its stale job is requeued
     try:
         with SessionLocal() as s:

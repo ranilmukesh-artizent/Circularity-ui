@@ -21,6 +21,11 @@
  *      promotes it; the Models panel lists it as active with its median hours per component. (A case already open keeps
  *      its life until it is valued again; the Overview shows the model id for cases valued after the promotion.)
  *   9  (P9-3.12) CMH-48213 reads six valued paths and the renewal FC-30117-R in the re-issue lines.
+
+ *   11 (P9-3.14) a path reads "CO2e avoided n kg . sample factors tf-co2-2026.1"; an exit case run to Finance without the recycler certificate: Finance is refused (GR-06).
+ *   12 (P9-3.15) a DCD grade C ($702 repair) waits for the Fleet manager; a policy-covered return is approved by the standing policy.
+ *   14 (P9-3.17) CMH-48213 approved for re-issue, the sim clock moves, the fleet line reads issued, Finance confirms, realised vs predicted.
+ *   16 (P9-3.19) a BAT return (62%) reads four paths and the hazardous-transport line.
  *   17 (P9-3.20) planner.a is refused a fit-for-use threshold of 40 (GR-03), proposes 60 and cannot approve it; the Approver
  *      approves; a CMH return with parts at 55% life no longer harvests them. (The overlay stays: the lead resets after.)
  *
@@ -431,6 +436,159 @@ await step('10 Queue plan: two CMH returns that both want FC-30117-R share it, t
   if (!/is planned for RT-\d+, where it adds more across the queue/.test(shown) || !/first come, first served/.test(shown)) throw new Error('the Overview reads: ' + shown);
   return shown;
 });
+// ---------------------------------------------------------------- helpers of steps 11, 12, 14 and 16
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
+const toolView = (p, id) => getJson(p, '/api/screens/toolfleet/' + id);
+const caseIdOf = async (p, serial) => {
+  const r = await must(p, 'cases.list', { q: serial, limit: 5 });
+  const row = (r.rows || []).find((x) => x.id);
+  if (!row) throw new Error('no case for ' + serial);
+  return row.id;
+};
+const openTool = async (p, serial, facts) =>
+  (await must(p, 'case.open', { org_unit_id: ORG, template_key: 'tool_fleet', asset_key: serial, reason: 'manual', facts })).case_id;
+// the case page's own stage line ("Case at Stage 9 of 10 · Waiting on Finance", or the done line)
+const stageOf = async (p) => {
+  const t = await p.innerText('#view');
+  if (/Every stage is done/.test(t)) return '10 · Every stage is done';
+  return t.match(/Case at Stage (\d+) of 10 · ([^\n]+)/)?.slice(1).join(' · ') ?? '(none)';
+};
+const advance = async (hours = 3) => {
+  const r = await fetch(SIM + '/_sim/clock/advance', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hours }) });
+  if (!r.ok) throw new Error('sim clock advance failed: ' + r.status);
+};
+// planner.a submits with the page's own button; then the Approver approves with the page's own buttons, or overrides to `kind`
+// through the action when the recommendation is another path (the Override dialog is not driven here). A standing policy that
+// covers the case approves it on the submit and nothing is left for the Approver. Returns what happened.
+async function submitAndApprove(id, kind) {
+  const planner = await as('planner.a');
+  await planner.goto(`${base}/#/product/${id}/stage/7`);
+  await planner.locator('#view').waitFor();
+  const sub = planner.locator('button', { hasText: `Submit ${id} for review` });
+  try {
+    await sub.first().waitFor({ timeout: UI });
+  } catch {
+    throw new Error(`planner.a has no "Submit ${id} for review" button`);
+  }
+  await sub.first().click();
+  const approver = await as('approver');
+  const auto = await until(async () => (await toolView(approver, id)).followThrough, '', 8000, approver).catch(() => null);
+  const v = await toolView(approver, id);
+  if (auto) return 'approved by policy';
+  await approver.goto(`${base}/#/product/${id}/stage/7`);
+  await approver.locator('#view').waitFor();
+  if (v.best === kind) {
+    await approver.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click();
+    await approver.getByLabel(/I reviewed evidence snapshot/).check();
+    await approver.getByText('Approve and send instruction').click();
+  } else {
+    const route = (v.paths || []).find((p) => p.k === kind);
+    if (!route || !route.ok) throw new Error(`${id} has no open ${kind} path: ${JSON.stringify(route || (v.paths || []).map((p) => p.k))}`.slice(0, 220));
+    await must(approver, 'decision.override', { case_id: id, route: route.name, rationale: `Smoke: take the ${kind} path`, reviewed: true });
+  }
+  await until(async () => (await toolView(approver, id)).followThrough, `${id} shows no follow-through after the approval`, UI, approver);
+  return v.best === kind ? `approved ${kind}` : `overridden to ${kind}`;
+}
+// only the simulated clock moves until the case waits for Finance (stage 9) or is closed
+async function runToFinance(id) {
+  const w = await as('approver');
+  await w.goto(`${base}/#/product/${id}/stage/8`);
+  await w.locator('#view').waitFor();
+  let s = '';
+  for (let i = 0; i < 40; i++) {
+    s = await stageOf(w);
+    if (/^9 .*Finance|^10 /.test(s)) break;
+    await advance();
+    await w.waitForTimeout(3000);
+  }
+  if (!/^9 .*Finance|^10 /.test(s)) throw new Error(`${id} did not reach Finance after the clock moved: ${s}`);
+  return s;
+}
+
+// ---------------------------------------------------------------- 11
+await step('11 CO2e and GR-06: a path reads its CO2e and factor source; Finance cannot confirm a recycling without the certificate', async () => {
+  const admin = await as('admin');
+  const id = await openTool(admin, 'CMH-CO-1', { cls: 'CMH', grade: 'D', site: 'Houston', rul: 10 });
+  const v = await until(async () => (await toolView(admin, id)).paths?.length && (await toolView(admin, id)), 'no paths for ' + id, SYNC, admin);
+  const co2 = v.paths.filter((p) => p.ok && p.co2 != null && p.co2 !== 0);
+  if (!co2.length) throw new Error('no open path carries a CO2e figure: ' + JSON.stringify(v.paths.map((p) => [p.k, p.ok, p.co2])));
+  if (!co2.every((p) => p.co2Source === 'sample factors tf-co2-2026.1')) throw new Error('the CO2e factor source reads ' + co2.map((p) => p.co2Source).join(' | '));
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-paths"]').first().waitFor({ timeout: UI });
+  const shown = ((await admin.locator('[data-testid="tf-paths"]').first().textContent()) || '').replace(/\s+/g, ' ');
+  const m = shown.match(/CO2e avoided -?[\d.]+ kg · sample factors tf-co2-2026\.1/);
+  if (!m) throw new Error('the Overview shows no "CO2e avoided <n> kg · sample factors tf-co2-2026.1": ' + shown.slice(0, 200));
+  // a recycling (exit) carried out in full but with no certificate from the recycler: Finance's confirmation is refused (GR-06)
+  const how = await submitAndApprove(id, 'exit');
+  await runToFinance(id);
+  const fin = await as('finance');
+  const r = await callAction(fin, 'outcome.confirm', { case_id: id });
+  const msg = r.error?.message || '';
+  if (r.ok || !/Recycling needs the recycler's certificate before the case closes \(GR-06\)/.test(msg)) {
+    throw new Error('Finance\'s "Confirm the outcome" on an exit case without a certificate was not refused with GR-06: ' + JSON.stringify(r).slice(0, 200));
+  }
+  return `${m[0]}; ${how}; refused: "${msg}"`;
+});
+
+// ---------------------------------------------------------------- 12
+await step('12 Approval: a $702 repair waits for the Fleet manager, a clean return is approved by the standing policy', async () => {
+  const admin = await as('admin');
+  // a DCD of grade C: the repair costs 520 x 1.35 = $702, over the $600 of GR-14
+  const dcd = await openTool(admin, 'DCD-AP-1', { cls: 'DCD', grade: 'C', site: 'Houston', rul: 62 });
+  const person = await until(
+    async () => {
+      const a = (await toolView(admin, dcd)).approval;
+      return a && a.kind === 'person' ? a : null;
+    },
+    `${dcd} has no approval route`,
+    SYNC,
+    admin,
+  );
+  if (!/^Waits for the Fleet manager: Repair \$702 is over \$600/.test(person.text)) throw new Error('the approval of the DCD reads: ' + person.text);
+  await admin.goto(`${base}/#/product/${dcd}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-approval"]').first().waitFor({ timeout: UI });
+  const shownPerson = (await admin.locator('[data-testid="tf-approval-text"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/Waits for the Fleet manager: Repair \$702 is over \$600/.test(shownPerson)) throw new Error('the Overview reads: ' + shownPerson);
+  // the standing policy of the returns flow: Admin writes and submits it, the Approver approves it (maker-checker)
+  const pol = await must(admin, 'standingPolicy.save', { pack: 'tool_fleet', org_unit_id: ORG, name: 'Tool returns standing', rules: { max_value: 20000, min_confidence: 0.75 }, owner: 'admin' });
+  await must(admin, 'standingPolicy.submit', { id: pol.id });
+  await must(await as('approver'), 'standingPolicy.approve', { id: pol.id });
+  // a return the policy may approve: the first open tool case of the org whose route is the policy (CMH-48213 is left for step 14)
+  const r = JSON.stringify(await getJson(admin, '/api/screens/product/returned'));
+  const serials = [...new Set(r.match(/\b(?:CMH|BRK|DCD|CRH|AGR|LSR)-\d+\b/g) || [])].filter((x) => x !== 'CMH-48213');
+  let clean = null;
+  for (const serial of serials) {
+    const id = await caseIdOf(admin, serial);
+    const a = (await toolView(admin, id)).approval;
+    if (a && a.kind === 'policy' && !a.by) {
+      clean = id;
+      break;
+    }
+  }
+  if (!clean) throw new Error('no open tool return is covered by the standing policy (every one waits for a person)');
+  await submitAndApprove(clean, 'release');
+  const after = await until(
+    async () => {
+      const a = (await toolView(admin, clean)).approval;
+      return a && /^Approved by policy \S+ v\d+ \(owner [Aa]dmin\)/.test(a.text) ? a : null;
+    },
+    `${clean} does not read "Approved by policy <id> v<n> (owner Admin)"`,
+    UI,
+    admin,
+  );
+  await admin.goto(`${base}/#/product/${clean}/overview`);
+  await admin.locator('#view').waitFor();
+  await until(
+    async () => /Approved by policy \S+ v\d+ \(owner [Aa]dmin\)/.test(await admin.locator('[data-testid="tf-approval-text"]').first().innerText()),
+    `the Overview of ${clean} does not show the policy approval`,
+    UI,
+    admin,
+  );
+  return `${person.text} · ${after.text}`;
+});
+
 // ---------------------------------------------------------------- 13
 await step('13 Key account: CRH-44120 (contract FC-30140, Westmark Supply) waits for the account manager', async () => {
   const admin = await as('admin');
@@ -447,6 +605,46 @@ await step('13 Key account: CRH-44120 (contract FC-30140, Westmark Supply) waits
   const shown = (await admin.locator('[data-testid="tf-approval"]').first().innerText()).replace(/\s+/g, ' ');
   if (!/Westmark Supply/.test(shown)) throw new Error('the Overview reads: ' + shown);
   return shown;
+});
+// ---------------------------------------------------------------- 14
+await step('14 Follow-through: CMH-48213 re-issued, the sim clock moves, the fleet line reads issued, Finance confirms, realised against predicted', async () => {
+  const admin = await as('admin');
+  const id = await caseIdOf(admin, 'CMH-48213');
+  const before = await toolView(admin, id);
+  if (before.followThrough) throw new Error(`${id} was approved already (an earlier step took CMH-48213?)`);
+  const how = await submitAndApprove(id, 'release');
+  const ft = (await toolView(admin, id)).followThrough;
+  if (!ft.steps.some((s) => s.k === 'lease' && /Fleet contract system/.test(s.system))) throw new Error('the re-issue has no lease step in the fleet contract system: ' + JSON.stringify(ft.steps.map((s) => [s.k, s.system])));
+  // only time moves: the worker sends the steps in order, the mocks acknowledge them
+  const stage = await runToFinance(id);
+  const lease = (await toolView(admin, id)).followThrough.steps.find((s) => s.k === 'lease');
+  if (!lease.ack) throw new Error('the lease step is not acknowledged: ' + JSON.stringify(lease));
+  // the contract line of the returned tool in the fleet contract system (the mock's own read, demo key)
+  const lines = await (await fetch(`${SIM}/fleet/api/v1/contract-lines?contractId=FC-30117`, { headers: { 'x-api-key': 'fleet-demo-key' } })).json();
+  const line = (lines.items || []).find((l) => l.serial === 'CMH-48213');
+  if (!line || line.status !== 'issued') throw new Error('the fleet contract line of CMH-48213 does not read issued: ' + JSON.stringify(line || lines).slice(0, 200));
+  // the section lists the steps with the system and its acknowledgement
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  await admin.locator('[data-testid="tf-follow-through"]').first().waitFor({ timeout: UI });
+  const leaseRow = (await admin.locator('[data-testid="tf-ft-lease"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/Fleet contract system/.test(leaseRow) || !/acknowledged/.test(leaseRow)) throw new Error('the lease line reads: ' + leaseRow);
+  // Finance confirms with the page's own button
+  const fin = await as('finance');
+  await fin.goto(`${base}/#/product/${id}/stage/9`);
+  await fin.locator('#view').waitFor();
+  const confirm = fin.locator('button', { hasText: 'Confirm the outcome' });
+  await confirm.first().waitFor({ timeout: UI }).catch(() => {
+    throw new Error('Finance has no "Confirm the outcome" button; stage is ' + stage);
+  });
+  await confirm.first().click();
+  await until(async () => (await toolView(fin, id)).followThrough?.outcome, `${id} shows no outcome after Finance confirmed`, UI, fin);
+  await fin.goto(`${base}/#/product/${id}/overview`);
+  await fin.locator('#view').waitFor();
+  await fin.locator('[data-testid="tf-ft-outcome"]').first().waitFor({ timeout: UI });
+  const out = (await fin.locator('[data-testid="tf-ft-outcome"]').first().innerText()).replace(/\s+/g, ' ');
+  if (!/Realised .* against predicted .*tolerance/.test(out)) throw new Error('the outcome reads: ' + out);
+  return `${how}; ${leaseRow}; line ${line.lineId || line.line_id || ''} issued; ${out}`;
 });
 // ---------------------------------------------------------------- 17
 await step('17 Fit-for-use threshold: planner.a proposes 60, lowering is refused, the Approver approves, a harvest case loses its parts', async () => {
@@ -496,6 +694,25 @@ await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a post
   const again = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
   if (again.ok || again.error?.code !== 'duplicate') throw new Error('a second post is not a duplicate: ' + JSON.stringify(again));
   return 'posted once, the second post is a duplicate';
+});
+// ---------------------------------------------------------------- 16
+await step('16 Battery: a BAT return reads four paths and the hazardous-transport line', async () => {
+  const admin = await as('admin');
+  // state of health 62%: take-back is the only path the pack's rules leave (the gates may block it too: the rows are shown either way)
+  const id = await openTool(admin, 'BAT-48001', { cls: 'BAT', site: 'Houston', soh: 62, sohRead: '2026-10-05' });
+  const v = await until(async () => (await toolView(admin, id)).paths?.length && (await toolView(admin, id)), 'no paths for ' + id, SYNC, admin);
+  const keys = v.paths.map((p) => p.k).join(',');
+  if (keys !== 'release,redeploy,resell,exit') throw new Error('the battery paths are ' + keys);
+  const exit = v.paths.find((p) => p.k === 'exit');
+  if (!exit.lines.some((l) => l.type === 'c' && /^Hazardous transport \(lithium-ion, UN 3480\)/.test(l.label))) throw new Error('the take-back has no hazardous-transport line: ' + exit.lines.map((l) => l.label).join(' | '));
+  if (!exit.lines.some((l) => /Take-back scheme fee/.test(l.label))) throw new Error('the take-back has no scheme fee line: ' + exit.lines.map((l) => l.label).join(' | '));
+  await admin.goto(`${base}/#/product/${id}/overview`);
+  await admin.locator('#view').waitFor();
+  for (const k of ['release', 'redeploy', 'resell', 'exit']) await admin.locator(`[data-testid="tf-path-${k}"]`).first().waitFor({ timeout: UI });
+  await admin.locator('[data-testid="tf-path-exit-hazard"]').first().waitFor({ state: 'attached', timeout: UI });
+  const hz = ((await admin.locator('[data-testid="tf-path-exit-hazard"]').first().textContent()) || '').replace(/\s+/g, ' ');
+  if (!/Hazardous transport \(lithium-ion, UN 3480\): \$[\d,.]+/.test(hz)) throw new Error('the Overview reads the hazard line as: ' + hz);
+  return `${keys}; ${hz}`;
 });
 await browser.close();
 if (errors.length) {

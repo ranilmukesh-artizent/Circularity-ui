@@ -97,7 +97,8 @@ def route_for_approval(
     gates: Sequence[Any],
     pack: Pack,
 ) -> ApprovalRoute:
-    """Who must approve the case's recommended path `best` (module docstring). `case["age"]` is the tool's age in months;
+    """Who must approve the case's recommended path `best` (module docstring).
+    `case["ageMonths"]` is the tool's age in months (absent: GR-15 is not applied);
     `gates` are the gate results of the decision (`GateResult`); `confidence` None skips the confidence rule."""
     t = thresholds(pack)
     holds: list[dict[str, str]] = []
@@ -109,7 +110,7 @@ def route_for_approval(
         cost = repair_cost(best)
         if cost > t.repair_usd:
             hold(REPAIR_GUARD, f"Repair {_money(cost)} is over {_money(t.repair_usd)} ({REPAIR_GUARD})", REPAIR_ROLE)
-    age = case.get("age")
+    age = case.get("ageMonths")  # months, None when the case carries no age (never the case document's `age`, in years or 0)
     young = t.write_off_months is not None and isinstance(age, int | float) and age < t.write_off_months
     if best is not None and best["k"] in WRITE_OFF_PATHS and young:
         hold(

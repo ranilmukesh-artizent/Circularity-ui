@@ -62,6 +62,16 @@ def candidate(s: Session, template: str, kind: str = "calibration") -> ModelRow 
     )
 
 
+def proposed(s: Session, template: str, kind: str = "calibration") -> ModelRow | None:
+    """The newest candidate of the template that a person has proposed for promotion, if any."""
+    return _one(
+        s,
+        "template = :t AND kind = :k AND status = 'candidate' AND metrics ? 'proposal' "
+        "ORDER BY created_at DESC, id DESC LIMIT 1",
+        {"t": template, "k": kind},
+    )
+
+
 def of_template(s: Session, template: str) -> list[ModelRow]:
     """The template's models, the newest first (the read action model.list, U2)."""
     sql = f"SELECT {_COLS} FROM model_version WHERE template = :t ORDER BY created_at DESC, id DESC"  # noqa: S608 - fixed columns

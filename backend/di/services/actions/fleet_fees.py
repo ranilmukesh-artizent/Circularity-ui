@@ -17,7 +17,7 @@ from typing import Any
 from di.core import policy
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement
-from di.services.instructions import fees
+from di.services.instructions import fees, queue
 
 ACTIONS.setdefault(
     "nonReturnFee.post",
@@ -39,10 +39,15 @@ def post_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
     if line["status"] != fees.STATUS or line["fee"] <= 0:
         return "validation_error", f"Line {i['line_id']} has no non-return fee to post."
     item = fees.item_of(ctx.session, i["line_id"])
-    org = (item or {}).get("org_unit_id") or fees.org_of(ctx.session, line["serial"])
+    org = (item or {}).get("org_unit_id") or fees.org_of(ctx.session, line["serial"], line["contract_id"])
     a = ctx.actor.account
-    if org and a is not None and policy.policy(a).get("tenantScoped") and not policy.tenant_ok(a, org, ctx.actor.ctx):
-        return "tenant_boundary", f"{org} is a tenant you cannot see. Request tenant access first."
+    if a is not None and policy.policy(a).get("tenantScoped"):
+        if not org:  # no contract owner and no case: the tenant is unknown, so a tenant-scoped person may not post (R21)
+            return "tenant_boundary", f"The org unit that owns {i['line_id']} is not on file. Ask an administrator to post it."
+        if not policy.tenant_ok(a, org, ctx.actor.ctx):
+            return "tenant_boundary", f"{org} is a tenant you cannot see. Request tenant access first."
+    if not queue.enabled():  # nothing would be sent: the item stays open and the key unspent
+        return "validation_error", "Sending instructions is switched off: the fee is not posted."
     return None
 
 

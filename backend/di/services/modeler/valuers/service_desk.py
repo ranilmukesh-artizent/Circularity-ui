@@ -20,7 +20,7 @@ is computed, R16), write, approve or release anything (a person approves through
 """
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
@@ -95,6 +95,9 @@ def _option(k: str, eligible: bool, why: str, **kw: Any) -> dict[str, Any]:
 def _line_options(ln: Mapping[str, Any], fx: Decimal, take: Mapping[str, Any]) -> list[dict[str, Any]]:
     est, cover, credit, terms = ln.get("estimate"), ln["cover"], ln["credit"], ln["terms"]
     cls = str(ln["model_class"])
+    if ln.get("recall"):  # GR-12 (a gate, R20: first): a recalled tool is repaired, swapped or upgraded by nobody until released
+        why = f"Blocked by GR-12: {ln['recall']}"
+        return [_option(k, False, why) for k in KEYS]
     if not est or not est.get("n"):  # no estimate: a technician checks the tool first
         why = "No estimate yet: a technician checks the tool first"
         return [_option(k, False, why) for k in KEYS]
@@ -224,6 +227,7 @@ def decide_ticket(inputs: Mapping[str, Any]) -> TicketDecision:
                 "options": opts,
                 "best": _best(opts),
                 "draft": bool(ln.get("estimate")) and not ln["estimate"].get("auto"),
+                "unpriced": not ln.get("estimate"),  # no estimate at all: the line is not yet a draft either
                 "stale": sorted(set(ln.get("cited") or []) - set(inputs.get("approved") or [])),
             }
         )
@@ -281,6 +285,22 @@ def _allocate(d: TicketDecision, inputs: Mapping[str, Any]) -> BatchDecision:
 def decide_batch(inputs: Mapping[str, Any]) -> BatchDecision:
     """A batch decided per tool (module docstring, SD-07): the split and its totals."""
     return _allocate(decide_ticket(inputs), inputs)
+
+
+def unpriced_ticket(lines: Sequence[Mapping[str, Any]], batch: bool, why: str) -> TicketDecision:
+    """A ticket nothing can be priced for (its market has no tables): every option of every line is not eligible with `why`, the
+    case has no best, and `approval_holds` holds it with GR-S1. It is never valued as a return (F2 of the phase 4 review)."""
+    rows = [
+        {"n": ln["n"], "serial": ln["serial"], "currency": None, "options": [_option(k, False, why) for k in KEYS], "best": None,
+         "draft": bool(ln.get("estimate")) and not ln["estimate"].get("auto"), "unpriced": not ln.get("estimate"),
+         "recall": None, "stale": []}
+        for ln in lines
+    ]  # fmt: skip
+    keys = ("split", "all_fix", "all_upgrade") if batch else KEYS
+    return {
+        "market": None, "currency": None, "fx": 1.0, "take_up": {}, "lines": rows, "inputs": None,
+        "options": [_option(k, False, why) for k in keys], "best": None,
+    }  # fmt: skip
 
 
 def batch_ticket(inputs: Mapping[str, Any]) -> TicketDecision:
@@ -351,8 +371,14 @@ def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, st
     if any(ln["stale"] for ln in d["lines"]):
         hold("GR-S3", STALE)
     drafts = [ln["serial"] for ln in d["lines"] if ln["draft"]]
-    if drafts:
-        hold("GR-S1", f"The estimate of {', '.join(drafts)} is a draft: a technician checks it")
+    missing = [ln["serial"] for ln in d["lines"] if ln.get("unpriced") and not ln.get("recall")]
+    if drafts or missing:  # nothing priced (a draft, or no estimate at all): never a return, a technician checks first
+        said = []
+        if drafts:
+            said.append(f"The estimate of {', '.join(drafts)} is a draft")
+        if missing:
+            said.append(f"There is no estimate for {', '.join(missing)}")
+        hold("GR-S1", f"{'; '.join(said)}: a technician checks it")
     for ln in d["lines"]:
         k = route_option(ln, route)  # the option this line takes on the route
         o = next((x for x in ln["options"] if x["k"] == k), None)
@@ -368,4 +394,5 @@ def approval_holds(d: Mapping[str, Any], route: str | None) -> list[dict[str, st
 __all__ = [
     "KEYS", "NAMES", "OPTION_KINDS", "STALE", "BatchDecision", "TicketDecision",
     "approval_holds", "batch_ticket", "decide_batch", "decide_ticket", "route_option", "split_line", "step_plan",
+    "unpriced_ticket",
 ]  # fmt: skip

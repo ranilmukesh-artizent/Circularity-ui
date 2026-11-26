@@ -44,6 +44,7 @@ write language (no model step, R16: the document is computed). Only `units_reser
 before a re-issue (GR-11) is a known gap, not a story.
 """
 
+import hashlib
 from typing import Any
 
 from sqlalchemy import text
@@ -112,7 +113,9 @@ def fee_post(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa:
     line_id, fee = str(d.get("line_id") or ""), float(d.get("fee") or 0)
     if not line_id or fee <= 0:
         raise NotApplicable("no fee to post")
-    ref = f"FEE-{line_id}"[:16]
+    ref = f"FEE-{line_id}"
+    if len(ref) > 16:  # the journal reference holds 16 characters: a long id keeps a hash of the whole id, so two never collide
+        ref = "FEE-" + hashlib.sha1(line_id.encode()).hexdigest()[:12]  # noqa: S324 - a short reference, not a secret
     items = [
         writers._item(1, writers.GL_FEE, -fee, f"Non-return fee {line_id}", line_id, None, None),
         writers._item(2, writers.GL_CLEARING, fee, f"Fee clearing {line_id}", writers.CLEARING, None, None),

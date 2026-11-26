@@ -15,7 +15,9 @@ computeAccuracy only measures: no model, table or bar changes, so it needs no ma
 FORBIDDEN_ACTIONS). Permission `manageMarketTables`. The worker runs the same job once a simulated day (`serviceDesk.accuracy`).
 Changing the bar is a guardrail change (the GR-S1 parameters, I-4), not an action here.
 
-postFault needs `assess` (the Engineer's), keeps the ticket's text, and an agent's call is held for a person (HELD_FOR_PERSON,
+postFault takes a fault only on a draft line (no estimate, or one not priced instantly) of a case not yet approved: a conflict
+otherwise (F4 of the phase 4 review). It needs `assess` (the Engineer's), keeps the ticket's text,
+and an agent's call is held for a person (HELD_FOR_PERSON,
 I-10). It approves and releases nothing, so it is not in FORBIDDEN_ACTIONS. No model step (R16): the fault is a code picked from
 the depot's four and nothing reads the free text, so there is no `AgentLoop` here. whatIf is a read and a computation: no model
 step either (R16), so no model tests; an agent may call it, and it approves and releases nothing, so it joins no forbidden list.
@@ -85,6 +87,10 @@ def post_fault_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | N
         return "validation_error", f"No line {i['line']} on {i['case_id']}."
     if ln.get("fault_code") == i["fault_code"]:
         return "conflict", "This fault is already posted."
+    if c["stage"] not in ("none", "awaiting_approval"):  # once approved the plan has gone out: a new fault is a new ticket
+        return "conflict", f"{c['id']} is past approval (stage {c['stage']}): a fault can no longer be posted on it."
+    if (ln.get("estimate") or {}).get("auto"):  # the spec: the fault is posted "on a draft line"
+        return "conflict", f"Line {ln['n']} is already priced from its fault; only a draft line takes a fault."
     return None
 
 

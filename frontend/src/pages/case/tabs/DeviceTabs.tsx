@@ -6,7 +6,7 @@ import { fmtDateYear } from '../../../api/format';
 import { can } from '../../../api/session';
 import { useAction } from '../../../hooks/useAction';
 import { Kv } from '../CaseBlocks';
-import { channelRow, deviceLine, diversionLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, settlementLine, usd, wipeState } from '../device';
+import { channelRow, deviceLine, evidenceLine, diversionLine, gradeLine, lotLines, mismatchLine, payoutLine, payoutState, quoteCheckLine, realisedKpi, refLine, registryLine, registryState, replacementRow, settlementLine, usd, wipeState } from '../device';
 import type { TabProps } from './index';
 
 const LABEL = { imei: 'IMEI', model: 'Model', storage: 'Storage' } as const;
@@ -182,7 +182,11 @@ export function ChannelsTab({ c }: TabProps) {
       {holds.map((h) => (
         <p key={h.id} className="stpad" role="status" style={{ color: 'var(--bad)' }}>{h.reason} · waits for {h.owner}</p>
       ))}
-      <ul className="stsys stpad" aria-label="Price per channel">{rows.map((r) => <li key={r.k} title={r.why || undefined}>{channelRow(r)}</li>)}</ul>
+      <ul className="stsys stpad" aria-label="Price per channel">{rows.map((r) => (
+        <li key={r.k} title={r.why || undefined}>
+          {r.replacement ? replacementRow({ ...r, replacement: r.replacement }) : channelRow(r)}{r.repair ? ` · ${evidenceLine(r.repair)}` : ''}
+        </li>
+      ))}</ul>
     </>
   );
 }

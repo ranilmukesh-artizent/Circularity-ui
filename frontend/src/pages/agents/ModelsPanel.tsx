@@ -5,6 +5,7 @@ import {
 } from '../../api/agents'; // prettier-ignore
 import { barText } from './repairAccuracy';
 import { medianLines, qualityLine, skippedLines } from './ratedLife';
+import { shadowLine } from './shadow';
 import { fmtDateYear, money } from '../../api/format';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -243,7 +244,15 @@ export function takeUpLine(m: ModelVersion): string {
 
 /** What a model holds: its calibration factors or steps, or, for a remaining-life model, the median hours per component. */
 export function ModelNote({ m }: { m: ModelVersion }) {
-  if (m.kind === 'price') return <div className="note" data-testid="price-note">{priceLine(m)}</div>;
+  if (m.kind === 'price') {
+    const shadow = shadowLine(m);
+    return (
+      <>
+        <div className="note" data-testid="price-note">{priceLine(m)}</div>
+        {shadow && <div className="note" data-testid="price-shadow">{shadow}</div>}
+      </>
+    );
+  }
   if (m.kind === 'take_up') {
     const pct = (v: number) => `${Math.round(v * 100)}%`;
     return (

@@ -27,13 +27,14 @@ from typing import Any
 
 from sqlalchemy import text
 
-from di.core import policy, state
+from di.core import clock, policy, state
 from di.repositories.common import AS_OF, case_demand, hash_id, iso, limit_for, money, ooo_cover
 from di.repositories.live_rules import Shadow, live_rules, shadow_rules
 from di.services import instructions, refresh_decision
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, guard, implement, mark_destructive
 from di.services.cases import intake, lifecycle, store
+from di.services.device import replacement as device_replacement
 from di.services.engine.evaluate import apply_business, build_routes, draft_of, evaluate
 from di.services.engine.predictor import FormulaPredictor
 from di.services.engine.routes import GATES, POLICY, SUSTAINABILITY, fail, rank_routes
@@ -332,6 +333,15 @@ def _spend(i) -> float:
     return v if isinstance(v, int | float) and not isinstance(v, bool) and not math.isnan(v) else 0
 
 
+def _stale_tables(ctx: CallContext, c: dict[str, Any]) -> tuple[str, str] | None:
+    """GR-S3, checked again at the approval: a service ticket's prices must come from the tables in force today. A table
+    approved since the case was decided leaves it for `case.reevaluate` (decline, then re-evaluate) to price again."""
+    stale = follow_through.stale_tables(ctx.session, c, clock.now().date())
+    if not stale:
+        return None
+    return "conflict", f"{c['id']}: prices must come from the market's current approved table (GR-S3); stale: {', '.join(stale)}."
+
+
 def _fraud_held(c: dict[str, Any]) -> tuple[str, str] | None:
     """A case held for fraud review is approved or overridden only after a person runs `fraud.release` (plan 9, P9-2.19)."""
     f = c.get("fraud")
@@ -347,13 +357,13 @@ def approve_guard(i: dict[str, Any], ctx: CallContext):
     rec = c.get("recommendation")
     if not g and i.get("route") and rec and i["route"] != rec["plan"]:
         g = "conflict", "That route is not the recommendation; use Override."
-    return g or _ap_policy(i, ctx, c)
+    return g or _stale_tables(ctx, c) or _ap_policy(i, ctx, c)
 
 
 @guard("decision.override")
 def override_guard(i: dict[str, Any], ctx: CallContext):
     c = _peek(ctx, i["case_id"])
-    return _fraud_held(c) or _ap_guard(i, ctx, c) or _ap_policy(i, ctx, c)
+    return _fraud_held(c) or _ap_guard(i, ctx, c) or _stale_tables(ctx, c) or _ap_policy(i, ctx, c)
 
 
 def _approve_idem(i: dict[str, Any], ctx: CallContext):
@@ -372,6 +382,8 @@ def _approve(action: str, i: dict[str, Any], ctx: CallContext, approver: str | N
     is_ov = t is not rec
     ref = approval_ref(c["id"]) + (f"-{cyc(c) + 1}" if cyc(c) else "")
     c["chosen"] = copy.deepcopy(t)
+    if refused := device_replacement.on_approve(ctx.session, c):  # a device's replacement stock: its demand unit (P9-6.16)
+        raise ActionError("conflict", refused)
     steps = steps_for(t, template=c.get("template"))  # a tool-fleet case's steps name the fleet and parts systems (P9-3.17)
     steps[0]["activeAt"] = NOW
     c["exec"] = {
@@ -451,6 +463,8 @@ def approve_by_policy_guard(i: dict[str, Any], ctx: CallContext):
     row = standing_policies.get(ctx.session, str(i["policy_id"]))
     if row is None or row.status != "active" or row.ver != i["ver"]:
         return "conflict", f"Policy {i['policy_id']} v{i['ver']} is not in force."
+    if _stale_tables(ctx, c):  # GR-S3: a policy never approves prices from a superseded table
+        return "approval_required", ABOVE_POLICY
     return None if decision_covered(ctx, c, row) else ("approval_required", ABOVE_POLICY)
 
 
@@ -490,6 +504,8 @@ def decline(i: dict[str, Any], ctx: CallContext):
     c["reevalReason"] = f"Declined by {by}: {i['reason']}"
     c["submitted"] = None
     c["cycle"] = cyc(c) + 1  # a new decision cycle: new keys for submit, approve and decline
+    if device_replacement.on_decline(ctx.session, c):  # a device's replacement unit goes back to the demand (P9-6.16)
+        c.pop("replacement", None)
     push_event(
         ctx,
         {

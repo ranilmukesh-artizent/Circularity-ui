@@ -3,8 +3,9 @@ device_listing, device_bid, device_sale and device_replacement_demand, migration
 
 Owns: the row types and the as-of reads of the weekly price feed, launches, live listings, open bids, settled sales and
 replacement demand. Every read takes the date it asks as of and never returns a row dated after it (listed, received,
-settled or launched later): Phase 7's leakage test relies on this. Never writes: `di.connectors.adapters.device_market`
-lands the rows. Synthetic data: an IMEI identifies a device, no person is stored.
+settled or launched later): Phase 7's leakage test relies on this. Writes only the reservation of a replacement demand unit
+(`reserve_replacement`, `release_replacement`, P9-6.16); `di.connectors.adapters.device_market` lands every other row (and
+keeps `reserved` when it lands the demand again). Synthetic data: an IMEI identifies a device, no person is stored.
 
 Replacement demand has no raising date in its table, so `replacement_demand` takes `as_of` for symmetry and cannot filter
 by it.
@@ -194,3 +195,56 @@ def replacement_demand(s: Session, sku_key: str, grade: str, as_of: date) -> int
         {"k": sku_key, "g": grade},
     ).scalar_one()
     return int(n)
+
+
+@dataclass(frozen=True)
+class DemandRow:
+    id: str
+    unit_cost: float
+    qty: int
+    reserved: list[str]
+
+    @property
+    def open(self) -> int:
+        """The units not yet reserved."""
+        return max(0, self.qty - len(self.reserved))
+
+
+def open_replacement(s: Session, sku_key: str, grade: str, case_id: str | None = None) -> list[DemandRow]:
+    """The replacement demand of `sku_key` that a device of `grade` can fill and that has a unit for the case: one not yet
+    reserved, or one the case itself reserved (P9-6.16). The earliest needed first, then by id."""
+    rows = s.execute(
+        text(
+            "SELECT id, unit_cost, qty, reserved FROM device_replacement_demand WHERE sku_key = :k AND grade_min >= :g "
+            "ORDER BY needed_by NULLS LAST, id"
+        ),
+        {"k": sku_key, "g": grade},
+    )
+    out = [DemandRow(r[0], _f(r[1]), int(r[2]), [str(x) for x in r[3]]) for r in rows]
+    return [d for d in out if d.open > 0 or (case_id is not None and case_id in d.reserved)]
+
+
+def reserve_replacement(s: Session, demand_id: str, case_id: str) -> bool:
+    """Reserve one unit of the demand for the case (P9-6.16), once: True when the case now holds a unit (also when it held it
+    already), False when every unit is taken. One statement, so two approvals cannot take the same last unit."""
+    got = s.execute(
+        text(
+            "UPDATE device_replacement_demand SET reserved = reserved || to_jsonb(CAST(:c AS text)) "
+            "WHERE id = :d AND NOT reserved ? :c AND jsonb_array_length(reserved) < qty"
+        ),
+        {"d": demand_id, "c": case_id},
+    )
+    if got.rowcount:  # type: ignore[attr-defined]  # a CursorResult
+        return True
+    held = s.execute(
+        text("SELECT 1 FROM device_replacement_demand WHERE id = :d AND reserved ? :c"), {"d": demand_id, "c": case_id}
+    ).first()
+    return held is not None
+
+
+def release_replacement(s: Session, case_id: str) -> int:
+    """Give back every unit the case holds (a rejected decision); how many it held."""
+    got = s.execute(
+        text("UPDATE device_replacement_demand SET reserved = reserved - CAST(:c AS text) WHERE reserved ? :c"), {"c": case_id}
+    )
+    return int(got.rowcount)  # type: ignore[attr-defined]

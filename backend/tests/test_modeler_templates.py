@@ -40,7 +40,9 @@ def test_device_pack_matches_golden():
     # GR-D7 (blacklist, P9-6.6), GR-D8 (price confidence, P9-6.10), GR-D10 and GR-D12 (wholesale lots, P9-6.11), GR-D11
     # (payout gap, P9-6.8) and GR-D13 (quote match, P9-6.5) are plan 9 additions for received devices; the demo has none of them
     guards = [
-        (x.id, x.text, x.owner) for x in t.guardrails if x.id not in ("GR-D7", "GR-D8", "GR-D10", "GR-D11", "GR-D12", "GR-D13")
+        (x.id, x.text, x.owner)
+        for x in t.guardrails
+        if x.id not in ("GR-D7", "GR-D8", "GR-D9", "GR-D10", "GR-D11", "GR-D12", "GR-D13")  # fmt: skip
     ]
     assert guards == [(x["id"], x["text"], x["owner"]) for x in g["guards"]]
     # the listing dims (listChannel, listDaysMin, offersMax: ageing rules, P9-6.13) are a plan 9 addition, not in the demo

@@ -241,6 +241,8 @@ export interface ModelVersion {
     /** take-up model (P9-4.11), on the offers it was fitted on, against the pack's prior (the baseline) */
     log_loss?: number; brier?: number; baseline_log_loss?: number; baseline_brier?: number; market?: string | null;
     bands?: { lo: number; hi: number; offered: number; accepted: number; predicted: number }[];
+    /** a price candidate's shadow (P9-6.18): evaluations shadowed of the `min` a promotion needs, and its error and coverage against the active model's on the `settled` ones */
+    shadow?: { n: number; min: number; settled: number; mae: number | null; mae_active: number | null; coverage: number | null; coverage_active: number | null };
   };
   /** what the model predicts: a calibration of route values (default), the remaining life of tool components, or a device's price per channel */
   kind?: 'calibration' | 'rated_life' | 'price' | 'take_up';

@@ -303,7 +303,7 @@ def test_paths_agree_tool_fleet_key_account():
 
 def test_paths_agree_tool_fleet_young_write_off():
     # Story: a worn grade D tool of 12 months is written off: GR-15 sends a write-off under 24 months to Service operations.
-    g = _facts("CMH", "D", 6, age=12, dem={"lease": [], "wo": {}})
+    g = _facts("CMH", "D", 6, age=12, age_months=12, dem={"lease": [], "wo": {}})
     c = _agree_tool(_open_tool("CMH-PA009", g), g, story="young write-off")
     assert c["recommendation"]["id"] in {"exit", "harvest"}
     assert (c["approvalRoute"]["kind"], c["approvalRoute"]["role"]) == ("person", "Service operations")
