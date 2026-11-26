@@ -107,3 +107,29 @@
 
 /* agents named outside the panel carry the bot icon (plan 10, 4.6), not the old sparkle glyph: Live board marks */
 .lr-ic { width: 12px; height: 12px; flex: none; vertical-align: -2px; }
+
+/*
+ * The docked panel takes 400px from the page (body.afpon). Up to a 1680px viewport the page column is then no wider than
+ * at a 1280px viewport, so the page's own 1280px layout applies (the demo's rules, repeated under body.afpon; T8, from
+ * writer 28's report). Not a container query: `container-type` adds layout containment, which would make the page column
+ * the containing block of every position: fixed drawer and dialog inside it.
+ */
+@media (min-width: 1281px) and (max-width: 1680px) {
+  body.afpon .frhg2 { grid-template-columns: minmax(0, 1fr); }
+  body.afpon .frhside { position: static; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  body.afpon .frhr { width: 300px; }
+  body.afpon .frsmg { grid-template-columns: 220px minmax(0, 1fr); }
+  body.afpon .frsmp { grid-column: 1 / -1; }
+  body.afpon .frwfg { grid-template-columns: minmax(0, 1fr); }
+  body.afpon .frwfr { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  body.afpon .frrecs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.afpon .jgnav .jgm { display: none; }
+  body.afpon .afjd:not(.on):not(.cur) .t { visibility: hidden; }
+  /* the case stage strip's compact form (the demo's 1400px rule) */
+  body.afpon .stph ol { gap: 4px; }
+  body.afpon .stphs { gap: 6px; }
+  html.st body.afpon .stc { padding: 4px 5px; column-gap: 4px; }
+  html.st body.afpon .stc .stci { width: 16px; height: 16px; font-size: 9.5px; }
+  html.st body.afpon .stc .t { font-size: 11px; }
+  html.st body.afpon .stc .sts { font-size: 10px; }
+}

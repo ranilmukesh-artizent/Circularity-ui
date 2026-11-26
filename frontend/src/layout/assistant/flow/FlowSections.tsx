@@ -1,6 +1,7 @@
 import { Suspense, useEffect, type ReactNode } from 'react';
 import { proposals, type HomeProposal } from '../../../api/home';
 import { useModeler } from '../../../api/modeler';
+import type { ModelerScreen } from '../../../api/types';
 import { ErrorBoundary, Loading } from '../../../components/Boundary';
 import { heldForFlow } from '../../../pages/modeler/flowBrief';
 import { useSurface, type FlowSurface } from '../../../utils/workSurface';
@@ -15,9 +16,12 @@ function WithHeld({ flowId, children }: { flowId: number; children: (held: HomeP
   return <>{children(heldForFlow(proposals(), flowId))}</>;
 }
 
-function Sections({ sf }: { sf: FlowSurface }) {
-  // the column reads the screen itself, from the same cache the Modeler page uses, so it needs nothing but the surface
-  const s = useModeler(sf.template, sf.org);
+/** The column's own read of the screen (same cache as the page, keyed by template and org). */
+function Read({ sf }: { sf: FlowSurface }) {
+  return <Sections s={useModeler(sf.template, sf.org)} />;
+}
+
+function Sections({ s }: { s: ModelerScreen }) {
   const st = useChange();
   const id = s.flow.id;
   const may = s.can.edit || s.can.approve;
@@ -46,13 +50,16 @@ function Sections({ sf }: { sf: FlowSurface }) {
  * T1's pinned `AssistantPanel` renders this above the transcript on the Modeler's Flow tab; it renders nothing when the
  * page has not registered a flow surface.
  */
-export function FlowSections() {
+export function FlowSections({ screen }: { screen?: ModelerScreen }) {
   const sf = useSurface();
   if (!sf || sf.kind !== 'flow') return null;
+  // the Modeler passes the screen it shows: a second read under another cache key (the page asks for the default
+  // template as '', the surface names it) left the column on "Reading the flow…" for seconds (T8)
+  const mine = screen && screen.flow.id === sf.flowId ? screen : null;
   return (
     <ErrorBoundary resetKey={String(sf.flowId)}>
       <Suspense fallback={<Loading label="Reading the flow…" />}>
-        <Sections sf={sf} />
+        {mine ? <Sections s={mine} /> : <Read sf={sf} />}
       </Suspense>
     </ErrorBoundary>
   );

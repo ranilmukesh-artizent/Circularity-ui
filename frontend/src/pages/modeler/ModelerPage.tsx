@@ -290,7 +290,7 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
           </button>
           <div className="mdl-agent-body">
             {/* one panel, pinned: its mode follows the tab (3.3); What I see, Watching, Proposals and Last simulation only on Flow */}
-            <AssistantPanel host="pinned" mode={TAB_MODE[tab]} section={tab === 'flow' || tab === 'setup' ? undefined : tab} sections={flowTab ? <FlowSections /> : undefined} />
+            <AssistantPanel host="pinned" mode={TAB_MODE[tab]} section={tab === 'flow' || tab === 'setup' ? undefined : tab} sections={flowTab ? <FlowSections screen={s} /> : undefined} />
           </div>
         </section>
         <div className="mdl-center">
