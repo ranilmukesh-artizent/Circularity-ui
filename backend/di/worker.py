@@ -385,6 +385,26 @@ def enqueue_device_ageing() -> None:
         s.commit()
 
 
+@handler("views.alerts")
+def _view_alerts(_payload: dict[str, Any]) -> None:
+    """The alerts of saved analytics views (plan 9, P9-9.19, UC-20): each measure is computed, and a threshold newly crossed
+    raises My work items for the owner and the shared roles (di.services.analytics_views.evaluate_alerts), once per crossing."""
+    from di.services import analytics_views
+
+    with SessionLocal() as s:
+        raised = analytics_views.evaluate_alerts(s, "system")
+        s.commit()
+    if raised:
+        log.info("view alerts: %d new crossing(s)", raised)
+
+
+def enqueue_view_alerts() -> None:
+    """Queue a `views.alerts` job unless one is queued or running (the periodic step runs every 30 s)."""
+    with SessionLocal() as s:
+        jobs.enqueue(s, "views.alerts", {}, priority=200, dedupe_key="views.alerts")
+        s.commit()
+
+
 @handler("device.priceRefit")
 def _device_price_refit(payload: dict[str, Any]) -> None:
     """The retrained price model (plan 9, P9-6.18): when 200 sales settled since the active model's window, a candidate is
@@ -552,6 +572,10 @@ def periodic() -> None:
         enqueue_device_ageing()
     except Exception:
         log.exception("queueing the device ageing job failed")
+    try:
+        enqueue_view_alerts()
+    except Exception:
+        log.exception("queueing the view alerts job failed")
     try:
         enqueue_price_refit()
     except Exception:

@@ -26,7 +26,8 @@ from tests.helpers import call
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")
 
 ORG = "Customer A"
-CELLS = ("%:XR-%", f"{ORG}:%:PSU-48", f"{ORG}:%:RRU-4410")
+# "%:SPARE-%": the demo seed leaves SPARE-1 (test_tn_facts._market) in the pool; it must not count here
+CELLS = ("%:XR-%", "%:SPARE-%", f"{ORG}:%:PSU-48", f"{ORG}:%:RRU-4410")
 
 
 def _clean() -> None:

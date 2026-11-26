@@ -45,6 +45,7 @@ FORBIDDEN_ACTIONS = (
     "device.ageingSuggestions",  # plan 9 P9-6.13: a person reads the ageing suggestions, accepts one into their draft (R21)
     "telecom.crossRegion",  # P9-10.15: a person reads the cross-region transfers and accepts the rule into their draft (R21)
     "assessment.record",  # plan 9 P9-12.9: servicing or remanufacturing is a person's regulatory call (R7)
+    "view.share",  # plan 9 P9-9.19: sharing a saved view with a role changes who sees that data (access, R21)
     "conflict.resolve",  # phase 2 review: choosing between two systems' values clears a hold; a person decides it
 )  # fmt: skip
 
@@ -63,6 +64,7 @@ HELD_FOR_PERSON = (
     "nonReturnFee.post",  # P9-3.18: a fee posted to the billing system is a person's; an agent may prepare it
     "lot.propose",  # P9-6.11: picking a buyer for a lot is proposed by an agent and held; a person accepts it
     "service.book",  # P9-11.7: a service order for a rental device is booked by a person
+    "view.setAlert",  # P9-9.19: an alert sends My work items to other people; an agent may prepare it, a person sets it
     "requisition.reduce",  # P9-10.16: cutting a purchase requisition is a person's; the follow-through agent prepares it
     "rental.writeOff",  # P9-11.17: the write-off of a retired rental device is posted by Finance
     "rentalFleet.chargeDamage",  # P9-12.5: the customer charge for a machine's check-in damage is recorded by Finance

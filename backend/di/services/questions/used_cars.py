@@ -9,11 +9,13 @@ key) and registered with `analytics.register`. Imported by `di.services.question
 `device_question` tool answer them by id. Every number is counted or averaged here, never by a model; the sentence goes
 through `analytics.word`. Days are the market facts' `lot_days_to_sale` per lot (the dealer system's average days to sale),
 and a car's own days in stock (`asset.days_on_lot`, P9-9.18) orders the example records.
-Never does: write anything, or build saved views and alerts (DV-13 has none to reuse; the ageing alert is P9-9.18's).
+Also registers the measure `days_in_stock` of both questions (the most days any car of the question's filter has been in stock),
+which the alert of a saved view reads (`di.services.analytics_views`; the ageing alert of lots is P9-9.18's).
+Never does: write anything.
 """
 
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
 from statistics import mean
@@ -21,7 +23,7 @@ from statistics import mean
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.services.device.analytics import Answer, Scope, WorkedQuestion, register
+from di.services.device.analytics import Answer, Scope, WorkedQuestion, register, register_measure
 from di.services.modeler.pack import load_pack
 
 SEGMENT = "ev_crossover"
@@ -130,5 +132,17 @@ def _lease(s: Session, scope: Scope | None, _as_of: date) -> Answer:
     return lease_return_lots(load_cars(s, scope), _names())
 
 
+def _oldest(pick: str, value: str) -> Callable[[Session, Scope | None], float | None]:
+    """The measure `days_in_stock` of a question: the most days any car of its filter has been in stock (None: no car)."""
+
+    def measure(s: Session, scope: Scope | None) -> float | None:
+        days = [c.days_in_stock for c in load_cars(s, scope) if getattr(c, pick) == value]
+        return float(max(days)) if days else None
+
+    return measure
+
+
+register_measure("wq_uc_1", "days_in_stock", _oldest("segment", SEGMENT))  # alertable on a saved view (P9-9.19)
+register_measure("wq_uc_2", "days_in_stock", _oldest("return_kind", LEASE_END))
 register(WorkedQuestion("wq_uc_1", "Where do returned EV crossovers sell fastest?", "bar", _ev, "used_cars"))
 register(WorkedQuestion("wq_uc_2", "Which lots sell lease returns fastest?", "bar", _lease, "used_cars"))

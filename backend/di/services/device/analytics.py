@@ -87,6 +87,19 @@ def register(q: WorkedQuestion) -> WorkedQuestion:
     return q
 
 
+#: (question id, measure) -> the measure's current value over the rows a scope allows (None: no rows). The alert of a saved view
+#: (P9-9.19, `di.services.analytics_views`) reads it; a question with no entry has no alertable measure.
+MEASURES: dict[tuple[str, str], Callable[[Session, Scope | None], float | None]] = {}
+
+
+def register_measure(question_id: str, measure: str, compute: Callable[[Session, Scope | None], float | None]) -> None:
+    MEASURES[question_id, measure] = compute
+
+
+def measures_of(question_id: str) -> list[str]:
+    return sorted(m for q, m in MEASURES if q == question_id)
+
+
 def questions_of(pack_key: str) -> list[dict[str, str]]:
     """The worked questions registered for a pack, in registration order: {id, question}."""
     return [{"id": q.id, "question": q.question} for q in REGISTRY.values() if q.pack == pack_key]

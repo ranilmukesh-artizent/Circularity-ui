@@ -53,6 +53,7 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "releaseQuarantine": ("Admin", "Approver"),  # plan 9 P9-3.7: release a recalled tool from quarantine after the fix
     "postFees": ("Admin", "Planner", "Finance"),  # plan 9 P9-3.18: post a non-return fee of a closed contract line
     "bookService": ("Admin", "Engineer", "Planner"),  # plan 9 P9-11.7: book certification or maintenance for a rental device
+    "saveView": ("Admin", "Planner", "Approver", "Executive", "Finance", "Engineer"),  # plan 9 P9-9.19: save, share, alert a view
     "recordAssessment": ("Admin", "Engineer"),  # plan 9 P9-12.9: the regulatory assessment of planned medical device work
 }
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {

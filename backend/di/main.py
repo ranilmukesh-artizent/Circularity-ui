@@ -6,6 +6,7 @@ import di.repositories.cases  # registers action handlers
 import di.repositories.workspace  # registers action handlers
 import di.services.actions.access  # registers action handlers
 import di.services.actions.agents  # registers action handlers (agent.register, agent.update; plan 8)
+import di.services.actions.analytics_views  # registers view.save, view.share, view.setAlert, view.list (plan 9 P9-9.19)
 import di.services.actions.assessments  # registers assessment.record (medical device regulatory assessment; plan 9 P9-12.9)
 import di.services.actions.cases_intake  # registers action handlers (case.open; plan 8)
 import di.services.actions.compose  # registers action handlers (compose.*: the composition object; plan 9 P9-8.17)

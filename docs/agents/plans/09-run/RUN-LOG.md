@@ -230,3 +230,4 @@ unattended". Times are local (IST).
 | 27 Nov 00:28 | P9-7.7 merged. FR market canary for service desk tables |
 | 27 Nov 00:28 | P9-7.8 merged. FR market canary smoke |
 | 27 Nov 00:48 | P9-13.13 merged. final docs pass after every code branch; facts checked by the lead (Executive runReplay, rollout roles) |
+| 27 Nov 02:40 | P9-13.12 merged. final proof recorded in docs/agents/plans/09-work/final-proof.md |
