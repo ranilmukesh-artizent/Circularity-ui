@@ -164,9 +164,12 @@ never, always, only, require, prefer, exclude, send, route, block. No model deci
 - Docked, not floating: at a viewport of 1280px or wider the dock pushes the page (the app grid gains a 400px
   column; `--afpw` stays the width token). Below 1280px it overlays with a shadow; below 700px it is full screen (as
   today).
-- On the Modeler, the dock and the right rail (section 3) share one column below 1600px: opening the dock swaps the
-  rail out; the rail's tab strip stays as a 44px vertical column, so one click swaps back. At 1600px and wider both
-  show.
+- **On the Modeler the same panel is pinned, not docked** (product decision, 26 Nov): one component,
+  `AssistantPanel`, has two hosts. Everywhere else the host is the Ctrl+J dock above. On the Modeler the host is a
+  fixed agent column left of the canvas, always visible, in Change flow mode by default, and the page reads agent-first
+  (section 3). While the pinned column is mounted the dock does not render; Ctrl+J and every launcher focus the pinned
+  composer instead, so there is never a second copy. The conversation is the same one (one store), so a question asked
+  on Home is still in the transcript on the Modeler.
 - Focus moves to the composer on open and back to the invoking control on close.
 
 ### 2.3 The intent preview card (R2, R3)
@@ -334,7 +337,7 @@ the label; Apply has a visible focus ring (existing `:focus-visible` tokens).
 | Surface | Fate |
 |---|---|
 | `layout/AskPanel.tsx` | Replaced by `layout/assistant/AssistantDock.tsx` (Ask mode keeps its streaming, lookups, cards and next steps). `openAsk()` stays as an alias of `openAssistant({mode:'ask'})`. |
-| `pages/modeler/AssistantPanel.tsx` | Removed. Its logic moves to the dock's Change flow mode; the canvas still draws the proposal dashed. |
+| `pages/modeler/AssistantPanel.tsx` | Removed. Its logic moves to the Change flow mode of the one `AssistantPanel` (`layout/assistant/`), which the Modeler pins as its agent column (section 3); the canvas still draws the proposal dashed. |
 | `pages/modeler/DescribeDialog.tsx` | Removed, with the "Describe your business" button. `config.read`/`config.draft` stay in the backend (agents and MCP use them; `config.read` still gives the match score). |
 | `compose/DescribeStep.tsx` | Before a composition exists: a launcher ("Describe the business in Ask Circularity") that opens the dock in Set up. After: the review of what was drafted, kept, with the change set drawn by a shared `ChangeSetList` (no JSON strings). |
 | Modeler bar "Compose" | Becomes the page tab "Set up" (section 3). |
@@ -345,31 +348,104 @@ the label; Apply has a visible focus ring (existing `:focus-visible` tokens).
 
 ---
 
-## 3. The Modeler page layout
+## 3. The Modeler page layout: agent-first
 
-Principle (playbook, "the work, not the chat, is the primary surface"): the canvas is the page. Everything that edits
-the selected thing sits in one rail; everything that configures the org or the pack sits in page tabs; lifecycle sits
-in one bar.
+Product decision (26 Nov, after review of this spec): the Modeler is **agent-first**. The one assistant is pinned open
+as a fixed column, and what the agent understands, watches, proposes and last simulated is the first thing a person
+sees, with the canvas beside it as the work surface. Still one assistant: the column is the same `AssistantPanel`
+(same store, same modes, same preview card); only its host differs (2.2).
+
+### 3.1 What "agent-first, like before" keeps from the demo, done better
+
+The demo's agent-first mode (`fixtures/demo/index.html`, the `AF-START`/`AF-CSS-START` blocks, `FEAT.agent`) read as
+agent-first because of four things. Each is kept, and fixed:
+
+| Demo (AF block) | What made it work | Kept as, here |
+|---|---|---|
+| `afBriefing()`: computed role sentences with a count and a link ("3 decisions ready to submit; the largest is RT-… at $…") | The agent speaks first, in numbers, before anyone types | "What I see" section: 3–5 computed sentences about this flow, each a link (3.3) |
+| `.afb` provenance badges: Retrieved, Rules, Model, Simulated, Prepared by agent | Every fact says where it came from | The same five words as small sentence-case tags (the demo's were uppercase, a tell), on each line and card |
+| `.afrec` recommendation card with the plan (`.afplan`) and the draft rule (`.afdraft`, yellow left rule) | The proposal is a concrete object, not chat text | The preview card (2.3) with the revision mark (4.1); the yellow left rule is kept only for "prepared, waiting for you" |
+| `.afst` step list (done green, current on yellow-soft) | Visible state of a run | The status lines (2.4), and the rollout stepper in the lifecycle bar |
+
+What changes from the demo: no floating 420px overlay over the work (it is a column in the layout), no card-in-card
+shadows (`.afc` had `box-shadow`), no uppercase badges, no sparkle on every button.
+
+### 3.2 Wireframe (1440 x 900; the app sidebar starts collapsed to its 68px icon form on the Modeler below 1600px)
 
 ```
-+-- sidebar --+------------------------------------------------------------------------------------------+
-|             | Modeler                                        [Industrial returns v] [workspace v]        |
-|             | Flow · Customer layer · Policies · Tables* · Packs · Set up        (page tabs)              |
-|             |------------------------------------------------------------------------------------------|
-|             | Industrial returns · workspace   Draft v2 · 1 blocking   [Submit for approval] [Discard]      |
-|             | Rollout: Replay > Shadow > Canary > Full  (only when a candidate exists, inline stepper)     |
-|             |------------------------------------------------------------------------------------------|
-|             |                                                            | Inspector Checks Impact History|
-|             |                                                            |--------------------------------|
-|             |        FLOW CANVAS (fills the viewport height)             | IR-01 · set a path             |
-|             |                                                            | Stage  Choose best route       |
-|             |   dashed revision marks = proposed, not applied            | When   grade = D               |
-|             |                                                            | Then   exclude Resale          |
-|             |                                     [+ Add rule]           | ...                            |
-|             |  [+][-][fit]                         minimap               |              360px rail        |
-+-------------+------------------------------------------------------------+--------------------------------+
-                                                            (Ask Circularity dock opens to the right, 2.2)
++--+-----------------------------------------------------------------------------------------------------------+
+|  | Modeler                                                    [Industrial returns v]  [workspace v]           |
+|  | Flow   Customer layer   Policies   Tables*   Packs   Set up                                (page tabs)      |
+|  |-----------------------------------------------------------------------------------------------------------|
+|  | Industrial returns · workspace    Draft v2 · 1 blocking    Replay > Shadow > Canary > Full   [Submit] [Discard]|
+|  |-----------------------------------+-----------------------------------------------------------+----+------|
+|  | (spark) Ask Circularity            |                                                           |info|      |
+|  | Change flow · proposes only.       |                                                           |chk1|  r   |
+|  | You apply; another person approves |                                                           |trnd|  a   |
+|  |                                    |                                                           |rota|  i   |
+|  | What I see                  Rules  |                                                           |    |  l   |
+|  |  (book) 5 locked guardrails, 1     |            FLOW CANVAS (fills the height)                 |    |      |
+|  |    business rule, 7 outcomes.      |                                                           |    | 340px|
+|  |  (alert) IR-01 has no path: it     |     dashed revision marks = proposed, not applied         |    | when |
+|  |    blocks submit.          Select > |                                                           |    | open |
+|  |  (branch) Draft v2 differs from    |                                                           |    |      |
+|  |    v1 by 1 rule.                   |                                                           |    |      |
+|  |                                    |                                                           |    |      |
+|  | Watching                           |                                                           |    |      |
+|  |  (eye) Shadow run: 120 decisions,  |                                                           |    |      |
+|  |    114 agree, 6 differ   Simulated |                                                           |    |      |
+|  |  (users) 3 rules suggested by      |                                                           |    |      |
+|  |    approver overrides     Review > |                           [+ Add rule]                    |    |      |
+|  |                                    |  [+][-][fit]                              minimap         |    |      |
+|  | Proposals (1)                      |-----------------------------------------------------------+----+------|
+|  |  +------------------------------+  |
+|  |  | Exclude Resale for grade D   |  |   <- the preview card of 2.3, with Apply to draft
+|  |  +------------------------------+  |
+|  | Last simulation       Simulated   |
+|  |  (activity) Draft v2 on 41 open    |
+|  |    cases, 2 min ago: 3 change      |
+|  |    route, net -$1,240  Run again   |
+|  |------------------------------------|
+|  | (transcript of this conversation)  |
+|  | [Change flow] [Ask] [Set up]       |
+|  | +--------------------------------+ |
+|  | | Describe a change to this flow | |
+|  | +--------------------------------+ |
+|  |                          [Propose] |
++--+------------------------------------+
+   ^ 384px agent column, pinned            ^ canvas: the rest                          ^ 44px tab strip + rail
 ```
+
+### 3.3 The agent column (pinned `AssistantPanel`, Change flow mode)
+
+Top to bottom; the four agent-first sections scroll together above the transcript, the composer stays fixed at the
+bottom of the column.
+
+1. **Header**: the assistant's name with its one identity icon (`spark`, 20px), the mode, and the autonomy line,
+   computed from the person's rights: "Change flow · proposes only. You apply; another person approves." (no edit
+   rights: "Ask · read-only on this flow").
+2. **What I see** (tag: Rules). A pure function `flowBrief(s, checks)` writes 3–5 sentences from the screen read
+   (`/api/screens/modeler`): counts of guardrails, rules and outcomes; each blocking check as its own sentence; how
+   the draft differs from the published version (node diff of `s.flow.graph` vs `s.flow.published`); whose flow it is
+   when the org inherits it. Every sentence links: a node selects it on the canvas and opens the Inspector; a check
+   opens Checks. No model writes these sentences; numbers come only from the read.
+3. **Watching** (one row per signal, only the ones that exist): shadow run (`s.shadow`: n, agree, disagree, dv; tag
+   Simulated), rollout state (`showRollout(s)`), suggestions from overrides (`flow.suggestions`, read once when the
+   column mounts and on "Refresh"; tag Retrieved), held proposals for this flow (`GET /api/screens/home/proposals`
+   filtered to `flow.*`, `overlay.*`, `compose.*` actions; tag Prepared by agent), "the draft changed under a proposal".
+   Empty: "Nothing to watch yet: no shadow run, no overrides, nothing held."
+4. **Proposals**: the pending flow proposal as the preview card (2.3); suggestions open as preview cards from their
+   Watching row; held proposals use the held card (2.6). At most one preview card is expanded; the rest are one line.
+5. **Last simulation** (tag Simulated): the last `flow.simulate` result of this flow in this session (`useLastSim`,
+   2.4 wording, with its age), and "Run again" (`flow.simulate`, a read). Before any: "Not simulated yet. [Simulate
+   draft v2]".
+6. **Transcript and composer**: as in 2.2; the mode radio defaults to Change flow (Ask without edit rights; Set up on
+   the Set up tab).
+
+On page tabs other than Flow the column stays, with its mode following the tab (Set up tab: Set up; Customer layer,
+Policies, Tables, Packs: Ask with `section` = the tab); sections 2–5 show only on the Flow tab.
+
+### 3.4 The rest of the page
 
 - **Header**: title, the template and org pickers (as today), then the page tabs. The description sentence moves into
   the empty state of the rail's Inspector tab.
@@ -379,10 +455,12 @@ in one bar.
   in the same drawer).
 - **Canvas**: `height: calc(100vh - <header + bar>)`, min 520px. "Add rule" moves onto the canvas (bottom right),
   because it acts on the canvas.
-- **Rail** (new `ModelerRail.tsx`, 360px), four tabs: **Inspector** (`FlowInspector`), **Checks** (`ChecksPanel`, tab
-  shows the blocking count; clicking a check selects the node and switches to Inspector), **Impact** (`ImpactPanel` and
-  `WhatIf`), **History** (`HistoryPanel`: versions, rollback, exports, log). The selected tab is kept per session.
-  Selecting a node switches to Inspector unless the person pinned another tab.
+- **Rail** (new `ModelerRail.tsx`): a 44px vertical tab strip at the right edge, always visible, that opens a 340px
+  rail over the canvas's right edge (below 1600px) or beside it (1600px and wider, open by default). Four tabs, icon
+  plus a tooltip and `aria-label`: **Inspector** (`info`; `FlowInspector`), **Checks** (`checks`, with the blocking
+  count as a number badge; `ChecksPanel`; clicking a check selects the node and switches to Inspector), **Impact**
+  (`trend`; `ImpactPanel` and `WhatIf`), **History** (`rotate`; `HistoryPanel`: versions, rollback, exports, log).
+  Selecting a node opens the rail on Inspector unless the person pinned another tab; Esc or the active tab closes it.
 - **Page tabs** (secondary work, one at a time, below the header; the Flow tab is the default):
   - Customer layer: `OverlayPanel`.
   - Policies: `StandingPolicyPanel`.
@@ -391,9 +469,31 @@ in one bar.
   - Set up (shown to `managePacks`): `ComposePanel`, opened by `?compose=<id>` (existing) or from the dock.
   - Tab in the URL: `?tab=layer|policies|tables|packs|setup`, so the dock and links can open one.
 - **Moved off the page**: `ModelsPanel` and Repair estimate accuracy (already on the Agents page; the Modeler shows a
-  one-line link "Models used by this flow: Agents › Models"). `SuggestionsPanel` moves into the dock's Change flow
-  empty state (and its count shows on the rail's Impact tab: "3 suggestions from overrides").
-- Below 1100px the rail drops under the canvas as tabs (as `.mdl-main` does today).
+  one-line link "Models used by this flow: Agents › Models"). `SuggestionsPanel` moves into the agent column's
+  Watching section (3.3).
+- Below 1100px the agent column becomes a 56px strip above the canvas ("Ask Circularity · 1 proposal · 1 blocking",
+  tap to expand full width), and the rail drops under the canvas as tabs (as `.mdl-main` does today).
+
+### 3.5 Modeler spacing and layout rules
+
+8px grid (4px only inside controls). The page is one instrument panel, not floating cards: the agent column, canvas
+and rail sit edge to edge, separated by 1px `--line` hairlines, with no gaps, radii or shadows between them.
+
+| Element | Rule |
+|---|---|
+| Page gutter | 24px left and right of the header block; the three-column body runs full bleed to the content edge |
+| Title block | h1 28px/700 display; 8px to the page tabs; tabs 40px tall, 24px apart, active tab = 2px `--ink` underline (not a pill) |
+| Lifecycle bar | 48px tall, 16px horizontal padding, 1px `--line` above and below; items 12px apart; one primary button (yellow) at most |
+| Agent column | 384px (`--mdl-agent-w`), padding 20px; 24px between sections; section title 13px/600 sentence case with an 18px icon, 8px gap; rows min 32px with 16px icons and 8px icon gap; text 13.5px/1.45; provenance tag right-aligned on the title row |
+| Composer | fixed at the column bottom, 16px padding, 1px `--line` top; textarea 2 rows, grows to 6 |
+| Canvas | fills the rest; height `calc(100vh - var(--mdl-head))`, min 520px; background `--panel2` with a 24px dot grid at `--line2`; zoom controls and Add rule 16px from the edges |
+| Canvas nodes | 8px radius, 12px padding, 8px between kind line and label; kind line in sentence case 11.5px `--muted` with a 14px kind icon (not "CORE · INTAKE" uppercase); locked nodes show `key` 14px instead of a lock emoji or text |
+| Rail | 44px tab strip (40px hit targets, 4px apart, 16px from the top); 340px panel, padding 20px, 24px between groups |
+| Page tabs other than Flow | content max width 1080px, 24px padding, sections 32px apart, hairline separators, no nested panels |
+| Breakpoints | >= 1600: sidebar open, column 384, rail open 340. 1280–1599: sidebar collapsed (68px), column 384, rail on demand. 1100–1279: column 320. < 1100: column as a strip (3.4) |
+
+New tokens (T7, `assistant.css`): `--mdl-agent-w: 384px`, `--mdl-agent-w-sm: 320px`, `--mdl-rail-w: 340px`,
+`--mdl-strip-w: 44px`, `--mdl-bar-h: 48px`, `--mdl-head: 168px` (title, tabs and bar), `--mdl-grid: 24px`.
 
 ---
 
@@ -420,8 +520,13 @@ the demo and is never hand-edited; new tokens go in a new `frontend/src/styles/a
 | Held amber | `--as-hold` (new, = `--warn`) | #8A6400 | #E5A543 | Waiting for a person, nearest-pack, assumed. Left rule 3px on held cards. |
 | Guardrail red | `--as-block` (new, = `--bad`) | #B3382C | #EC7A6E | Blocked by a guardrail. Left rule 3px; the guardrail id in mono. |
 
-Surfaces reuse `--panel` (dock), `--panel2` (preview card), `--line`/`--line2` (hairlines). No gradients, no purple, no
-glass, no glow on the AI.
+Surfaces reuse `--panel` (dock and agent column), `--panel2` (preview card, canvas), `--line`/`--line2` (hairlines).
+No gradients, no purple, no glass, no glow on the AI.
+
+Provenance tags (`.as-prov`, 11.5px/600, sentence case, 1px border, radius 4px, 2px 6px padding) keep the demo's
+`.afb` colour mapping: Retrieved `--ok` on `--ok-soft`; Rules `--info` on `--info-soft`; Model `--ink2` on transparent
+with a 1px `--line` border (not amber, so it never reads as "held"); Simulated `--muted`, dashed border; Prepared by
+agent `--ink` on `--yellow-soft`.
 
 ### 4.2 Type roles
 
@@ -456,9 +561,40 @@ New tokens: `--as-w: 400px` (alias of `--afpw`), `--as-pad: 16px`, `--as-gap: 20
 
 ### 4.5 Tells removed (playbook Part 3)
 
-Sparkle on every AI button (keep one, on the dock's entry); bubbles and "You:"; card-in-card with shadows; ALL-CAPS
-labels in the panel; "Approve · AI applies it"; "Do it for me"; ✓/! glyphs as icons (use the existing `Icon` set);
-"Thinking…" dots.
+Sparkle on every AI button (keep it only for Ask Circularity itself, 4.6); bubbles and "You:"; card-in-card with
+shadows; ALL-CAPS labels in the panel and on canvas nodes; "Approve · AI applies it"; "Do it for me"; ✓/✕/! glyphs
+and emoji as icons; "Thinking…" dots.
+
+### 4.6 Icons
+
+One set only: the demo's stroke icons in `frontend/src/assets/assets.gen.ts` (`ICON`, 24px viewBox, stroke 1.75,
+round caps and joins, `currentColor`), drawn with `components/Icon.tsx`. No emoji, no Unicode glyphs (✓ ✕ ! ⚠ 🔒) as
+icons, no second icon library. If a needed icon is missing, add it to the demo and regenerate with
+`node frontend/scripts/dump-assets.mjs` (rule 7), never inline an SVG in a page.
+
+- Sizes: 16px in rows and buttons, 18px in section titles, 20px in the column header; 14px on canvas nodes. Stroke
+  stays 1.75 at every size (no scaling of the stroke).
+- Colour: `currentColor`, so the icon takes the text colour of its row; status colour (`--as-hold`, `--as-block`,
+  `--ok`) only on status icons, never on decorative ones.
+- Every icon has a text label next to it, or an `aria-label` and a tooltip when it stands alone (rail tabs, zoom).
+- `spark` means Ask Circularity and appears only on its entry in the top bar and on its panel header (dock or pinned
+  column). Registered agents (case autopilot, stage agents, the configuration agent) use `bot`. Nothing else uses
+  either.
+
+Meaning to icon (names from `ICON`):
+
+| Meaning | Icon | Meaning | Icon |
+|---|---|---|---|
+| Ask Circularity | `spark` | A registered agent | `bot` |
+| What I see (the flow brief) | `book` | Watching | `eye` |
+| A proposal / draft change | `edit` | Held for a person | `clock` |
+| Guardrail, locked step | `shield`, `key` | Business rule | `branch` |
+| Outcome | `target` | Simulation, shadow run | `activity` |
+| Check passed / failed | `check` / `alert` | Impact | `trend` |
+| Inspector | `info` | History, rollback | `rotate` |
+| Undo | `undo` | Pause agent | `pause` |
+| Send / Propose | `send` | Overrides (people) | `users` |
+| Checks tab | `checks` | Intake / source step | `database` |
 
 ---
 
@@ -534,7 +670,9 @@ and integrate when T1 lands (seven in parallel at most).
 
 ### T1. The dock and Ask mode (M)
 
-- Files (owned): `frontend/src/layout/assistant/AssistantDock.tsx` (new), `layout/assistant/modes/ask.tsx` (new; the
+- Files (owned): `frontend/src/layout/assistant/AssistantPanel.tsx` (new: the one panel, `host: 'dock' | 'pinned'`;
+  mounting a pinned host suppresses the dock and makes Ctrl+J and `openAssistant` focus the pinned composer; one
+  conversation store for both hosts), `layout/assistant/AssistantDock.tsx` (new, the dock host), `layout/assistant/modes/ask.tsx` (new; the
   answer turn and cards moved from `AskPanel.tsx`), `layout/assistant/status.ts` + `status.test.ts` (new),
   `layout/assistant/turns.ts` + `turns.test.ts` (new: turn reducer, queue slot, stop), `layout/assistant/modes/index.ts`
   (registry of modes; T2 and T3 each add one line, see shared files), `layout/AskPanel.tsx` (deleted),
@@ -550,23 +688,31 @@ and integrate when T1 lands (seven in parallel at most).
   starter, see a done status line and an answer, Esc closes and focus returns. Read-only.
 - Depends on: T0.
 
-### T2. Change flow mode (M)
+### T2. Change flow mode and the agent-first sections (L)
 
 - Files (owned): `layout/assistant/modes/change.tsx` (new), `layout/assistant/PreviewCard.tsx` (new; also used by
-  T1 for next steps and T5 for held proposals: T2 owns it, T1 and T5 import it), `pages/modeler/proposal.ts` +
+  T1 for next steps and T5 for held proposals: T2 owns it, T1 and T5 import it), `layout/assistant/flow/FlowBrief.tsx`,
+  `flow/Watching.tsx`, `flow/LastSim.tsx`, `flow/ProvTag.tsx` (new: the sections 2–5 of 3.3 and the provenance tag),
+  `pages/modeler/flowBrief.ts` + `flowBrief.test.ts` (new, pure: the "What I see" sentences and their link targets,
+  the Watching rows from `s.shadow`, rollout, suggestions and held proposals), `pages/modeler/proposal.ts` +
   `proposal.test.ts` (add `previewOf(p, s)`: title, diff lines, checks, impact, limits; `undoNote(text)`),
-  `api/modeler.ts` (`saveDraft` takes an optional `note`), `frontend/scripts/smoke-modeler.mjs` and
-  `frontend/scripts/smoke-mvp.mjs` (replace `#mdl-ask` and "Approve · AI applies it" with the dock).
-- Done: in the Modeler with edit rights the dock opens in Change flow; a sentence runs `flow.propose`, the proposal is
-  drawn through `surface.showProposal`, the preview card shows diff, checks, impact (from `p.sim`), basis (`read_by`)
-  and limits; Apply to draft / Apply and adjust / Rephrase / Dismiss; blocked and unclear handled (2.3, 2.5); Undo
-  (2.7) while the draft is unchanged; the empty state lists `flow.suggestions` and opens each as a preview card; the
-  question hint (2.1).
-- Tests: vitest for `previewOf` (rule, step, blocked; limits text by role), the Undo availability rule, the question
-  heuristic. Playwright `smoke-a10-t2.mjs` (writes: reset before and after): as `admin`, Modeler › Industrial returns,
-  propose "Never send grade D motors to resale", see the card, Apply to draft, see "Saved to draft", Undo, History shows
-  both notes.
-- Depends on: T0; integrates with T1 (dock) and T4 (surface registration).
+  `api/modeler.ts` (`saveDraft` takes an optional `note`; `useLastSim(flowId)` keeps the whole last `SimWithNodes` and
+  its time beside `lastNodes`), `frontend/scripts/smoke-modeler.mjs` and `frontend/scripts/smoke-mvp.mjs` (replace
+  `#mdl-ask` and "Approve · AI applies it" with the pinned column).
+- Done: on the Modeler the pinned column (T1's `AssistantPanel host="pinned"`, placed by T4) opens in Change flow with
+  the header autonomy line and the sections What I see, Watching, Proposals and Last simulation of 3.3, each with its
+  provenance tag and icons from 4.6; every brief sentence links to its node or tab through `surface.select`; a sentence
+  runs `flow.propose`, the proposal is drawn through `surface.showProposal`, the preview card shows diff, checks,
+  impact (from `p.sim`), basis (`read_by`) and limits; Apply to draft / Apply and adjust / Rephrase / Dismiss; blocked
+  and unclear handled (2.3, 2.5); Undo (2.7) while the draft is unchanged; suggestions from overrides open as preview
+  cards from their Watching row; Run again calls `flow.simulate`; the question hint (2.1). Spacing per 3.5.
+- Tests: vitest for `flowBrief` (counts match the screen read for Industrial returns; a blocking check becomes a
+  sentence linked to its node; the draft-vs-published diff; empty Watching), `previewOf` (rule, step, blocked; limits
+  text by role), the Undo availability rule, the question heuristic. Playwright `smoke-a10-t2.mjs` (writes: reset
+  before and after): as `admin`, Modeler › Industrial returns, "What I see" shows the IR-01 blocking sentence and
+  clicking it selects IR-01; propose "Never send grade D motors to resale", see the card, Apply to draft, see "Saved to
+  draft", Undo, History shows both notes; Last simulation shows after Run again.
+- Depends on: T0; integrates with T1 (panel) and T4 (column slot and surface registration).
 
 ### T3. Set up mode and the Compose launcher (M)
 
@@ -592,13 +738,18 @@ and integrate when T1 lands (seven in parallel at most).
   `pages/modeler/AssistantPanel.tsx` and `pages/modeler/SuggestionsPanel.tsx` (deleted; the suggestions logic is in
   `api/modeler.ts`, used by T2), `pages/modeler/railTab.ts` + `.test.ts` (new: which tab shows after a selection, a
   check click, a pin).
-- Done: the layout of section 3 (header with page tabs and `?tab=`, lifecycle bar with inline rollout, full-height
-  canvas with Add rule on it, 360px rail with four tabs, secondary panels in tabs, Models moved to a link);
-  `registerSurface` with the `FlowSurface` handle (graph, flush, showProposal, applyGraph, select) and `{kind:'compose'}`
-  on the Set up tab; the rail and the dock share one column below 1600px (2.2).
-- Tests: vitest for `railTab`. Playwright `smoke-a10-t4.mjs` (read-only): as `planner.a` and `admin` at 1440 x 900, the
-  Modeler page is no taller than 1.2 viewports on the Flow tab, the canvas is at least 520px tall, the four rail tabs
-  and the page tabs exist, clicking a failing check selects its node in the Inspector.
+- Done: the agent-first layout of section 3 (3.2 wireframe, 3.4, 3.5): header with page tabs and `?tab=`, lifecycle
+  bar with inline rollout, the pinned agent column slot left of the canvas rendering `<AssistantPanel host="pinned" />`
+  on every Modeler tab with the mode set by tab, a full-height canvas with Add rule on it, the 44px rail tab strip with
+  the 340px rail (on demand below 1600px, open at 1600px and wider), secondary panels in tabs, Models moved to a link,
+  the < 1100px strip form of the column; edge-to-edge columns with hairlines and the 3.5 sizes (layout CSS in
+  `modeler.css`, using T7's `--mdl-*` tokens); `registerSurface` with the `FlowSurface` handle (graph, flush,
+  showProposal, applyGraph, select) and `{kind:'compose'}` on the Set up tab.
+- Tests: vitest for `railTab`. Playwright `smoke-a10-t4.mjs` (read-only): as `planner.a` and `admin` at 1440 x 900 and
+  1920 x 1080, the agent column is the leftmost element of the body and its "What I see" title is inside the first
+  viewport, the page is no taller than 1.2 viewports on the Flow tab, the canvas is at least 520px tall, the rail is
+  closed at 1440 and open at 1920, the four rail tabs and the page tabs exist, clicking a failing check selects its
+  node in the Inspector, Ctrl+J focuses the pinned composer and no dock appears.
 - Depends on: T0. Also updates `smoke-modeler.mjs` selectors for moved panels only if T2 has not (coordinate with T2:
   T2 owns that file; T4 sends its selector changes to T2's writer through the lead).
 
@@ -616,36 +767,53 @@ and integrate when T1 lands (seven in parallel at most).
 - Depends on: T0; integrates with T1 (mount point is one line in `AssistantDock.tsx`, done by T1 as a placeholder
   `<WaitingStrip/>` import).
 
-### T6. Launchers, copy and the sparkle (S)
+### T6. Launchers, copy, icons and the Modeler rail panels' refresh (M)
 
 - Files (owned): `pages/home/HomePage.tsx`, `AlertsPage.tsx`, `ChecksPage.tsx`, `ReportsPage.tsx`, `TasksPage.tsx`,
   `pages/case/CaseOverview.tsx`, `pages/case/StagePage.tsx`, `pages/case/caseActions.ts`,
   `pages/workflows/WorkflowPage.tsx`, `pages/workflows/WorkflowList.tsx` (button label "Build a workflow"),
   `pages/integration/ConnectFlow.tsx`, `pages/integration/SourceMap.tsx`, `pages/integration/FabricOverview.tsx`,
-  `layout/Sidebar.tsx` (search), the top-bar search input in `layout/TopBar.tsx` (T1 owns the entry button lines of
-  the same file; T6 edits only the `.frsearch` block, merge in order T1 then T6).
-- Done: no `<Icon name="spark" />` outside the dock's entry and header; every inline launcher calls `openAssistant`
-  with its question and context (case id, KPI); "Do it for me" becomes "Ask how to do this"; demo texts otherwise
-  unchanged ("Explain this number", "Agent suggests", "Ask about RT-1048"); the search placeholder matches what search
-  does; one Ctrl K search, not two.
-- Tests: vitest `caseActions.test.ts` (existing, extended: the question and context each launcher sends). Playwright
-  `smoke-a10-t6.mjs` (read-only): count spark icons per page over the 11 accounts' pages (0 outside the top bar), and
-  "Ask about RT-1048" opens the dock with "Case: RT-1048" in the context line.
+  `layout/Sidebar.tsx` (search; the Modeler's collapsed default below 1600px, 3.2, unless the person expanded it), the
+  top-bar search input in `layout/TopBar.tsx` (T1 owns the entry button lines of the same file; T6 edits only the
+  `.frsearch` block, merge in order T1 then T6), and the contents of the Modeler's rail panels:
+  `pages/modeler/ChecksPanel.tsx`, `FlowInspector.tsx`, `ImpactPanel.tsx`, `WhatIf.tsx`, `HistoryPanel.tsx` (T4 hosts
+  them in the rail and does not edit them).
+- Done: no `<Icon name="spark" />` outside Ask Circularity's entry and panel header (4.6); every inline launcher calls
+  `openAssistant` with its question and context (case id, KPI), which focuses the pinned column on the Modeler; "Do it
+  for me" becomes "Ask how to do this"; demo texts otherwise unchanged ("Explain this number", "Agent suggests", "Ask
+  about RT-1048"); the search placeholder matches what search does; one Ctrl K search, not two. In the rail panels:
+  ✓/✕/! glyphs become `check`/`alert` icons at 16px, every label is sentence case, spacing follows 3.5 (20px padding,
+  24px between groups, 32px rows), no panel-in-panel inside the rail (the rail is the container; `Panel` headers drop
+  to 13px/600 section titles with an 18px icon from the 4.6 table).
+- Tests: vitest `caseActions.test.ts` (existing, extended: the question and context each launcher sends); a vitest for
+  `ChecksPanel` (a failing check renders the `alert` icon and calls `onSelect` with its node). Playwright
+  `smoke-a10-t6.mjs` (read-only): count spark icons per page over the 11 accounts' pages (0 outside the entry and the
+  panel header), no text node in the Modeler matches /[✓✕⚠]/, and "Ask about RT-1048" opens the dock with "Case:
+  RT-1048" in the context line.
 - Depends on: T0 (`openAssistant` signature; until T1 lands it can call the existing `openAsk`).
 
-### T7. Tokens, the revision mark and the one motion (S)
+### T7. Tokens, the canvas refresh, the revision mark and the one motion (M)
 
-- Files (owned): `frontend/src/styles/assistant.css` (new: tokens of 4.1 and 4.3 in light and dark, dock, turn, card,
-  status line, revision mark), `frontend/src/main.tsx` (one import line), `pages/modeler/FlowCanvas.tsx` and
-  `FlowCanvas.test.tsx` (the dashed outline, the Δ tag with the draft version, the resolve-to-solid on apply via a
-  `resolved` prop), `components/Icon.tsx` (only if a Δ glyph is needed).
-- Done: the dock and cards use only these tokens; the proposed node shows the revision mark in both themes; the one
-  motion of 4.4 plays on apply and not under reduced motion.
-- Tests: vitest in `FlowCanvas.test.tsx` (proposed node has the revision class and tag; `resolved` removes it).
-  Playwright `smoke-a10-t7.mjs` (read-only): screenshots of the dock and a proposed node in light and dark into the
-  session scratchpad, and a contrast check of status-line text against `--panel` (>= 4.5:1) in both themes.
-- Depends on: T0. Visual integration with T1/T2 is by class names fixed in this spec: `.as-dock`, `.as-turn`,
-  `.as-status`, `.as-card`, `.as-card.held`, `.as-card.blocked`, `.rev`, `.rev-tag`.
+- Files (owned): `frontend/src/styles/assistant.css` (new: tokens of 4.1, 4.3 and 3.5 in light and dark; styles of
+  the panel in both hosts, turn, card, status line, provenance tag, revision mark, the pinned column's sections),
+  `frontend/src/main.tsx` (one import line), `pages/modeler/FlowCanvas.tsx` and `FlowCanvas.test.tsx` (node refresh of
+  3.5: sentence-case kind line with a 14px kind icon from 4.6 instead of "CORE · INTAKE", `key` icon on locked nodes,
+  12px padding, 8px radius; the dashed outline, the Δ tag with the draft version, the resolve-to-solid on apply via a
+  `resolved` prop; the 24px dot grid), `pages/modeler/canvas.css` (new; Modeler node styles, so the shared
+  `components/graph/graph.css` and the Workflow canvas stay untouched). The Δ is text in the mono face, not an icon.
+- Done: the panel (both hosts) and cards use only these tokens; the pinned column's section titles, rows and tags
+  match 3.5 and 4.6; canvas nodes match 3.5 in both themes with every icon from `ICON`; the proposed node shows the
+  revision mark in both themes; the one motion of 4.4 plays on apply and not under reduced motion; no node text
+  changes (labels, rule ids and outcome names stay as they are).
+- Tests: vitest in `FlowCanvas.test.tsx` (proposed node has the revision class and tag; `resolved` removes it; a
+  locked node renders the `key` icon; the kind line is sentence case). Playwright `smoke-a10-t7.mjs` (read-only):
+  screenshots of the Modeler (pinned column, canvas, a proposed node drawn through the surface without applying) and
+  of the dock on Home, in light and dark, into the session scratchpad; a contrast check of status-line and tag text
+  against their backgrounds (>= 4.5:1) in both themes.
+- Depends on: T0. Visual integration with T1/T2/T4 is by class names fixed in this spec: `.as-panel`,
+  `.as-panel.pinned`, `.as-dock`, `.as-turn`, `.as-status`, `.as-card`, `.as-card.held`, `.as-card.blocked`,
+  `.as-sec` (a column section), `.as-sec-t` (its title row), `.as-row`, `.as-prov`, `.rev`, `.rev-tag`, `.mdl-agent`,
+  `.mdl-canvas`, `.mdl-strip`, `.mdl-rail`.
 
 ### T8. Integration and gate (M, lead or one writer, last)
 
@@ -662,7 +830,11 @@ and integrate when T1 lands (seven in parallel at most).
 |---|---|---|
 | `layout/assistant/types.ts`, `utils/workSurface.ts` | T0 (lead) | read by all; changes go through the lead |
 | `layout/assistant/modes/index.ts` | T1 | T2, T3 each add one import line after T1 merges |
-| `layout/assistant/AssistantDock.tsx` | T1 | T5 mount line placed by T1 |
+| `layout/assistant/AssistantPanel.tsx`, `AssistantDock.tsx` | T1 | T5 mount line placed by T1; T4 renders the pinned host |
+| `layout/assistant/flow/*`, `pages/modeler/flowBrief.ts` | T2 | — |
+| `pages/modeler/ChecksPanel.tsx`, `FlowInspector.tsx`, `ImpactPanel.tsx`, `WhatIf.tsx`, `HistoryPanel.tsx` | T6 | hosted by T4's rail, not edited by T4 |
+| `pages/modeler/FlowCanvas.tsx`, `canvas.css` | T7 | — |
+| `layout/Sidebar.tsx` | T6 | — |
 | `layout/assistant/PreviewCard.tsx` | T2 | imported by T1, T5 |
 | `layout/TopBar.tsx` | T1 (entry button) | T6 (search block), merged after T1 |
 | `api/modeler.ts` | T2 | — |
@@ -675,12 +847,12 @@ and integrate when T1 lands (seven in parallel at most).
 |---|---|---|---|
 | T0 contracts | XS | — | first |
 | T1 dock + Ask | M | T0 | A |
-| T2 Change flow | M | T0 (integrates T1, T4) | A |
+| T2 Change flow + agent-first sections | L | T0 (integrates T1, T4) | A |
 | T3 Set up | M | T0 (integrates T1, T4) | A |
 | T4 Modeler layout | L | T0 | A |
 | T5 Held + agents | S | T0 (integrates T1) | A |
-| T6 Launchers + copy | S | T0 | A |
-| T7 Tokens + motion | S | T0 | A |
+| T6 Launchers, copy, icons, rail panels | M | T0 | A |
+| T7 Tokens, canvas refresh, motion | M | T0 | A |
 | T8 Integration + gate | M | T1–T7 | last |
 
 ---
@@ -704,4 +876,4 @@ and integrate when T1 lands (seven in parallel at most).
 
 | Date | Decision | Why | Alternatives | Where |
 |---|---|---|---|---|
-| 2026-11-26 | **One assistant: Ask Circularity is the only conversational surface** (plan 10). The global panel becomes a docked panel with three modes: Ask (read-only, `POST /api/ask`), Change flow (`flow.propose`, `flow.simulate`, `flow.suggestions`; the person applies with `flow.saveDraft`, with an Undo that is the person's own `flow.saveDraft` of the earlier graph) and Set up (`compose.start`, `compose.answer`; the Compose work surface keeps mapping, agents, approve and publish). The Modeler's Assistant panel and the "Describe your business" dialog are removed; `config.read`/`config.draft` stay for agents and MCP. Held proposals and agent runs show in the panel through `proposal.accept`/`proposal.reject` and `agent.runTrace`. Text changes against the demo and plan 8/9 screens: "Approve · AI applies it" becomes "Apply to draft" (the write is the person's), "Do it for me" becomes "Ask how to do this" (Ask cannot act), the sparkle icon stays only on the panel's entry, and the Modeler's secondary panels move to tabs (Models to the Agents page only). No number, rule, guardrail or decision text changes; RT-1048 and the 128 cases are unchanged. | Users saw three chatbots with three voices and two approval paths for the same description; the playbook's agent patterns (preview, visible state, undo, takeover) were partly built in each and whole in none. | Keep three panels with a shared style (still three voices); a model-chosen mode (silent routing the person cannot see); a new product name for the assistant (churn on demo texts). | `frontend/src/layout/assistant/`, `pages/modeler/ModelerPage.tsx`, `ModelerRail.tsx`, `compose/DescribeStep.tsx`, `styles/assistant.css`; smokes `frontend/scripts/smoke-a10*.mjs` |
+| 2026-11-26 | **One assistant: Ask Circularity is the only conversational surface** (plan 10). The global panel becomes one `AssistantPanel` with two hosts, a Ctrl+J dock everywhere and, on the Modeler, a pinned agent column left of the canvas that opens in Change flow and leads with what the agent sees, watches, proposes and last simulated (agent-first, as the demo's AF mode; product decision 26 Nov). It has three modes: Ask (read-only, `POST /api/ask`), Change flow (`flow.propose`, `flow.simulate`, `flow.suggestions`; the person applies with `flow.saveDraft`, with an Undo that is the person's own `flow.saveDraft` of the earlier graph) and Set up (`compose.start`, `compose.answer`; the Compose work surface keeps mapping, agents, approve and publish). The Modeler's Assistant panel and the "Describe your business" dialog are removed; `config.read`/`config.draft` stay for agents and MCP. Held proposals and agent runs show in the panel through `proposal.accept`/`proposal.reject` and `agent.runTrace`. Text changes against the demo and plan 8/9 screens: "Approve · AI applies it" becomes "Apply to draft" (the write is the person's), "Do it for me" becomes "Ask how to do this" (Ask cannot act), the sparkle icon stays only on Ask Circularity's entry and header (agents use `bot`), canvas node kind lines become sentence case with icons, and the Modeler's secondary panels move to tabs (Models to the Agents page only). No number, rule, guardrail or decision text changes; RT-1048 and the 128 cases are unchanged. | Users saw three chatbots with three voices and two approval paths for the same description; the playbook's agent patterns (preview, visible state, undo, takeover) were partly built in each and whole in none. | Keep three panels with a shared style (still three voices); a model-chosen mode (silent routing the person cannot see); a new product name for the assistant (churn on demo texts). | `frontend/src/layout/assistant/`, `pages/modeler/ModelerPage.tsx`, `ModelerRail.tsx`, `compose/DescribeStep.tsx`, `styles/assistant.css`; smokes `frontend/scripts/smoke-a10*.mjs` |
