@@ -5,8 +5,8 @@
  */
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import {
-  bookService, exTs, refList, refreshEvidence, serviceProposal, srcAge, stages, type CaseAnalysis, type CaseRec, type Clock,
-  type Source, type StageTag,
+  bookService, classLabelOf, exTs, refList, refreshEvidence, serviceProposal, srcAge, stages,
+  type CaseAnalysis, type CaseRec, type Clock, type Source, type StageTag,
 } from '../../api/case';
 import { money } from '../../api/format';
 import { can } from '../../api/session';
@@ -16,6 +16,8 @@ import { IconTile } from '../../components/kit/IconTile';
 import { KeyedStatus, type StatusTable } from '../../components/kit/StatusPill';
 import { VendorLogo } from '../../components/kit/VendorLogo';
 import { caseActions } from './caseActions';
+import { ClassArt } from '../../components/ClassArt';
+import { photoSrc } from './photo';
 
 export const hue = (h: string, k?: number) => ({ '--c': `var(--h-${h})`, ...(k != null ? { '--k': k } : {}) }) as CSSProperties;
 
@@ -190,16 +192,15 @@ export function StageLogos({ n, src }: { n: number; src: Record<string, Source> 
     </>
   );
 }
-const AS_IMG: Record<string, string> = { motor: 'motor', pump: 'pump', control: 'control', drill: 'powertool', batch: 'powertool', it: 'it' };
-export const photoSrc = (cls: string) => 'assets/products/' + AS_IMG[cls] + '.webp';
+export { photoSrc };
 /** The product photo, with the class name as a fallback (asPhoto). */
 export function Photo({ c, cls }: { c: CaseRec; cls?: string }) {
   const [broken, setBroken] = useState(false);
-  const label = refList('CLASSES')[c.cls]?.label ?? c.cls;
+  const label = classLabelOf(c.cls), src = photoSrc(c.cls);
   return (
     <div className={'asimg ' + (cls || '')}>
-      {!broken && <img src={photoSrc(c.cls)} alt={`${c.product}, ${c.mfr}`} onError={() => setBroken(true)} />}
-      <span className="asph" hidden={!broken}><span>{label}</span></span>
+      {src && !broken && <img src={src} alt={`${c.product}, ${c.mfr}`} onError={() => setBroken(true)} />}
+      {(!src || broken) && <ClassArt cls={c.cls} label={label} />}
       {c.qty > 1 && <span className="asqty">×{c.qty}</span>}
     </div>
   );

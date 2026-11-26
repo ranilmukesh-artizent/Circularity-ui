@@ -22,7 +22,7 @@ export function AppliedLine() {
     }
   };
   return (
-    <p className="as-status" data-state="done">
+    <p className="as-status" data-state="done" role="status" aria-live="polite">
       <span>Saved {a.label} to {ver != null ? `draft v${ver}` : 'the draft'} · not published</span>
       {canUndo(st) && <button type="button" className="as-link" disabled={busy} onClick={() => void undo()}>Undo</button>}
       <button type="button" className="as-link" onClick={() => flowSurface()?.select(null, 'history')}>See in History</button>

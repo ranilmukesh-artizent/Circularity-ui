@@ -19,6 +19,10 @@ interface AuFilter { q: string; src: string; type: string; status: string; dir: 
 const EMPTY: AuFilter = { q: '', src: '', type: '', status: '', dir: -1, limit: 40, prep: false };
 const saved = sessionScoped<AuFilter>(() => ({ ...EMPTY }));
 
+/** A request line with break points after "/", "?", "&" and "=" so a query wraps between its parts, not in the middle of one. */
+const breakable = (s: string): ReactNode =>
+  s.split(/([/?&=])/).map((part, i) => (i % 2 ? <Fragment key={i}>{part}<wbr /></Fragment> : part));
+
 const PU = <span className="chip bad" style={{ height: 'auto', padding: '1px 8px' }}>Provenance unavailable</span>;
 const fv = (v: unknown): ReactNode => (v == null || v === '' ? PU : String(v));
 const stC = (s: AuditEntry['status']) =>
@@ -121,7 +125,7 @@ export function AuditPage({ route, query }: PageProps) {
                       <td className="num nowrap">{x.ts.toISOString().slice(11, 19)}</td>
                       <td>{x.source}</td>
                       <td><b>{x.caseId}</b><div className="note">{x.item}</div></td>
-                      <td className="mono" style={{ maxWidth: 260, wordBreak: 'break-all' }}>{x.request}</td>
+                      <td className="mono" style={{ maxWidth: 280, overflowWrap: 'anywhere' }} title={x.request}>{breakable(x.request)}</td>
                       <td>{x.result}</td>
                       <td style={{ maxWidth: 240 }}>{x.used}</td>
                       <td>{stC(x.status)}{n > 0 && <> <span className="chip line">{n} comment{n > 1 ? 's' : ''}</span></>}</td>

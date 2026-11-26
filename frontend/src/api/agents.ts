@@ -80,6 +80,10 @@ export interface AgentProposal {
   at: string;
   /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
   own?: boolean;
+  /** What the agent's run knew (see HomeProposal): absent when the run recorded none. */
+  confidence?: number;
+  threshold?: number;
+  sources?: { fact: string; source: string; at?: string | null }[];
 }
 
 /** Shown in place of Accept on a proposal the person's own agent prepared. */
@@ -99,8 +103,18 @@ export interface CatalogTool {
   implemented: boolean;
 }
 
+/** One stage of a pack's chain with the agent that runs it and how alone it may act (gap 14; read here, set in Compose). */
+export interface PackStageAgents {
+  stage: string;
+  agent: string;
+  autonomy: 'recommend' | 'limits' | 'alone';
+  threshold: number;
+}
+
 export interface AgentsScreen {
   agents: AgentRow[];
+  /** the stage agents under each pack */
+  packs: { key: string; name: string; stages: PackStageAgents[] }[];
   orgs: string[];
   mcp_tools: string[];
   runs: AgentRun[];

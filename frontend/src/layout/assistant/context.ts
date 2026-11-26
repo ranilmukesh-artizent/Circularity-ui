@@ -21,6 +21,7 @@ export function contextOf(route: RouteRef, surface: Surface | null, role: string
   } else if (surface?.kind === 'compose') {
     ctx.pack = surface.pack;
     ctx.org = surface.org;
+    if (surface.id != null) ctx.composeId = surface.id;
   }
   return ctx;
 }
@@ -41,6 +42,7 @@ export function contextParts(ctx: AssistantContext): string[] {
     if (ctx.section) parts.push('Section: ' + ctx.section);
     if (ctx.pack) parts.push('Pack: ' + ctx.pack);
     if (ctx.org) parts.push('Org: ' + ctx.org);
+    if (ctx.composeId != null) parts.push('Composition ' + ctx.composeId);
   }
   if (ctx.caseId) parts.push('Case: ' + ctx.caseId);
   return parts;

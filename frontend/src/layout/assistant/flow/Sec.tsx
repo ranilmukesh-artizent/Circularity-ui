@@ -19,14 +19,17 @@ export function Sec({ icon, title, tag, right, children }: { icon: string; title
   );
 }
 
-/** A row of a section: a 16px icon, a sentence, and an optional link button (the target is spelled out, not "click here"). */
-export function Row({ icon, tag, children, go, onGo }: { icon: string; tag?: Prov; children: ReactNode; go?: string; onGo?: () => void }) {
+/**
+ * A row of a section: a 16px icon, a sentence, and an optional link button (the target is spelled out, not "click
+ * here"); `goLabel` names the target for a screen reader when several rows share the same short word ("Select").
+ */
+export function Row({ icon, tag, children, go, goLabel, onGo }: { icon: string; tag?: Prov; children: ReactNode; go?: string; goLabel?: string; onGo?: () => void }) {
   return (
     <div className="as-row">
       <Icon name={icon} className="as-ic" />
       <span className="as-row-t">{children}</span>
       {tag && <ProvTag name={tag} />}
-      {go && onGo && <button type="button" className="as-link" onClick={onGo}>{go}</button>}
+      {go && onGo && <button type="button" className="as-link" aria-label={goLabel} onClick={onGo}>{go}</button>}
     </div>
   );
 }

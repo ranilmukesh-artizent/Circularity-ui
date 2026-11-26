@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const m = vi.hoisted(() => ({ cached: vi.fn() }));
-vi.mock('./client', async (orig) => ({ ...(await orig<typeof import('./client')>()), cached: m.cached }));
 vi.mock('./view', () => ({ view: () => ({ tenant: 'All' }) }));
+vi.mock('./client', async (orig) => ({
+  ...(await orig<typeof import('./client')>()),
+  cached: m.cached,
+  ref: () => ({ phone: { label: 'Phone' }, motor: { label: 'Motor' } }),
+  packClasses: () => ({ scissor_lift: { label: 'Scissor lift' } }),
+}));
 
-import { analyticsOrgs, analyticsRows, DEFAULT_FILTER } from './analytics';
+import { analyticsOrgs, analyticsRows, classOptions, DEFAULT_FILTER } from './analytics';
 
 const orgs = [
   { id: 'workspace', name: 'Workspace', kind: 'group', depth: 0 },
@@ -30,5 +35,15 @@ describe('analytics org roll-up (plan 8 MVP-10.1)', () => {
 
   it("the org select lists the answer's units", () => {
     expect(analyticsOrgs()).toEqual(orgs);
+  });
+});
+
+describe('asset-class options (UI audit 8, parity)', () => {
+  it("the industrial Analytics page lists exactly the demo's classes", () => {
+    expect(Object.keys(classOptions())).toEqual(['phone', 'motor']);
+    expect(Object.keys(classOptions('industrial'))).toEqual(['phone', 'motor']);
+  });
+  it('another pack adds its own classes after the demo ones', () => {
+    expect(Object.keys(classOptions('rental_fleet'))).toEqual(['phone', 'motor', 'scissor_lift']);
   });
 });

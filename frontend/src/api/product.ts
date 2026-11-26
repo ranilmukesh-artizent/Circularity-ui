@@ -7,7 +7,8 @@
  * queue, the drawer, the journey and compare read, with its recommendation in brief. The asset page reads the full
  * record with assetCase(id); the per-case figures (assetHealth, caseRul …) come from that asset's answer.
  */
-import { cached, ref, session, withQuery } from './client';
+import { cached, classLabelOf, ref, session, withQuery } from './client';
+export { classLabelOf };
 import { money } from './format';
 import { canRoute, currentAccount, rolePolicy } from './session';
 import { setView, view } from './view';

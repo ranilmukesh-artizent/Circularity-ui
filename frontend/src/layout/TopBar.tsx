@@ -31,8 +31,10 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
   const theme = useTheme();
   const acct = useRef<HTMLDetailsElement>(null);
   const bell = useRef<HTMLDetailsElement>(null);
+  const region = useRef<HTMLDetailsElement>(null);
   useOutsideClose(acct);
   useOutsideClose(bell);
+  useOutsideClose(region); // the region note closes on any outside click, e.g. when the account menu opens (QA B item 5)
   const [ago, setAgo] = useState(liveAgo);
   const [asking, setAsking] = useState(false);
   useEffect(() => {
@@ -90,9 +92,9 @@ export function TopBar({ onMenu, onSignOut }: { onMenu: () => void; onSignOut: (
         )}
         <span className="pill live" title="Data refreshes continuously from the connected systems">
           <span className="dot" />
-          <span>{ago}</span>
+          <span className="livet">{ago}</span>
         </span>
-        <details className="rgm">
+        <details className="rgm" ref={region}>
           <summary className="pill" aria-label="Region: language, time zone and currency" title="Language, time zone and currency">
             <Icon name="globe" />
             <span>{regionSummary()}</span>

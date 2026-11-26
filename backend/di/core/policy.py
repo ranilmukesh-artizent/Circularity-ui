@@ -35,6 +35,7 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
     "manageFlows": ("Admin", "Planner"),
     "approve.flows": ("Admin", "Approver"),
     "manageAgents": ("Admin",),
+    "runAgent": ("Admin", "Planner", "Approver"),  # gap 15: run an agent on a case; its writes only hold for a person
     "openCases": ("Admin", "Developer", "Planner"),
     "runReplay": ("Admin", "Planner", "Executive"),  # plan 9 P9-7.1: import history, read replay reports (Executive reads)
     "managePacks": ("Admin", "Planner"),  # plan 9 P9-1.6: import and submit a pack version
@@ -57,6 +58,8 @@ EXTRA_PERMS: dict[str, tuple[str, ...]] = {
 EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "modeler": ("Admin", "Planner", "Approver", "Executive", "Finance"),  # Finance: the market tables (P9-4.2)
     "agents": ("Admin", "Developer"),
+    # gap 12: what the agents did on the cases of the person's tenants, read only (the same roles as My work)
+    "agent-activity": ("Admin", "Developer", "Planner", "Approver", "Engineer", "Finance", "Executive", "Warehouse Manager"),
     "mywork": ("Admin", "Developer", "Planner", "Approver", "Engineer", "Finance", "Executive", "Warehouse Manager"),
 }
 EXTRA_SECTIONS: dict[tuple[str, str], tuple[str, ...]] = {("access", "orgs"): ("Admin",)}

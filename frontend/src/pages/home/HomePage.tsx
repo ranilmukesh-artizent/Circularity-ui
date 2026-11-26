@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { Suspense, useDeferredValue, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import {
   activity, alerts, allModules, askExamples, askModes, askStarters, attention, briefing, canManageWorkflows, figures, frPref, greeting, homeUi,
@@ -18,6 +18,7 @@ import { Ring } from '../../components/kit/Ring';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { Timeline } from '../../components/kit/Timeline';
+import { AgentActivityLink } from './AgentActivityLink';
 import { AttentionCard } from './AttentionCard';
 import { HomeKpi } from './HomeKpi';
 import { ProposalsCard } from './ProposalsCard';
@@ -41,12 +42,23 @@ const Hero = () => (
   </svg>
 );
 
+/** A card-shaped placeholder while a section reads (QA B items 9, 10, 12): the frame of Home stays, only this block waits. */
+const Skel = ({ h, label }: { h: number; label: string }) => (
+  <div className="hskel" style={{ minHeight: h }} role="status" aria-label={label} aria-busy="true" />
+);
+
 function Briefing() {
   const lines = briefing();
+  const waiting = taskItems().length; // the same list "Needs you" shows: the hero never contradicts it
   const [all, setAll] = useState(false);
   return (
     <div className={'afc afc-briefing frbrief' + (all ? ' all' : '')} data-card="briefing">
-      <p>Your AI agents are ready.{lines.length ? '' : ' Nothing needs you right now.'}</p>
+      <p>
+        Your AI agents are ready.
+        {lines.length ? '' : waiting ? (
+          <> <a href="#/mywork">{waiting} {waiting === 1 ? 'item waits' : 'items wait'} on you.</a></>
+        ) : ' Nothing needs you right now.'}
+      </p>
       {lines.length > 0 && (
         <ul className="afbr">
           {lines.map((l, i) => (
@@ -108,6 +120,21 @@ function AskBox() {
         </Modal>
       )}
     </section>
+  );
+}
+
+/**
+ * The agent activity list for a window. Switching Live / Today / This week reads a new answer: the list for the window
+ * you left stays (dimmed) while it arrives, and its own Suspense holds the first read, so Home never blanks (QA B item 10).
+ */
+function ActivityBody({ win }: { win: string }) {
+  const shown = useDeferredValue(win);
+  return (
+    <div className={shown !== win ? 'hwait' : undefined} aria-busy={shown !== win}>
+      <Suspense fallback={<Skel h={120} label="Loading agent activity" />}>
+        <ActivityTimeline win={shown} />
+      </Suspense>
+    </div>
   );
 }
 
@@ -326,33 +353,59 @@ function Figures() {
         </>
       }
     >
-      <div className="frfig">
-        {figures(per).map((f) => (
-          <div className="frfg" key={f.k}>
-            <IconTile ic={f.ic} h={f.h} />
-            <div>
-              <b className="num">{f.v}</b>
-              <span className="note">{f.l}</span>
-              <span className="frfgs">
-                {f.delta && <Delta d={f.delta} />}
-                <span className="note">{f.sub}</span>
-              </span>
-              <button className="lnk" onClick={() => ask(launch.explainKpi(f.l))}>Explain this number</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <FigureTiles per={per} />
     </Panel>
   );
+}
+
+/** The key figures for a period: the card stays when the period changes (same deferral as the activity list). */
+function FigureTiles({ per }: { per: string }) {
+  const shown = useDeferredValue(per);
+  return (
+    <div className={shown !== per ? 'hwait' : undefined} aria-busy={shown !== per}>
+      <Suspense fallback={<Skel h={200} label="Loading key figures" />}>
+        <FigureGrid per={shown} />
+      </Suspense>
+    </div>
+  );
+}
+
+function FigureGrid({ per }: { per: string }) {
+  return (
+    <div className="frfig">
+      {figures(per).map((f) => (
+        <div className="frfg" key={f.k}>
+          <IconTile ic={f.ic} h={f.h} />
+          <div>
+            <b className="num">{f.v}</b>
+            <span className="note">{f.l}</span>
+            <span className="frfgs">
+              {f.delta && <Delta d={f.delta} />}
+              <span className="note">{f.sub}</span>
+            </span>
+            <button className="lnk" onClick={() => ask(launch.explainKpi(f.l))}>Explain this number</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function KpiTiles({ role }: { role: string }) {
+  return <>{kpis(role).map((k) => <HomeKpi key={k.k + k.l} o={k} />)}</>;
+}
+
+function AttentionSlot() {
+  const nav = useNavigate();
+  const attn = attention();
+  return attn ? <AttentionCard head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} /> : null;
 }
 
 /** Home (frHome, 5.13): greeting and briefing, Ask box, KPI tiles per role, agent activity, a role panel, key figures, modules, and the right column. */
 export function HomePage() {
   useBackend();
-  const nav = useNavigate();
   const a = currentAccount()!, role = a.role, tech = isTechnical(), { greet, date } = greeting();
   const act = homeUi('frAct') || 'today';
-  const attn = attention();
   return (
     <div className="afh frhome">
       <header className="frhh">
@@ -360,7 +413,9 @@ export function HomePage() {
           <span className="sr">Home</span>
           <span className="note">{date}</span>
           <h1>{greet}, {role}</h1>
-          <Briefing />
+          <Suspense fallback={<Skel h={72} label="Loading your briefing" />}>
+            <Briefing />
+          </Suspense>
         </div>
         {!tech && (
           <div className="frhr">
@@ -382,7 +437,9 @@ export function HomePage() {
         <div className="frhmain">
           <AskBox />
           <div className="frkpis" id="frKpis">
-            {kpis(role).map((k) => <HomeKpi key={k.k + k.l} o={k} />)}
+            <Suspense fallback={<Skel h={104} label="Loading key numbers" />}>
+              <KpiTiles role={role} />
+            </Suspense>
           </div>
           <div className="frh2">
             <Panel
@@ -390,19 +447,28 @@ export function HomePage() {
               right={<a className="lnk" href="#/audit/log">View all →</a>}
             >
               <Segmented name="act" label="Activity period" cur={act} items={[['live', 'Live'], ['today', 'Today'], ['week', 'This week']]} onPick={(v) => setHomeUi('frAct', v)} />
-              <ActivityTimeline win={act} />
+              <ActivityBody win={act} />
             </Panel>
             <div className="frhst">
-              <Middle role={role} />
+              <Suspense fallback={<Skel h={220} label="Loading decisions by stage" />}>
+                <Middle role={role} />
+              </Suspense>
               <Figures />
             </div>
           </div>
           <Modules />
         </div>
         <aside className="frhside">
-          <RightTabs />
-          <ProposalsCard />
-          {attn && <AttentionCard head={attn.head} line={attn.line} btn={attn.btn} onClick={() => nav('/' + attn.go)} />}
+          <Suspense fallback={<Skel h={320} label="Loading what needs you" />}>
+            <RightTabs />
+          </Suspense>
+          <Suspense fallback={null}>
+            <ProposalsCard />
+          </Suspense>
+          <AgentActivityLink />
+          <Suspense fallback={null}>
+            <AttentionSlot />
+          </Suspense>
           <QuickActions />
         </aside>
       </div>

@@ -18,15 +18,25 @@ function navAnswer(): NavAnswer {
   return cached<NavAnswer>(withQuery('/api/screens/nav', { cc_mode: v.ccMode, last_asset: v.lastAsset, tenant_filter: v.tenant }));
 }
 
+/**
+ * The counts in the menu and the bell come from ONE answer: the nav read without the view setting that only shapes the
+ * groups (last_asset, the case you opened last). Every page then shows the same number; before, each last_asset made its own cache
+ * entry that kept the count it was fetched with, so My work read 83 on one page and 76 on the next (UI QA B, item 3).
+ */
+function countsAnswer(): NavAnswer {
+  const v = view();
+  return cached<NavAnswer>(withQuery('/api/screens/nav', { cc_mode: v.ccMode, tenant_filter: v.tenant })); // same URL as the groups until a case is opened
+}
+
 export const navigation = (): NavGroup[] => navAnswer().groups;
 
 /** Badges in the menu: decisions awaiting approval (Decision Workbench), the approvals inbox (Command Center),
  *  open conflicts that hold up a pending decision (Connection Fabric; di/services/screens/nav.py), and per-section badges keyed
  *  as in NAV (conf, srcissue, wffail, inbox). */
-export const navBadges = (): Badges => navAnswer().badges;
+export const navBadges = (): Badges => countsAnswer().badges;
 
 /** One count in the menu by key: awaiting, inbox, integration, or mywork (My work: the length of its list, plan 9 P9-1.8); 0 when absent. */
-export const navBadge = (key: 'awaiting' | 'inbox' | 'integration' | 'mywork'): number => navAnswer().badges[key] ?? 0;
+export const navBadge = (key: 'awaiting' | 'inbox' | 'integration' | 'mywork'): number => countsAnswer().badges[key] ?? 0;
 
 export interface AlertItem { id: string; kind: string; ic: string; h: string; t: string; s: string; sev: number; go: string; ack: boolean }
 
@@ -55,7 +65,7 @@ export function regionSummary(): string {
 /** Open counts shown in the menu and the bell. */
 export function navCounts(): { tasks: number; alerts: number } {
   if (!session()) return { tasks: 0, alerts: 0 };
-  return { tasks: navAnswer().tasks, alerts: alerts().filter((a) => !a.ack).length };
+  return { tasks: countsAnswer().tasks, alerts: alerts().filter((a) => !a.ack).length };
 }
 
 // Assets bundled with the app (the demo's LOGO, LOGO_INK and Lucide ICON set: src/assets/assets.gen.ts).

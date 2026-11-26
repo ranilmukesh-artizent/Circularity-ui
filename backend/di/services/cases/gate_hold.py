@@ -39,6 +39,7 @@ from di.core import clock
 from di.services.cases import (
     bench_evidence,
     contract_line,
+    core_evidence,
     decon_evidence,
     diversion_facts,
     export_approval,
@@ -152,6 +153,10 @@ def attach_evidence(s: Session, case: MutableMapping[str, Any]) -> None:
             case["bench"] = read
         else:
             case.pop("bench", None)
+    # the core's inspection and fraud evidence (P9-12.8, NS-CORE-03)
+    if case.get("template") == core_evidence.TEMPLATE and (core := core_evidence.read(s, case.get("assetId"))):
+        case["core"] = core
+        recs.extend(core_evidence.evidence(core))
     if case.get("template") in ("used_cars", "medical_rental") and default_pack_of(case).close.lease_residual:
         q = text("SELECT data FROM canonical WHERE model = 'asset' AND key = :a")
         asset = s.execute(q, {"a": case.get("assetId")}).scalar()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChangeSet, DraftRule, OverlayOpRef, PackMatch } from '../../../api/compose';
-import { assumedCount, blockedLines, changeLines, changeTitle, matchLine, opSentence, setupHref, wordCountLine } from './changeSetView';
+import { assumedCount, blockedLines, changeLines, changeTitle, matchLine, packLabel, opSentence, setupHref, wordCountLine } from './changeSetView';
 
 const op = (o: Record<string, unknown>): OverlayOpRef => ({ id: 'op-1', by: '', note: '', ...o }) as unknown as OverlayOpRef;
 const rule = (over: Partial<DraftRule> = {}): DraftRule => ({
@@ -74,21 +74,33 @@ describe('blocked lines', () => {
 });
 
 describe('the reading and match lines', () => {
-  it('a matched pack shows its rounded score', () => {
-    const m: PackMatch = { key: 'tool_fleet', score: 81.4, nearest_only: false };
-    expect(matchLine(m)).toEqual({ text: 'Matched pack: tool_fleet (81)', amber: false });
+  const names = { tool_fleet: 'Tool fleet returns', used_cars: 'Used vehicles · lease and trade-in returns', industrial: 'Industrial returns' };
+  it('a matched pack shows the pack file name and its rounded score', () => {
+    const m: PackMatch = { key: 'used_cars', score: 85.6, nearest_only: false };
+    expect(matchLine(m, 'used_cars', names)).toEqual({ text: 'Matched: Used vehicles (86)', amber: false });
   });
-  it('a nearest-only pack is amber and says to check every change', () => {
-    const m: PackMatch = { key: 'tool_fleet', score: 32, nearest_only: true };
-    expect(matchLine(m)).toEqual({ text: 'Nearest pack: tool_fleet (32). No pack matched well. Check every change.', amber: true });
+  it('the pick kept over the match is said', () => {
+    const m: PackMatch = { key: 'used_cars', score: 86, nearest_only: false };
+    expect(matchLine(m, 'industrial', names)).toEqual({ text: 'Matched: Used vehicles (86). Drafted against Industrial returns, the one you picked.', amber: false });
+  });
+  it('no pack fits: amber, no match claimed, the score is only the closest', () => {
+    const m: PackMatch = { key: 'industrial', score: 32, nearest_only: true };
+    expect(matchLine(m, 'industrial', names)).toEqual({
+      text: 'No pack fits this description yet. Closest: Industrial returns (32). Drafted against Industrial returns: check every change.', amber: true,
+    });
+    expect(matchLine(m).text).toBe('No pack fits this description yet. Closest: industrial (32).');
   });
   it('without a score (config.read failed) the pack alone is named', () => {
-    expect(matchLine(null, 'tool_fleet')).toEqual({ text: 'Matched pack: tool_fleet', amber: false });
+    expect(matchLine(null, 'tool_fleet', names)).toEqual({ text: 'Matched: Tool fleet returns', amber: false });
   });
   it('word count line is singular and plural aware', () => {
     expect(wordCountLine(62, 1, ['SAP'])).toBe('Read 62 words, 1 explicit control, systems: SAP');
     expect(wordCountLine(1, 0, [])).toBe('Read 1 word, 0 explicit controls');
   });
+});
+
+describe('packLabel', () => {
+  it('falls back to the key when the pack has no name', () => expect(packLabel('itad')).toBe('itad'));
 });
 
 describe('setupHref', () => {

@@ -89,7 +89,13 @@ describe('watchingRows (plan 10 section 3.3)', () => {
     const r = watchingRows(screen(), { suggestions: sugg(3), held: [] });
     expect(r[0]).toMatchObject({ id: 'suggestions', text: '3 rules suggested by approver overrides.', tag: 'Retrieved', action: 'suggestions' });
     expect(watchingRows(screen(), { suggestions: sugg(1), held: [] })[0].text).toBe('1 rule suggested by approver overrides.');
-    expect(watchingRows(screen(), { suggestions: sugg(0), held: [] })).toEqual([]);
+    expect(watchingRows(screen(), { suggestions: { ...sugg(0), decisions: 0 }, held: [] })).toEqual([]);
+  });
+
+  it('a read that suggests nothing says what it read, with no action (the old Find suggestions line)', () => {
+    const none = { ...sugg(0), groups: [{ template: 'industrial', from: 'p1', to: 'p2', n: 2 }] };
+    const r = watchingRows(screen(), { suggestions: none, held: [] });
+    expect(r).toEqual([{ id: 'suggestions', icon: 'users', tag: 'Retrieved', text: 'Read 10 decisions and 2 overrides: no rule suggested yet.' }]);
   });
 
   it('held proposals, tagged Prepared by agent', () => {

@@ -75,8 +75,9 @@ _declare(
 ACTIONS.setdefault(
     "agent.startRun",
     ActionDef(
-        id="agent.startRun", title="Start an agent run", verb="start agent runs", risk="act", perm=_PERM, scope="case",
-        desc="Start an agent's playbook on a case. The agent acts as you; what it holds waits for a person.",
+        id="agent.startRun", title="Start an agent run", verb="start agent runs", risk="act", perm="runAgent", scope="case",
+        desc="Start an agent's playbook on a case. The agent acts as you; what it holds waits for a person. "
+        "A Planner or Approver runs the case autopilot: it only prepares.",
         input={"agent": {"req": True, "t": "string"}, "case_id": {"req": True, "t": "string"},
                "playbook": {**_OPT, "t": "string"}},
     ),
@@ -294,12 +295,22 @@ def update(i: dict[str, Any], ctx: CallContext):
     return a.as_dict() if a else {"id": i["id"]}
 
 
+def _manager(ctx: CallContext) -> bool:
+    """The caller manages agents (Admin): other roles that run an agent (Planner, Approver) only have it prepare."""
+    a = ctx.actor.account
+    return a is not None and policy.can(a, "manageAgents", ctx.actor.ctx)
+
+
 @guard("agent.startRun")
 def start_run_guard(i: dict[str, Any], ctx: CallContext):
     if registry.get(ctx.session, i["agent"]) is None:
         return "not_found", "Unknown agent."
     if (i.get("playbook") or runtime.autopilot.NAME) not in runtime.PLAYBOOKS:
         return "validation_error", f"The playbook is one of {', '.join(runtime.PLAYBOOKS)}."
+    if not _manager(ctx):  # a Planner or Approver: propose only, the case autopilot of an enabled agent
+        agent = registry.get(ctx.session, i["agent"])
+        if (i.get("playbook") or runtime.autopilot.NAME) != runtime.autopilot.NAME or agent is None or not agent.enabled:
+            return "out_of_scope", "You run the case autopilot of an enabled agent. Other playbooks are for an Admin."
     return None
 
 
@@ -307,7 +318,7 @@ def start_run_guard(i: dict[str, Any], ctx: CallContext):
 def start_run(i: dict[str, Any], ctx: CallContext):
     """plan 8 MVP-12.4: the runtime's way in (runtime.start); the worker's agent.step job runs it, as the person."""
     playbook = i.get("playbook") or runtime.autopilot.NAME
-    run_id = runtime.start(ctx.session, i["agent"], playbook, i["case_id"], account=ctx.actor.id)
+    run_id = runtime.start(ctx.session, i["agent"], playbook, i["case_id"], account=ctx.actor.id, propose_only=not _manager(ctx))
     rb_log(ctx, "agent.run.started", f"{i['agent']} · {playbook} · {i['case_id']}", "agent.startRun")
     return {"run_id": run_id, "agent": i["agent"], "playbook": playbook, "case_id": i["case_id"]}
 

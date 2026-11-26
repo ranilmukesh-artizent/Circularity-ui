@@ -11,7 +11,7 @@
  */
 import { invoke } from './actions';
 import type { PackStage } from './analytics';
-import { ApiError, cached, invalidate, ref, withQuery } from './client';
+import { ApiError, cached, classLabelOf, invalidate, ref, withQuery } from './client';
 import type { DeviceView } from './device';
 import type { Reference } from './reference';
 import type { MarketTerms, ServiceDeskView } from './serviceDesk';
@@ -242,6 +242,8 @@ export function caseAnalysis(id: string): CaseAnalysis {
   return cached<CaseAnalysis>(withQuery(casePath(id) + '/analysis', { tenant: view().tenant }));
 }
 
+/** An asset class's name: the demo's, else its pack's, else the id. */
+export { classLabelOf };
 /** A static list of the demo (reference data). */
 export const refList = <K extends keyof Reference>(name: K): Reference[K] => ref(name);
 

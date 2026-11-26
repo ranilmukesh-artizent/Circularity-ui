@@ -18,6 +18,8 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `frontend/src/pages/modeler/compose/`, `frontend/src/pages/mywork/` | Plan 9: Compose's five steps; My work (cases and steps waiting on you, ageing and lots). |
 | `frontend` | React 18 + TS + Vite. `src/api` the facade (pages call only it), `src/pages/<area>` the pages, `src/components` shared UI (incl. `kit/`), `src/hooks`, `src/utils`, `src/layout` the app shell (sidebar, top bar, Ask panel), `src/assets`, `src/styles`. |
 | `frontend/src/pages/modeler/`, `frontend/src/pages/agents/` | Plan 8: the Modeler (canvas, inspector, checks, impact, lifecycle, history, assistant) and the Agents page (registry, proposals, runs, tool catalogue). |
+| `frontend/src/layout/assistant/` | Plan 10: the one assistant (dock and the Modeler's pinned column; Ask, Change flow and Set up modes). |
+| `backend/di/resources/` | Plan 3: the generic CRUD router at `/api/v1/{name}` over registered resources; gzip in `di/core/gzip.py`. Plan 5: OpenTelemetry in `di/telemetry.py`, off by default (viewing traces: testing.md). |
 | `frontend/src/api/client.ts` | HTTP client: Suspense read cache, actions, sign-in token, live stream. |
 | `frontend/src/assets/assets.gen.ts` | The demo's logos, icons and vendor logos (`frontend/scripts/dump-assets.mjs`, committed). |
 | `backend` | `di-api` + `di-worker` (FastAPI, SQLAlchemy 2, Alembic, psycopg 3). Package `di`, in layer folders (plan 7; `backend/.importlinter` enforces the direction): |
@@ -25,7 +27,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `backend/di/schemas/` | Pydantic request and response shapes of the routes. |
 | `backend/di/services/` | Business logic: `actions/` (every write and read action, `POST /api/actions/{id}` through `pipeline.invoke`), `screens/<area>` (what each page shows; each docstring maps the facade exports), `engine/`, `execution/`, `instructions/`, `cases/`, `canonical/`, `ask/`, `stream`, `auth`, `sources`, `journal`. |
 | `backend/di/services/modeler/` | Plan 8, pure: template packs (`packs/`), flow graph, compile, scope, apply (business rules after the gate rules), validate, guardrails, simulate, parse, propose, suggest, telemetry facts; `valuers/` (tool fleet, device, routes adapter). Tested against `fixtures/golden/po/`. |
-| `backend/di/services/modeler/` (plan 9) | Also: `packs/*.json` (eight packs: industrial, tool fleet, device, used cars, telecom network, medical rental, ITAD, rental fleet; `carbon.json` is the sample factor set, not a pack), `compose.py` (Compose's five steps), `export_dmn.py`/`export_bpmn.py` (export), `vendor_qualification.py` (downstream vendors with certificate dates), `gate_checks/`, `replay_samples/`, `rollout.py`. |
+| `backend/di/services/modeler/` (plan 9) | Also: `packs/*.json` (thirteen packs: industrial, tool fleet, device, used cars, telecom network, medical rental, ITAD, rental fleet, telecom CPE, battery, automotive cores, medical capital, retail returns; `carbon.json` is the sample factor set, not a pack), `compose.py` (Compose's five steps), `export_dmn.py`/`export_bpmn.py` (export), `vendor_qualification.py` (downstream vendors with certificate dates), `gate_checks/`, `replay_samples/`, `rollout.py`. |
 | `backend/di/services/questions/` | Plan 9: worked analytics questions of each pack, in code (`used_cars`, `telecom_network`, `medical_rental`). |
 | `backend/di/services/execution/` (plan 9) | Close modules: `asset.py` (fixed-asset retire/transfer), `residual.py` (lease residual), `settlement.py` (customer credit against the ERP), `reporting.py` (close only with reporting evidence). |
 | `backend/di/services/agent_credentials.py`, `oauth.py`, `oidc.py`, `scim.py`, `group_map.py`; `backend/di/routes/oauth.py`, `scim.py` | Plan 9 identity: per-agent client credentials, OAuth for outside MCP clients (S256 only, audience-bound tokens), organisation sign-in, SCIM, directory groups to roles. |
@@ -46,7 +48,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 | `docs/agents/audits/` | Audits with their evidence (logs, junit, screenshots) and the agents' reports, one folder per audit. Latest: `2026-11-24-plan-08/` (findings F1–F11, UI gaps U1–U9, the merge record). |
 | `docs/agents/research/` | Research notes behind decisions to come (e.g. `2026-11-agent-foundation.md`: agent runtime and interop). |
 | `scripts/dev/` | Dev scripts (tests with the lock, reset, restart, unstick, status). Plan 9: `gate-p9.sh`, `story-matrix.sh`, `wt-check.sh`, `lead-verify.sh`. |
-| `frontend/scripts/smoke-p9-*.mjs` | Plan 9 browser smokes, one per phase that has a demo (1 to 5, 8 to 11). |
+| `frontend/scripts/smoke-p9-*.mjs` | Plan 9 browser smokes, one per phase that has a demo (1 to 11). |
 | `trial/`, `scripts/trial/` | The trial package for customers (Compose on prebuilt images, start/stop/reset scripts, `START-HERE.md`) and its build and clean-install check. |
 | `fixtures/demo/assets/products/` | Product photos, beside the demo; `frontend/scripts/extract-styles.mjs` copies them into the web app. |
 | `docs/reference/` | Source documents (agent-first product spec, user journey deck, IFS process fit). Read-only background. |
@@ -177,20 +179,16 @@ The plan-8 audit ([docs/agents/audits/2026-11-24-plan-08/](docs/agents/audits/20
 findings F1–F11 fixed or kept by a decision in the decision log (`95a45ed`, `8fea98c`); tool-fleet and device cases
 opened from data are valued and ranked end to end; the gate after the merge passed (4,459 api tests, 271 source-sim,
 312 web, the four browser smokes, lint).
-Next: plans 3–5 (CRUD for every resource and gzip, async, OpenTelemetry), then B18; demo-ready work last.
-
-Plan 9 (Recover, [plan](docs/agents/plans/09-agentic-platform.md)) is being built from 25 Nov 2026 by a lead with
-parallel writers; progress, blocked tasks and the report are in `docs/agents/plans/09-run/`, status and known gaps in
-`docs/backend-steps.md` ("Plan 9 status"). Delivered so far (26 Nov 2026, ticks in `docs/agents/plans/PROGRESS.md`):
-packs as data (`modeler/packs/*.json`) with a gate catalogue, customer overlay, one decider and My work; the agent chain
-on a model router; tool fleet returns, service desk and contract refresh; device recommerce; replay and staged publish;
-Compose end to end with organisation sign-in, SCIM and an adapter registry; four more industries as packs (used cars,
-telecom network, medical rental, ITAD) with rental fleet landing; and the phase-13 close: fixed-asset retirement,
-lease residual, customer credit against the ERP, close only with reporting evidence, downstream vendor qualification,
-model drift, per-agent credentials and OAuth for outside MCP clients. Still open: phase gates 3 to 13, the remaining
-phase-12 packs, the final smoke and proof (13.11, 13.12, 13.14). Plan 10
-([plan](docs/agents/plans/10-unified-assistant-ux.md)) is in progress: one assistant dock and a Modeler layout with a
-hierarchy, frontend only. Kinective's Legal team reviews outside-client access, the accounting and reporting texts before
-anything is relied on at a customer.
+Plan 9 (Recover, [plan](docs/agents/plans/09-agentic-platform.md)) was built from 25 Nov 2026 by a lead with parallel
+writers; progress and the report are in `docs/agents/plans/09-run/`, status and known gaps in `docs/backend-steps.md`
+("Plan 9 status"), ticks in `docs/agents/plans/PROGRESS.md`. It delivered packs as data (thirteen packs, each a
+template in the Modeler), the agent chain on a model router, replay and staged publish, Compose end to end with
+organisation sign-in, SCIM and an adapter registry, and the close: fixed-asset retirement, lease residual, customer and
+core credit against the ERP, reporting evidence, vendor qualification, model drift, per-agent credentials and OAuth for
+outside MCP clients. Open: the final gate (13.11 smoke, 13.12 fresh-clone and trial proof, 13.14). Plan 10 (one
+assistant, [plan](docs/agents/plans/10-unified-assistant-ux.md)), plan 3 (CRUD and gzip) and plan 5 (OpenTelemetry;
+its live trace check waits for an image pull) are done. Next: plan 4 (async), then B18; demo-ready work last.
+Kinective's Legal team reviews outside-client access, the accounting and reporting texts before anything is relied on at
+a customer.
 
 Known server gaps are listed under B17b, plan 6 and plan 8 in `docs/backend-steps.md`.

@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import text
 
 from di.core.db import SessionLocal
-from di.services.agents import runtime
+from di.services.agents import chain, runtime
 from di.services.agents.catalog import catalog
 from tests import starting
 from tests.helpers import client, h
@@ -126,3 +126,18 @@ def test_nav_lists_agents_after_mcp(acct):
 def test_session_lists_the_agents_page():
     assert client.get("/api/auth/me", headers=h("developer")).json()["pages"]["agents"] == []
     assert "agents" not in client.get("/api/auth/me", headers=h("planner-a")).json()["pages"]
+
+
+def test_screen_lists_the_stage_agents_under_each_pack():
+    """Gap 14: the 12 stage agents per pack with the autonomy the pack gives each stage (read; set through Compose)."""
+    out = _get("admin").json()
+    packs = {p["key"]: p for p in out["packs"]}
+    assert {"industrial", "tool_fleet", "device"} <= set(packs)  # every pack is listed (packs as templates)
+    ind = packs["industrial"]
+    assert ind["name"] == "Industrial returns"
+    assert [s["stage"] for s in ind["stages"]] == list(chain.AGENT_IDS)
+    first = ind["stages"][0]
+    assert first["agent"] == "stage-lease" and first["autonomy"] in ("recommend", "limits", "alone")
+    assert {s["autonomy"] for s in ind["stages"]} <= {"recommend", "limits", "alone"}
+    assert all(0.65 <= s["threshold"] <= 0.85 for s in ind["stages"])
+    assert _get("developer").json()["packs"] == out["packs"]

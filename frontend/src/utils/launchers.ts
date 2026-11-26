@@ -4,7 +4,7 @@
  * person is looking at, so the answer needs no further context. The case page's own context (Case: RT-1048) comes
  * from the route; the KPI, alert, check or report is named in the question itself.
  */
-import { openAsk } from './askBus';
+import { openAssistant } from './askBus';
 
 /** Each question as a pure string, so a test can say exactly what a launcher sends. */
 export const launch = {
@@ -23,7 +23,8 @@ export const launch = {
   fixRun: (name: string, id: string, step: string, run: string) => `How do I fix ${name} (${id}) after it failed at ${step} in run ${run}?`,
   suggestMappings: (system: string) => `Which fields of ${system} should map to the canonical model?`,
   whyRecommended: (system: string, why: string) => `Why is ${system} recommended? ${why}`,
+  escalateCase: (id: string) => `Who should ${id} go to if I escalate it, and what do they need from me?`,
 };
 
-/** Open the assistant in Ask mode with a question. openAsk stays the one entry until the dock reads openAssistant. */
-export const ask = (question: string): void => openAsk(question);
+/** Open the one assistant in Ask mode with a question (openAsk stays as the alias for older callers). */
+export const ask = (question: string): void => openAssistant({ mode: 'ask', question });

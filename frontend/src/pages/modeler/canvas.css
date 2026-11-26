@@ -14,17 +14,28 @@
   --xy-minimap-mask-background-color: color-mix(in srgb, var(--bg) 72%, transparent);
   --xy-minimap-mask-stroke-color: var(--ink2);
   --xy-minimap-node-background-color: var(--line);
-  box-shadow: none;
+  box-shadow: none; margin: 12px;
 }
+.mdl-canvas .react-flow__controls { margin: 12px; }
+.mdl-canvas .react-flow__attribution { margin: 0; }
 
 /* node: 8px radius, 12px padding, 8px between the kind line and the label, a hairline, no shadow */
-.mdl-canvas .mdl-node { padding: 12px; gap: 8px; border-radius: 8px; box-shadow: none; }
-.mdl-canvas .mdl-node .hd { font-size: 11.5px; letter-spacing: 0; text-transform: none; min-height: 14px; }
+.mdl-canvas .mdl-node { padding: 8px 12px; gap: 2px; border-radius: 8px; box-shadow: none; }
+.mdl-canvas .mdl-node .hd { font-size: 14px; letter-spacing: 0; text-transform: none; min-height: 18px; gap: 4px; }
+.mdl-canvas .mdl-node .tg { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mdl-canvas .mdl-node .kind { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .mdl-canvas .mdl-node .kind-ic { width: 14px; height: 14px; flex: none; }
 .mdl-canvas .mdl-node .mdl-key { display: inline-flex; color: var(--muted); }
-.mdl-canvas .mdl-node b { font-size: 12.5px; line-height: 1.3; }
-.mdl-canvas .mdl-node .s, .mdl-canvas .mdl-node .ow { font-size: 11.5px; }
+.mdl-canvas .mdl-node b { font-size: 15px; line-height: 1.3; }
+/* the node boxes are fixed in the flow's own units (about 100 high), so the text clamps instead of spilling. A title longer
+   than one line (class tl, over 16 characters) takes two lines and leaves one for the sub line; an outcome with a long
+   title also drops its owner line (the owner is in the inspector). Full title on hover. */
+.mdl-canvas .mdl-node b, .mdl-canvas .mdl-node .s, .mdl-canvas .mdl-node .ow { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; -webkit-line-clamp: 2; line-clamp: 2; line-height: 1.3; }
+.mdl-canvas .mdl-node.tl .s, .mdl-canvas .mdl-node.t-path .s, .mdl-canvas .mdl-node .ow { -webkit-line-clamp: 1; line-clamp: 1; }
+.mdl-canvas .mdl-node.t-path:not(.tl) b { -webkit-line-clamp: 1; line-clamp: 1; }
+.mdl-canvas .mdl-node.t-path.tl .ow { display: none; }
+.mdl-canvas .mdl-node .s, .mdl-canvas .mdl-node .ow { font-size: 14px; }
+.mdl-canvas .mdl-node:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* a selected node is ringed in ink: yellow is kept for the one primary action */
 .mdl-canvas .mdl-node.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
 

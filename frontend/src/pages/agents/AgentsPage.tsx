@@ -1,13 +1,16 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
-  acceptProposal, agentCredentials, findTools, issueCredential, revokeCredential, OWN_PROPOSAL_NOTE, rejectProposal, stageLabel, startRun, updateAgent, useAgents,
+  agentCredentials, findTools, issueCredential, revokeCredential, stageLabel, startRun, updateAgent, useAgents,
   type AgentCredential, type AgentPatch, type AgentProposal, type AgentRow, type AgentRun, type AgentsScreen, type Autonomy, type Playbook,
 } from '../../api/agents'; // prettier-ignore
 import { useBackend } from '../../api/useBackend';
 import { Drawer, Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import './agents.css';
+import { AgentsBusiness } from './AgentsBusiness';
+import { ProposalItems } from '../../components/ProposalRow';
 import { LlmModelsPanel } from './LlmModelsPanel';
 import { OutsideClients } from './OutsideClients';
 import { ModelsPanel } from './ModelsPanel';
@@ -31,7 +34,7 @@ export function AgentsPage() {
         <div>
           <h1>Agents</h1>
           <p>
-            The agents that may call Circularity, what they may use and how far they may go. Agents prepare and propose; a person accepts, approves and changes
+            What each agent does for you, how far it may go and when it last ran. Agents prepare and propose; a person accepts, approves and changes
             access.
           </p>
         </div>
@@ -41,14 +44,21 @@ export function AgentsPage() {
           <b>Read-only view.</b> Admin manages agents. You accept or reject the proposals your permissions cover.
         </div>
       )}
-      <Registry s={s} />
-      {s.can.manage && <Credentials agents={s.agents} />}
-      {s.can.manage && <OutsideClients agents={s.agents} />}
+      <AgentsBusiness s={s} />
       <Proposals list={s.proposals} />
       <Runs s={s} />
-      <LlmModelsPanel s={s} />
-      <ModelsPanel />
-      <Catalogue s={s} />
+      <div className="ag-expert">
+        <div className="ag-expert-head" id="agExpert">
+          <h2>Models and tools</h2>
+          <p className="note">For admins and developers: the registry, credentials, language models and the tool catalogue.</p>
+        </div>
+        <Registry s={s} />
+        {s.can.manage && <Credentials agents={s.agents} />}
+        {s.can.manage && <OutsideClients agents={s.agents} />}
+        <LlmModelsPanel s={s} />
+        <ModelsPanel />
+        <Catalogue s={s} />
+      </div>
     </div>
   );
 }
@@ -65,7 +75,7 @@ function Registry({ s }: { s: AgentsScreen }) {
   return (
     <section className="sect" id="agReg">
       <div className="sh">
-        <h2>Registry</h2>
+        <h2>Agent registry</h2>
         <span className="note">{s.agents.length} agents · {s.agents.filter((a) => !a.enabled).length} stopped</span>
         <span className="grow" />
         {s.can.manage && <button className="btn sm pri" id="ag-register" onClick={() => setRegistering(true)}>Register agent</button>}
@@ -73,11 +83,11 @@ function Registry({ s }: { s: AgentsScreen }) {
       <div className="panel">
         <div className="tw">
           <table className="t static">
-            <thead><tr><th>Agent</th><th>Kind</th><th>Status</th><th>Autonomy</th><th>Tools</th><th>Org scope</th><th></th></tr></thead>
+            <thead><tr><th>Agent</th><th>Kind</th><th>Status</th><th title="The most an agent may do over MCP, whatever its stages allow">Highest level</th><th>Tools</th><th>Org scope</th><th></th></tr></thead>
             <tbody>
               {s.agents.map((a) => (
                 <tr key={a.id} data-agent={a.id}>
-                  <td><b>{a.name}</b> <span className="note mono">{a.id}</span></td>
+                  <td><b>{a.name}</b><span className="note mono ag-id">{a.id}</span></td>
                   <td><span className="chip line">{a.kind}</span></td>
                   <td className="nowrap">
                     <span className={'chip ' + (a.enabled ? 'ok' : 'bad')}>{a.enabled ? 'On' : 'Stopped'}</span>{' '}
@@ -91,7 +101,7 @@ function Registry({ s }: { s: AgentsScreen }) {
                     {s.can.manage ? (
                       <>
                         <label className="sr" htmlFor={'ag-au-' + a.id}>Autonomy of {a.name}</label>
-                        <select id={'ag-au-' + a.id} value={a.autonomy} disabled={action.pending} onChange={(e) => change(a, { autonomy: e.target.value as Autonomy }, a.name + ' autonomy changed.')}>
+                        <select className="sel" id={'ag-au-' + a.id} value={a.autonomy} disabled={action.pending} onChange={(e) => change(a, { autonomy: e.target.value as Autonomy }, a.name + ' autonomy changed.')}>
                           {AUTONOMY.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                         </select>
                       </>
@@ -159,9 +169,9 @@ function Credentials({ agents }: { agents: AgentRow[] }) {
         <span className="note">A credential lets an agent get its own token. It acts as you, limited to its tools.</span>
         <span className="grow" />
         <label className="sr" htmlFor="ag-cred-agent">Agent</label>
-        <select id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+        <select className="sel" id="ag-cred-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
           {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>{' '}
+        </select>
         <button className="btn sm pri" id="ag-cred-issue" disabled={action.pending || !agent} onClick={issue}>Issue credential</button>
       </div>
       {secret && (
@@ -179,7 +189,7 @@ function Credentials({ agents }: { agents: AgentRow[] }) {
           <table className="t static">
             <thead><tr><th>Client id</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={5} className="note">No credentials for this agent.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={5} className="note">No credentials for this agent yet. Issue one to let it get its own token.</td></tr>}
               {rows.map((c) => (
                 <tr key={c.client_id}>
                   <td className="mono">{c.client_id}</td>
@@ -247,71 +257,19 @@ function EditModal({ s, agent, busy, onClose, onSave }: {
   );
 }
 
+/** The held proposals as the shared ProposalRow cards (the same card as Home and the assistant): what accepting does,
+ *  the hold reasons, bulk accept for the same reason; Accept runs as the signed-in person, Reject asks why. */
 function Proposals({ list }: { list: AgentProposal[] }) {
-  const action = useAction();
-  const [rejecting, setRejecting] = useState<AgentProposal | null>(null);
-  const [reason, setReason] = useState('');
-  const accept = async (p: AgentProposal) => {
-    const r = await action.run(() => acceptProposal(p.id));
-    if (r.ok) toast(`Proposal ${p.id} accepted: ${p.title} ran as you.`);
-  };
-  const reject = async () => {
-    if (!rejecting) return;
-    const r = await action.run(() => rejectProposal(rejecting.id, reason.trim()));
-    if (!r.ok) return;
-    toast(`Proposal ${rejecting.id} rejected.`);
-    setRejecting(null);
-    setReason('');
-  };
   return (
     <section className="sect" id="agProps">
       <div className="sh">
         <h2>Proposals waiting for you</h2>
         <span className="note">An agent prepared these; nothing runs until a person accepts it</span>
       </div>
-      <div className="panel">
-        {list.length ? (
-          <div className="tw">
-            <table className="t static">
-              <thead><tr><th>#</th><th>Agent</th><th>Action</th><th>Held because</th><th>Case</th><th>Prepared</th><th></th></tr></thead>
-              <tbody>
-                {list.map((p) => (
-                  <tr key={p.id} id={'agp-' + p.id}>
-                    <td className="num">{p.id}</td>
-                    <td>{p.agentName}</td>
-                    <td>{p.title} <span className="note mono">{p.action}</span>{p.why && <span className="note">{p.why}</span>}</td>
-                    <td data-reasons>{p.reasons?.length ? p.reasons.map((r) => <span key={r.reason + r.detail} className={'chip ' + (r.reason === 'taint' || r.reason === 'destructive' ? 'bad' : 'line')} title={r.reason}>{r.detail}</span>) : <span className="note">—</span>}</td>
-                    <td>{p.case_id ? <a href={caseHref(p.case_id)}>{p.case_id}</a> : <span className="note">—</span>}</td>
-                    <td className="num nowrap">{p.at.slice(0, 16).replace('T', ' ')}</td>
-                    <td className="nowrap">
-                      {p.own ? <span className="note">{OWN_PROPOSAL_NOTE}</span> : <button className="btn sm pri" disabled={action.pending} onClick={() => accept(p)}>Accept</button>}{' '}
-                      <button className="btn sm" disabled={action.pending} onClick={() => setRejecting(p)}>Reject</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="pb"><div className="empty"><b>Nothing waiting</b>Proposals that agents hold for a person you may decide show here.</div></div>
-        )}
-      </div>
-      {rejecting && (
-        <Modal
-          title={'Reject proposal ' + rejecting.id}
-          onClose={() => setRejecting(null)}
-          foot={
-            <>
-              <button className="btn" onClick={() => setRejecting(null)}>Cancel</button>
-              <button className="btn pri" disabled={action.pending} onClick={reject}>Reject</button>
-            </>
-          }
-        >
-          <div className="fld">
-            <label htmlFor="agp-reason">Reason for the agent's owner</label>
-            <textarea id="agp-reason" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
-          </div>
-        </Modal>
+      {list.length ? (
+        <ProposalItems list={list.map((p) => ({ ...p, why: p.why ?? '' }))} idPrefix="agp-" label="Proposals waiting for you" className="as-list" />
+      ) : (
+        <div className="panel"><div className="pb"><div className="empty"><b>Nothing waiting</b>Proposals that agents hold for a person you may decide show here.</div></div></div>
       )}
     </section>
   );
@@ -345,17 +303,23 @@ function StartRun({ agents }: { agents: AgentRow[] }) {
     toast(`Run ${r.output.run_id} started: ${PLAYBOOKS[playbook].toLowerCase()} on ${r.output.case_id}.`);
   };
   return (
-    <div className="pb axrl" style={{ borderBottom: '1px solid var(--line)' }}>
-      <label htmlFor="ag-run-agent">Agent</label>
-      <select id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
-        {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-      </select>
-      <label htmlFor="ag-run-playbook">Playbook</label>
-      <select id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
-        {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
-      </select>
-      <label htmlFor="ag-run-case">Case</label>
-      <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" style={{ width: 120 }} />
+    <div className="ag-form ag-run">
+      <div className="ag-field">
+        <label htmlFor="ag-run-agent">Agent</label>
+        <select className="sel" id="ag-run-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+          {on.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+      <div className="ag-field">
+        <label htmlFor="ag-run-playbook">Playbook</label>
+        <select className="sel" id="ag-run-playbook" value={playbook} onChange={(e) => setPlaybook(e.target.value as Playbook)}>
+          {(Object.keys(PLAYBOOKS) as Playbook[]).map((p) => <option key={p} value={p}>{PLAYBOOKS[p]}</option>)}
+        </select>
+      </div>
+      <div className="ag-field">
+        <label htmlFor="ag-run-case">Case</label>
+        <input id="ag-run-case" value={caseId} onChange={(e) => setCaseId(e.target.value)} placeholder="e.g. RT-1048" />
+      </div>
       <button className="btn sm pri" disabled={action.pending || !agent || !caseId.trim()} onClick={start}>Start run</button>
       {err && <span className="note err">{err}</span>}
     </div>

@@ -48,7 +48,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describeInAssistant, openInSetup } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const apiBase = process.env.API_URL || `http://localhost:${process.env.API_PORT || 8000}`;
@@ -138,7 +138,7 @@ async function step(name, fn) {
   }
 }
 
-// The Modeler keeps its template and organisation in its own state (the query is read once): pick them in its selects.
+// The Modeler's template and organisation are in its URL (plan 10 T8); the selects are checked too.
 const modeler = async (p, template, org) => {
   await go(p, `modeler?template=${template}&org=${encodeURIComponent(org)}`);
   for (const [sel, want] of [['#mdl-tpl', template], ['#mdl-org', org]]) {
@@ -149,6 +149,8 @@ const modeler = async (p, template, org) => {
       await p.waitForFunction(([s, v]) => document.querySelector(s)?.value === v, [sel, want]);
     }
   }
+  // the picks change at once; the flow they read follows: wait until it is shown
+  await p.locator('.mdl-picks[aria-busy="false"]').waitFor({ timeout: 60000 });
 };
 
 /** Start a playbook run from the Agents page (Admin): the Start run form of the Runs section. */
@@ -263,7 +265,9 @@ await step('4 planner.a accepts from Home, the run resumes, approver approves RT
   const card = pl.locator('#frProps li').filter({ hasText: HERO });
   await card.waitFor();
   await expectText(pl, 'Held because:', `#frProps li:has-text("${HERO}")`);
-  await card.getByRole('button', { name: 'Accept', exact: true }).click();
+  // plan 10 (2.6): Accept names what it does, then one confirming step runs it as the person
+  await card.getByRole('button', { name: 'Accept, runs as you', exact: true }).click();
+  await card.getByRole('button', { name: 'Run as me', exact: true }).click();
   await expectText(pl, 'ran as you', 'body');
   const ad = await as('admin');
   await until(
@@ -360,8 +364,8 @@ await step('7 Describe your business in Ask Circularity (Set up): a draft compos
   if (!prompt) throw new Error(`${packFile} has no sample prompt`);
   const pl = await as('planner.a');
   await modeler(pl, 'tool_fleet', 'Customer A');
-  // plan 10: no dialog; the Compose panel's launcher opens the assistant in Set up (the Set up tab of the new layout, or the Compose button)
-  await pl.getByRole('tab', { name: 'Set up', exact: true }).or(pl.getByRole('button', { name: 'Compose', exact: true })).first().click();
+  // plan 10: no dialog; the Set up page tab shows the Compose panel, whose launcher opens the assistant in Set up
+  await openSetupTab(pl);
   const id = await describeInAssistant(pl, { timeout: 120000 });
   await expectText(pl, /Matched pack: tool_fleet|Nearest pack: tool_fleet/, '.st-turn');
   // the one question: its options are the buttons beside Skip; pick the first

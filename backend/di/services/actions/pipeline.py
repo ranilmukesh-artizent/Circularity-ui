@@ -160,7 +160,12 @@ def agent_route(a: ActionDef, ctx: CallContext) -> Literal["refused", "held", "r
         a.changes_state
         and not ctx.confirmed
         and ctx.preparer
-        and (a.destructive or held_for_person(a.id) or proposals.holds(ctx.session, ctx.preparer))
+        and (
+            a.destructive
+            or held_for_person(a.id)
+            or proposals.holds(ctx.session, ctx.preparer)
+            or proposals.run_holds(ctx.session, ctx.run_id)
+        )
     ):
         return "held"
     return "runs"

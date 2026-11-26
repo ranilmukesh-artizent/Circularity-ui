@@ -229,3 +229,4 @@ unattended". Times are local (IST).
 | 27 Nov 00:28 | P9-12.11 merged. industrial pack in the full format; parity pinned to tests/fixtures/industrial_decisions.json; P9-12.12 stays open |
 | 27 Nov 00:28 | P9-7.7 merged. FR market canary for service desk tables |
 | 27 Nov 00:28 | P9-7.8 merged. FR market canary smoke |
+| 27 Nov 00:48 | P9-13.13 merged. final docs pass after every code branch; facts checked by the lead (Executive runReplay, rollout roles) |

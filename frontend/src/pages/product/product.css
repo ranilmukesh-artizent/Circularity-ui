@@ -6,3 +6,6 @@
   .pjs { margin: -16px -14px 14px; }
   .pjg { margin: 14px -14px -60px; }
 }
+/* The strip marks two things: the page you are on (filled) and where the case stands (ringed, and named). */
+.jgol .jg-cur:not(.on) .t { display: inline; color: var(--ink); font-weight: 600; }
+.jgol .jg-cur:not(.on) .t::before { content: "Case at "; font-weight: 400; color: var(--muted); }

@@ -39,7 +39,7 @@
 :where(.as-text) { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 72ch; }
 :where(.as-note, .as-basis) { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
 :where(.as-sub) { margin-top: 8px; }
-:where(.as-next, .as-starters, .as-card-b) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+:where(.as-next, .as-starters, .as-turn-acts) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 :where(.as-empty) { padding: var(--as-gap, 20px) 0; }
 :where(.as-error) { margin: 8px 0 0; color: var(--as-block, var(--bad)); font-size: 13px; }
 
@@ -68,3 +68,82 @@
 :where(.as-limits) { margin-left: auto; font-size: 12px; color: var(--muted); }
 :where(.as-hint, .as-queue) { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 12.5px; color: var(--muted); }
 :where(.as-hint .lnk) { padding: 0; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; background: none; border: 0; cursor: pointer; }
+
+/*
+ * Plan 10 T8: what the panel mounts above the transcript (in its scroll): "Waiting for you", "Agents on this", and the
+ * held card of 2.6 (ProposalRow, also Home's "Proposals for you"). Plain class rules: assistant.css has none of these.
+ */
+.as-waiting { padding: 12px 0 4px; border-bottom: 1px solid var(--line2); }
+.as-waiting > summary { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; list-style: none; font: 600 13px/1.3 var(--f-display); }
+.as-waiting > summary::-webkit-details-marker { display: none; }
+.as-waiting > summary svg { width: 18px; height: 18px; flex: none; }
+.as-waiting > summary .as-chev { margin-left: auto; width: 16px; height: 16px; color: var(--muted); transition: transform 150ms ease-out; }
+.as-waiting[open] > summary .as-chev { transform: rotate(180deg); }
+.as-waiting > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+.as-waiting > .note { margin: 4px 0 8px; font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .as-waiting > summary .as-chev { transition: none; } }
+.as-agents { padding: 12px 0 4px; border-bottom: 1px solid var(--line2); }
+.as-agents .as-row > span { display: grid; gap: 4px; min-width: 0; }
+.as-agents .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.as-list { margin: 0 0 8px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.as-card.held { display: flex; gap: 12px; align-items: flex-start; margin: 0; }
+.as-card.held .as-card-b { display: grid; gap: 4px; min-width: 0; flex: 1; font-size: 13px; line-height: 1.45; }
+.as-card.held .as-card-t { margin: 0; font: 650 14px/1.35 var(--f-display); overflow-wrap: anywhere; }
+.as-card.held .as-prov { padding: 0; border: 0; background: none; color: var(--ink2); font-size: 12px; font-weight: 500; white-space: normal; }
+.as-card.held .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.as-card.held .fld { display: grid; gap: 4px; }
+.as-card.held textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; }
+/* the panel's sections (the Modeler's Flow tab) scroll with the transcript; the first sits below the strips */
+.as-log > .as-sec:first-of-type, .as-log > .as-waiting + .as-sec { margin-top: 20px; }
+
+/* an Ask table answer (QA B-33): scrolls sideways inside its box; cells keep one line so columns stay readable */
+.as-tablecard > b { display: block; margin-bottom: 4px; font-size: 13px; }
+.as-table { overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.as-table:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.as-table table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.as-table th, .as-table td { padding: 6px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line2); }
+.as-table th { position: sticky; top: 0; background: var(--panel2); font-weight: 600; color: var(--ink2); }
+.as-table tr:last-child td { border-bottom: 0; }
+
+/* agents named outside the panel carry the bot icon (plan 10, 4.6), not the old sparkle glyph: Live board marks */
+.lr-ic { width: 12px; height: 12px; flex: none; vertical-align: -2px; }
+
+/*
+ * The docked panel takes 400px from the page (body.afpon). Up to a 1680px viewport the page column is then no wider than
+ * at a 1280px viewport, so the page's own 1280px layout applies (the demo's rules, repeated under body.afpon; T8, from
+ * writer 28's report). Not a container query: `container-type` adds layout containment, which would make the page column
+ * the containing block of every position: fixed drawer and dialog inside it.
+ */
+@media (min-width: 1281px) and (max-width: 1680px) {
+  body.afpon .frhg2 { grid-template-columns: minmax(0, 1fr); }
+  body.afpon .frhside { position: static; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  body.afpon .frhr { width: 300px; }
+  body.afpon .frsmg { grid-template-columns: 220px minmax(0, 1fr); }
+  body.afpon .frsmp { grid-column: 1 / -1; }
+  body.afpon .frwfg { grid-template-columns: minmax(0, 1fr); }
+  body.afpon .frwfr { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  body.afpon .frrecs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.afpon .jgnav .jgm { display: none; }
+  body.afpon .afjd:not(.on):not(.cur) .t { visibility: hidden; }
+  /* the case stage strip's compact form (the demo's 1400px rule) */
+  body.afpon .stph ol { gap: 4px; }
+  body.afpon .stphs { gap: 6px; }
+  html.st body.afpon .stc { padding: 4px 5px; column-gap: 4px; }
+  html.st body.afpon .stc .stci { width: 16px; height: 16px; font-size: 9.5px; }
+  html.st body.afpon .stc .t { font-size: 11px; }
+  html.st body.afpon .stc .sts { font-size: 10px; }
+}
+
+/* ProposalRow: what accepting does (UI fix 39, E13) and bulk accept */
+.as-does { display: grid; gap: 4px; margin-top: 4px; padding: 8px; background: var(--panel); border: 1px solid var(--line2); border-radius: 6px; }
+.as-does-h { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.as-does-l { display: grid; gap: 2px; margin: 0; }
+.as-does-r { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; font-size: 12.5px; }
+.as-does-r dt { flex: 0 0 11em; max-width: 100%; color: var(--muted); }
+.as-does-r dd { margin: 0; flex: 1 1 9em; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.as-card.held .as-pick { flex: none; width: 16px; height: 16px; margin: 4px 0 0; accent-color: var(--ink); }
+.as-bulk { display: grid; gap: 8px; margin: 0 0 8px; padding: 8px 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+.as-bulk-g { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.as-bulk-g > span:first-child { min-width: 0; flex: 1 1 14em; }
+.as-bulk-go { padding-top: 8px; border-top: 1px solid var(--line2); }
+.as-bulk-list { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; }

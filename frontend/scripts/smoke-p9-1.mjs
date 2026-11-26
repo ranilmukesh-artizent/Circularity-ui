@@ -128,6 +128,8 @@ const modeler = async (p, template) => {
   if ((await tpl.inputValue()) !== template) {
     await tpl.selectOption(template);
     await p.waitForFunction((t) => document.querySelector('#mdl-tpl')?.value === t, template);
+    // the pick changes at once; the flow follows (writer 23): wait until the new template's screen is shown
+    await p.locator('.mdl-picks[aria-busy="false"]').waitFor({ timeout: 60000 });
   }
 };
 const caseOpen = async (p, asset, facts) => {

@@ -36,17 +36,22 @@ export function DescribeStep({ composition }: {
 function Drafted({ c }: { c: Composition }) {
   const action = useAction();
   const [match, setMatch] = useState<PackMatch | null>(null);
+  const [names, setNames] = useState<Record<string, string> | undefined>();
   const [err, setErr] = useState('');
   const cs = c.change_set;
   const editable = c.status === 'draft' || c.status === 'sent_back';
   const done = c.steps.describe.state === 'done';
   const explicit = c.reading.explicit_controls ?? c.reading.controls.length;
-  const m = matchLine(match, c.pack_key);
+  const m = matchLine(match, c.pack_key, names);
 
   // the score of the match is the reading's, not stored with the composition
   useEffect(() => {
     let live = true;
-    void readDescription(c.text, c.org_unit_id).then((r) => live && r.ok && setMatch(r.output.match));
+    void readDescription(c.text, c.org_unit_id).then((r) => {
+      if (!live || !r.ok) return;
+      setMatch(r.output.match);
+      setNames(r.output.pack_names);
+    });
     return () => { live = false; };
   }, [c.text, c.org_unit_id]);
 

@@ -165,6 +165,10 @@ export interface HomeProposal {
   input: Record<string, unknown>; case_id: string | null; run_id: string | null; at: string;
   /** The agent acted for this signed-in person: they may only reject it (proposal.accept refuses them, maker-checker). */
   own?: boolean;
+  /** What the agent's run knew: its confidence and threshold (0 to 1) and the sources behind it. Absent when the run recorded none. */
+  confidence?: number;
+  threshold?: number;
+  sources?: { fact: string; source: string; at?: string | null }[];
 }
 export const proposals = (): HomeProposal[] => cached<HomeProposal[]>(H + '/proposals');
 /** Run the action the agent prepared, as the signed-in person. */
@@ -261,10 +265,30 @@ export const askStarters = (): string[] => {
   const st = ref('AF_STARTERS');
   return st[role()] || st.Planner;
 };
+/**
+ * What an example needs from the person: the permission they must hold, or null when anybody who sees the page may ask
+ * (a question). `gate.waive` is nobody's: failed gates are not waived from here.
+ */
+const EXAMPLE_NEEDS: Record<string, string | null> = {
+  'case.submit': 'submit', 'case.approve': 'approve.decisions', 'gate.waive': 'never', 'case.record': 'assess',
+  'queue.bulk': 'request', 'exceptions.chase': 'request', 'workflow.draft': 'manageWorkflows', 'workflow.fix': 'manageWorkflows',
+  'workflow.edit': 'manageWorkflows', 'workflow.clone': 'manageWorkflows', 'mapping.refine': 'manageWorkflows',
+  'source.setup': 'manageWorkflows', 'import.clean': 'manageWorkflows', 'mcp.review': 'approve.mcp',
+};
+/** Agents never approve, waive or change anything on their own (AGENTS.md rule 10): an example that acts reads "prepare ... for me". */
+const EXAMPLE_TITLE: Record<string, string> = {
+  'case.submit': 'Prepare this case for review', 'case.approve': 'Prepare the decision packet for my approval',
+  'case.record': 'Prepare the result for me to record',
+};
+/** "Examples you can ask": only what this role can take forward, and no example that has the agent act for the person. */
 export function askExamples(): string[] {
   const l = ref('AF_INTENTS')
     .filter((I) => I.title && I.area !== 'presenter' && (I.area !== 'integration' || canPage('integration')) && (I.area !== 'case' || canPage('product', 'case')))
-    .map((I) => I.title as string);
+    .filter((I) => {
+      const need = EXAMPLE_NEEDS[I.id as string];
+      return need === undefined || (need !== 'never' && (need === null || canDo(need)));
+    })
+    .map((I) => EXAMPLE_TITLE[I.id as string] ?? (I.title as string));
   return [...new Set(l)].slice(0, 40);
 }
 export const canManageWorkflows = (): boolean => canDo('manageWorkflows');

@@ -4,16 +4,17 @@
  * suggested next steps through a preview card (2.3) and the audit line (2.9), moved from the old AskPanel. Ask never
  * acts: a next step runs only on the person's own "Run it", through invoke() like any other click.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { invoke } from '../../../api/actions';
-import { ask as askApi, type AskCard, type AskNext } from '../../../api/ask';
+import { ask as askApi, askStartersFor, type AskCard, type AskNext, type AskStarters } from '../../../api/ask';
 import { ref } from '../../../api/client';
 import { can, canPage, currentAccount } from '../../../api/session';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { askContext } from '../context';
-import { statusLine, statusText } from '../status';
+import { PreviewCard } from '../PreviewCard';
+import { argsText, selectStarters, startersQuery, toolWords, usedLine } from './starters';
 import { applyAskEvent, askData } from '../turns';
 import type { AssistantContext, AssistantMode, ModeDef, Turn } from '../types';
 
@@ -28,15 +29,10 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 function starters(): string[] {
   const role = currentAccount()?.role ?? '';
   try {
-    return (ref('AF_STARTERS')[role] ?? []).slice(0, 4);
+    return ref('AF_STARTERS')[role] ?? [];
   } catch {
     return [];
   }
-}
-
-/** Up to two questions from what the person is looking at (2.10). */
-export function contextStarters(ctx: AssistantContext): string[] {
-  return ctx.caseId ? [`Why this route for ${ctx.caseId}?`] : [];
 }
 
 export const askMode: ModeDef = {
@@ -61,7 +57,16 @@ export const askMode: ModeDef = {
 };
 
 function AskEmpty({ ctx, ask }: { ctx: AssistantContext; ask: (text: string) => void }) {
-  const list = [...starters(), ...contextStarters(ctx)];
+  const [server, setServer] = useState<AskStarters>({ pack: null, starters: [] });
+  const { page, section, case_id } = startersQuery(ctx);
+  useEffect(() => {
+    let live = true;
+    askStartersFor({ page, section, case_id }).then((r) => live && setServer(r), () => live && setServer({ pack: null, starters: [] }));
+    return () => {
+      live = false;
+    };
+  }, [page, section, case_id]);
+  const list = selectStarters(starters(), server, ctx);
   return (
     <div className="as-empty">
       <p className="as-note">Answers from your data, within what your role may see. Ask never changes anything.</p>
@@ -135,12 +140,13 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
       )}
       {d.tools.length > 0 && (
         <details className="as-audit">
-          <summary>Lookups ({d.tools.length})</summary>
+          <summary>{usedLine(d.tools)}</summary>
           <ul aria-label="Lookups">
             {d.tools.map((x, i) => (
               <li key={i} title={x.message ?? ''}>
-                <span className="mono">{x.name}</span>{' '}
-                {statusText(statusLine({ name: x.name, phase: x.ok ? 'done' : 'refused', args: x.args, message: x.message }))}
+                {cap(toolWords(x.name))}
+                {argsText(x.args ?? {}) && <> · <span className="mono">{argsText(x.args ?? {})}</span></>}
+                {!x.ok && <> · refused{x.message ? ': ' + x.message : ''}</>}
               </li>
             ))}
           </ul>
@@ -153,27 +159,22 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
   );
 }
 
-/** The intent preview (2.3) for a suggested step that runs an action: what runs, the limits, Run it / Not now. */
+/**
+ * The intent preview (2.3) for a suggested step that runs an action: the shared PreviewCard, titled with the step's
+ * label; what changes is the action's verb from the catalogue; the limits say it runs as the person. Run it / Not now.
+ */
 function NextStepCard({ n, onRun, onDismiss }: { n: AskNext; onRun: () => void; onDismiss: () => void }) {
   return (
-    <div className="as-card" role="group" aria-label={n.label}>
-      <p className="as-card-t">Proposed: {n.label}</p>
-      <p className="as-basis">Suggested by Ask Circularity</p>
-      <p className="as-card-h">What changes</p>
-      <p>
-        Runs <span className="mono">{n.action}</span>.
-      </p>
-      <p className="as-card-h">Limits</p>
-      <p>Runs as you, with your role's checks and approvals. Undo it from the case if the action allows.</p>
-      <div className="as-card-b">
-        <button type="button" className="btn pri sm" onClick={onRun}>
-          Run it
-        </button>
-        <button type="button" className="btn sm" onClick={onDismiss}>
-          Not now
-        </button>
-      </div>
-    </div>
+    <PreviewCard
+      title={'Proposed: ' + n.label}
+      basis="Suggested by Ask Circularity"
+      sections={[{ heading: 'What changes', lines: [{ text: 'Runs ' + n.action + '.', sign: '~' }] }]}
+      limits="Runs as you, with your role's checks and approvals. Undo it from the case if the action allows."
+      actions={[
+        { label: 'Run it', primary: true, onClick: onRun },
+        { label: 'Not now', onClick: onDismiss },
+      ]}
+    />
   );
 }
 
@@ -222,25 +223,32 @@ function Card({ c, q, onNext }: { c: AskCard; q: string; onNext: (n: AskNext) =>
       </div>
     );
   if (c.type === 'table' && Array.isArray(d.cols))
+    // the dock is 400px: the table scrolls sideways inside its own box (focusable, so the keyboard scrolls it too), and
+    // a line under it says so when it has more columns than fit (QA B-33)
     return (
-      <div className="tw as-sub">
+      <div className="as-sub as-tablecard">
         {d.title && <b>{String(d.title)}</b>}
-        <table>
-          <thead>
-            <tr>{d.cols.map((h: string) => <th key={h}>{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {(d.rows ?? []).slice(0, 12).map((r: { cells: unknown[] }, i: number) => (
-              <tr key={i}>{r.cells.map((x, k) => <td key={k}>{typeof x === 'object' ? JSON.stringify(x) : String(x ?? '')}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
+        {/* a scrollable region is focusable so a keyboard can scroll it (WCAG 2.1.1) */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+        <div className="as-table" role="region" aria-label={String(d.title ?? 'Answer table')} tabIndex={0}>
+          <table>
+            <thead>
+              <tr>{d.cols.map((h: string) => <th key={h}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {(d.rows ?? []).slice(0, 12).map((r: { cells: unknown[] }, i: number) => (
+                <tr key={i}>{r.cells.map((x, k) => <td key={k}>{typeof x === 'object' ? JSON.stringify(x) : String(x ?? '')}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {d.cols.length > 3 && <p className="as-note">{d.cols.length} columns · scroll sideways to see them all</p>}
       </div>
     );
   if (c.type === 'briefing' && Array.isArray(d.lines))
     return (
       <ul className="aflines">
-        {d.lines.map((l: unknown, i: number) => <li key={i}>{typeof l === 'string' ? l : String((l as { t?: string }).t ?? JSON.stringify(l))}</li>)}
+        {d.lines.map((l: unknown, i: number) => <li key={i}>{typeof l === 'string' ? l : String((l as { text?: string; t?: string }).text ?? (l as { t?: string }).t ?? JSON.stringify(l))}</li>)}
       </ul>
     );
   const title = d.title ?? d.label ?? d.case_id ?? d.id;

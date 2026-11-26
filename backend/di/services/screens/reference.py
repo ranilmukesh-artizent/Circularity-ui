@@ -34,6 +34,9 @@ What is here, by the facade file that reads it (frontend/src/api/*.ts):
 |                  | SRC_CATS TOOLS WF_STC WF_STL XF                                                                  |
 | (world)          | SITES GATES                                                                                      |
 
+PACK_CLASSES is the one list that is not the demo's (UI audit gap 8, facade `refList('PACK_CLASSES')`): the asset classes
+the pack files add to the demo's CLASSES, with their pack. The golden file is not changed.
+
 CC_EST (estimated value per unit by class) is derived from the closed decisions, which are fixed, so it is a constant.
 Functions in the demo's lists (AF_INTENTS matchers, AF_EVALS checks) are not data and are left out, as the dump drops
 them; AF_INTENTS and AF_EVALS keep their ids, titles and questions.
@@ -44,13 +47,32 @@ CONFLICTS, EVENTS, CALLS, EXPECTED, POOLS, ROWS, CASE_BY_ID, ACTIONS (GET /api/a
 are frontend assets: ICON, LOGO, LOGO_INK (bundle them with the app).
 """
 
+from functools import cache
+
 from di.core.errors import ApiError
 from di.repositories.reference import lists
+from di.services.modeler.pack import load_pack, pack_keys
+
+
+@cache
+def pack_classes() -> dict[str, dict[str, str]]:
+    """PACK_CLASSES (UI audit gap 8): the asset classes of every pack file that the demo's CLASSES does not have, by class id:
+    `{label, pack, pack_name}`. Derived from the pack files (a new pack shows up with no code), so a case of a car, a radio or a
+    hospital bed has a name wherever a page says "asset class". The demo's six classes stay in CLASSES and are never listed
+    here; the first pack (by key) to name a class owns it."""
+    demo = lists()["CLASSES"]
+    out: dict[str, dict[str, str]] = {}
+    for key in pack_keys():
+        pack = load_pack(key)
+        for cl in pack.classes:
+            if cl.id not in demo and cl.id not in out:
+                out[cl.id] = {"label": cl.name, "pack": key, "pack_name": pack.name}
+    return out
 
 
 def reference(names: str | None = None) -> dict:
     """Every list, or only the comma-separated `names` (404 naming any that does not exist)."""
-    data = lists()
+    data = {**lists(), "PACK_CLASSES": pack_classes()}
     if not names:
         return data
     want = [n.strip() for n in names.split(",") if n.strip()]

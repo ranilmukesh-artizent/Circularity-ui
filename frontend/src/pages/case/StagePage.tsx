@@ -1,4 +1,4 @@
-import { Suspense, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import {
   activeClock, approverRole, assetModel, caseAnalysis, caseScreen, lc, nextStep, notConnected, phaseOf, phases, rememberTab, rememberedTab, runOf,
@@ -15,7 +15,12 @@ import { stageTabs, type TabDef } from './tabs';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { useCaseUi, type CaseUi } from './CaseContext';
 
-export type CaseView = { kind: 'stage'; n: number; tab: string | null } | { kind: 'overview' } | { kind: 'full' };
+/** A tab was picked and its panel has not been brought into view yet (see scrollToDetails). */
+let pendingScroll = false;
+/** Put the details strip just under the sticky stage bar (#stDet has the scroll margin), clear of the foot bar below. */
+const scrollToDetails = () => document.getElementById('stDet')?.scrollIntoView({ block: 'start' });
+
+export type CaseView ={ kind: 'stage'; n: number; tab: string | null } | { kind: 'overview' } | { kind: 'full' };
 
 const href = (id: string, n: number | 'overview' | 'full', tab?: string | null) => '#/' + stageHref(id, n, tab);
 
@@ -182,6 +187,9 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
   const pick = (k: string) => {
     rememberTab(c.id, n, k);
     nav('/' + stageHref(c.id, n, k), { replace: true });
+    // the strip sits near the bottom of the window: bring the new panel up under the sticky stage bar, not behind the foot bar
+    pendingScroll = true;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(scrollToDetails));
   };
   const explain = n === 6 && !!c.recommendation;
 
@@ -279,6 +287,12 @@ export function StagePage({ c, n, tab }: { c: CaseRec; n: number; tab: string | 
 /** One tab's content, drawn from the analysis (read here, so the stage page shows before it arrives). */
 function TabBody({ c, tab }: { c: CaseRec; tab: TabDef }) {
   const a = caseAnalysis(c.id), s = caseScreen(c.id)!;
+  // the panel has arrived after a tab pick: bring it into view once more now that it has its full height
+  useEffect(() => {
+    if (!pendingScroll) return;
+    pendingScroll = false;
+    scrollToDetails();
+  }, [tab]);
   const View = tab[2];
   return <View c={c} a={a} s={s} />;
 }
@@ -318,8 +332,10 @@ export function StageFoot({ c, view, pri }: { c: CaseRec; view: CaseView; pri: b
       </aside>
     );
   const n = view.n, sug = nx.kind === 'done' ? 'Every stage is done' : nx.label;
+  // A blocked case must not push the person on to approval: the blocked step comes first (the next link goes quiet)
+  const stuck = !!c.blocked && view.n + 1 > at;
   const btn = pri ? null
-    : (nx.kind === 'act' || nx.kind === 'ack') && nx.n !== n ? <button className="btn sm" onClick={() => runNextStep(id, ui)}>{nx.label}</button>
+    : (nx.kind === 'act' || nx.kind === 'ack') && nx.n !== n ? <button className={`btn sm${stuck ? ' pri' : ''}`} onClick={() => runNextStep(id, ui)}>{nx.label}</button>
     : nx.kind === 'approve' && n !== 7 ? <button className="btn sm" onClick={() => approveGuarded(id, ui)}>Open the approval card</button>
     : null;
   return (
@@ -332,9 +348,10 @@ export function StageFoot({ c, view, pri }: { c: CaseRec; view: CaseView; pri: b
       <p className="stsug">
         <span className="jgk"><Icon name="bot" /> Agent suggests</span> <b>{sug}</b>
         {nx.n && nx.n !== n && nx.kind !== 'done' ? <> <span className="note">(stage {nx.n})</span></> : null} {btn}
+        {stuck && <span className="note stblk" title={c.blocked?.reason}> Blocked at stage {at}{c.blocked?.gateName ? ': ' + c.blocked.gateName : ''}</span>}
       </p>
       {n < 10 ? (
-        <a className={'btn ' + (pri ? '' : 'pri')} id="jgContinue" href={href(id, n + 1)} aria-label={`Next: stage ${n + 1}, ${stageTitle(n + 1)}`}><span className="stfn">{n + 1} {stageTitle(n + 1)}</span> →</a>
+        <a className={`btn ${pri || stuck ? '' : 'pri'}`} id="jgContinue" href={href(id, n + 1)} title={stuck ? `Blocked at stage ${at}: ${c.blocked?.reason || ''}` : undefined} aria-label={`Next: stage ${n + 1}, ${stageTitle(n + 1)}`}><span className="stfn">{n + 1} {stageTitle(n + 1)}</span> →</a>
       ) : (
         <a className={'btn ' + (pri ? '' : 'pri')} id="jgContinue" href={href(id, 'overview')}>Overview →</a>
       )}

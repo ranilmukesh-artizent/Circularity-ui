@@ -21,5 +21,15 @@
 .graphbox .react-flow__controls { box-shadow: var(--shadow); border-radius: 8px; overflow: hidden; }
 .graphbox .react-flow__controls-button { background: var(--panel); color: var(--ink); border-bottom: 1px solid var(--line); }
 .graphbox .react-flow__controls-button svg { fill: currentColor; }
-.graphbox .react-flow__minimap { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
-.graphbox .react-flow__attribution { background: transparent; font-size: 9px; opacity: .6; }
+/* the minimap in the app's tokens in both themes (the library defaults are light greys, white in dark mode) */
+.graphbox .react-flow__minimap {
+  --xy-minimap-background-color: var(--panel);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--bg) 72%, transparent);
+  --xy-minimap-mask-stroke-color: var(--ink2);
+  --xy-minimap-node-background-color: var(--line);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); overflow: hidden;
+}
+.graphbox .react-flow__controls-button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+/* the library's credit link: legible on both themes (it sits over the canvas background) */
+.graphbox .react-flow__attribution { background: transparent; font-size: 11px; padding: 0 4px; }
+.graphbox .react-flow__attribution a { color: var(--ink2); }

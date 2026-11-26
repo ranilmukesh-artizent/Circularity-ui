@@ -82,6 +82,15 @@ def decide(s: Session, pid: int, status: str, by: str, at: datetime, result: dic
     )
 
 
+def run_holds(s: Session, run_id: str | None) -> bool:
+    """The run was started by a person who may only have it prepare (agent.startRun for a Planner or Approver, gap 15):
+    every write of the run holds for a person, whatever the agent's own autonomy is."""
+    if not run_id:
+        return False
+    st = s.execute(text("SELECT state FROM agent_run WHERE id = :i"), {"i": run_id}).scalar_one_or_none()
+    return bool(isinstance(st, dict) and st.get("propose_only"))
+
+
 def own(p: dict, account: policy.Account) -> bool:
     """The person the agent acted for (audit F3a): they do not accept their own agent's proposal."""
     return bool(p.get("requested_by")) and p["requested_by"] == account.id
@@ -114,18 +123,59 @@ def why(p: dict) -> str:
     return a.desc if a and a.desc else ""
 
 
+def evidence_for(s: Session, rows: list[dict]) -> dict[int, dict[str, Any]]:
+    """What the agent's run knew when it held each proposal: the confidence and threshold of the run's latest stage that
+    has a confidence, and the sources (`{fact, source, at}`) of the run's stages on the proposal's case. A proposal with no
+    run, or a run with nothing recorded, has no entry: the screen shows nothing for it, never a made-up value."""
+    runs = {r["run_id"] for r in rows if r.get("run_id")}
+    if not runs:
+        return {}
+    recs = s.execute(
+        text(
+            "SELECT run_id, case_id, confidence, threshold, sources FROM agent_stage_record "
+            "WHERE run_id = ANY(:r) ORDER BY at, stage"
+        ),
+        {"r": list(runs)},
+    ).mappings()
+    by_run: dict[str, list[dict]] = {}
+    for rec in recs:
+        by_run.setdefault(rec["run_id"], []).append(dict(rec))
+    out: dict[int, dict[str, Any]] = {}
+    for r in rows:
+        mine = [x for x in by_run.get(r.get("run_id") or "", []) if not r["case_id"] or x["case_id"] == r["case_id"]]
+        e: dict[str, Any] = {}
+        scored = [x for x in mine if x["confidence"] is not None]
+        if scored:
+            e["confidence"], e["threshold"] = float(scored[-1]["confidence"]), float(scored[-1]["threshold"])
+        seen: set[tuple[Any, ...]] = set()
+        srcs = []
+        for x in mine:
+            for f in x["sources"] or []:
+                k = (f.get("fact"), f.get("source"))
+                if f.get("source") and k not in seen:
+                    seen.add(k)
+                    srcs.append({"fact": str(f.get("fact") or ""), "source": str(f["source"]), "at": f.get("at")})
+        if srcs:
+            e["sources"] = srcs
+        if e:
+            out[int(r["id"])] = e
+    return out
+
+
 def pending_for(s: Session, account: policy.Account, pctx: policy.Context) -> list[dict]:
     rows = s.execute(text(f"SELECT {_COLS} FROM agent_proposal WHERE status = 'pending' ORDER BY id")).mappings()  # noqa: S608 - fixed columns
     names = {a.id: a.name for a in registry.all_agents(s)}
     out = []
-    for r in map(dict, rows):
-        if may_decide(r, account, pctx):
-            a = ACTIONS[r["action"]]
-            out.append(
-                {
-                    "id": r["id"], "agent": r["agent"], "agentName": names.get(r["agent"], r["agent"]), "action": r["action"],
-                    "title": a.title, "why": why(r), "input": r["input"], "case_id": r["case_id"], "run_id": r["run_id"],
-                    "at": r["created_at"].isoformat(), "own": own(r, account), "reasons": r["reasons"],
-                }
-            )  # fmt: skip
+    mine = [r for r in map(dict, rows) if may_decide(r, account, pctx)]
+    known = evidence_for(s, mine)
+    for r in mine:
+        a = ACTIONS[r["action"]]
+        out.append(
+            {
+                "id": r["id"], "agent": r["agent"], "agentName": names.get(r["agent"], r["agent"]), "action": r["action"],
+                "title": a.title, "why": why(r), "input": r["input"], "case_id": r["case_id"], "run_id": r["run_id"],
+                "at": r["created_at"].isoformat(), "own": own(r, account), "reasons": r["reasons"],
+                **known.get(int(r["id"]), {}),
+            }
+        )  # fmt: skip
     return out

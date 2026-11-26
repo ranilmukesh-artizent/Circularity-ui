@@ -78,7 +78,7 @@ def _models(acct: str) -> dict:
 def test_models_screen_empty():
     out = _models("admin")
     assert out["base"] == "v1.3"
-    assert out["active"] == {"industrial": None, "tool_fleet": None, "device": None}
+    assert {"industrial", "tool_fleet", "device"} <= set(out["active"]) and set(out["active"].values()) == {None}  # every pack
     assert out["models"] == []
     assert out["can"] == {"fit": True, "promote": True}
     assert _models("planner-a")["can"] == {"fit": True, "promote": False}

@@ -6,6 +6,8 @@ export interface AssistantContext {
   page: string; section?: string; caseId?: string; role: string;
   flow?: { id: number; name: string; template: string; org: string; canEdit: boolean; draftVer: number | null };
   pack?: string; org?: string;
+  /** plan 10 T8: the composition in view (the Set up tab's, or the one `openAssistant({ composeId })` named) */
+  composeId?: number;
 }
 export interface OpenRequest { mode?: AssistantMode; question?: string; composeId?: number }
 export type TurnState = 'waiting' | 'working' | 'done' | 'held' | 'blocked' | 'failed' | 'stopped';

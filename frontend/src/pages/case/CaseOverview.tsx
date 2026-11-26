@@ -12,9 +12,14 @@ import { Photo, Pva, Tag } from './CaseBlocks';
 import { FraudHold } from './FraudHold';
 import { RefreshPanel } from './toolfleet/RefreshPanel';
 import { ToolFleetPanel } from './toolfleet/ToolFleetPanel';
+import { UsedCarPanel } from './usedcars/UsedCarPanel';
+import { TelecomPanel } from './telecom/TelecomPanel';
+import { isTelecom, type TelecomCase } from './telecom/telecom';
+import { MedicalPanel } from './medical/MedicalPanel';
 import { approveGuarded, caseActions, runNextStep } from './caseActions';
 import { AgentRunPanel } from './CaseDrawers';
 import { useCaseUi } from './CaseContext';
+import { RunAgentPanel } from './RunAgentPanel';
 import { custodyLines, recordMatchLine } from './custody';
 
 const href = (id: string, n: number | 'overview' | 'full') => '#/' + stageHref(id, n);
@@ -117,8 +122,12 @@ export function Overview({ c }: { c: CaseRec }) {
               <div className="pb"><p className="note" style={{ margin: 0 }}>{agents}</p></div>
             </section>
           )}
+          <RunAgentPanel caseId={id} />
           <AgentRunPanel c={c} ui={ui} />
           {c.template === 'tool_fleet' && ((c as CaseRec & { flow?: string }).flow === 'contract_refresh' ? <RefreshPanel caseId={id} /> : <ToolFleetPanel caseId={id} />)}
+          {c.template === 'used_cars' && <UsedCarPanel c={c} />}
+          {isTelecom(c) && <TelecomPanel c={c as TelecomCase} />}
+          {c.template === 'medical_rental' && <MedicalPanel c={c} />}
           {(matchLine || trail.length > 0) && (
             <section className="panel frp" aria-label="System of record and custody">
               <div className="ph"><h3>Custody</h3></div>

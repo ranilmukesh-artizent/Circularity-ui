@@ -31,10 +31,25 @@ export function ComposePanel({ org, pack, id, onId, onClose }: {
         </div>
         <button className="btn sm" onClick={onClose}>Close</button>
       </div>
-      <Suspense fallback={<p className="note">Loading…</p>}>
-        {id == null ? <Body org={org} pack={pack} c={null} onId={onId} /> : <Loaded org={org} pack={pack} id={id} onId={onId} />}
-      </Suspense>
+      <div className="pb">
+        <Suspense fallback={<ComposeSkeleton />}>
+          {id == null ? <Body org={org} pack={pack} c={null} onId={onId} /> : <Loaded org={org} pack={pack} id={id} onId={onId} />}
+        </Suspense>
+      </div>
     </section>
+  );
+}
+
+/** What the panel shows while a composition loads: the step tabs, the state line and a block of text, in the size they will have. */
+function ComposeSkeleton() {
+  return (
+    <div className="cmp-skel" role="status" aria-label="Loading the composition">
+      <div className="cmp-skel-tabs"><i /><i /><i /><i /><i /></div>
+      <i className="cmp-skel-line w60" />
+      <i className="cmp-skel-line w90" />
+      <i className="cmp-skel-line w75" />
+      <i className="cmp-skel-block" />
+    </div>
   );
 }
 

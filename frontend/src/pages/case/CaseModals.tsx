@@ -198,7 +198,7 @@ export function RecordAssessmentModal({ c, onClose }: { c: CaseRec; onClose: () 
 const CX_EV: Record<string, string[]> = { purchase: ['cost', 'dem'], prep: ['insp', 'photo'], cost: ['insp', 'photo'], service: ['svc', 'eng'], residual: ['mkt'], market: ['mkt'], sale: ['mkt'], demand: ['dem'], gates: ['pol', 'id', 'eng'] };
 const CX_SL: [ScenKey, string][] = [['purchase', 'Avoided purchase price'], ['cost', 'Workshop, parts and fees'], ['service', 'Service exposure'], ['market', 'Resale price']];
 
-/** Stage 6 "✦ Explain this decision": why, what-if sliders and the evidence snapshot on one screen (cxExplainHTML). */
+/** Stage 6 "Explain this decision": why, what-if sliders and the evidence snapshot on one screen (cxExplainHTML). */
 export function ExplainView({ caseId, onClose }: { caseId: string; onClose: () => void }) {
   const c = caseById(caseId)!;
   const r = c.recommendation!;

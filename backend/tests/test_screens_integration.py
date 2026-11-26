@@ -511,3 +511,16 @@ def test_every_account_and_endpoint_covered():
     for path in NEEDS:
         seen = [a for a in ACCOUNTS if allowed(a, path)]
         assert 0 < len(seen) < len(ACCOUNTS), path
+
+
+def test_conflict_queue_leads_with_open_ones_ui_qa_21():
+    """UI QA 21: with status=all the open (and escalated) conflicts come before the resolved ones, newest first in each."""
+    got = get("admin", "conflicts", status="all", limit=5000)
+    if got is None:
+        return
+    st = [c["status"] for c in got["conflicts"]]
+    assert st == sorted(st, key=lambda x: x == "resolved")  # no open one after a resolved one
+    assert got["counts"]["open"] == st.count("open")
+    for grp in ("open", "resolved"):
+        ids = [int(c["id"][3:]) for c in got["conflicts"] if c["status"] == grp]
+        assert ids == sorted(ids, reverse=True)

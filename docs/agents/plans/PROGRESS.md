@@ -348,6 +348,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-27 | 09 · P9-12.11 industrial pack in the full pack format | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
 | 2026-11-27 | 09 · P9-7.7 fR market canary for service desk tables | this commit | combined run of 39 test files on the merged tree: 780 passed, then b2c/pack_views/fabric_pack_systems fixed and rerun green; lint, mypy, lint-imports green | done |
 | 2026-11-27 | 09 · P9-7.8 phase 7 demo smoke script | this commit | smoke-p9-7.mjs node --check only; the smoke itself runs in the final pass | done |
+| 2026-11-27 | 09 · P9-13.13 plan 9 docs, status and user guides | this commit | docs only: AGENTS.md, backend-steps, history, decision-log, user guides | done |
 
 ## Decisions taken without the user (to review)
 

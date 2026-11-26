@@ -18,6 +18,8 @@ type Row3 = [string, string, string];
 /** A journey step: [n, title, kind ("built" …), description]. */
 type JourneyRow = [number, string, string, string];
 
+/** A class a pack adds to the demo's (backend PACK_CLASSES): its name and the pack that owns it. */
+export interface PackClassDef { label: string; pack: string; pack_name: string }
 interface ClassDef { label: string; plural: string; pre: string; pnew: number; tau: number; weight: number; mfr: string[] }
 interface NavGroup { id: string; label: string; icon: string; sub: string; kids: string[][]; leaf?: boolean; mode?: number; sec?: string }
 interface PageDef { t: string; sub: string; icon: string; j: number[] }
@@ -58,6 +60,7 @@ export interface Reference {
   CH_ING: Dict<string>;
   CLASSES: Dict<ClassDef>;
   CLS_ICON: Dict<string>;
+  PACK_CLASSES: Dict<PackClassDef>;
   COMPS: string[];
   CONN_METHODS: Dict<ConnMethod>;
   DELEG: Row3[];

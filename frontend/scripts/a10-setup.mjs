@@ -5,6 +5,8 @@
  *   await describeInAssistant(p, { typed: 'We return motors ...' });            // or typed text
  *   await openInSetup(p);                                                       // "Open in Set up": the Describe step of the composition
  *
+ * `openSetupTab(p)` opens the Modeler's Set up tab (the old Compose button).
+ *
  * `describeInAssistant` starts from the Compose panel's launcher (or, with `launch: false`, from an assistant already in Set up
  * mode), picks a sample or types, waits for the drafted turn and returns the composition id.
  */
@@ -30,6 +32,12 @@ export async function describeInAssistant(p, { title, typed, timeout = 180000, l
   const id = Number(foot.match(/Composition (\d+)/)?.[1]);
   if (!id) throw new Error('the Set up turn names no composition: ' + foot);
   return id;
+}
+
+/** The Modeler's "Set up" page tab (plan 10, 3.4; it replaced the bar's Compose button): the Compose panel shows. */
+export async function openSetupTab(p, timeout = 60000) {
+  await p.locator('.mdl-tabs a[data-tab="setup"]').click();
+  await p.locator('section[aria-label="Compose"]').waitFor({ timeout });
 }
 
 /** Follow "Open in Set up" of the last Set up turn; the Compose panel then shows the composition on its Describe step. */

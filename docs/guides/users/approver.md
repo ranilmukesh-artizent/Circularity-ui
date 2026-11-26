@@ -132,6 +132,21 @@ approve them." This holds for everyone who saved or submitted the draft, not onl
 The Modeler's **Suggestions from overrides** shows rules that repeated overrides point to, checked and simulated.
 You can read them; a Planner or Admin applies one to a draft, and it then comes to you for approval like any change.
 
+### 6b. Approve a composition or a group map
+
+**A composition** (Compose, the Modeler) arrives as one object: the pack changes, the accepted field mappings and the
+agent settings. **Approve** applies them all together or none; you cannot approve one you made, and the checks run again
+for you. If a step is wrong, choose the **Step**, optionally a **Node** (for example `stage:condition`), write the
+reason (15 characters or more) and press **Send back**: the reason stays pinned to that step for its maker. You start the
+canary on **Publish** after approving.
+
+**A directory group map** (Access, Admin's Identity page) maps a directory group to a role and a site. One person saves
+it and a different person approves it; the Admin role is never given through a group. See
+[admin.md](admin.md#accounts-and-identity).
+
+**A fraud hold on an automotive core** is released here with a reason (it needs the permission to approve decisions).
+Planners and agents cannot release it.
+
 ### 7. Approve a model promotion
 
 The **Models** panel at the foot of the Modeler lists the fitted models with their outcome count, error figures,

@@ -15,6 +15,7 @@ from tests.device_registry import seed_registry
 
 pytestmark = pytest.mark.usefixtures("no_synced_conflicts")
 
+SALE = {"buynow", "offers", "auction", "market", "wholesale"}  # the pack's device_channels
 BAN = "Destruction of unsold apparel and footwear is banned; reuse, donation or recycling first"
 
 
@@ -39,10 +40,16 @@ def test_ns_b2c_01_phone_valued_by_device_pack():
     want = {x["k"]: x for x in device.decide(lot, [])["all"]}  # the device pack's valuation of the same facts
     assert {"buynow", "offers", "auction"} <= set(want)
     for k, x in want.items():
-        if k not in {"buynow", "offers", "auction", "market", "wholesale"}:
-            continue  # only the sale channels are valued as the device pack does (lane B changed the rest)
+        if k not in SALE:
+            continue  # the pack takes only its `device_channels` from the device valuer; see the recycle check below
         got = _route(c, k)
         assert not got["excluded"] and abs(got["net"] - x["score"]) < 0.005, (k, got["net"], x["score"])
+    # Decision (27 Nov): `recycle` is the retail pack's own route (P9-12.10: device channels from the device valuer, `donate`,
+    # `recycle`, `exit` from the pack's value lines). The device pack gained its own `recycle` (a certified recycler's material
+    # value less its fee, P9-6.15), so `device.decide` now prices a route of the same id differently; the retail pack must not
+    # follow it. Retail recycle = ref * recycle_share - recycle_cost = 300 * 0.03 - 2.
+    assert "recycle" in want and abs(want["recycle"]["score"] - _route(c, "recycle")["net"]) > 0.005
+    assert abs(_route(c, "recycle")["net"] - (PHONE["ref"] * 0.03 - 2)) < 0.005
     assert c["recommendation"] is not None and c["recommendation"]["id"] == device.decide(lot, [])["best"]["k"]
     assert {r["id"] for r in c["routes"]} == {"buynow", "offers", "auction", "market", "wholesale", "donate", "recycle", "exit"}
     assert c["valuer"]["imei"] == IMEI and c.get("gateHold") is None

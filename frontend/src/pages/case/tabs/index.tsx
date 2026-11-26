@@ -5,6 +5,10 @@ import * as D from './DecideTabs';
 import { ChannelsTab, ComplianceTab, DeviceTab, PayoutTab, QuoteTab, SettlementTab } from './DeviceTabs';
 import * as E from './EarlyTabs';
 import * as X from './ExecuteTabs';
+import { CarChannelsTab, VehicleChecksTab } from '../usedcars/UsedCarTabs';
+import { isTelecom, type TelecomCase } from '../telecom/telecom';
+import { TelecomCloseTab, TelecomExportTab, TelecomSparesTab, TelecomUnitTab } from '../telecom/TelecomTabs';
+import { RentalChecksTab, RentalFollowTab } from '../medical/MedicalTabs';
 import { BatchTab, CreditLeverTab, EstimateTab, OptionsTab, TicketTab } from './ServiceDeskTabs';
 
 export interface TabProps { c: CaseRec; a: CaseAnalysis; s: CaseScreen }
@@ -16,7 +20,9 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
     case 1: return [['lease', 'Lease record', E.LeaseTab], ['customer', 'Customer', E.CustomerTab], ['systems', 'Systems', E.SystemsTab]];
     case 2: return [['auth', 'Authorisation', E.AuthTab], ['finance', 'Finance', E.FinanceTab]];
     case 3: return [['route', 'Route', E.LaneTab], ['cost', 'Cost trace', E.LaneCostTab]];
-    case 4: return [['evidence', 'Evidence checklist', E.EvidenceListTab], ['location', 'Location', E.LocationTab], ['holding', 'Holding cost', E.HoldingTab]];
+    case 4: return [['evidence', 'Evidence checklist', E.EvidenceListTab], ['location', 'Location', E.LocationTab], ['holding', 'Holding cost', E.HoldingTab],
+      ...(isTelecom(c) ? [['unit', 'Network unit', TelecomUnitTab] as TabDef] : []), // inventory match, wipe, battery (telecom pack)
+    ];
     case 5: {
       const early: TabDef[] = [['findings', 'Findings', E.FindingsTab], ['diag', 'Diagnostic condition', E.DiagTab], ['cert', 'Certified period', E.CertTab], ['photos', 'Photos', E.PhotosTab]];
       // a received device starts with its Device tab (P9-6.4), then the Quote tab when it has one (P9-6.5)
@@ -28,7 +34,10 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
             ...(c.device.payout ? [['payout', 'Payout', PayoutTab] as TabDef] : []), // the payout adjustment (P9-6.8)
           ]
         : [];
-      return [...extra, ...early];
+      const car: TabDef[] = c.template === 'used_cars' ? [['vehicle', 'Vehicle checks', VehicleChecksTab]] : []; // title, odometer, recall (gap 7)
+      return [...car, ...extra, ...early];
+      const rental: TabDef[] = c.template === 'medical_rental' ? [['rentalchecks', 'Rental checks', RentalChecksTab]] : []; // decontamination, certification (gap 7)
+      return [...rental, ...extra, ...early];
     }
     case 6: return [
       ...(c.serviceDesk ? [['ticket', 'Ticket', TicketTab] as TabDef] : []), // a service ticket starts with its Ticket tab (P9-4.3)
@@ -37,6 +46,9 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ...(c.serviceDesk ? [['credit', 'Credit lever', CreditLeverTab] as TabDef] : []), // test a credit before offering it (P9-4.10)
       ...(c.serviceDesk?.batch ? [['batch', 'Batch', BatchTab] as TabDef] : []), // a batch's split (P9-4.8)
       ...(c.device?.channels ? [['channels', 'Channels', ChannelsTab] as TabDef] : []), // a device's price per channel (P9-6.10)
+      ...(c.template === 'used_cars' ? [['carchannels', 'Channels', CarChannelsTab] as TabDef] : []), // a used car's channels (gap 7)
+      ...(isTelecom(c) ? [['tnexport', 'Export control', TelecomExportTab] as TabDef, ['tnspares', 'Spares before new', TelecomSparesTab] as TabDef] : []), // telecom pack
+      ...(c.template === 'medical_rental' ? [['rentalfollow', 'Follow-through', RentalFollowTab] as TabDef] : []), // repair approval, steps, write-off (gap 7)
       ['packet', 'Decision packet', D.PacketTab], ['compare', 'Compare outcomes', D.CompareTab], ['why', 'Why this outcome', D.WhyTab],
       ['evidence', 'Evidence', D.EvidenceTab], ['whatif', 'What-if and edge cases', D.WhatIfTab], ['predicted', 'How it was predicted', D.PredictedTab],
       ['demand', 'Demand', D.DemandTab],
@@ -47,6 +59,8 @@ export function stageTabs(c: CaseRec, n: number): TabDef[] {
       ['delivery', 'Delivery', X.DeliveryTab], ['costs', 'Actual costs', X.CostsTab], ['docs', 'Documents', X.DocsTab],
       ...(c.device?.settlement ? [['settlement', 'Settlement', SettlementTab] as TabDef] : []), // the sale against the forecast (P9-6.12)
     ] : [];
-    default: return r ? [['lines', 'Lines', X.LinesTab], ['learn', 'Learning record', X.LearnTab], ['carried', 'Carried forward', X.CarriedTab]] : [];
+    default: return r ? [['lines', 'Lines', X.LinesTab], ['learn', 'Learning record', X.LearnTab], ['carried', 'Carried forward', X.CarriedTab],
+      ...(isTelecom(c) && (c as TelecomCase).close ? [['tnclose', 'Reuse', TelecomCloseTab] as TabDef] : []), // what the reuse saved (telecom pack)
+    ] : [];
   }
 }

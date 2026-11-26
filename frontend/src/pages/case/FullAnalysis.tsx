@@ -3,7 +3,7 @@
  */
 import { Suspense, type MouseEvent } from 'react';
 import {
-  caseAnalysis, caseScreen, exTs, fmtD, refList, stageHref, tiView,
+  caseAnalysis, caseScreen, classLabelOf, exTs, fmtD, refList, stageHref, tiView,
   type CaseAnalysis, type CaseRec, type CaseScreen,
 } from '../../api/case';
 import { asHex } from './tabs/EarlyTabs';
@@ -59,7 +59,7 @@ function TiStatus({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
 function TiCtx({ c, a, s }: { c: CaseRec; a: CaseAnalysis; s: CaseScreen }) {
   const pick = ['Asset ID', 'Serial number', 'Product', 'Revision', 'Ownership', 'Location', 'Received', 'Age'];
   const facts = a.view.facts.filter((x) => pick.includes(x[0])), h = a.view.health;
-  const label = refList('CLASSES')[c.cls]?.label ?? c.cls;
+  const label = classLabelOf(c.cls);
   return (
     <section className="aship ticx">
       <div className="asphoto"><Photo c={c} /></div>

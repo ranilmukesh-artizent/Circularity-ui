@@ -47,27 +47,39 @@ export function OutsideClients({ agents }: { agents: AgentRow[] }) {
         <h2>Outside clients</h2>
         <span className="note">An outside MCP client asks a person for consent, then acts as an agent with the scopes below. Its writes are held for a person.</span>
       </div>
-      <div className="panel" style={{ padding: 12, marginBottom: 12 }}>
-        <label htmlFor="oc-name">Client name</label>
-        <input id="oc-name" value={name} onChange={(e) => setName(e.target.value)} />{' '}
-        <label htmlFor="oc-uris">Redirect URIs (one per line, exact)</label>
-        <textarea id="oc-uris" value={uris} onChange={(e) => setUris(e.target.value)} rows={2} style={{ width: '100%' }} />
-        <label htmlFor="oc-agent">Acts as</label>
-        <select id="oc-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
-          {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
-        <div>
-          {OAUTH_SCOPES.map((s) => (
-            <label key={s} style={{ marginRight: 12 }}>
-              <input type="checkbox" checked={scopes.includes(s)} onChange={() => flip(s)} /> {SCOPE_TEXT[s]}
-            </label>
-          ))}
-        </div>
-        <button className="btn sm pri" id="oc-register" disabled={action.pending || !name.trim() || !uris.trim() || !agent || scopes.length === 0} onClick={register}>
-          Register client
-        </button>
-      </div>
       <div className="panel">
+        <div className="ag-form ag-stack">
+          <div className="ag-field">
+            <label htmlFor="oc-name">Client name</label>
+            <input id="oc-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="ag-field">
+            <label htmlFor="oc-agent">Acts as</label>
+            <select className="sel" id="oc-agent" value={agent} onChange={(e) => setAgent(e.target.value)}>
+              {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          <div className="ag-field ag-wide">
+            <label htmlFor="oc-uris">Redirect URIs</label>
+            <textarea id="oc-uris" value={uris} onChange={(e) => setUris(e.target.value)} rows={2} aria-describedby="oc-uris-h" />
+            <span className="hint" id="oc-uris-h">One per line, written exactly as the client sends it.</span>
+          </div>
+          <fieldset className="ag-wide ag-scopes">
+            <legend>What it may ask for</legend>
+            {OAUTH_SCOPES.map((s) => (
+              <label key={s}>
+                <input type="checkbox" checked={scopes.includes(s)} onChange={() => flip(s)} /> {SCOPE_TEXT[s]}
+              </label>
+            ))}
+          </fieldset>
+          <div className="ag-wide">
+            <button className="btn sm pri" id="oc-register" disabled={action.pending || !name.trim() || !uris.trim() || !agent || scopes.length === 0} onClick={register}>
+              Register client
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="panel" style={{ marginTop: 12 }}>
         <div className="tw">
           <table className="t static">
             <thead><tr><th>Client</th><th>Agent</th><th>Scopes</th><th>Redirect URIs</th><th>Status</th><th></th></tr></thead>

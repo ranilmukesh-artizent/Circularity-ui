@@ -11,3 +11,87 @@
   background-color:var(--panel);color:var(--ink);border:1px solid var(--line)}
 :where(:root[data-theme="dark"]) :where(select option,select optgroup){background-color:var(--panel);color:var(--ink)}
 :where(:root[data-theme="dark"]) :where(input,textarea)::placeholder{color:var(--muted)}
+
+/* Connection Fabric (UI QA 20, 23-25, 28) */
+/* 20: the tab strip wraps instead of clipping its last tab */
+html.fr .frtabs2{flex-wrap:wrap;overflow:visible;row-gap:0}
+html.fr .frtabs2 button{padding:9px 12px}
+/* 24: the selected Graph/List toggle is the brand yellow in dark mode, not a white pill */
+:root[data-theme="dark"] .seg button[aria-pressed=true]{background:var(--yellow);color:#141414}
+/* 24: the per-table "New Foreign Key" button shows on hover or focus; the toolbar button stays */
+@media (hover:hover){.tgc .tgfk{opacity:0}.tgc:hover .tgfk,.tgc:focus-within .tgfk{opacity:1}}
+/* 25: the Monitor tables stay inside their cards; the workflow cell keeps the expander and the name on one line */
+#frMon .frmon2{grid-template-columns:minmax(0,1fr)}
+@media (min-width:1700px){#frMon .frmon2{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}}
+#frMon td .lnk.b{display:inline;text-decoration:none;text-align:left}#frMon td .lnk.b:hover{text-decoration:underline}
+#frMon td:first-child{white-space:nowrap}#frMon td:first-child .lnk.b{white-space:normal}
+/* 28: workflow list: the search box shows its whole placeholder */
+#frWfQ{text-overflow:ellipsis;min-width:280px}
+/* UI QA B32: a long source URL in the Workflow Studio rail wraps instead of widening the page */
+.frrel .note.mono{overflow-wrap:anywhere;min-width:0}
+.frwfg>*{min-width:0}
+#frMon td .lnk{text-decoration:none}
+
+/* ---- UI fix wave 28: app shell and Home (QA B items 2, 5, 8, 9-14) ---- */
+
+/* The menu scrolls inside the viewport and does not pass the wheel on to the page; the footer card stays inside the
+   rail (a grid item would otherwise grow to its longest line). */
+.frnav { overscroll-behavior: contain; scrollbar-gutter: stable; scrollbar-width: thin; }
+/* A shadow at the edge that has more menu behind it (the "local" layers cover it once you are at that end). */
+.frnav {
+  background:
+    linear-gradient(var(--side-bg) 30%, transparent) top / 100% 24px no-repeat local,
+    linear-gradient(transparent, var(--side-bg) 70%) bottom / 100% 24px no-repeat local,
+    linear-gradient(to bottom, color-mix(in srgb, var(--side-ink) 22%, transparent), transparent) top / 100% 8px no-repeat scroll,
+    linear-gradient(to top, color-mix(in srgb, var(--side-ink) 22%, transparent), transparent) bottom / 100% 8px no-repeat scroll;
+}
+.frfoot { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.frfoot > * { min-width: 0; }
+.frco summary { min-width: 0; }
+.frut b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The top search keeps a usable width: the placeholder ends in an ellipsis, and below 1360px the "Live" pill gives up its
+   words (kept for screen readers and in its tooltip) before the search is squeezed. */
+html.fr .frsearch { flex: 1 1 280px; min-width: 220px; }
+.frsearch input, .frsearch input::placeholder { text-overflow: ellipsis; }
+@media (max-width: 1360px) and (min-width: 861px) {
+  .pill.live .livet { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* Dark mode: the toast is a dark card with a border like every other raised surface, not a light slab. */
+:root[data-theme="dark"] .toast { background: var(--panel3); color: var(--ink); border: 1px solid var(--line); }
+
+/* Home: a section that is still reading holds its place (the rest of Home stays on screen). Static block; the
+   dimming of an old list while a new one arrives is only opacity. */
+/* Home's Recovery waterfall (Executive) shares the class .frwf with the workflow editor, whose "html.fr .frwf" columns
+   (220px / 1fr / 260px) squeeze the bar to nothing and push the numbers out (QA B item 12). Home keeps its own three columns. */
+html.fr .frhst .frwf { grid-template-columns: 120px minmax(0, 1fr) 72px; }
+/* A KPI value that is long (21,826 kg) shrinks a little before it is cut; the full value is in its tooltip. */
+.frkv b { font-size: clamp(16px, 1.15vw, 21px); }
+
+.hskel { border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); }
+.frkpis > .hskel { grid-column: 1 / -1; }
+.hwait { opacity: .55; transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { .hwait { transition: none; } }
+
+/* The page keeps its scrollbar space, so opening a dialog or drawer does not move the page behind it. */
+html { scrollbar-gutter: stable; }
+
+/* Home at wide windows: Agent activity and Decisions by stage share a row and Key figures runs full width under them,
+   so the left column has no blank space under a short activity list. */
+@media (min-width: 1101px) {
+  .frh2 { grid-template-areas: "act mid" "fig fig"; align-items: stretch; }
+  .frhst { display: contents; }
+  .frh2 > #afActivity { grid-area: act; }
+  .frhst > :first-child { grid-area: mid; }
+  .frhst > :last-child { grid-area: fig; }
+}
+/* The class tile of an asset class with no product photo (components/ClassArt.tsx): a line icon over the class name,
+   on the demo's .asph and .thumb colours, so it follows the theme. */
+.classart{padding:0 6px;text-align:center;line-height:1.25}
+.classart .thumb svg{width:32px;height:32px}
+.asimg.stph .classart,.asimg.sm .classart{gap:4px;font-size:12px}
+.asimg.stph .classart .thumb,.asimg.sm .classart .thumb{width:36px;height:32px}
+.asimg.stph .classart .thumb svg,.asimg.sm .classart .thumb svg{width:22px;height:22px}
+.asimg.stph .classart>span:last-child,.asimg.sm .classart>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.asimg.xs .classart .thumb svg{width:18px;height:18px}

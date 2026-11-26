@@ -63,6 +63,17 @@ The **Modeler** shows the decision flow and business rules each organisation use
 read only for you; Planners and Admin change rules, and an Approver or Admin approves them. The **Models** panel at its
 foot shows the model that values new cases, its calibration and the fitted candidates, also read only.
 
+### 5. Read the replay report and the rollout state
+
+Before a new flow goes live, a Planner replays past decisions through it. In the Modeler's **Replay** panel (and on
+Compose's Publish step) you can read the latest report; you cannot import or run one. It shows four numbers: the route
+mix, the share decided without a person, approvals and exceptions a day, and the uplift with its 80 percent band. It
+also lists facts dropped for being later than the decision, and the data-quality notes. The lifecycle bar above the
+canvas shows the step the flow is at (replay, shadow, canary, full). The **Rollout** panel itself, with the canary
+report against the control (override, exception and hold rates, the mean net value with the band of the difference),
+is for Approvers and Planners; ask one of them for it. If a canary breaches its stop rule, it pauses by itself and the
+approvers are told; only a person widens it again.
+
 ## What you cannot do, and why
 
 - **Change anything on a case** (request, submit, approve, confirm): the Executive view is read only by design.

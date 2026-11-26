@@ -8,6 +8,7 @@ import type { ActionResult, ModelerScreen } from '../../api/types';
 import { Panel } from '../../components/kit/Panel';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
+import { Field } from './Field';
 
 const STATUS: Record<StandingStatus, string> = { draft: 'Draft', review: 'In review', active: 'In force', retired: 'Retired' };
 const MIN_REASON = 15;
@@ -102,30 +103,42 @@ function Draft({ pack, org, limit, threshold, busy, existing, onSave }: {
   const value = Number(max);
   const confidence = Number(conf);
   const tooBig = limit !== null && max.trim() !== '' && value > limit;
-  const ready = name.trim() !== '' && owner.trim() !== '' && max.trim() !== '' && value > 0 && conf.trim() !== '' && !Number.isNaN(confidence) && !tooBig;
   const taken = existing.some((p) => p.status === 'draft' || p.status === 'review');
+  const off = busy ? 'Saving…' : name.trim() === '' ? 'Name the policy first.' : max.trim() === '' || !(value > 0) ? 'Enter the largest value it may approve.'
+    : tooBig ? `The largest value is the pack's ${money(limit ?? 0)}.` : conf.trim() === '' || Number.isNaN(confidence) ? 'Enter the lowest confidence.' : owner.trim() === '' ? 'Name its owner first.' : null;
   return (
     <div className="mdl-prop" data-standing-draft>
       <span className="label">Draft a policy{taken ? ' (another is already waiting)' : ''}</span>
-      <div className="mdl-row">
-        <label className="sr" htmlFor="sp-name">Name</label>
-        <input id="sp-name" value={name} placeholder="Name" style={{ width: 150 }} onChange={(e) => setName(e.target.value)} />
-        <label className="sr" htmlFor="sp-max">Largest value in dollars</label>
-        <input id="sp-max" type="number" min="0" step="any" value={max} placeholder={limit === null ? 'Up to ($)' : `Up to ($, at most ${money(limit)})`} style={{ width: 170 }} onChange={(e) => setMax(e.target.value)} />
-        <label className="sr" htmlFor="sp-conf">Lowest confidence</label>
-        <input id="sp-conf" type="number" min="0" max="1" step="0.01" value={conf} style={{ width: 80 }} onChange={(e) => setConf(e.target.value)} />
-        <label className="sr" htmlFor="sp-owner">Owner</label>
-        <input id="sp-owner" value={owner} placeholder="Owner (account id)" style={{ width: 150 }} onChange={(e) => setOwner(e.target.value)} />
-        <label className="sr" htmlFor="sp-routes">Routes</label>
-        <input id="sp-routes" value={routes} placeholder="Routes (all if empty)" style={{ width: 160 }} onChange={(e) => setRoutes(e.target.value)} />
+      <div className="mdl-form">
+        <Field id="sp-name" label="Name" wide>
+          <input id="sp-name" value={name} placeholder="e.g. Small redeploys" onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field id="sp-owner" label="Owner" hint="The person who answers for it (account id).">
+          <input id="sp-owner" value={owner} placeholder="e.g. planner.a" onChange={(e) => setOwner(e.target.value)} />
+        </Field>
+      </div>
+      <div className="mdl-form">
+        <Field id="sp-max" label="Largest value it may approve ($)" hint={limit === null ? 'No limit from the pack.' : `At most ${money(limit)} (the pack's limit).`}>
+          <input id="sp-max" type="number" min="0" step="any" value={max} placeholder="e.g. 500" onChange={(e) => setMax(e.target.value)} />
+        </Field>
+        <Field id="sp-conf" label="Lowest confidence" hint={`0 to 1. The pack's own threshold is ${threshold}.`}>
+          <input id="sp-conf" type="number" min="0" max="1" step="0.01" value={conf} onChange={(e) => setConf(e.target.value)} />
+        </Field>
+        <Field id="sp-routes" label="Routes" hint="Comma separated. Empty means every route.">
+          <input id="sp-routes" value={routes} placeholder="e.g. redeploy, resell" onChange={(e) => setRoutes(e.target.value)} />
+        </Field>
+      </div>
+      <div className="mdl-form-foot">
         <button
           className="btn sm pri"
-          disabled={busy || !ready}
+          disabled={off !== null}
+          title={off ?? undefined}
           onClick={async () =>
             (await onSave(() => saveStandingPolicy({ pack, org, name: name.trim(), owner: owner.trim(), rules: { max_value: value, min_confidence: confidence, routes: list(routes), classes: null, markets: null } }))) &&
             (setName(''), setMax(''), setRoutes(''))
           }
         >Save draft</button>
+        {off && !busy && <span className="note mdl-why">{off}</span>}
       </div>
       {tooBig && <p className="mdl-msg blk" role="alert" style={{ margin: 0 }}>The policy cannot approve above the pack&apos;s {money(limit ?? 0)} threshold.</p>}
     </div>

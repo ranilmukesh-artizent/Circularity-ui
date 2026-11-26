@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useBackend } from '../api/useBackend';
-import { canRoute, currentAccount, homeRoute, setBackendTheme, signOut } from '../api/session';
+import { navigation } from '../api/nav';
+import { canRoute, currentAccount, homeRoute, isKnownRoute, setBackendTheme, signOut } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';
 import { pageFor } from '../pages/registry';
@@ -65,13 +66,15 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
   });
   const [menu, setMenu] = useState(false);
   const allowed = canRoute(route);
-  const Page = pageFor(route.page) ?? NotPortedPage;
+  // QA B item 7: a path that is no page at all says "Page not found" inside the shell instead of showing Home
+  const known = isKnownRoute(route, navigation().find((g) => g.id === route.page)?.kids.map((k) => k.id));
+  const Page = (known && pageFor(route.page)) || NotPortedPage;
 
   useEffect(() => setMenu(false), [route.page, route.a, route.b]);
   useEffect(() => {
-    if (allowed === true) return;
+    if (allowed === true || !known) return;
     toast(allowed === 'tenant' ? 'That record belongs to a tenant or warehouse you cannot see.' : 'That page is not available for your role.');
-  }, [allowed]);
+  }, [allowed, known]);
 
   const doSignOut = () => {
     const label = currentAccount()?.label;
@@ -89,7 +92,7 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
       return !r;
     });
 
-  if (allowed !== true) return <Navigate to={'/' + homeRoute()} replace />;
+  if (known && allowed !== true) return <Navigate to={'/' + homeRoute()} replace />;
 
   return (
     <>

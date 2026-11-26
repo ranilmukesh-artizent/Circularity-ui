@@ -3,7 +3,7 @@
  * Events: start, tool, delta, reset, final (backend/di/services/ask/service.py). Ask only reads; a suggested next step is
  * offered to the person and runs only when they confirm it.
  */
-import { accessToken } from './client';
+import { accessToken, http, withQuery } from './client';
 
 export interface AskContext { page?: string; section?: string; case_id?: string; object?: { kind: string; id: string } }
 
@@ -95,3 +95,8 @@ export async function ask(
   }
   await readSse(res.body, opts.onEvent);
 }
+
+/** Starter questions for what the person is looking at, by pack and page, already filtered by their role (E17). */
+export interface AskStarters { pack: string | null; starters: { text: string }[] }
+export const askStartersFor = (q: { page: string; section?: string; case_id?: string }): Promise<AskStarters> =>
+  http<AskStarters>(withQuery('/api/ask/starters', q));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkItem } from '../../api/mywork';
-import { conflictGroupTitle, countsByKind, dueLabel, groupConflicts, nonReturnLine, sortItems } from './mywork';
+import { conflictGroupTitle, conflictSummary, countsByKind, dueLabel, groupConflicts, meaningful, nonReturnLine, readable, sortForPerson, sortItems } from './mywork';
 
 const item = (o: Partial<WorkItem>): WorkItem => ({
   id: 'w:1', kind: 'exception', case_id: null, title: 't', cause: null, action: null, owner: 'Planner', due: null, overdue: false, priority: 100, go: null, ...o,
@@ -56,5 +56,34 @@ describe('My work conflict grouping (UI audit gap 20)', () => {
   });
   it('has no group without conflicts', () => {
     expect(groupConflicts([item({ id: 'a:1', kind: 'approval' })]).conflicts).toEqual([]);
+  });
+});
+
+describe('My work text (UI fix 29)', () => {
+  it('reads snake_case field names as words and keeps ids', () => {
+    expect(readable('Sources disagree on work_order_ref of MTR-1108')).toBe('Sources disagree on work order reference of MTR-1108');
+    expect(readable('Sources disagree on work_order_type of RT-1073')).toBe('Sources disagree on work order type of RT-1073');
+  });
+  it('drops a lone dot', () => {
+    expect(meaningful('.')).toBe('');
+    expect(meaningful(null)).toBe('');
+    expect(meaningful('Demand cancelled.')).toBe('Demand cancelled.');
+  });
+});
+
+describe('My work order (UI fix 39, F20)', () => {
+  it('puts what only this person decides first and the conflicts last', () => {
+    const kinds = sortForPerson([
+      item({ id: 'c:1', kind: 'conflict', priority: 1 }),
+      item({ id: 'w:2', kind: 'exception', priority: 1 }),
+      item({ id: 'p:3', kind: 'proposal', priority: 100 }),
+      item({ id: 'a:4', kind: 'approval', priority: 100 }),
+      item({ id: 'w:5', kind: 'needs_info', priority: 100 }),
+    ]).map((i) => i.kind);
+    expect(kinds).toEqual(['approval', 'proposal', 'needs_info', 'exception', 'conflict']);
+  });
+  it('words the conflict pile', () => {
+    expect(conflictSummary(154)).toBe('154 data conflicts hold decisions');
+    expect(conflictSummary(1)).toBe('1 data conflict holds a decision');
   });
 });

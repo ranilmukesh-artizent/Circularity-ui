@@ -31,6 +31,8 @@ export interface PackMatch {
   score: number;
   /** below the bar: this is only the nearest pack, none is invented */
   nearest_only: boolean;
+  /** the pack file's own name; absent in older replies */
+  name?: string;
 }
 
 export interface ChangeOption {
@@ -95,6 +97,8 @@ export interface ChangeSet {
 export interface DescriptionRead {
   reading: Reading;
   match: PackMatch;
+  /** every pack's file name by key, so the screen names packs without a list of its own */
+  pack_names?: Record<string, string>;
   question: ChangeQuestion | null;
 }
 

@@ -1,5 +1,6 @@
 import type { HomeProposal } from '../../../api/home';
 import type { ModelerScreen } from '../../../api/types';
+import { ProposalItems } from '../../../components/ProposalRow';
 import { AppliedLine } from './AppliedLine';
 import { flowSurface, pendingOfSuggestion, setPending, useChange } from './changeStore';
 import { PendingCard } from './PendingCard';
@@ -7,8 +8,8 @@ import { Row, Sec } from './Sec';
 
 /**
  * "Proposals" (plan 10, 3.3): the pending flow proposal as the preview card, at most one expanded; the other suggestions
- * from overrides and the proposals held for a person are one line each. Accepting a held proposal is done under
- * "Waiting for you", where it goes through the same card as every other write.
+ * from overrides are one line each; the proposals an agent holds for this flow are the held card of 2.6 (ProposalRow:
+ * Accept runs it as the person after a confirming step, Reject asks why). "Waiting for you" leaves them out.
  */
 export function Proposals({ s, held }: { s: ModelerScreen; held: HomeProposal[] }) {
   const st = useChange();
@@ -26,9 +27,9 @@ export function Proposals({ s, held }: { s: ModelerScreen; held: HomeProposal[] 
       {others.map((g, i) => (
         <Row key={g.dim + g.value + g.path} icon="users" tag="Retrieved" go="Review" onGo={() => open(i)}>{g.text}</Row>
       ))}
-      {held.map((p) => (
-        <Row key={p.id} icon="bot" tag="Prepared by agent">{p.agentName}: {p.title}. Accept or reject it under Waiting for you.</Row>
-      ))}
+      {held.length > 0 && (
+        <ProposalItems list={held} idPrefix="asf-" label="Held for you" />
+      )}
       {!n && !st.applied && <p className="as-empty">No proposals. Describe a change below and it is checked and simulated before anything is saved.</p>}
     </Sec>
   );

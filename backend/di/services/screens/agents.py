@@ -24,6 +24,10 @@ the tool catalogue.
         llm        the language models (di.services.llm.view): [{id, provider, model, roles, rpm, tpm, rpd, enabled,
                    priority, used_minute: {requests, tokens}, used_day, cooling_until}]; Admin switches and orders them
                    with llm.setModel (plan 9 P9-2.3), other roles see an empty list
+        packs      (UI gap 14) the stage agents under each pack: [{key, name, stages: [{stage, agent, autonomy, threshold}]}],
+                   the chain's twelve stages in order with the agent that runs each and the autonomy the pack gives it
+                   (recommend, limits, alone; `chain.stage_defs`). Read only: a stage's autonomy is set in Compose
+                   (compose.setStageAgents, maker-checker). Whatever it is, no agent runs an action in FORBIDDEN_ACTIONS
         can        {manage}: the account may change agents (manageAgents). The actions check again.
 
 Access: the `agents` page (Admin, Developer). Agents never decide a proposal or change an agent: the page's buttons
@@ -73,13 +77,14 @@ from di.repositories.constants import TOOLS_BY_ID
 from di.repositories.model_versions import ModelRow
 from di.repositories.orgs import units
 from di.services.actions.models import model_json, promote_block, proposal_of, propose_block
-from di.services.agents import proposals, registry
+from di.services.agents import chain, proposals, registry
 from di.services.agents.catalog import catalog
 from di.services.agents.journey import journey
 from di.services.agents.stage_context import STAGE_IDS
 from di.services.device import price_shadow
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
+from di.services.modeler.pack import load_pack
 from di.services.modeler.templates import template_keys
 from di.services.service_desk import accuracy
 
@@ -159,6 +164,18 @@ def _runs(p: Principal, s: Session, names: dict[str, str]) -> list[dict[str, Any
     return out
 
 
+def _packs() -> list[dict[str, Any]]:
+    """The stage agents under each pack (UI gap 14): the chain's twelve stages as the pack defines them."""
+    out = []
+    for key in template_keys():
+        pack = load_pack(key)
+        stages = [
+            {"stage": d.id, "agent": d.agent_id, "autonomy": d.autonomy, "threshold": d.threshold} for d in chain.stage_defs(pack)
+        ]
+        out.append({"key": key, "name": pack.name, "stages": stages})
+    return out
+
+
 def page(p: Principal, s: Session) -> dict[str, Any]:
     p.require_page("agents")
     agents = registry.all_agents(s)
@@ -169,6 +186,7 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
         "runs": _runs(p, s, {a.id: a.name for a in agents}),
         "proposals": proposals.pending_for(s, p.account, p.ctx),
         "tools": catalog(),
+        "packs": _packs(),
         "llm": models_view(s) if policy.can(p.account, "manageAgents", p.ctx) else [],
         "can": {"manage": policy.can(p.account, "manageAgents", p.ctx)},
     }

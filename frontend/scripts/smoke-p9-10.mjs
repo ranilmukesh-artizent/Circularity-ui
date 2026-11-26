@@ -35,7 +35,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describeInAssistant, openInSetup } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-10');
@@ -160,8 +160,8 @@ const need = (n) => {
 // ---------------------------------------------------------------- 1 (TN-01)
 const compose = (p) => p.locator('section[aria-label="Compose"]');
 async function startCompose(p, typed) {
-  await open(p, MODELER, '.mdl-bar');
-  await p.getByRole('button', { name: 'Compose', exact: true }).click();
+  await open(p, MODELER, '.mdl-tabs');
+  await openSetupTab(p);
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
   await describeInAssistant(p, typed === undefined ? { title: 'Decommissioned network kit', timeout: UI } : { typed, timeout: UI });
@@ -196,7 +196,7 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
     });
   for (const n of Object.keys(UNITS).map(Number)) {
     let r = await openUnit(n);
-    if (!r.ok && /pack/i.test(JSON.stringify(r))) {
+    if (!r.ok && /pack|template/i.test(JSON.stringify(r))) { // "No pack" before packs as templates, "The template is one of" after
       // the pack of the org is published by people first (admin imports, approver approves): the shipped pack, as the api tests do
       const doc = JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs/telecom_network.json'), 'utf8'));
       doc.version = '1.4.1';
@@ -328,8 +328,8 @@ await step('8 The analytics question and the modelled replay figures', async () 
   if (!/PSU-48/.test(await text(p))) throw new Error('the power unit question shows no chart rows (PSU-48)');
   notes.push('question with its chart');
 
-  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-bar');
-  if (!COMP) await p.getByRole('button', { name: 'Compose', exact: true }).click();
+  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
+  if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
   if (await tab.count()) await tab.click();

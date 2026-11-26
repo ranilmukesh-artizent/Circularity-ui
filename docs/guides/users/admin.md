@@ -68,6 +68,25 @@ does.
   whoever acts first completes the item. A delegate without a sign-in account (the demo's deputy) is recorded only.
   See [Approvals](../approvals.md#8-admins-settings-limits-self-approval-delegations).
 
+**Organisation sign-in, group mapping, SCIM and test a user (plan 9).** The demo signs in with any ID and password. A
+company that signs people in from its own directory (OpenID Connect) sets the `DI_OIDC_*` settings on the API service
+([trial START-HERE](../../../trial/START-HERE.md#organisation-sign-in) says which). Then:
+
+- **Group map:** each directory group is mapped to a role and a site. You save a row and a different person (an
+  Approver or another Admin) approves it, so a map never takes effect on one person's word. The Admin role is never
+  given through a group. When a new row for a group is approved, the group's previous approved row retires.
+- **SCIM:** the directory can provision users at `/scim/v2` with a bearer secret kept as the directory source's webhook
+  secret. A delete or `active=false` deactivates the user and never deletes anything; SCIM cannot create or change a
+  group or give a role (the approved group map does).
+- **Role matrix and Test a user** (Access page): the matrix shows every permission by role. **Test a user** shows what
+  a given account, with its groups, would see and be allowed to do, without signing in as them.
+
+**Adapter registry and system owners.** A connection made from the registry starts in the test environment and read
+only. As Admin you hold the right to answer for any system owner: in **My work**, a request for production access or for
+write-back shows the system, the access asked for and the requester's note; **Approve** or **Decline** with a reason.
+Nobody approves their own request. A person other than the drafter releases a new connector entry
+([developer.md](developer.md)).
+
 ### The organisation tree
 
 **Organisation** shows the tree: *Workspace* at the top, with Customer A, B and C below it at the start. A case
@@ -164,6 +183,12 @@ The **Agents** page is the fuller view:
 
 **Agent metrics** counts success measures from the journal: interactions to approve, share of changes started through
 the agent, acceptance, edit, undo and fallback rates, time to decision, response time.
+
+### Who may start an agent run
+
+Starting any agent run is Admin's. **Run the agent on this case** (case Overview) is the one narrower path: the
+`runAgent` right (Admin, Planner, Approver) starts a propose-only run of the case autopilot of an enabled agent, and the
+action pipeline holds every write of that run for a person. **Agent activity** (read only) lists what each agent did.
 
 ### Agent credentials
 

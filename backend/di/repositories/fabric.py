@@ -372,11 +372,12 @@ class Fabric:
     def conflicts(
         self, status: Literal["open", "resolved", "all"] = "open", source: str | None = None, limit: int | None = None
     ) -> tuple[list[dict], int]:
+        # open and escalated ones lead the list (UI QA 21), newest first within each group
         where = {"open": "status IN ('open', 'escalated')", "resolved": "status = 'resolved'", "all": "true"}[status]
         args = {"src": source}
         cond = f'{where} AND (CAST(:src AS text) IS NULL OR authority = :src OR "values" ? :src)'
         total = self.s.execute(text(f"SELECT count(*) FROM conflict WHERE {cond}"), args).scalar_one()  # noqa: S608 - `where` comes from a fixed mapping; values are bound
-        q = f"SELECT * FROM conflict WHERE {cond} ORDER BY id DESC" + (" LIMIT :n" if limit else "")  # noqa: S608 - `where` comes from a fixed mapping; values are bound
+        q = f"SELECT * FROM conflict WHERE {cond} ORDER BY (status = 'resolved'), id DESC" + (" LIMIT :n" if limit else "")  # noqa: S608 - `where` comes from a fixed mapping; values are bound
         rows = self.s.execute(text(q), args | ({"n": limit} if limit else {})).mappings()
         esc = escalations(self.s)
         return [self._conflict(r, esc.get(f"CF-{r['id']}")) for r in rows], total
