@@ -40,7 +40,7 @@ log = logging.getLogger("di.lifecycle")
 COLLECTION = "source_config"
 state.register(COLLECTION, list)
 # the journaled actions that decide whether a source exists: its deletion, or its (re-)creation
-EXISTENCE_ACTIONS = ["source.delete", "source.update"]
+EXISTENCE_ACTIONS = ["source.delete", "source.update", "source.connect"]
 
 
 def configs(s: Session) -> dict[str, dict[str, Any]]:

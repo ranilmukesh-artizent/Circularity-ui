@@ -578,6 +578,38 @@ def _connect_catalog(i: dict[str, Any], ctx: CallContext) -> dict:
 
 
 _declare(
+    "source.connect", "Connect a source", "connect sources",
+    "Connect a catalogue system (the Connect dialog's flow with a flat body), or provision a source whose connector "
+    "exists but is not connected yet (AWS IoT). Plan 3 task 4: the create of /api/v1/sources.", "act",
+    {"catalog": {"req": True, "t": "string"}, "auth": {"req": False, "t": "string"}, "scopes": {"req": False, "t": "array"},
+     "maps": {"req": False, "t": "array"}, "secret": {"req": False, "t": "string"},
+     "org_unit_id": {"req": False, "t": "string"}}, _MGR,
+)  # fmt: skip
+
+
+@implement("source.connect")
+def source_connect(i: dict[str, Any], ctx: CallContext):
+    """A catalogue system: as source.update mode "catalog" (the demo's frCxFinish), its guards and texts. Any other id
+    names a source with a Python connector that is `unavailable` (AWS IoT at start): it becomes live and a full initial
+    sync is queued, in this transaction (di.connectors.sync.mark_connected; connect_source commits, an action must not)."""
+    _check_org(i, ctx)
+    cid = str(i["catalog"])
+    if cid in CATALOG:
+        body = {"d": {"catalog": cid, "auth": i.get("auth"), "scopes": i.get("scopes") or []},
+                "maps": i.get("maps") or [], "secret": i.get("secret")}  # fmt: skip
+        return _bound(ctx, _connect_catalog(body, ctx), i)
+    if cid not in ADAPTERS:
+        raise ActionError("not_found", f"No catalogue system {cid}.")
+    cur, _ = _current(ctx, cid)
+    if cur["db"] != "unavailable":
+        raise ActionError("conflict", f"{cur['name']} is already connected.")
+    job = sync.mark_connected(ctx.session, cid, "unavailable")
+    _event(ctx, cur, "source.connected", "acknowledged", "Connected by " + _by(ctx))
+    sync.set_delivery(cid, True)
+    return _bound(ctx, {"mode": "adapter", "source_id": cid, "name": cur["name"], "queued": job is not None}, i)
+
+
+_declare(
     "mapping.catalogSuggest", "Suggest field mappings", "suggest field mappings",
     "The field mappings a catalogue system's records support, each with a sample value read from the system. "
     "Changes nothing.", "read", {"catalog_id": {"req": True, "t": "string"}}, _MGR,

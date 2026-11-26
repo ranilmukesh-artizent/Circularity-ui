@@ -103,26 +103,37 @@ def test_sources_list_get_and_who_may_see_them():
 
 
 def test_sources_write_through_their_actions(calls):
+    """The sync verb keeps the stand-in (it reads the shared source-sim); the others are real pipeline calls below."""
     sid = get("sources").json()["items"][0]["id"]
-    assert client.post(ROOT + "sources", json={"catalog": "x"}, headers=h("admin")).status_code == 201
     assert client.patch(ROOT + f"sources/{sid}", json={"action": "sync"}, headers=h("admin")).status_code == 200
-    assert client.patch(ROOT + f"sources/{sid}", json={"action": "rotate", "days": 30}, headers=h("admin")).status_code == 200
-    assert client.patch(ROOT + f"sources/{sid}", json={"action": "pause"}, headers=h("admin")).status_code == 200
-    assert (
-        client.patch(
-            ROOT + f"sources/{sid}", json={"note": "n", "d": {}, "maps": [], "mode": "m", "ops": {}}, headers=h("admin")
-        ).status_code
-        == 200
-    )
-    assert client.delete(ROOT + f"sources/{sid}", headers=h("admin")).status_code == 200
-    assert calls == [
-        ("source.connect", {"catalog": "x"}),
-        ("source.sync", {"source_id": sid}),
-        ("credentials.rotate", {"days": 30, "source_id": sid}),
-        ("source.pause", {"source_id": sid}),
-        ("source.update", {"note": "n", "d": {}, "maps": [], "mode": "m", "ops": {}, "id": sid}),
-        ("source.delete", {"source_id": sid}),
-    ]
+    assert calls == [("source.sync", {"source_id": sid})]
+
+
+def test_sources_connect_pause_resume_rotate_update_delete_for_real():
+    from tests.test_source_connect import CAT, _cleanup
+
+    _cleanup()
+    try:
+        r = client.post(ROOT + "sources", json={"catalog": CAT, "auth": "key", "scopes": ["read"]}, headers=h("admin"))
+        assert r.status_code == 201 and r.json()["source_id"] == CAT, r.text
+        for action, extra in (
+            ("pause", {}),
+            ("resume", {}),
+            ("rotate", {"days": 30, "secret": "a-new-secret-1"}),
+            ("reconnect", {}),
+        ):
+            r = client.patch(ROOT + f"sources/{CAT}", json={"action": action, **extra}, headers=h("admin"))
+            assert r.status_code == 200, (action, r.text)
+        body = {"mode": "edit", "d": {"method": "api", "name": "Workday renamed"}, "maps": [], "ops": {}, "note": "n"}
+        r = client.patch(ROOT + f"sources/{CAT}", json=body, headers=h("admin"))
+        assert r.status_code == 200 and "display name" in r.json()["changes"], r.text
+        assert client.delete(ROOT + f"sources/{CAT}", headers=h("admin")).status_code == 200
+        assert client.get(ROOT + f"sources/{CAT}", headers=h("admin")).status_code == 404
+        journal = get("journal", limit=60).json()["items"]
+        seen = {e.get("action") for e in journal}
+        assert {"source.connect", "source.pause", "source.resume", "credentials.rotate", "source.delete"} <= seen
+    finally:
+        _cleanup()
 
 
 def test_conflicts_read_and_patch(calls):
@@ -195,14 +206,15 @@ def test_workflows_are_hidden_from_a_role_without_the_studio():
     assert get("workflows/WF-101", "planner.a").status_code == 403
 
 
-def test_workflow_runs_are_read_with_a_filter_and_run_through_workflow_run(calls):
+def test_workflow_runs_are_read_with_a_filter_and_run_through_workflow_run():
     wid = get("workflows").json()["items"][0]["id"]
     runs = get("workflow-runs", workflow=wid, limit=5).json()["items"]
     assert all(r["workflow"] == wid for r in runs)
     if runs:
         assert get(f"workflow-runs/{runs[0]['id']}").status_code == 200
-    assert client.post(ROOT + "workflow-runs", json={"id": wid}, headers=h("admin")).status_code == 201
-    assert calls == [("workflow.run", {"id": wid})]
+    r = client.post(ROOT + "workflow-runs", json={"id": wid}, headers=h("admin"))
+    assert r.status_code == 201, r.text  # the real workflow.run: a run is started and journaled
+    assert any(e.get("action") == "workflow.run" for e in get("journal", limit=20).json()["items"])
     assert client.delete(ROOT + "workflow-runs/RUN-1", headers=h("admin")).status_code in (404, 405)
 
 
