@@ -73,3 +73,14 @@ def test_seed_agents_never_approved(seeded):
             text("SELECT count(*) FROM action_journal WHERE preparer IS NOT NULL AND action LIKE 'decision.approve%'")
         ).scalar_one()
     assert n == 0
+
+
+def test_seed_calls_no_model(seeded):
+    """The seed is deterministic and costs nothing: no model budget row was taken, and the loop override is gone."""
+    from di.services.agents import runtime
+
+    with SessionLocal() as s:
+        n = s.execute(text("SELECT count(*) FROM llm_budget")).scalar_one()
+        states = s.execute(text("SELECT state::text FROM agent_run")).scalars().all()
+    assert n == 0 and runtime._LOOP is None
+    assert not any('"by_model": true' in x for x in states)

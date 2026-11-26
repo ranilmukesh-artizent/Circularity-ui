@@ -25,6 +25,7 @@ from di.core.db import SessionLocal
 from di.repositories import device_tradeins
 from di.services.actions.pipeline import SYSTEM, CallContext, invoke
 from di.services.agents import runtime
+from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.cases import store
 from di.services.device import intake as device_intake
 from tests import ucfixtures as uc
@@ -205,7 +206,12 @@ def seed() -> dict[str, Any]:
         "telecom_network": _telecom(),
         "medical_rental": _medical(),
     }
-    runs = _agents(cases)
+    # the seed runs on every reset: no model call, the deterministic path of every stage (R16: code answers when no model does)
+    runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: None))
+    try:
+        runs = _agents(cases)
+    finally:
+        runtime.set_loop(None)
     with SessionLocal() as s:
         s.execute(text("DELETE FROM job WHERE kind = 'case.gateRecheck'"))
         s.commit()
