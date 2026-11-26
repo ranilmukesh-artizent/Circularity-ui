@@ -139,6 +139,7 @@ class MappingProposal:
     proposed_by: Literal["rule", "memory", "model"]
     candidates: list[tuple[str, float]]
     band: Band
+    needs_person: bool = False  # a pack-hinted field a person confirms: never pre-ticked, a model cannot lift it (P9-11.11)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -494,5 +495,5 @@ def _hinted(
     band = _band(conf, cal)
     return MappingProposal(
         p.name, canon.target, conf, str(h["reason"]), _rule_for(p, canon), "rule",
-        [(s.canon.target, s.raw) for s in cands], "check" if band == "none" else band,
+        [(s.canon.target, s.raw) for s in cands], "check" if band in ("none", "pre_ticked") else band, needs_person=True,
     )  # fmt: skip

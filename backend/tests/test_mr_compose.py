@@ -221,7 +221,7 @@ def test_mr_01_assumed_items_marked():
 def _rule(cs: Any) -> Any:
     assert [r.id for r in cs.rules] == ["BR-MR-SVC"] and cs.ops == [], (cs.rules, cs.ops)
     assert cs.rules[0].origin is not None and cs.rules[0].origin.kind == "answer"
-    assert cs.rules[0].origin.question == _mr().clarify.question  # where the rule came from
+    assert cs.rules[0].origin.kind == "answer" and cs.rules[0].origin.question == "svc"  # where the rule came from: the question key
     return cs.rules[0]
 
 
@@ -229,9 +229,11 @@ def test_mr_02_service_answer_scopes_rule():
     asked = _draft()
     always = _rule(_draft(_option(asked, "always")))
     assert (always.stage, always.action, always.path) == ("decide", "require", "service_rerent")
-    assert "request.days" not in always.scope  # every rental
+    assert all(c.fact != "request.days" for c in always.when)  # every rental
     over = _rule(_draft(_option(asked, "30 days")))
-    assert over.stage == "decide" and over.scope.endswith("and request.days > 30") and over.scope.startswith(always.scope)
+    days = [c for c in over.when if c.fact == "request.days"]
+    assert over.stage == "decide" and [(c.op, c.value) for c in days] == [("gt", 30.0)]  # "... and request.days > 30"
+    assert over.when[: len(always.when)] == always.when  # the same scope, narrowed
     stages = [s.key for s in _mr().stages]
     assert stages.index(over.stage) == 4  # stage 5 of 7
     assert _draft(_option(asked, "always")).assumed == [] and _draft(_option(asked, "always")).question is None
@@ -242,7 +244,7 @@ def test_mr_02_model_draft_answer_adds_the_packs_rule_not_the_models():
     asked = _draft()
     runtime.set_loop(_scripted(_model()))
     cs = _draft(_option(asked, "30 days"), drafter=_drafter())
-    assert cs.by_model is True and _rule(cs).scope.endswith("and request.days > 30")
+    assert cs.by_model is True and any(c.fact == "request.days" and c.op == "gt" for c in _rule(cs).when)
     assert cs.rules == _draft(_option(asked, "30 days")).rules
 
 
