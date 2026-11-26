@@ -185,6 +185,21 @@ def test_x_05_valuation_confidence_formulas():
     assert valuation.confidence({}, {"routes": []}) is None
 
 
+def test_x_05_valuation_reports_the_recommendation_when_a_hold_leaves_the_top_net_route_to_a_person():
+    # P9-3.21 (R19): the chain's best is the route the decision recommends, not the highest net a hold withheld from it.
+    def route(k, net):
+        return {"id": k, "plan": k, "net": net, "excluded": False}
+
+    case = {"routes": [route("release", 19861.77), route("resell", 401.48), route("exit", 100.0)],
+            "recommendation": {"id": "resell", "net": 401.48}}  # fmt: skip
+    out = valuation.output({}, case)
+    assert (out["best"]["route"], out["best"]["net"], out["second"]["route"]) == ("resell", 401.48, "release")
+    plain = valuation.output({}, {k: v for k, v in case.items() if k != "recommendation"})
+    assert plain["best"]["route"] == "release"  # no recommendation: the engine's own order, as before
+    top = valuation.output({}, case | {"recommendation": {"id": "release", "net": 19861.77}})
+    assert (top["best"]["route"], top["second"]["route"]) == ("release", "resell")
+
+
 def test_x_05_outcome_and_reconcile_only_when_closed():
     """P9-2.21: the analytics stage became outcome (9) and reconcile (10); neither invents anything for an open case."""
     case = {"id": "RT-1", "stage": "closed", "recommendation": {"net": 100, "terms": []}, "outcome": {"net": 90, "lines": []}}

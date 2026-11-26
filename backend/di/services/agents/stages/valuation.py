@@ -3,7 +3,8 @@
 
 Owns: the step list (`case.reevaluate` when the case waits for re-evaluation, else the read `case.routes`; the legacy
 `case_autopilot` alias skips that read so its calls stay as they were), the stage's output (the two best eligible routes
-of the case, as the engine valued them) and its confidence:
+of the case, as the engine valued them, the case's recommendation first when a hold or a rule left the top-net route to a
+person) and its confidence:
 - when both routes carry `p10` and `p90`: 1 minus the overlap of the two best intervals over the width of the best
   one, clipped to [0, 1];
 - else 0.5 plus the lead of the best net over the second, as a share of the best net (at most 0.5 more);
@@ -42,7 +43,12 @@ def _top_two(case: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     routes = [
         r for r in case.get("routes") or [] if isinstance(r, Mapping) and not r.get("excluded") and _num(r.get("net")) is not None
     ]
-    return sorted(routes, key=lambda r: -float(r["net"]))[:2]
+    ranked = sorted(routes, key=lambda r: -float(r["net"]))
+    rec = case.get("recommendation")
+    chosen = next((r for r in ranked if isinstance(rec, Mapping) and r.get("id") == rec.get("id")), None)
+    if chosen is not None and chosen is not ranked[0]:  # a hold or a rule left the top-net route to a person (R19, P9-3.21)
+        ranked = [chosen, *(r for r in ranked if r is not chosen)]
+    return ranked[:2]
 
 
 def confidence(st: dict[str, Any], case: Mapping[str, Any]) -> float | None:
