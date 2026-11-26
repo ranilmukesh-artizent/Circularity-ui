@@ -3,7 +3,7 @@
     follow_steps(route_id, pack, facts) -> list[str]   the step kinds sent after the route is approved
 
 The steps are the pack's route `instructions` (part 5): re-rent `dispatch`; service then re-rent `service_order`, `dispatch`;
-refurbish `refurb_order`; retire `data_sanitisation` (only for a class with patient data, G-DATA-3), `disposal_collection`,
+refurbish `biomed_refurb`; retire `data_sanitisation` (only for a class with patient data, G-DATA-3), `disposal_collection`,
 `write_off`. A re-rent route id carries its request (`rerent:REQ-2`); the pack's route is the part before the colon. `write_off`
 is not a step of the plan: it is a posting for Finance, prepared by the close (`di.services.cases.close_medical_rental`) and held
 for a person. `decide_case` sets the list on each route as `steps`, and the execution plan

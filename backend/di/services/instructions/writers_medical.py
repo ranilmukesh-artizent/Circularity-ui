@@ -2,7 +2,7 @@
 
     dispatch             rental system (`mr_rental`)  POST /dispatches {tag, reqId, evidence: {serviceRef, certExpiry, deconRef}}
     service_order        biomedical service (`mr_biomed`)  POST /service-orders {tag, kind, dueBy}
-    refurb_order         biomedical service            POST /service-orders {tag, kind: refurbish, dueBy}
+    biomed_refurb        biomedical service            POST /service-orders {tag, kind: refurbish, dueBy}
     data_sanitisation    disposal partner (`mr_disposal`)  POST /sanitisations {tag}
     disposal_collection  disposal partner              POST /collections {tags, sanitisationRef}
 
@@ -15,7 +15,7 @@ idempotent in the systems (the dispatch on the request, the service order on tag
 - **dispatch (MR-23).** The request is the route's (`rerent:REQ-2`). The hospital's evidence is read from the device's `condition`
   record: the service record reference (the preventive maintenance code and its due date), the certification date and the
   decontamination record reference. A device with one missing is refused: the hospital must never get a device without them.
-- **service_order / refurb_order.** The kind is the one the service gate proposed (`serviceCheck.proposed`), else `repair`
+- **service_order / biomed_refurb.** The kind is the one the service gate proposed (`serviceCheck.proposed`), else `repair`
   (`refurbish` for a refurbishment); it is due by the rental's start date, or the route's lead days from now.
 - **data_sanitisation / disposal_collection (MR-19).** The collection of a device with patient data waits for the sanitisation
   record (`condition.sanitisation_record_ref`): G-DATA-3's check (`gate_checks.data`) decides, and the write is `Waiting` until the

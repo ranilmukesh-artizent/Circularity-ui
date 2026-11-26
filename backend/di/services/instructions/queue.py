@@ -45,7 +45,7 @@ SYSTEM_OF = {
     "lessee_charge": "uc_lease",
     "dispatch": "mr_rental",  # P9-11.17: the follow-through of a medical rental route (the pack's route instructions)
     "service_order": "mr_biomed",
-    "refurb_order": "mr_biomed",
+    "biomed_refurb": "mr_biomed",
     "data_sanitisation": "mr_disposal",
     "disposal_collection": "mr_disposal",
     "enhanced_decon": "mr_decon",  # P9-11.12: an enhanced cycle for a device from an isolation ward

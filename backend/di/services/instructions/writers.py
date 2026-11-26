@@ -732,7 +732,7 @@ from di.services.instructions import writers_medical  # noqa: E402 - the medical
 WRITERS |= {
     "dispatch": writers_medical.dispatch,
     "service_order": writers_medical.service_order,
-    "refurb_order": writers_medical.refurb_order,
+    "biomed_refurb": writers_medical.refurb_order,
     "data_sanitisation": writers_medical.data_sanitisation,
     "disposal_collection": writers_medical.disposal_collection,
 }

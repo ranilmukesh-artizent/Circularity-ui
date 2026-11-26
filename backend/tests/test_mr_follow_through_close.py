@@ -178,10 +178,13 @@ def test_mr_19_the_steps_of_each_route():
     pump, monitor = {"cls": "infusion_pump"}, {"cls": "patient_monitor"}
     assert follow_steps("service_rerent", pack, pump) == ["service_order", "dispatch"]
     assert follow_steps("rerent:REQ-2", pack, pump) == ["dispatch"]
-    assert follow_steps("refurbish", pack, pump) == ["refurb_order"]
+    assert follow_steps("refurbish", pack, pump) == ["biomed_refurb"]
     assert follow_steps("retire", pack, pump) == ["disposal_collection"]
     assert follow_steps("retire", pack, monitor) == ["data_sanitisation", "disposal_collection"]
-    assert queue.SYSTEM_OF["service_order"] == queue.SYSTEM_OF["refurb_order"] == "mr_biomed"
+    assert queue.SYSTEM_OF["service_order"] == queue.SYSTEM_OF["biomed_refurb"] == "mr_biomed"
+    assert (
+        queue.TEMPLATE_SYSTEM_OF["telecom_network"]["refurb_order"] == "tn_bench"
+    )  # telecom keeps its kind (26 Nov: they collided)
 
 
 def _dispatched(c: dict, hours: int) -> None:

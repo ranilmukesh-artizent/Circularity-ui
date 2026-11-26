@@ -132,7 +132,7 @@ EX_STEP: dict[str, dict[str, Any]] = {
     "service_order": _s("Service order", "Biomedical service · service order", ("SVC", "Service order"), "Biomedical engineer", 8,
                         "workorder.created", 13, "service order accepted by the biomedical service system",
                         "The biomedical engineer owns the service the device needs before it is rented again"),
-    "refurb_order": _s("Refurbishment order", "Biomedical service · refurbishment order", ("SVC", "Service order"),
+    "biomed_refurb": _s("Refurbishment order", "Biomedical service · refurbishment order", ("SVC", "Service order"),
                        "Clinical engineering", 8, "workorder.created", 26, "refurbishment order accepted by the service system",
                        "Clinical engineering owns the refurbishment of the device"),
     "data_sanitisation": _s("Patient data sanitisation", "Disposal partner · sanitisation", ("SAN", "Sanitisation"),
