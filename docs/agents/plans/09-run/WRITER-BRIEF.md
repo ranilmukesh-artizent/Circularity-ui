@@ -41,7 +41,9 @@ run branch your lead named, `feature/plan-09-recover` unless the prompt says oth
 
 - **Tests** run only through `bash scripts/dev/wt-check.sh <k> <api test files>` from your worktree root, in Git
   Bash. Use `WT_LINT=0` for the red-first run.
-  - It also runs tsc, vitest and eslint when `frontend/` changed.
+  - It lints only your changed files (mypy cached) and, when `frontend/` changed, runs tsc, `vitest related` and eslint on them.
+  - `WT_AUTO=1 bash scripts/dev/wt-check.sh <k>` runs the tests your change impacts (`impacted-tests.sh`); on ALL (core,
+    migrations or conftest changed) it refuses: name the files.
   - It refuses test files that call the shared source-sim (`/_sim/`, faults); the lead runs those after the merge.
     Say which in your report.
   - Never run `api-test.sh`, `full-suite.sh`, `reset.sh`, `restart.sh`, `selftest.sh`, a smoke, or
