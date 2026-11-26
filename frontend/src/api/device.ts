@@ -7,6 +7,8 @@
  */
 import { invoke } from './actions';
 import type { CaseRec } from './case';
+import { forkFlow } from './modeler';
+import type { FlowGraph } from './types';
 
 /** The payout adjustment of a received device (P9-6.8, DV-05): the quote, the payout the pack's table gives and the gap. A gap
  * within the limit (`auto`) is adjusted at once; a bigger one is `waiting` for Customer care, with the grading photos, until a
@@ -197,3 +199,48 @@ export const approveLot = (lotId: string) => invoke<{ status: string }>('lot.app
 
 /** lot.reject: send a proposed lot back with a reason. */
 export const rejectLot = (lotId: string, reason: string) => invoke<{ status: string }>('lot.reject', { lot_id: lotId, reason });
+
+/** One ageing suggestion (P9-6.13, DV-08): listings that sit with no offer (Offers) or unsold (Buy Now) past the customer's days, the
+ * move to the next channel, and the draft rule as a checked, simulated proposal. The numbers are counted from the listings. */
+export interface AgeingSuggestion {
+  kind: 'offers_to_auction' | 'buynow_to_offers';
+  from: string;
+  to: string;
+  /** the age band: the days listed the rule asks for */
+  days: number;
+  n: number;
+  value: number;
+  listings: string[];
+  /** "Move 12 Offers listings to Auction: 14 days, no offer" */
+  text: string;
+  rule: Record<string, unknown>;
+  proposal: { kind: 'rule' | 'blocked'; graph: FlowGraph; rid: string; guard: string | null; msg: string };
+}
+
+export interface AgeingList {
+  flow_id: number;
+  /** the org that owns the flow: not `org_unit_id` when the org inherits its flow (accepting forks it first) */
+  flow_org: string;
+  org_unit_id: string;
+  as_of: string;
+  offers_days: number;
+  choices: number[];
+  buynow_days: number;
+  suggestions: AgeingSuggestion[];
+}
+
+/** device.ageingSuggestions: the moves the org's live listings call for (a read action; nothing is saved). */
+export const ageingSuggestions = (orgUnitId: string, offersDays?: number) =>
+  invoke<AgeingList>('device.ageingSuggestions', { org_unit_id: orgUnitId, ...(offersDays ? { offers_days: offersDays } : {}) });
+
+/** Accept a suggestion: the person's own flow.saveDraft of its graph (the org's flow is forked first when it inherits one). The
+ * flow is then submitted and approved by a different person, as any change; nothing here approves or publishes. */
+export async function acceptAgeingSuggestion(s: AgeingSuggestion, t: Pick<AgeingList, 'flow_id' | 'flow_org' | 'org_unit_id'>) {
+  let flowId = t.flow_id;
+  if (t.flow_org !== t.org_unit_id) {
+    const f = await forkFlow('device', t.org_unit_id);
+    if (!f.ok) return f;
+    flowId = f.output.flow_id;
+  }
+  return invoke<{ id: number }>('flow.saveDraft', { flow_id: flowId, graph: s.proposal.graph, source: 'assistant', note: 'Ageing suggestion: ' + s.text });
+}

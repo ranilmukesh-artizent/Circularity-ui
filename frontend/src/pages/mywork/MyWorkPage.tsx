@@ -9,6 +9,7 @@ import { Modal } from '../../components/Overlay';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { PackKpiTiles } from '../analytics/PackView';
+import { AgeingCard } from './AgeingCard';
 import { LotsCard } from './LotsCard';
 import { countsByKind, dueLabel, KIND_LABEL, KINDS, nonReturnLine, proposalId, sortItems, workId } from './mywork';
 
@@ -52,6 +53,7 @@ export function MyWorkPage() {
         </section>
       ))}
       {(can('manageLots') || can('approve.decisions')) && <LotsCard />}
+      {can('manageFlows') && <AgeingCard />}
       <div className="row" role="group" aria-label="Filter by kind" style={{ marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         <button className={'chip ' + (kind === 'all' ? 'ok' : 'line')} aria-pressed={kind === 'all'} onClick={() => setKind('all')}>
           All {s.items.length}

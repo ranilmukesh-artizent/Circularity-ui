@@ -161,4 +161,16 @@ def parse_rule(t: Template, text: str) -> ParsedRule:
     s = text.lower()
     if t.key == "industrial":
         return _industrial(t, s)
-    return PARSERS[t.key](s)
+    if t.key != "device":
+        return PARSERS[t.key](s)
+    # the ageing dims (P9-6.13) are read by their phrase, like the telemetry dim of the industrial pack; the phrase is taken out
+    # before the path is read, so "listed on Buy Now" is not the path
+    phrased: dict[str, Any] = {}
+    _phrased(t, s, phrased)
+    for d in t.dims:
+        p = next((x for x in t.wording.phrases if x.key == d.key), None)
+        if p is not None and d.key in phrased:
+            for v in d.values:
+                s = re.sub(_words([p.fmt.format(p.words.get(v, v)).lower()]) + r"\b", " ", s)
+    rule = PARSERS[t.key](s)
+    return ParsedRule(rule.path, rule.action, {**rule.scope, **phrased})

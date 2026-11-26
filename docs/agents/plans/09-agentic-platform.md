@@ -939,7 +939,7 @@ each story went.
 - [x] P9-6.10 Price per channel with interval and floor
 - [x] P9-6.11 Wholesale lots sold to the best approved bid
 - [x] P9-6.12 List, settle and learn from device sales
-- [ ] P9-6.13 Ageing suggestions accepted into rules
+- [x] P9-6.13 Ageing suggestions accepted into rules
 - [ ] P9-6.14 Device customer diversions
 - [ ] P9-6.15 Repair then sell, parts and recycle routes
 - [ ] P9-6.16 Replacement stock as a device channel

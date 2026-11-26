@@ -6,8 +6,9 @@ store and the trade-in hold it today. The case keeps the result as its valuer sn
 read of the case sees the numbers it was opened with. P9-6.10 adds the price band of each channel (`bands`: the active price
 model's, else the feed's reference value at the pack's channel index with no interval) and the sales of the SKU in 90 days;
 the price confidence reads both. P9-6.11 adds `bid_per_unit`: the best net a unit among the approved bids on a lot of the device's
-model and grade that is collecting bids (the wholesale channel then values the device at that bid). Later tasks add listing and
-replacement demand.
+model and grade that is collecting bids (the wholesale channel then values the device at that bid). P9-6.13 adds `listing`:
+the channel, days listed and offers of the device's live listing, which a rule's scope reads (`listChannel`, `listDaysMin`,
+`offersMax`); `refresh_listing` keeps it current on every valuation. Later tasks add replacement demand.
 Never does: write, value a channel (the valuer does) or invent a number: a missing price or evidence is None.
 """
 
@@ -47,9 +48,32 @@ class DeviceInputs:
     sales_90d: int | None = None
     # the best approved net a unit on a lot of this model and grade that is collecting bids (P9-6.11); None when there is none
     bid_per_unit: float | None = None
+    # the device's live listing, {channel, days, offers, offers_under, listing_id}; empty when it is not listed (P9-6.13)
+    listing: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def listing_view(s: Session, imei: str | None, as_of: date) -> dict[str, Any]:
+    """The device's live listing as a rule's scope reads it: its channel as the pack's key (`buynow`, `offers`, `auction`), the
+    whole days it has been listed to `as_of` and its offers. `offers_under` is the offers less one: the scope dim `offersMax`
+    holds a value below its bound, so "at most 0 offers" is a value below 0. Empty without a live listing."""
+    row = device_market.listing_of(s, imei) if imei else None
+    if row is None or row.status != "live":
+        return {}
+    names = {str(v).lower(): k for k, v in load_pack("device").valuer.params["dcn"].items()}
+    return {
+        "listing_id": row.listing_id, "channel": names.get(row.channel.lower(), row.channel.lower()),
+        "days": max(0, (as_of - row.listed_at.date()).days), "offers": row.offers, "offers_under": row.offers - 1,
+    }  # fmt: skip
+
+
+def refresh_listing(s: Session, case: dict[str, Any], as_of: date) -> None:
+    """The listing facts of a stored device case's valuer snapshot, read again (a valuation sees the days it is listed today)."""
+    lot = case.get("valuer")
+    if isinstance(lot, dict) and lot.get("imei") and isinstance(lot.get("inputs"), dict):
+        lot["inputs"]["listing"] = listing_view(s, str(lot["imei"]), as_of)
 
 
 def imei_key(imei: str) -> str:
@@ -131,4 +155,5 @@ def gather(s: Session, case: Mapping[str, Any], as_of: date) -> DeviceInputs:
         bands=price_bands(s, case, cond, point.week if point else None),
         sales_90d=sales_of_sku(s, str(case["sku_key"]), as_of) if case.get("sku_key") else None,
         bid_per_unit=bid_per_unit(s, case, as_of),
+        listing=listing_view(s, imei, as_of),
     )
