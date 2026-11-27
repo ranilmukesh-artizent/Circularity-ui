@@ -197,11 +197,11 @@ await step('1 Connect the seven used-car systems, sync them and open the cars as
   await open(dev, base + '/#/integration/overview', 'tr[data-int]');
   for (const sid of SOURCES) await dev.locator(`tr[data-int="${sid}"]`).first().waitFor({ timeout: UI });
 
-  // (action: case.open) the sync opens no used-car case yet; the key is the car's canonical key as the sources wrote it (shared)
+  // (action: case.open) the sync opens no used-car case yet; the key is the car's canonical key as the sources wrote it (org unit, then VIN: the demo seed registers the used-car systems for Customer A, as the other packs' smokes expect)
   const planner = await as('planner.a');
   const openCar = (n) =>
     callAction(planner, 'case.open', {
-      org_unit_id: ORG, template_key: 'used_cars', asset_key: `shared:${vin(n)}`, reason: n > 60 ? 'trade_in' : 'lease_end',
+      org_unit_id: ORG, template_key: 'used_cars', asset_key: `${ORG}:${vin(n)}`, reason: n > 60 ? 'trade_in' : 'lease_end',
       facts: { vin: vin(n), mileage: 38000, return_date: '2026-11-20' },
     });
   for (const n of CARS) {

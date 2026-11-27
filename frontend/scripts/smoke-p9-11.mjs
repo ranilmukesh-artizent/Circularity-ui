@@ -42,8 +42,8 @@ const ORG = 'Customer A';
 const SOURCES = ['mr_rental', 'mr_assets', 'mr_decon', 'mr_biomed', 'mr_parts', 'mr_disposal'];
 const TAGS = { 1: 'SYN-MR-IP-0001', 2: 'SYN-MR-IP-0002', 20: 'SYN-MR-IP-0020', 7: 'SYN-MR-PM-0007' }; // key -> the device's asset tag
 const MODELER = `${base}/#/modeler?template=medical_rental&org=${encodeURIComponent(ORG)}`;
-const UI = 30000;
-const FIRST = 20000; // a first page load after sign-in
+const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
+const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 
@@ -183,7 +183,10 @@ await step('1 Connect the six rental systems, sync them, open the devices as cas
   const planner = await as('planner.a');
   const openDevice = (k) =>
     callAction(planner, 'case.open', {
-      org_unit_id: ORG, template_key: 'medical_rental', asset_key: `${ORG}:${TAGS[k]}`, reason: 'rental_return', facts: { tag: TAGS[k] },
+      org_unit_id: ORG, template_key: 'medical_rental', asset_key: `${ORG}:${TAGS[k]}`, reason: 'rental_return',
+      // the rental system's mock returns only the infusion pumps: a monitor has no record of its return, so the planner states the
+      // pack's minimum facts herself (the case needs return_date and hospital)
+      facts: k === '7' ? { tag: TAGS[k], hospital: 'HOSP-B', return_date: '2026-11-20' } : { tag: TAGS[k] },
     });
   for (const k of Object.keys(TAGS)) {
     let r = await openDevice(k);

@@ -83,6 +83,7 @@ def test_tn_01_reading_log_and_draft():
     assert [c.text for c in reading.controls] == ["Export-control check before any resale"] and reading.controls[
         0
     ].kind == "check"
+    assert reading.explicit_controls == 1  # the stated check is the "1 explicit control" the reading log says (smoke P9-10)
     match = match_pack(reading, TEXT, packs)
     assert (match.key, match.nearest_only) == ("telecom_network", False)
 

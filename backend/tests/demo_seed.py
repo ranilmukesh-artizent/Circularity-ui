@@ -50,6 +50,10 @@ EXTRA_SOURCES = {
     "medical_rental": ("mr_rental", "mr_decon", "mr_biomed", "mr_assets"),
 }
 AGENT = "recover-chain"
+# The seed's assets sit in a number range (800s) that no phase smoke or demo script uses (the smokes take SN-TN-0001..0202,
+# SYN-MR-IP-0001..0020, SYNUC...001..090 from the mocks): a smoke that opens its own case on a mock's asset right after a
+# reset must not meet the seed's case on it ("duplicate") nor read the seed's records for it.
+UC_N, TN_N, MR_N = 800, 800, 800
 
 
 def _ok(r: dict) -> dict:
@@ -132,9 +136,9 @@ def _device() -> dict[str, str]:
 
 def _used_cars() -> dict[str, str]:
     ids = {
-        "held": uc.open_car(3)["id"],  # a lien on the title holds every route until it is released
-        "waiting": uc.open_car(1)["id"],
-        "closed": uc.open_car(10, like=1)["id"],
+        "held": uc.open_car(UC_N + 3, like=3)["id"],  # a lien on the title holds every route until it is released
+        "waiting": uc.open_car(UC_N + 1, like=1)["id"],
+        "closed": uc.open_car(UC_N + 10, like=1)["id"],
     }
     _approve_and_close(ids["closed"])
     return ids
@@ -144,11 +148,11 @@ def _telecom() -> dict[str, str]:
     ids: dict[str, str] = {}
     _tn_market()
     for k, n in (("waiting", 1), ("closed", 2)):
-        ids[k] = _tn_open(_tn_unit(n))["id"]
+        ids[k] = _tn_open(_tn_unit(TN_N + n))["id"]
     # on the tracker and the bench, not in the inventory: the match gate holds it
-    (job,) = _tn_job("RJ-09", "SITE-301", [(3, "RAD-7700")])
+    (job,) = _tn_job("RJ-09", "SITE-301", [(TN_N + 3, "RAD-7700")])
     _tn_write("tn_decom", "removal_jobs", job)
-    _tn_evidence(3)
+    _tn_evidence(TN_N + 3)
     ids["held"] = _tn_open(job)["id"]
     _approve_and_close(ids["closed"])
     return ids
@@ -156,9 +160,9 @@ def _telecom() -> dict[str, str]:
 
 def _medical() -> dict[str, str]:
     ids = {
-        "held": _mr_open(3, **MR_SCENARIOS["MR-S3"])["id"],  # no decontamination record: every route fails
-        "waiting": _mr_open(1, **MR_SCENARIOS["MR-S1"])["id"],
-        "closed": _mr_open(2, **MR_SCENARIOS["MR-S1"])["id"],
+        "held": _mr_open(MR_N + 3, **MR_SCENARIOS["MR-S3"])["id"],  # no decontamination record: every route fails
+        "waiting": _mr_open(MR_N + 1, **MR_SCENARIOS["MR-S1"])["id"],
+        "closed": _mr_open(MR_N + 2, **MR_SCENARIOS["MR-S1"])["id"],
     }
     _approve_and_close(ids["closed"])
     return ids
@@ -183,13 +187,14 @@ def _run(case_id: str, account: str = "planner-a", tainted: bool = False) -> str
 def _agents(cases: dict[str, dict[str, str]]) -> list[str]:
     """Three runs: a used car over the recon approval limit (value), a car whose inspection is only an estimate (confidence)
     and a telecom unit whose run read untrusted content (taint). Each stops at a held proposal for a person."""
-    over = uc.open_car(7)["id"]  # recon over AP-UC-RECON
-    uc.write_car(9, like=1)
-    uc.write("uc_insp", "inspections", uc.records(9, 1)["uc_insp"][1] | {
+    over = uc.open_car(UC_N + 7, like=7)["id"]  # recon over AP-UC-RECON
+    uc.write_car(UC_N + 9, like=1)
+    uc.write("uc_insp", "inspections", uc.records(UC_N + 9, 1)["uc_insp"][1] | {
         "status": "scheduled", "conditionScore": None, "odometerPhotoReading": None, "reconEstimate": None,
         "reconLines": [], "completedAt": None})  # fmt: skip
-    body = {"org_unit_id": ORG, "template_key": "used_cars", "asset_key": uc.vin_key(ORG, uc.vin(9)), "reason": "lease_end",
-            "facts": {"vin": uc.vin(9), "mileage": 38000, "return_date": "2026-10-03"}}  # fmt: skip
+    car = uc.vin(UC_N + 9)
+    body = {"org_unit_id": ORG, "template_key": "used_cars", "asset_key": uc.vin_key(ORG, car), "reason": "lease_end",
+            "facts": {"vin": car, "mileage": 38000, "return_date": "2026-10-03"}}  # fmt: skip
     estimate = str(_ok(call("case.open", body, "planner-a"))["case_id"])
     return [_run(over), _run(estimate), _run(cases["telecom_network"]["waiting"], tainted=True)]
 

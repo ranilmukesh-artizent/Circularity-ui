@@ -305,13 +305,15 @@ def read_text(text: str, packs: Sequence[Pack] | None = None) -> Reading:
         found = [c for c in dict.fromkeys(_MARKET.findall(clause)) if c in markets]
         if found:
             controls.append(Control(kind="market", text=clause.rstrip(".;!?"), value=found))
-        explicit += 1 if skip or len(controls) > before else 0  # a role found next is not a limit of its own
+        counted = skip or len(controls) > before  # a role found next is not a limit of its own
         for r in roles:
             if _find(r, clause):
                 controls.append(Control(kind="role", text=clause.rstrip(".;!?"), value=r))
                 break
         for g in _stated_checks(clause, packs):
             controls.append(Control(kind="check", text=clause.rstrip(".;!?"), value=g.id))
+            counted = True  # a check the clause states ("Export-control check before any resale") is an explicit control
+        explicit += 1 if counted else 0
     systems = list(dict.fromkeys(s for p in packs for s in _systems_of(p) if _find(s, text)))
     unit = next((p.unit for p in packs if re.search(rf"\b{re.escape(p.unit)}s?\b", text, re.I)), None)
     return Reading(word_count=len(text.split()), controls=controls, systems=systems, unit=unit, explicit_controls=explicit)

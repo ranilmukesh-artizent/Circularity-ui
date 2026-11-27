@@ -49,8 +49,8 @@ const POLICY = { max_value: 20000, min_confidence: 0.75, routes: ['refurbish_red
 const BAN = 'Destruction of unsold apparel and footwear is banned; reuse, donation or recycling first';
 const NOT_YET = 'Battery passport not yet required (from 18 Feb 2027, indicative)';
 const VIN44 = 'SYNUC000000000044';
-const UI = 30000;
-const FIRST = 20000; // a first page load after sign-in
+const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
+const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 

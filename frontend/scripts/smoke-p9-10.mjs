@@ -53,8 +53,8 @@ const UNITS = {
   202: { model: 'LCD-100G', site: 'SITE-301' }, // never in the inventory
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
-const UI = 30000;
-const FIRST = 20000;
+const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
+const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 
@@ -224,7 +224,7 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
 // ---------------------------------------------------------------- 2 (TN-05)
 await step('2 The unit not in the inventory: "Unit not in network inventory" on the case and in My work', async () => {
   const p = await as('planner.a');
-  await inCase(202, /Unit not in network inventory/, '"Unit not in network inventory"');
+  await inCase(p, 202, /Unit not in network inventory/, '"Unit not in network inventory"');
   let where = '';
   for (const acct of ['warehouse1', 'warehouse2', 'admin', 'planner.a']) {
     const q = await as(acct);
@@ -245,7 +245,7 @@ await step('2 The unit not in the inventory: "Unit not in network inventory" on 
 // ---------------------------------------------------------------- 3 (TN-06)
 await step('3 The unit whose wipe failed twice: "Wipe failed twice: storage destroyed, no resale"', async () => {
   const p = await as('planner.a');
-  await inCase(15, /Wipe failed twice: storage destroyed, no resale/, '"Wipe failed twice: storage destroyed, no resale"');
+  await inCase(p, 15, /Wipe failed twice: storage destroyed, no resale/, '"Wipe failed twice: storage destroyed, no resale"');
   void p;
   return `${sn(15)}`;
 });
@@ -274,10 +274,10 @@ await step('4 The export approvals: RAD-7700 with "keep as spares", the approver
 // ---------------------------------------------------------------- 5 (TN-11, TN-12)
 await step('5 The routes: redeploy with New spend avoided and net 9,435.00; the second RRU-4410 fills nothing twice', async () => {
   const p = await as('planner.a');
-  const t1 = await inCase(1, /Redeploy to a site/, '"Redeploy to a site"');
+  const t1 = await inCase(p, 1, /Redeploy to a site/, '"Redeploy to a site"');
   if (!/New spend avoided/.test(t1)) throw new Error(`${sn(1)} does not show "New spend avoided"`);
   if (!/9,435\.00|9,435|9\.4k/.test(t1)) throw new Error(`${sn(1)} does not show the net 9,435.00`);
-  const t7 = await inCase(7, /Site demand SD-112 filled by SN-TN-0001/, '"Site demand SD-112 filled by SN-TN-0001"');
+  const t7 = await inCase(p, 7, /Site demand SD-112 filled by SN-TN-0001/, '"Site demand SD-112 filled by SN-TN-0001"');
   if (!/Refurbish as a spare/.test(t7)) throw new Error(`${sn(7)} does not recommend "Refurbish as a spare"`);
   void p;
   return 'SN-TN-0001 redeploy, net 9,435.00; SN-TN-0007 refurbish as a spare';

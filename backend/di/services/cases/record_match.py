@@ -330,7 +330,8 @@ def _missing(s: Session, source_id: str, pack: Pack, report: ReconcileReport) ->
                 {"n": now, "t": tid, "ti": title},
             )
             continue
-        if now - _asset_time(r) < timedelta(days=days):
+        # a time after the workspace clock (a mock's manifest dated ahead of a pinned clock) cannot be waited on: it counts as now
+        if now - min(_asset_time(r), now) < timedelta(days=days):
             continue
         report.missing.append(r.key)
         seen = s.execute(text("SELECT 1 FROM work_item WHERE type = :t AND title = :ti LIMIT 1"), {"t": tid, "ti": title}).first()

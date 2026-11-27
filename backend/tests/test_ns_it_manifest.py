@@ -156,6 +156,18 @@ def test_ns_it_01_missing_serials_are_critical(after_pickup: None):
     assert _items("not_in_system_of_record") == [] and _items("expected_return_missing") == []
 
 
+def test_ns_it_01_missing_serials_open_though_the_clock_is_before_the_pickup():
+    """The mock's manifest is dated 2 to 3 Nov 2026 and the running stack's clock starts at 7 Oct (smoke P9-12): a time after
+    the clock cannot be waited on, so the pack's zero-day wait still opens the item for each serial that never arrived."""
+    assert clock.now() < datetime(2026, 11, 2, tzinfo=UTC)
+    _sync()
+    for serial in RECEIVED:
+        _open(serial)
+    _end_of_sync()
+    missing = _items("EX-IT-MISSING")
+    assert len(missing) == 2 and all(sum(s in i["title"] for i in missing) == 1 for s in LOST)
+
+
 def test_ns_it_01_chain_of_custody_on_case(after_pickup: None):
     _sync()
     cid = _open("SN-IT-0001")
