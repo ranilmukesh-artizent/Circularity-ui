@@ -33,6 +33,8 @@ for (const acct of accounts) {
   await page.click('button[type=submit]');
   await page.waitForSelector('.sidebar, nav, #view', { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(800);
+  // on a busy machine the menu renders late: wait for its links, or the walk would cover only EXTRA
+  await page.waitForFunction(() => document.querySelectorAll('a[href^="#/"]').length > 10, null, { timeout: 60000 }).catch(() => {});
 
   const links = await page.$$eval('a[href^="#/"]', (as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
   const routes = [...new Set([...links, ...EXTRA])].filter((h) => !/signin/.test(h));
