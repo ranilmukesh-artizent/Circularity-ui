@@ -24,7 +24,13 @@ async function session(acct) {
   await page.waitForTimeout(1500);
   return page;
 }
-const go = (p, n) => p.goto(`${base}/#/product/${CASE}/stage/${n}`).then(() => p.waitForTimeout(2500));
+// the stage page takes several seconds to render after a sign-in or a reset: wait for its stage line, not a fixed 2.5 s
+const go = (p, n) =>
+  p
+    .goto(`${base}/#/product/${CASE}/stage/${n}`)
+    .then(() => p.waitForFunction(() => /Case at Stage \d+ of 10|Every stage is done/.test(document.querySelector('#view')?.innerText || ''), null, { timeout: 45000 }))
+    .catch(() => {})
+    .then(() => p.waitForTimeout(1500));
 const stage = async (p) => {
   const t = await p.innerText('#view');
   if (/Every stage is done/.test(t)) return '10 · Every stage is done';
