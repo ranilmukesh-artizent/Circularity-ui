@@ -29,6 +29,7 @@ from di.repositories.context import call_ctx, visible_cases
 from di.repositories.packs import active_pack
 from di.services.cases import process
 from di.services.modeler import kpis
+from di.services.modeler.pack import pack_keys
 
 
 def _from_pack(session: Session, views: list[process.WorkView]) -> list[process.WorkView]:
@@ -47,6 +48,7 @@ def _from_pack(session: Session, views: list[process.WorkView]) -> list[process.
     ).mappings()
     meta = {f"w:{r['id']}": r for r in rows}
     out = []
+    caseless: dict[str, Any] = {}  # an item with no case (a manifest serial with no unit): its type names the pack's wording
     for v in views:
         m = meta.get(v.id)
         kind = None
@@ -56,12 +58,33 @@ def _from_pack(session: Session, views: list[process.WorkView]) -> list[process.
             except KeyError:  # the case's pack is no longer published: the row stays as written
                 pack = None
             kind = next((t for t in pack.runtime.exception_types if t.id == m["type"]), None) if pack else None
+        if m is not None and m["template"] is None and kind is None and str(m["type"]).startswith("EX-"):
+            kind = _caseless_kind(session, m["type"], caseless)
+            if kind is not None:  # the label and action are the pack's; the cause (which serial) and the owner stay the row's
+                out.append(replace(v, title=kind.label, action=kind.action))
+                continue
         if kind is None or m is None:
             out.append(v)
             continue
         owner = v.owner if m["owner_account"] or m["escalated_at"] else process.role_of_owner(kind.owner_role)
         out.append(replace(v, title=kind.label, action=kind.action, owner=owner))
     return out
+
+
+def _caseless_kind(session: Session, type_id: str, cache: dict[str, Any]) -> Any:
+    """The exception type `type_id` of the one published pack that names it (ids like `EX-IT-MISSING` are unique to a pack),
+    or None."""
+    if type_id not in cache:
+        found = None
+        for key in pack_keys():
+            try:
+                found = next((t for t in active_pack(session, key, None).runtime.exception_types if t.id == type_id), None)
+            except KeyError:
+                continue
+            if found is not None:
+                break
+        cache[type_id] = found
+    return cache[type_id]
 
 
 def _kpi_strip(p: Principal, session: Session) -> list[dict[str, Any]]:

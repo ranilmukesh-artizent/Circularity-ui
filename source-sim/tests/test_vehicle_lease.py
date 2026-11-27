@@ -77,6 +77,13 @@ def test_lease_returns_paging_and_seed(client):
     assert all(r["lesseeRef"].startswith("L-") and r["lesseeRef"][2:].isdigit() for r in rows)
 
 
+def test_lease_vin_007_is_the_recon_sample_suv(client):
+    """P9-9.21 step 7: VIN ...007 (recon $2,800, over the limit) is the pack's UC-S7, a 2022 petrol SUV, so retail after the
+    recon still beats the auction and the manager's approval sends the recon order, the lot transfer and the listing."""
+    seven = {r["vin"]: r for r in every_return(client)}[vin(7)]
+    assert (seven["segment"], seven["powertrain"], seven["modelYear"], seven["residualValue"]) == ("suv", "petrol", 2022, 16600)
+
+
 def test_lease_seed_is_the_same_twice(client):
     before = every_return(client)
     client.post("/_sim/reset", params={"system": "uc_lease"}).raise_for_status()
