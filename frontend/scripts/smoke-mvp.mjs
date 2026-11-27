@@ -451,7 +451,7 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
   }, `run ${run} did not stop at a held proposal`, 90000 * K, 3000);
   const pid = +row.match(/Proposal (\d+)/)[1];
   const prow = await admin.locator(`#agp-${pid}`).innerText();
-  check(/decision\.submit/.test(prow) && prow.includes(id), `proposal ${pid} is not the submit of ${id}: ${prow.replace(/\s+/g, ' ')}`);
+  check(/Submit for review/.test(prow) && prow.includes(id), `proposal ${pid} is not the submit of ${id}: ${prow.replace(/\s+/g, ' ')}`);
   // (no UI for a Planner: the Agents page is Admin and Developer only) planner-a accepts with the page's own action
   const pl = await as('planner-a');
   const acc = await callAction(pl, 'proposal.accept', { id: pid });
