@@ -375,7 +375,7 @@ await step('7 Describe your business in Ask Circularity (Set up): a draft compos
   // plan 10: no dialog; the Set up page tab shows the Compose panel, whose launcher opens the assistant in Set up
   await openSetupTab(pl);
   const id = await describeInAssistant(pl, { timeout: 120000 });
-  await expectText(pl, /Matched pack: tool_fleet|Nearest pack: tool_fleet/, '.st-turn');
+  await expectText(pl, /(Matched|Closest): Tool fleet returns \(\d+\)/, '.st-turn');
   // the one question: its options are the buttons beside Skip; pick the first
   const skip = pl.locator('.st-turn').last().getByRole('button', { name: 'Skip', exact: true });
   await skip.waitFor();
