@@ -50,7 +50,7 @@ const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-3');
 const ORG = 'tool-fleet-a';
 const SID = 'fleet';
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
-const SYNC = 180000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 180000; // SMOKE_SYNC_MS: a longer wait for a sync or a re-evaluation on a loaded machine
 const LONG = Number(process.env.SMOKE_LONG_MS) || 720000; // SMOKE_LONG_MS: a longer wait for the worker on a loaded machine
 mkdirSync(out, { recursive: true });
 
@@ -146,7 +146,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   await must(dev, 'workflow.publish', { id: wf.id });
   // the first full sync (queued by the reconnect) may still be running with the default graph: a sync queued meanwhile is
   // dropped as a duplicate, so let it finish, then read everything again through the published workflow (mode full)
-  await until(async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length >= 1, 'the first sync of ' + SID + ' did not finish', SYNC, dev);
+  await until(async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length >= 1, 'the first sync of ' + SID + ' did not finish', LONG, dev); // a first full sync on a loaded worker takes minutes
   // (its job may still read as running just after the history shows it, and the new sync is then dropped: ask again until it ran)
   const runs = async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length;
   await until(async () => {
@@ -154,7 +154,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
     await must(dev, 'source.sync', { source_id: SID });
     await dev.waitForTimeout(8000);
     return (await runs()) >= 2;
-  }, 'the second sync of ' + SID + ' did not run', SYNC, dev);
+  }, 'the second sync of ' + SID + ' did not run', LONG, dev);
   const n = await until(
     async () => {
       // the Returned assets read, counted by the tool serials in it (CMH-48213 ...): 18 once the sync has run

@@ -54,7 +54,7 @@ const UNWIPED = ['272', '247', '250', '267', '246', '251', '242', '260', '261', 
 const MKT = SIM + '/device-market/v1';
 const LAB = SIM + '/device-lab/v1';
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
-const SYNC = 240000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 240000; // SMOKE_SYNC_MS: a longer wait for a sync on a loaded machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });

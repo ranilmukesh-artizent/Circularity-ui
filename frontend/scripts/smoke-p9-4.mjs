@@ -41,7 +41,7 @@ const ORG = 'tool-fleet-a';
 const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}&tab=tables`; // the market tables are on the Tables page tab
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a longer wait on a slow or shared machine
 const FIRST = Math.max(20000, Number(process.env.SMOKE_UI_MS) || 0); // a first page load after sign-in
-const SYNC = 180000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 180000; // SMOKE_SYNC_MS: a longer wait for a sync or a re-evaluation on a loaded machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -314,7 +314,7 @@ await step('3 Ticket CS0010042: estimate, three options, credit lever, a fault p
   await openTab(p, id, 'estimate');
   await pageHas(p, [`${e.n} similar repairs`, e.auto ? 'Priced without a technician' : 'Draft: a technician checks'], 'Estimate tab');
   if (e.n !== 186) throw new Error(`the estimate rests on ${e.n} similar repairs, not 186`);
-  if (!e.auto) throw new Error('the estimate is a draft: it should be priced without a technician');
+  if (!e.auto) throw new Error(`the estimate is a draft: it should be priced without a technician (reason: ${e.reason})`);
 
   // Options
   await openTab(p, id, 'options');
