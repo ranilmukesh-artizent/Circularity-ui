@@ -16,7 +16,7 @@ export function visibleTabs(o: { managePacks: boolean; approvePacks?: boolean; t
     { id: 'policies', label: 'Policies' },
     ...(o.template === 'tool_fleet' ? [{ id: 'tables' as const, label: 'Tables' }] : []),
     ...(o.managePacks || o.approvePacks ? [{ id: 'packs' as const, label: 'Packs' }] : []),
-    ...(o.managePacks ? [{ id: 'setup' as const, label: 'Set up' }] : []),
+    ...(o.managePacks || o.approvePacks ? [{ id: 'setup' as const, label: 'Set up' }] : []),
   ];
 }
 

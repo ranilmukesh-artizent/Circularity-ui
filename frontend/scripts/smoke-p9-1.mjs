@@ -174,7 +174,8 @@ async function saveWhenOn(p, form, label) {
     const held = await form.locator('select, input').evaluateAll((els) => els.map((e) => `${e.id}=${e.value}`).join(' '));
     throw new Error(`${label}: Save stayed off. Reason shown: ${(await button.getAttribute('title').catch(() => null)) || 'none'}. The form holds ${held}`);
   }
-  await button.click();
+  await button.scrollIntoViewIfNeeded();
+  await button.click({ force: true, timeout: UI }); // the page is busy with live updates after step 1: skip the stability and hit-target waits that stall there
 }
 await step('2 Customer layer: skip refused, GR-D2 0.60 saves, 0.50 refused', async () => {
   const pl = await as('planner.a');

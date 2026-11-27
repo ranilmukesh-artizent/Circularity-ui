@@ -10,8 +10,8 @@ describe('page tabs', () => {
   it('adds Tables for tool_fleet and Packs and Set up for managePacks, in that order', () => {
     expect(ids(visibleTabs({ managePacks: true, template: 'tool_fleet' }))).toEqual(['flow', 'layer', 'policies', 'tables', 'packs', 'setup']);
   });
-  it('shows Packs, not Set up, to a person who only approves packs', () => {
-    expect(ids(visibleTabs({ managePacks: false, approvePacks: true, template: 'industrial' }))).toEqual(['flow', 'layer', 'policies', 'packs']);
+  it('shows Packs and Set up (to review a composition) to a person who only approves packs', () => {
+    expect(ids(visibleTabs({ managePacks: false, approvePacks: true, template: 'industrial' }))).toEqual(['flow', 'layer', 'policies', 'packs', 'setup']);
   });
   it('reads ?tab=, falling back to Flow for an unknown or hidden tab', () => {
     const v = visibleTabs({ managePacks: false, template: 'industrial' });
