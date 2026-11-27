@@ -7,7 +7,7 @@
  * queue, the drawer, the journey and compare read, with its recommendation in brief. The asset page reads the full
  * record with assetCase(id); the per-case figures (assetHealth, caseRul …) come from that asset's answer.
  */
-import { cached, classLabelOf, ref, session, withQuery } from './client';
+import { cached, classLabelOf, invalidate, ref, session, withQuery } from './client';
 export { classLabelOf };
 import { money } from './format';
 import { canRoute, currentAccount, rolePolicy } from './session';
@@ -85,6 +85,26 @@ export const myCases = (): Case[] => myRows();
 /** A case by id: the list row (undefined outside the account's tenants and warehouse). */
 export const caseById = (id: string | null | undefined): Case | undefined => (!id ? undefined : rowById(id));
 export const isCaseId = (id: string | null | undefined): boolean => !!id && id in cached<Record<string, unknown>>('/api/screens/nav/scope');
+const SCOPE_PATH = '/api/screens/nav/scope';
+const CASE_SHAPE = /^RT-\d+$/;
+const probed = new Map<string, number>(); // case id -> when the list was last read again for it
+const PROBE_EVERY_MS = 5000;
+/**
+ * Should the link to `id` make the case list (nav/scope) load again? Yes, when it looks like a case id and is not in the
+ * list read at sign-in, and the list was not read again for it in the last few seconds: a case opened since (by a scan, an
+ * agent, another person) is unknown to the cache, not missing. The route then waits for the new answer instead of showing
+ * the list page; a really missing id is answered by the server (the case page says so).
+ */
+export function shouldReloadScope(id: string | null | undefined, known: boolean, lastProbe?: number, now = Date.now()): boolean {
+  return !!id && !known && CASE_SHAPE.test(id) && (lastProbe === undefined || now - lastProbe >= PROBE_EVERY_MS);
+}
+/** Load the case list again for a link to a case it does not hold yet (see shouldReloadScope); false when nothing was done. */
+export function reloadScopeFor(id: string | null | undefined): boolean {
+  if (!id || !shouldReloadScope(id, isCaseId(id), probed.get(id))) return false;
+  probed.set(id, Date.now());
+  invalidate((k) => k[0] === 'GET' && k[1] === SCOPE_PATH);
+  return true;
+}
 export const classInfo = (cls: string): ClassInfo => ref('CLASSES')[cls];
 export const routeInfo = (id: string): { name: string; short: string } =>
   ref('ROUTES').find((x) => x.id === id) ?? { name: id, short: id };

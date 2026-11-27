@@ -2,10 +2,11 @@
  * The `product` page (Decision Workbench): Returned assets, Expected returns, Pool optimizer, Asset intelligence,
  * and live cases (#/product/<CASE_ID>[/<view>]), which the case area draws.
  */
+import { useEffect } from 'react';
 import { Navigate } from 'react-router';
 import { money } from '../../api/format';
 import { useBackend } from '../../api/useBackend';
-import { caseById, demoVisible, isCaseId, pool, tenantOK } from '../../api/product';
+import { caseById, demoVisible, isCaseId, pool, reloadScopeFor, tenantOK } from '../../api/product';
 import { CasePage } from '../case/CasePage';
 import type { PageProps } from '../registry';
 import { AssetPage } from './AssetPage';
@@ -15,6 +16,8 @@ import './product.css';
 export function ProductPage({ route, query }: PageProps) {
   useBackend();
   const a = route.a;
+  // a link to a case opened since sign-in (a scan, an agent, another person): the list has not seen it yet, so read it again
+  useEffect(() => { reloadScopeFor(a); }, [a]);
   if (a === 'asset') {
     // journey links (?jstep=1–5) open the case's stage page instead, replacing the history entry (stResolve)
     const js = parseInt(query.get('jstep') ?? '', 10);
