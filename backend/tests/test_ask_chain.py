@@ -11,7 +11,7 @@ from di.core.db import SessionLocal
 from di.services.actions import workflow_builder
 from di.services.ask import complete, groq_model, modeler_read
 from di.services.ask.chain import ChainModel
-from di.services.ask.groq_model import GroqModel
+from di.services.ask.engine_model import EngineModel
 from di.services.ask.model import AskRequest, Done, ModelUnavailable, TextDelta, get_model
 
 
@@ -141,11 +141,19 @@ def test_complete_json_used_by_modeler_read_and_workflow_plan(monkeypatch):
 def only_default_model():
     """The router's Ask chain is the one default row: migration 0063 adds two Groq fallback rows, off here, on again after."""
     with SessionLocal() as s:
-        s.execute(text("UPDATE llm_model SET enabled = false WHERE id IN ('groq-qwen3-27b', 'groq-oss-20b')"))
+        # every seeded fallback row (di.services.llm.seed: Groq's and Gemini's), whatever the stack has
+        on = [r[0] for r in s.execute(text("SELECT id FROM llm_model WHERE enabled AND id <> 'groq-default'"))]
+        s.execute(text("UPDATE llm_model SET enabled = false WHERE id = ANY(:ids)"), {"ids": on})
+        # the dev stack shares this database: a real cooldown or a used-up minute of the default row (a live check, a
+        # provider's 429) would leave the chain empty here. Lifted for the test, the cooldown put back after it.
+        cooling = s.execute(text("SELECT cooldown_until FROM llm_model WHERE id = 'groq-default'")).scalar()
+        s.execute(text("UPDATE llm_model SET cooldown_until = NULL WHERE id = 'groq-default'"))
+        s.execute(text("DELETE FROM llm_budget WHERE model_id = 'groq-default' AND \"window\" = 'minute'"))
         s.commit()
     yield
     with SessionLocal() as s:
-        s.execute(text("UPDATE llm_model SET enabled = true WHERE id IN ('groq-qwen3-27b', 'groq-oss-20b')"))
+        s.execute(text("UPDATE llm_model SET enabled = true WHERE id = ANY(:ids)"), {"ids": on})
+        s.execute(text("UPDATE llm_model SET cooldown_until = :c WHERE id = 'groq-default'"), {"c": cooling})
         s.commit()
 
 
@@ -154,7 +162,8 @@ def test_empty_chain_is_todays_single_model(monkeypatch, only_default_model):
     monkeypatch.delenv("ASK_MODEL_CHAIN", raising=False)
     get_settings.cache_clear()
     m = get_model()
-    assert isinstance(m, GroqModel) and m.model == (get_settings().groq_model.strip() or "openai/gpt-oss-120b")
+    assert isinstance(m, EngineModel) and m.name == "groq" and len(m._refs) == 1
+    assert m.model == (get_settings().groq_model.strip() or "openai/gpt-oss-120b")
     get_settings.cache_clear()
 
 
@@ -172,7 +181,9 @@ def test_chain_of_two_gives_a_chain_model_and_other_providers_are_skipped(chain_
     monkeypatch.setenv("GROQ_MODEL", "")
     try:
         m = get_model()
-        assert isinstance(m, ChainModel) and m.model == "m1" and [x.model for x in m.models] == ["m1", "m2"]
+        # one EngineModel over the router's chain in priority order; a "test" provider row is skipped
+        assert isinstance(m, EngineModel) and m.model == "m1" and [r.model for r in m._refs] == ["m1", "m2"]
+        assert m.name == "groq" and all(r.provider != "test" for r in m._refs)
     finally:
         with SessionLocal() as s:
             s.execute(text("DELETE FROM llm_model WHERE id = 'groq-second'"))

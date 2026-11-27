@@ -38,7 +38,10 @@ from di.services.actions.pipeline import CallContext, invoke
 MODELER_TOOLS: dict[str, dict] = {
     "get_decision_flow": {
         "id": "get_decision_flow", "rw": "read", "approval": "none", "step": [6],
-        "desc": "Read the decision flow a template uses for an org unit: its graph, checks and compiled business rules.",
+        "desc": (
+            "Read the decision flow a template uses for an org unit: its graph (steps, the guardrail gate and owner "
+            "approval with their GR- guardrail ids), checks and compiled business rules."
+        ),
         "input": {"template": {"t": "string", "req": True, "ex": "industrial"}, "org": {"t": "string", "ex": "Customer A"}},
     },
     "propose_rule_change": {

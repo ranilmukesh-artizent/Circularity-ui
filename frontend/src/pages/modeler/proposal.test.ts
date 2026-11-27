@@ -52,7 +52,7 @@ describe('previewOf: the preview card of plan 10 section 2.3', () => {
     expect(m.blocked).toBe(false);
     expect(m.title).toBe('Proposed: IR-02: grade D: never resale');
     expect(m.tag).toBe('IR-02');
-    expect(m.basis).toBe('Read by the rules');
+    expect(m.basis).toBe('Read by the rules (no language model answered)');
     expect(m.diff).toEqual([{ sign: '+', text: 'IR-02 · never resale when Grade is D' }]);
     expect(m.checks.map((c) => c.text)).toContain('Passes all 5 locked guardrails');
     expect(m.impact?.heading).toBe('Impact on the 41 open decisions');
@@ -79,7 +79,7 @@ describe('previewOf: the preview card of plan 10 section 2.3', () => {
     const s = screen();
     (s.flow as { dver: number | null }).dver = null;
     const m = previewOf({ ...ruleP, read_by: 'rules+model' }, s);
-    expect(m.basis).toBe('Read by a language model, checked by the rules');
+    expect(m.basis).toBe('Read by a language model, checked in code');
     expect(m.limits).toMatch(/^Saved to draft v2 only\./);
   });
 

@@ -85,6 +85,23 @@ configure_logging()  # one format and level for di and uvicorn; secrets masked i
 log = logging.getLogger("di.api")
 check_person_only(ACTIONS)  # every action module is imported above: agents never delete or approve
 
+
+def _ensure_models() -> None:
+    """The fallback models are put back at every start (di.services.llm.seed): a stack with one model goes dark at its limit."""
+    from di.core.db import SessionLocal
+    from di.services.llm.seed import ensure_models
+
+    try:
+        with SessionLocal() as s:
+            if n := ensure_models(s):
+                log.info("llm: %s fallback model row(s) put back", n)
+            s.commit()
+    except Exception:  # noqa: BLE001 - no table yet (a database before migration 0036): the router has no chain either
+        log.warning("llm: the fallback models could not be checked", exc_info=True)
+
+
+_ensure_models()
+
 app = FastAPI(title="Circularity DI API", version="0.2.0", lifespan=mcp_server.lifespan)
 app.add_middleware(GzipExceptStreams, minimum_size=1000, compresslevel=5)  # JSON gzip, never the streams (plan 3; di.core.gzip)
 setup_telemetry("di-api", app)  # plan 5: a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set (di/telemetry.py)

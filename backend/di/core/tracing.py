@@ -138,6 +138,21 @@ def span(
     return SpanScope(s, sp)
 
 
+def record(
+    s: Session, name: str, *, kind: Kind, trace_id: str, parent_id: str | None, started_at: datetime,
+    attrs: dict[str, Any] | None = None, status: Literal["ok", "error"] = "ok", span_id: str | None = None,
+) -> str:  # fmt: skip
+    """Write one finished span with its trace and parent given (ai-tasks T0: an assistant turn runs across a generator and
+    a worker thread, where the context variable of `span` does not carry). `run_id` is the trace id: the turn's id. Returns
+    the span id. Same redaction and content rule as `span`; never raises."""
+    sp = Span(
+        span_id=span_id or uuid.uuid4().hex[:16], trace_id=trace_id, parent_id=parent_id, run_id=trace_id, name=name,
+        kind=kind, started_at=started_at, attrs=dict(attrs or {}), status=status,
+    )  # fmt: skip
+    _write(s, sp)
+    return sp.span_id
+
+
 def prune(s: Session, days: int) -> int:
     """Delete the spans that started more than `days` days ago; returns how many."""
     r = s.execute(text("DELETE FROM trace_span WHERE started_at < now() - make_interval(days => :d)"), {"d": int(days)})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RAIL_WIDE_PX, afterCheckClick, afterEsc, afterPick, afterSelect, initialRail, type RailState } from './railTab';
+import { RAIL_TABS, RAIL_WIDE_PX, afterCheckClick, afterEsc, afterPick, afterProposal, afterSelect, initialRail, type RailState } from './railTab';
 
 const closed: RailState = { open: false, tab: 'inspector', pinned: null };
 
@@ -8,6 +8,17 @@ describe('railTab', () => {
     expect(RAIL_WIDE_PX).toBe(1600);
     expect(initialRail(1920).open).toBe(true);
     expect(initialRail(1440).open).toBe(false);
+  });
+
+  it('has Overview first, and the Inspector stays the default tab', () => {
+    expect(RAIL_TABS.map((t) => t.id)).toEqual(['overview', 'inspector', 'checks', 'impact', 'history']);
+    expect(initialRail(1920).tab).toBe('inspector');
+  });
+
+  it('a proposal opens Overview and keeps it through a selection', () => {
+    expect(afterProposal()).toEqual({ open: true, tab: 'overview', pinned: 'overview' });
+    expect(afterSelect(afterProposal(), 'n1').tab).toBe('overview');
+    expect(afterPick(closed, 'overview')).toEqual({ open: true, tab: 'overview', pinned: 'overview' });
   });
 
   it('a selection opens the Inspector when nothing is pinned', () => {

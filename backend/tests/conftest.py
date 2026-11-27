@@ -18,9 +18,25 @@ os.environ["DI_SOURCE_RETRY_BASE_SECONDS"] = "0.01"  # plan 6 A6: source GET ret
 import pytest
 from alembic import command
 from alembic.config import Config
+from pydantic_ai import models
 from sqlalchemy import text
 
 from di.core.db import SessionLocal, engine
+
+# No test reaches a provider. The dev database may hold a real key (the model-first readers, flow_reader and Ask, find it); any
+# model call a test did not fake now fails closed and the caller's deterministic path answers. The one deliberately live test
+# (test_ask.py::test_live_groq_...) turns it back on for itself with monkeypatch.
+models.ALLOW_MODEL_REQUESTS = False
+
+
+@pytest.fixture(autouse=True)
+def no_model_waits(monkeypatch):
+    """A model-first caller waits (up to 20 and 60 s) for a model cooling down in the shared dev database; tests never sleep."""
+    from di.services.agents.playbooks import flow_reader
+    from di.services.ask import model as ask_model
+
+    monkeypatch.setattr(flow_reader, "WAIT_FOR_MODEL", 0)
+    monkeypatch.setattr(ask_model, "WAIT_FOR_MODEL", 0)
 
 
 @pytest.fixture(scope="session", autouse=True)

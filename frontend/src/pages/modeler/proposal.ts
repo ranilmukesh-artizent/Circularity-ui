@@ -1,5 +1,5 @@
 /** The assistant's proposal as the Modeler shows it (the prototype's chat() and propHtml, lines 2438 and 2461-2465). */
-import type { Proposal } from '../../api/modeler';
+import { readBy, type Proposal } from '../../api/modeler';
 import type { FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
 import { formatImpact, tradeOff } from './impact';
 
@@ -88,7 +88,7 @@ export function diffGraphs(from: FlowGraph, to: FlowGraph, s: ModelerScreen): Di
 
 /** The card for a proposal (or a suggestion drafted as one): title, diff, checks, impact, limits by the person's rights. */
 export function previewOf(p: Proposal, s: ModelerScreen): PreviewModel {
-  const basis = p.read_by === 'rules+model' ? 'Read by a language model, checked by the rules' : 'Read by the rules';
+  const basis = readBy(p.read_by);
   if (p.kind === 'blocked') {
     return { blocked: true, title: `Blocked by ${p.guard ?? 'a guardrail'}`, tag: p.guard, basis, diff: [], checks: [{ level: 'warn', text: p.msg }], impact: null, limits: 'Nothing was changed. Rephrase it, or dismiss it.', canApply: false };
   }

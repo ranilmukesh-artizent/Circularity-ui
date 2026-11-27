@@ -58,7 +58,13 @@ def test_mcp_propose_does_not_change_draft():
     fid = flowkit.flow_id("tool_fleet", "workspace")
     a = call("admin", AGENT, "propose_rule_change", {"flow_id": fid, "text": "Never recycle construction lasers"})
     assert a["ok"] is True
-    assert (a["result"]["kind"], a["result"]["rid"]) == ("rule", "BR-03")
+    # This test talks over HTTP to the RUNNING api, whose model-first reader (flow.propose, ai-tasks I10) may use the dev
+    # database's real key, so the reading is not repeatable: a rule (BR-03) or the model's one question. The exact
+    # proposals are asserted in-process with a fake model (test_flow_propose_model.py). What holds either way: no change.
+    r = a["result"]
+    assert r["read_by"] in ("model", "rules") and r["kind"] in ("rule", "unclear")
+    if r["kind"] == "rule":
+        assert r["rid"] == "BR-03"
     f, versions = flowkit.get(fid)
     assert (f.status, f.draft, f.ver, versions) == ("pub", None, 1, [])
 

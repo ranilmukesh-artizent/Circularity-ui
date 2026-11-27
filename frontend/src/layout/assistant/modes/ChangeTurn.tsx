@@ -1,5 +1,5 @@
 import { Suspense, useEffect } from 'react';
-import { useModeler } from '../../../api/modeler';
+import { readBy, useModeler } from '../../../api/modeler';
 import { ErrorBoundary } from '../../../components/Boundary';
 import { looksLikeQuestion } from '../../../pages/modeler/proposal';
 import { useSurface } from '../../../utils/workSurface';
@@ -20,7 +20,7 @@ export function ChangeTurn({ turn, ask }: { turn: Turn; ctx: AssistantContext; a
   if (turn.error) return <p className="as-err" role="alert">{turn.error} Your text is kept.</p>;
   if (!d) return null;
   const p = d.proposal;
-  const basis = p.read_by === 'rules+model' ? 'Read by a language model, checked by the rules' : 'Read by the rules';
+  const basis = readBy(p.read_by);
   const outcome = st.outcomes[d.key];
   const mine = st.pending?.key === d.key;
   return (

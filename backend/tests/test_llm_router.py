@@ -21,6 +21,7 @@ from di.services.agents.forbidden import forbidden
 from di.services.agents.loop import LoopSpec
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.llm import router
+from di.services.llm.seed import ensure_models
 from tests import starting
 from tests.helpers import call, client, h
 from tests.test_agent_loop import PB, register, start
@@ -62,6 +63,9 @@ def fresh():
     yield
     router.TEST_MODELS.clear()
     _clean()
+    with SessionLocal() as s:  # the dev stack shares this database: put its fallback models back
+        ensure_models(s)
+        s.commit()
     starting.reset()
 
 
@@ -211,17 +215,22 @@ def test_llm_set_model_rules():
 
 
 def test_ask_uses_router_chain(monkeypatch):
-    from di.services.ask.groq_model import GroqModel
+    from di.services.ask import model as ask_model
+    from di.services.ask.engine_model import EngineModel
     from di.services.ask.model import NoModel, get_model
 
+    monkeypatch.setattr(ask_model, "WAIT_FOR_MODEL", 0)  # a cooling model is not waited for in a test
     monkeypatch.setattr(get_settings(), "groq_api_key", SecretStr("test-key-not-real"))
     monkeypatch.setattr(get_settings(), "groq_model", "")
     with SessionLocal() as s:
         s.execute(text("UPDATE llm_model SET enabled = true, model = 'router-model-1' WHERE id = :i"), {"i": SEED})
         s.commit()
     m = get_model()
-    assert isinstance(m, GroqModel) and m.model == "router-model-1"
+    # one EngineModel over the router's whole chain for `ask` (test rows skipped), the first ref's model first
+    assert isinstance(m, EngineModel) and m.model == "router-model-1" and m._refs[0].model == "router-model-1"
+    assert all(r.provider != "test" for r in m._refs)
     with SessionLocal() as s:
         router.cooldown(s, SEED, 3600)
         s.commit()
-    assert isinstance(get_model(), NoModel)  # the router is empty: Ask answers by rules, as without a key
+    empty = get_model()
+    assert isinstance(empty, NoModel) and empty.reason == "rate_limited"  # a key, no usable model: Ask answers by rules

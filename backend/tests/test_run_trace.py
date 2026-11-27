@@ -19,6 +19,7 @@ from di.services.agents import chain, playbook_versions, runtime
 from di.services.agents.loop import LoopSpec
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from di.services.llm import router
+from di.services.llm.seed import ensure_models
 from tests import starting
 from tests.helpers import call
 
@@ -58,6 +59,9 @@ def fresh():
     playbook_versions.unregister(PB, "1")
     get_settings.cache_clear()
     _clean()
+    with SessionLocal() as s:  # the dev stack shares this database: put its fallback models back
+        ensure_models(s)
+        s.commit()
     starting.reset()
 
 

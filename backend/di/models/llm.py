@@ -10,7 +10,7 @@ llm_model = Table(
     "llm_model",
     metadata,
     Column("id", Text, primary_key=True),
-    Column("provider", Text, nullable=False),  # groq, test
+    Column("provider", Text, nullable=False),  # groq, gemini (migration 0066), test
     Column("model", Text, nullable=False),
     Column("key_ref", Text),  # "env:<VAR>": the setting that holds the key
     Column("rpm", Integer, nullable=False),
@@ -27,7 +27,7 @@ llm_model = Table(
     Column("eval_score", Numeric),
     Column("eval_prev", Numeric),
     ts("eval_at"),
-    CheckConstraint("provider IN ('groq','test')", name="llm_model_provider"),
+    CheckConstraint("provider IN ('groq','gemini','test')", name="llm_model_provider"),
 )
 
 llm_budget = Table(

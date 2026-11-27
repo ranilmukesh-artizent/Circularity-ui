@@ -139,6 +139,104 @@ def _rule(
     return Proposal("rule", text, c, nid, rid, label, None, checks, sim(c))
 
 
+def _add_step(t: Template, c: Flow, name: str, after: str, owner: str) -> tuple[str, str] | None:
+    """Add a process step named `name` after the path `after` (a path id or its name) to the graph `c`; (node id, label),
+    or None when the flow has no such path."""
+    want = after.lower()
+    tgt = next((n for n in c["nodes"] if n["t"] == "path" and (n.get("path") == after or n["label"].lower() in want)), None)
+    if tgt is None:
+        return None
+    before = copy.deepcopy(c)
+    nm = name[:1].upper() + name[1:]
+    sid = _free(c, "s-" + re.sub(r"[^a-z0-9]+", "-", nm.lower()).strip("-"))
+    ex = next((e for e in c["edges"] if e["a"] == tgt["id"]), None)
+    c["nodes"].append(fn(sid, "step", tgt["x"] + 196, tgt["y"], nm, "Process step", owner=owner, ai=True))
+    if ex:
+        c["edges"] = [e for e in c["edges"] if e is not ex] + [fe(tgt["id"], sid), fe(sid, ex["b"])]
+    else:
+        c["edges"].append(fe(tgt["id"], sid))
+    nxt = next((n for n in before["nodes"] if ex and n["id"] == ex["b"]), tgt)
+    return sid, f"Step “{nm}” before {node_label(nxt, t).lower() if ex else 'the end'}, after {tgt['label']}"
+
+
+def _add_rule(t: Template, c: Flow, text: str, r: ParsedRule, owner: str) -> tuple[str, str, str, str | None]:
+    """Add the rule `r` to the graph `c`, between the last node feeding the decision and the decision; (node id, rule id,
+    label, the guardrail it breaks or None)."""
+    rid = next_rid(t, c)
+    dec = next(n for n in c["nodes"] if n["t"] == "decision")
+    gate = next(n for n in c["nodes"] if n["t"] == "gate")
+    into = next((e for e in c["edges"] if e["b"] == dec["id"]), None)
+    last = into["a"] if into else gate["id"]
+    rules = [n for n in c["nodes"] if n["t"] == "rule"]
+    y = (max(n["y"] for n in rules) if rules else 50) + 140
+    nid = _free(c, "r-" + rid)
+    node: Node = fn(nid, "rule", gate["x"], y, "", "", rid=rid, action=r.action, path=r.path, scope=r.scope, owner=owner,
+                    ai=True, src=text)  # fmt: skip
+    c["nodes"].append(node)
+    c["edges"] = [e for e in c["edges"] if e is not into] + [fe(last, nid), fe(nid, dec["id"])]
+    return nid, rid, f"{rid}: {rule_text(t, node)}", rule_breaks(t, node)
+
+
+def proposal_from_reading(
+    t: Template,
+    draft: Flow,
+    text: str,
+    reading: Mapping[str, Any],
+    actor_role: str,
+    decide_queue: Callable[[list[CompiledRule]], SimResult] | None,
+) -> Proposal:
+    """The proposal for a sentence that was already READ into a typed reading (ai-tasks I10: a model reads first, code checks):
+
+        {"kind": "rules", "rules": [{"path", "action", "scope"}, ...]}   one or several rules (a multi-part sentence)
+        {"kind": "step", "step": {"name", "after": path id or name}}
+        {"kind": "guardrail", "guardrail": a guardrail id or None, "message"}   it would weaken or skip a guardrail
+        {"kind": "unclear", "message": the one question to ask the person}
+
+    Whoever read it, the same code decides: a text that changes or weakens a guardrail (`refused_text`) is blocked before
+    the reading is looked at; every rule is checked against the guardrails (`rule_breaks`), validated and simulated; a rule
+    that breaks a guardrail blocks the whole proposal, shown in red, never applied. The reading's values must already be the
+    template's (the caller checks them); nothing here calls a model."""
+    text = text.strip()
+    if gid := refused_text(t, text):
+        return _blocked_text(t, text, gid)
+    kind = reading.get("kind")
+    if kind == "guardrail":
+        g = reading.get("guardrail")
+        return _blocked_text(t, text, g if g in {x.id for x in t.guardrails} else ANY_GUARDRAIL)
+    c = copy.deepcopy(draft)
+    if kind == "step" and reading.get("step"):
+        st = reading["step"]
+        made = _add_step(t, c, str(st["name"]), str(st["after"]), actor_role)
+        if made is None:
+            return Proposal("unclear", text, msg=f"I couldn't find “{st['after']}” in this flow. Name one of: {_names(t)}.")
+        return Proposal("step", text, c, made[0], label=made[1], sim=decide_queue(compile_flow(t, c)) if decide_queue else None)
+    rules = [
+        ParsedRule(r.get("path"), str(r.get("action") or "prefer"), dict(r.get("scope") or {}))
+        for r in reading.get("rules") or []
+    ]
+    rules = [r for r in rules if r.path]
+    if kind != "rules" or not rules:
+        ask = str(reading.get("message") or "").strip()
+        return Proposal("unclear", text, msg=ask or f"I couldn't tell which {_noun(t)} this is about. Name one of: {_names(t)}.")
+    nids, rids, labels, broken = [], [], [], None
+    for r in rules:
+        nid, rid, label, g = _add_rule(t, c, text, r, actor_role)
+        nids.append(nid)
+        rids.append(rid)
+        labels.append(label)
+        broken = broken or ((g, rid, label) if g else None)
+    checks = [x for x in validate_flow(t, c) if x.node_id in nids or x.msg.startswith("Conflict")]
+    label = "; ".join(labels)
+    if broken:
+        g, rid, words = broken
+        gd = next(x for x in t.guardrails if x.id == g)
+        msg = (f"I drafted {words}, but it breaks {g}: {gd.text}. I won't apply it. It is shown in red on the canvas until "
+               "you dismiss it.")  # fmt: skip
+        return Proposal("blocked", text, c, nids[-1], rid, label, g, checks, None, msg)
+    sim = decide_queue(compile_flow(t, c)) if decide_queue else None
+    return Proposal("rule", text, c, nids[-1], ", ".join(rids), label, None, checks, sim)
+
+
 def build_proposal(
     t: Template,
     draft: Flow,

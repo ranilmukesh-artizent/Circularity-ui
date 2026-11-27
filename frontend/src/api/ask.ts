@@ -5,12 +5,15 @@
  */
 import { accessToken, http, withQuery } from './client';
 
-export interface AskContext { page?: string; section?: string; case_id?: string; object?: { kind: string; id: string } }
+export interface AskContext { page?: string; section?: string; case_id?: string; object?: { kind: string; id: string; label?: string }; org?: string }
 
 export interface AskTool { name: string; args: Record<string, unknown>; ok: boolean; code?: string | null; message?: string | null; skipped?: boolean }
 
 /** A suggested next step: ask again, open the approval card, or an action the person may confirm. */
 export interface AskNext { label: string; ask?: string; approve?: string; go?: string; action?: string; input?: Record<string, unknown>; case_id?: string }
+
+/** A draft the assistant made; href is an app route. */
+export interface AskCreated { kind: string; id: string; label: string; href: string }
 
 export interface AskCard { type: string; data: Record<string, unknown> }
 
@@ -29,6 +32,8 @@ export interface AskFinal {
   refused: { tool: string | null; code: string; message: string | null }[];
   next: AskNext[];
   cards: AskCard[];
+  /** drafts made during the answer; a missing list is [] */
+  created?: AskCreated[];
   conversation_id: string;
 }
 
@@ -37,6 +42,7 @@ export type AskEvent =
   | ({ type: 'tool' } & AskTool)
   | { type: 'delta'; text: string }
   | { type: 'reset'; reason: string }
+  | ({ type: 'created' } & AskCreated)
   | ({ type: 'final' } & AskFinal);
 
 

@@ -163,7 +163,7 @@ export function FlowCanvas({ s, graph, selected, bad, proposed, revision = null,
 
   return (
     <div className="mdl-canvas" role="group" aria-label="Decision flow canvas">
-      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap minimapSize={[160, 100]} minimapMinWidth={1100} gap={24} openZoom={0.8}
+      <GraphView nodes={gnodes} edges={gedges} nodeTypes={NODE_TYPES} readOnly={!editable} minimap minimapSize={[160, 100]} minimapMinWidth={1100} gap={24}
         nodeColor={(id) => (by.get(id)?.lock ? 'var(--muted)' : 'var(--ink2)')}
         label="Decision flow canvas. Tab to a step and press Enter or Space to select it, then use arrow keys to move it or Delete to remove it."
         onSelect={select} onDelete={remove} onConnect={onConnect} onMove={moveTo}

@@ -19,7 +19,7 @@ function Strip({ ctx, skipFlow }: { ctx: ProposalContext; skipFlow?: number }) {
   // nothing held: no strip at all (2.6, "collapsed if 0"); an empty heading on every view is noise
   if (!list.length) return null;
   return (
-    <details className="as-waiting" data-waiting={list.length} open>
+    <details className="as-waiting" data-waiting={list.length} open={list.length <= 3}>
       <summary>
         <Icon name="clock" />
         <span>Waiting for you ({list.length})</span>

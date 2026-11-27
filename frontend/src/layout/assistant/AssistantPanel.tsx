@@ -36,9 +36,11 @@ export interface AssistantPanelProps {
    * Watching, Proposals, Last simulation; plan 10, 3.3). Its held proposals are left out of "Waiting for you".
    */
   sections?: ReactNode;
+  /** pinned only: the host lists this flow's held proposals itself (the Modeler rail's Overview tab), so "Waiting for you" leaves them out */
+  flowInRail?: boolean;
 }
 
-export function AssistantPanel({ host, onClose, mode: hint, section, sections }: AssistantPanelProps) {
+export function AssistantPanel({ host, onClose, mode: hint, section, sections, flowInRail }: AssistantPanelProps) {
   const conv = useConv();
   const ui = useUi();
   const ctx = useAssistantContext(section);
@@ -152,7 +154,7 @@ export function AssistantPanel({ host, onClose, mode: hint, section, sections }:
         Looking at: {contextParts(ctx).join(' · ')}
       </p>
       <div className="as-log" ref={log}>
-        <WaitingStrip caseId={ctx.caseId} flow={!!ctx.flow} skipFlow={sections && ctx.flow ? ctx.flow.id : undefined} />
+        <WaitingStrip caseId={ctx.caseId} flow={!!ctx.flow} skipFlow={(sections || flowInRail) && ctx.flow ? ctx.flow.id : undefined} />
         <AgentsOnThis caseId={ctx.caseId} />
         {sections}
         {conv.turns.length === 0 && <def.Empty ctx={ctx} ask={ask} />}

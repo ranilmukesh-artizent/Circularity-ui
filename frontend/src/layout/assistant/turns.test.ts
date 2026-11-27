@@ -104,6 +104,26 @@ describe('applyAskEvent', () => {
   });
 });
 
+describe('created drafts', () => {
+  const start = () => addTurn(emptyConv(), 'ask', 'Draft a workflow')[0].turns[0];
+  const wf = { kind: 'workflow', id: 'WF-131', label: 'Intake', href: '/integration/studio/WF-131' };
+  it('a created event adds a draft once; final.created is merged without duplicates', () => {
+    let t = applyAskEvent(start(), { type: 'created', ...wf });
+    t = applyAskEvent(t, { type: 'created', ...wf });
+    expect(askData(t).created).toEqual([wf]);
+    const other = { kind: 'flow', id: '9', label: 'Flow', href: '/modeler?template=industrial&org=workspace' };
+    t = applyAskEvent(t, final({ created: [wf, other] }));
+    expect(askData(t).created).toEqual([wf, other]);
+  });
+  it('a final without created gives an empty list', () => {
+    expect(askData(applyAskEvent(start(), final())).created).toEqual([]);
+  });
+  it('a reset clears the drafts', () => {
+    const t = applyAskEvent(applyAskEvent(start(), { type: 'created', ...wf }), { type: 'reset', reason: 'retry' });
+    expect(askData(t).created).toEqual([]);
+  });
+});
+
 describe('errorText', () => {
   it('a network failure keeps the text and says to retry', () => {
     expect(errorText(new TypeError('Failed to fetch'))).toBe('Could not reach Circularity. Your text is kept.');

@@ -229,7 +229,13 @@ def author(ctx: CallContext, prompt: str, answers: dict[str, Any] | None = None,
                 break
     finally:
         drafter.close()
-    if res.rounds == 0:  # no model answered (R16): the planner's graph, through the same checks
+    if graph is None:
+        # the safety net (R16; 27 Nov 2026): no model answered, or every draft of the model failed the checks. The planner's
+        # graph goes through the same checks, so a request still ends in a draft; `by_model` stays false and a note says so.
+        if res.rounds:
+            res.notes.append(
+                f"The language model's draft did not pass the checks after {res.rounds} tries, so this draft is the planner's."
+            )
         graph = planner_graph(ctx, plan, word, res.notes)
         res.errors = graph_errors(ctx, graph, plan)
         graph = None if res.errors else graph

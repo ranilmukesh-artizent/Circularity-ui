@@ -17,7 +17,7 @@ from typing import Any
 
 from di.services.agents.checked_output import invented_numbers
 
-WORKFLOW_TOOLS = frozenset({"list_workflows", "get_workflow", "get_workflow_run"})
+WORKFLOW_TOOLS = frozenset({"list_workflows", "get_workflow", "get_workflow_run", "create_workflow"})
 ID_RX = re.compile(r"\b(?:WF-\d+|RUN-[A-Z0-9]{5})\b")
 CASE_OF_WORKFLOW = re.compile(r"\bcase\s+(?:WF|RUN)-", re.I)
 NO_ACCESS = re.compile(r"(?:don.?t|do not|doesn.?t|does not) have (?:any )?access|\bno access\b|not authori[sz]ed", re.I)
@@ -25,6 +25,7 @@ DID_A_WRITE = re.compile(
     r"\b(?:I|I've|I have)\s+(?:re-?ran|re-?run|applied|reprocessed|restarted|started|fixed|published)\b", re.I
 )
 CASE_WORD = re.compile(r"\bcases?\b", re.I)
+_ISO_T = re.compile(r"(?<=\d)T(?=\d)")
 
 
 def _used(box: Any) -> list[Any]:
@@ -39,7 +40,10 @@ def problems(text: str, question: str, box: Any) -> list[str]:
     """Why `text` may not be shown (one reason per failed check), or []."""
     used = _used(box)
     facts = json.dumps([[u.args, u.data, u.message] for u in used], default=str, ensure_ascii=False)
-    known = facts + " " + question
+    # a time in the facts is ISO ("2026-10-07T08:58:45.000Z"): the hour after the "T" is one of the facts' own numbers
+    # (27 Nov 2026: a correct answer that said "08:58" was refused for "08" and the rules answered instead). Leading zeros
+    # are NOT dropped: "9 retries" must not pass because a date holds "09".
+    known = facts + " " + _ISO_T.sub(" ", facts) + " " + question
     out = []
     if bad := invented_numbers([text], known):
         out.append(f"These numbers are in no tool result: {', '.join(bad)}.")

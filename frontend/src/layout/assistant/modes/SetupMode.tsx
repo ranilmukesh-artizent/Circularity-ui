@@ -63,7 +63,8 @@ const wordCount = (t: string): number => t.trim().split(/\s+/).filter(Boolean).l
 const failed = (msg: string, code?: string) => (code === 'network' ? 'Could not reach Circularity. Your text is kept.' : msg);
 
 async function send(text: string, ctx: AssistantContext, io: { signal: AbortSignal; patch(f: (t: Turn) => Turn): void }): Promise<void> {
-  const { org, pack } = ctx;
+  // a flow surface has no ctx.pack: its template is the pack the draft starts from
+  const org = ctx.org, pack = ctx.pack ?? ctx.flow?.template;
   const set = (status: Status[], error?: string) => io.patch((t) => ({ ...t, status, ...(error !== undefined ? { error } : {}) }));
   if (!org || !pack) {
     set([{ verb: 'Could not start', item: 'the description', limit: 'no template chosen', state: 'failed' }], 'Open the Modeler and pick a template and organisation first. Set up drafts for that pair.');

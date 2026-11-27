@@ -8,6 +8,8 @@ export interface AssistantContext {
   pack?: string; org?: string;
   /** plan 10 T8: the composition in view (the Set up tab's, or the one `openAssistant({ composeId })` named) */
   composeId?: number;
+  /** the workflow (WF-nnn) or run (RUN-xxxxx) the route names */
+  workflowId?: string; runId?: string;
 }
 export interface OpenRequest { mode?: AssistantMode; question?: string; composeId?: number }
 export type TurnState = 'waiting' | 'working' | 'done' | 'held' | 'blocked' | 'failed' | 'stopped';

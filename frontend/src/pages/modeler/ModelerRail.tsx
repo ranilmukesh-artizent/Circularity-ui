@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Check, FlowGraph, FlowNode, ModelerScreen } from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { FlowSections } from '../../layout/assistant/flow/FlowSections';
 import { ChecksPanel } from './ChecksPanel';
 import { FlowInspector } from './FlowInspector';
 import { HistoryPanel } from './HistoryPanel';
@@ -74,6 +75,7 @@ export function ModelerRail(p: Props) {
       </div>
       {state.open && (
         <div className="mdl-rail-panel" role="tabpanel" id={idOf(state.tab)} aria-labelledby={'mdl-railtab-' + state.tab}>
+          {state.tab === 'overview' && <FlowSections screen={s} />}
           {state.tab === 'inspector' && (
             <>
               {!p.node && (

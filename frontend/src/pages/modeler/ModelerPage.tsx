@@ -7,7 +7,6 @@ import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
 import { AssistantPanel } from '../../layout/assistant/AssistantPanel';
-import { FlowSections } from '../../layout/assistant/flow/FlowSections';
 import type { AssistantMode } from '../../layout/assistant/types';
 import { registerSurface } from '../../utils/workSurface';
 import type { PageProps } from '../registry';
@@ -19,7 +18,7 @@ import { ModelerRail } from './ModelerRail';
 import { ModelerTabs, pageTab, visibleTabs, type PageTab } from './ModelerTabs';
 import { OverlayPanel } from './OverlayPanel';
 import { PacksPanel } from './PacksPanel';
-import { afterCheckClick, afterEsc, afterPick, afterSelect, afterSurfaceSelect, initialRail, type RailState, type RailTab } from './railTab';
+import { afterCheckClick, afterEsc, afterPick, afterProposal, afterSelect, afterSurfaceSelect, initialRail, type RailState, type RailTab } from './railTab';
 import { ReplayPanel, showReplay } from './ReplayPanel';
 import { RolloutPanel } from './RolloutPanel';
 import { StandingPolicyPanel } from './StandingPolicyPanel';
@@ -114,6 +113,11 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [rail, setRail] = useState<RailState>(() => initialRail(window.innerWidth));
   const [drawer, setDrawer] = useState<'rollout' | 'replay' | null>(null);
+  // a proposal from the assistant is listed and applied in the rail's Overview tab: it opens when one arrives
+  const hasProposal = proposal !== null;
+  useEffect(() => {
+    if (hasProposal) setRail(afterProposal());
+  }, [hasProposal]);
   const [agentOpen, setAgentOpen] = useState(false);
   /** the node just applied from a proposal: its revision outline closes once (plan 10, 4.4), then the mark goes */
   const [resolved, setResolved] = useState<string | null>(null);
@@ -289,8 +293,8 @@ function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; comp
             Ask Circularity{proposal ? ' · 1 proposal' : ''}{blocking > 0 ? ` · ${blocking} blocking` : ''}
           </button>
           <div className="mdl-agent-body">
-            {/* one panel, pinned: its mode follows the tab (3.3); What I see, Watching, Proposals and Last simulation only on Flow */}
-            <AssistantPanel host="pinned" mode={TAB_MODE[tab]} section={tab === 'flow' || tab === 'setup' ? undefined : tab} sections={flowTab ? <FlowSections screen={s} /> : undefined} />
+            {/* one panel, pinned: its mode follows the tab (3.3). What I see, Watching, Proposals and Last simulation are the rail's Overview tab */}
+            <AssistantPanel host="pinned" mode={TAB_MODE[tab]} section={tab === 'flow' || tab === 'setup' ? undefined : tab} flowInRail={flowTab} />
           </div>
         </section>
         <div className="mdl-center">

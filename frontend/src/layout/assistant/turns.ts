@@ -2,14 +2,14 @@
  * The conversation as plain data and pure reducers (plan 10, 2.8 and 2.10): the turns, one queue slot ("steer"),
  * stop, and how the events of an Ask stream fold into a turn. The store (store.ts) holds one of these for both hosts.
  */
-import type { AskEvent, AskFinal, AskTool } from '../../api/ask';
+import type { AskCreated, AskEvent, AskFinal, AskTool } from '../../api/ask';
 import { statusLine } from './status';
 import type { AssistantContext, AssistantMode, ModeDef, Status, Turn } from './types';
 
 export interface Queued { text: string; mode: AssistantMode }
 export interface Conv { turns: Turn[]; queue: Queued | null; running: number | null; nextId: number }
 /** What an Ask turn keeps in Turn.data. */
-export interface AskData { text: string; tools: AskTool[]; final: AskFinal | null }
+export interface AskData { text: string; tools: AskTool[]; final: AskFinal | null; created?: AskCreated[] }
 
 export const NETWORK_MSG = 'Could not reach Circularity. Your text is kept.';
 
@@ -74,10 +74,15 @@ export function applyAskEvent(t: Turn, e: AskEvent): Turn {
       const wait: Status = { verb: 'Writing', item: `the answer from ${d.tools.length + 1} lookup${d.tools.length ? 's' : ''}`, limit: 'read-only', state: 'working' };
       return { ...t, data: { ...d, tools: [...d.tools, e] }, status: [...t.status.filter((x) => x.state !== 'waiting' && x.state !== 'working'), line, wait] };
     }
+    case 'created': {
+      const { type: _t, ...c } = e;
+      const have = d.created ?? [];
+      return have.some((x) => x.kind === c.kind && x.id === c.id) ? t : { ...t, data: { ...d, created: [...have, c] } };
+    }
     case 'delta':
       return { ...t, data: { ...d, text: d.text + e.text } };
     case 'reset':
-      return { ...t, data: { ...d, text: '', tools: [] }, status: [{ verb: 'Looking up', item: 'what your role may see', limit: 'read-only', state: 'working' }] };
+      return { ...t, data: { ...d, text: '', tools: [], created: [] }, status: [{ verb: 'Looking up', item: 'what your role may see', limit: 'read-only', state: 'working' }] };
     case 'final': {
       const byRules = !e.by_model && e.provider === 'fallback';
       const n = e.tools?.length ?? d.tools.length;
@@ -85,9 +90,13 @@ export function applyAskEvent(t: Turn, e: AskEvent): Turn {
         ? statusLine({ name: 'ask.fallback', phase: 'done', result: { reason: reasonOf(e) } })
         : { verb: 'Answered', item: n ? `from ${n} lookup${n === 1 ? '' : 's'}` : 'from your data', limit: 'read-only', state: 'done' };
       const blocked = t.status.filter((x) => x.state === 'blocked');
-      return { ...t, data: { ...d, text: e.text, tools: e.tools?.length ? e.tools : d.tools, final: e }, status: [...blocked, summary] };
+      return { ...t, data: { ...d, text: e.text, tools: e.tools?.length ? e.tools : d.tools, final: e, created: mergeCreated(d.created, e.created) }, status: [...blocked, summary] };
     }
   }
+}
+
+function mergeCreated(a: AskCreated[] = [], b: AskCreated[] = []): AskCreated[] {
+  return [...a, ...b.filter((y) => !a.some((x) => x.kind === y.kind && x.id === y.id))];
 }
 
 function reasonOf(e: AskFinal): string {

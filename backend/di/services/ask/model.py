@@ -16,6 +16,7 @@ provider (Claude, a local Ollama model) is one more class with the same `answer`
 the endpoint, the stream the frontend reads and the tools stay as they are.
 """
 
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -85,6 +86,9 @@ class NoModel:
         yield  # pragma: no cover  (a generator, like every provider's answer)
 
 
+WAIT_FOR_MODEL = 60.0  # seconds Ask waits for the first model to come back from its cooldown before the rules answer
+
+
 def get_model() -> AskModel:
     """The configured provider (a FastAPI dependency of POST /api/ask; tests override it with a fake model)."""
     s = get_settings()
@@ -96,27 +100,27 @@ def get_model() -> AskModel:
     return NoModel("unknown_provider")
 
 
-def _routed(s: Settings) -> AskModel:
+def _routed(s: Settings) -> AskModel:  # noqa: ARG001 - the provider switch hands every provider the settings
     """Ask's models are the router's chain for the role `ask` (di.services.llm.router): the enabled rows with a key, not
     cooling down and with budget left, by priority. None: the rule-based fallback answers."""
     from di.core.db import SessionLocal
-    from di.services.ask.groq_model import GroqModel
+    from di.services.ask.engine_model import EngineModel
     from di.services.llm import router
 
     try:
         with SessionLocal() as db:
-            refs = [r for r in router.chain_for(db, "ask", needs_tools=True) if r.provider == "groq"]
-            keyed = [(r, router.resolve_key(r.key_ref)) for r in refs]
+            refs = [r for r in router.chain_for(db, "ask", needs_tools=True) if r.provider != "test"]
+            bind = db.get_bind()
+            if not refs and (wait := router.soonest(db, "ask")) is not None and wait <= WAIT_FOR_MODEL:
+                # every model is in its minute's cooldown and one is back shortly: a short wait beats a rules answer
+                time.sleep(wait + 0.5)
+                refs = [r for r in router.chain_for(db, "ask", needs_tools=True) if r.provider != "test"]
     except Exception:  # noqa: BLE001 - no database or no table: Ask answers by rules
         return NoModel("unavailable")
-    models: list[AskModel] = [GroqModel(key, r.model, s.ask_timeout_seconds, s.ask_max_rounds) for r, key in keyed]
-    if not models:
-        return NoModel("unavailable" if _has_key() else "no_key")
-    if len(models) > 1:
-        from di.services.ask.chain import ChainModel
-
-        return ChainModel(models)
-    return models[0]
+    if not refs:
+        return NoModel("rate_limited" if _has_key() else "no_key")  # a key, and every model cooling or out of budget
+    # one Pydantic AI loop over the whole chain (ai-tasks T4): each model request falls back on its own, at any round
+    return EngineModel(refs, bind)
 
 
 def _has_key() -> bool:

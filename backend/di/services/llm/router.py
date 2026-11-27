@@ -48,6 +48,7 @@ ROLES: tuple[str, ...] = ("ask", "agent", "author", "judge", "stage")
 TOOL_ROLES = ("agent", "stage")
 SEED_ID = "groq-default"  # the row of migration 0036; GROQ_MODEL still overrides its model at run time
 DEFAULT_COOLDOWN = 60.0
+DOWN_COOLDOWN = 30.0  # seconds a model that answered 5xx stays out of the chain
 DEFAULT_MAX_TOKENS = 1024
 EVAL_DROP = 10  # a model whose eval score fell by more than this many points since the last run leaves the chain (P9-2.15)
 DAY_TOKEN_CAP = 2_000_000_000  # the day window limits requests only
@@ -57,7 +58,7 @@ TEST_MODELS: dict[str, Model] = {}  # provider `test`: row id -> the FunctionMod
 @dataclass(frozen=True)
 class ModelRef:
     id: str
-    provider: Literal["groq", "test"]
+    provider: Literal["groq", "gemini", "test"]
     model: str
     key_ref: str | None
     request_timeout: float
@@ -102,6 +103,25 @@ def _usable(ref: ModelRef) -> bool:
 def chain_for(s: Session, role: Role | str, *, needs_tools: bool = False) -> list[ModelRef]:
     rows = s.execute(text(_CHAIN_SQL), {"role": role, "tools": needs_tools or role in TOOL_ROLES, "drop": EVAL_DROP}).all()
     return [r for r in map(_ref, rows) if _usable(r)]
+
+
+def soonest(s: Session, role: Role | str) -> float | None:
+    """Seconds until the first enabled model of the role is back (its cooldown ends, or the minute's budget window turns);
+    None when the role has no enabled model with a key. 0 when one is usable now."""
+    rows = s.execute(
+        text(
+            "SELECT m.id, m.provider, m.model, m.key_ref, m.request_timeout, "
+            "greatest(0, extract(epoch FROM coalesce(m.cooldown_until, now()) - now())) AS cool, "
+            "(coalesce(bm.used_requests, 0) >= m.rpm OR coalesce(bm.used_tokens, 0) >= m.tpm) AS minute_full, "
+            "extract(epoch FROM date_trunc('minute', now()) + interval '1 minute' - now()) AS to_minute "
+            "FROM llm_model m LEFT JOIN llm_budget bm ON bm.model_id = m.id AND bm.\"window\" = 'minute' "
+            "AND bm.window_start = date_trunc('minute', now()) "
+            "WHERE m.enabled AND (:role = ANY(m.roles) OR (:role = 'stage' AND 'agent' = ANY(m.roles)))"
+        ),
+        {"role": role},
+    ).all()
+    waits = [max(float(r.cool), float(r.to_minute) if r.minute_full else 0.0) for r in rows if _usable(_ref(r))]
+    return min(waits) if waits else None
 
 
 def eval_candidates(s: Session) -> list[ModelRef]:
@@ -217,9 +237,13 @@ class _Metered(WrapperModel):
             raise ModelHTTPError(429, self.ref.model, {"error": "the model's budget is used up"})
 
     def _limited(self, e: ModelAPIError) -> None:
-        if isinstance(e, ModelRateLimitError) or (isinstance(e, ModelHTTPError) and e.status_code == 429):
+        limited = isinstance(e, ModelRateLimitError) or (isinstance(e, ModelHTTPError) and e.status_code == 429)
+        # an overloaded or failing provider model (5xx: "high demand") is left out for a short while too, so the next
+        # requests go straight to a model that answers instead of paying for the same failure each time
+        down = isinstance(e, ModelHTTPError) and e.status_code >= 500
+        if limited or down:
             with Session(self._bind) as ls:
-                cooldown(ls, self.ref.id, e.retry_after)
+                cooldown(ls, self.ref.id, getattr(e, "retry_after", None) if limited else DOWN_COOLDOWN)
                 ls.commit()
 
     async def request(
@@ -258,6 +282,10 @@ def _provider_model(ref: ModelRef) -> Model | None:
     key = resolve_key(ref.key_ref)
     if not key:
         return None
+    if ref.provider == "gemini":  # Gemini's OpenAI-compatible endpoint, with no new dependency (di.services.llm.compat)
+        from di.services.llm.compat import gemini_model
+
+        return gemini_model(ref.model, key, ref.request_timeout)
     from groq import AsyncGroq
     from pydantic_ai.models.groq import GroqModel
     from pydantic_ai.providers.groq import GroqProvider

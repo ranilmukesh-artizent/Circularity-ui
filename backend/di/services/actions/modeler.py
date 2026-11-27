@@ -49,14 +49,13 @@ from di.repositories.orgs import units
 from di.services.actions.modeler_sim import lever_problem, sim_json, simulate_graph, simulate_rules
 from di.services.actions.pipeline import CallContext
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement, mark_destructive
-from di.services.ask.modeler_read import model_rule
 from di.services.modeler.compile import compile_flow
 from di.services.modeler.export_bpmn import process_of, to_bpmn
 from di.services.modeler.export_dmn import Table, decision_id, to_dmn
 from di.services.modeler.flow import Flow
 from di.services.modeler.pack import load_pack
 from di.services.modeler.parse import parse_rule
-from di.services.modeler.propose import STEP, Proposal, build_proposal, fill_parsed, refused_text
+from di.services.modeler.propose import Proposal, build_proposal, proposal_from_reading, refused_text
 from di.services.modeler.tables import table_title
 from di.services.modeler.templates import Template, load_template, template_keys
 from di.services.modeler.validate import blocking, validate_flow
@@ -496,18 +495,28 @@ def propose(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     f = _flow(ctx, i)
     t, draft, text = load_template(f.template_key), _graph(f), i["text"].strip()
     base = compile_flow(t, draft)
-    fill = _model_fill(t, text)
-    p = build_proposal(t, draft, text, ctx.actor.role, lambda cand: simulate_rules(ctx, f, cand, base), fill)
-    used = bool(fill) and fill_parsed(parse_rule(t, text), fill) != parse_rule(t, text)
-    return proposal_json(p) | {"read_by": "rules+model" if used else "rules"}
 
+    sim = lambda cand: simulate_rules(ctx, f, cand, base)  # noqa: E731 - the queue simulation both readers use
 
-def _model_fill(t: Template, text: str) -> dict[str, Any]:
-    """The optional model reading (MVP-5.3), asked only when the parser finds no path in a sentence that is neither a
-    guardrail change nor a step: {} without a key or on any failure."""
-    if refused_text(t, text) or STEP.search(text) or parse_rule(t, text).path:
-        return {}
-    return model_rule(text, t)
+    # the model reads the sentence first (ai-tasks I10; 27 Nov 2026: the pattern parser is only what answers when no model
+    # does). A text that weakens a guardrail is refused by code before any model is asked.
+    from di.services.agents.playbooks import flow_reader  # here, not at the top: its runtime imports this module
+
+    if refused_text(t, text):  # the guardrail wall, in code: no reader is asked
+        return proposal_json(build_proposal(t, draft, text, ctx.actor.role, sim, None)) | {"read_by": "guard"}
+    reading = flow_reader.read(ctx, t, draft, text)
+    if reading is not None:
+        rules = reading.get("rules") or []
+        if reading.get("kind") == "rules" and len(rules) == 1:
+            # the safety net under a one-rule reading: a qualifier the sentence states and the pattern parser finds (a
+            # product class, a customer, a grade) that the model left out is put back, so the rule is never broader than
+            # what was asked (seen live, 27 Nov 2026: "Customer C's motors" read once without the motors)
+            scope = rules[0].setdefault("scope", {})
+            for k, v in parse_rule(t, text).scope.items():
+                scope.setdefault(k, v)
+        return proposal_json(proposal_from_reading(t, draft, text, reading, ctx.actor.role, sim)) | {"read_by": "model"}
+    p = build_proposal(t, draft, text, ctx.actor.role, sim, None)
+    return proposal_json(p) | {"read_by": "rules"}
 
 
 # ---------------------------------------------------------------- export (plan 9, P9-8.21)

@@ -5,6 +5,8 @@ import type { Surface } from '../../utils/workSurface';
 import type { AssistantContext } from './types';
 
 const CASE_RX = /^RT-\d{4}$/;
+const WF_RX = /^WF-\d+$/;
+const RUN_RX = /^RUN-[A-Z0-9]{5}$/;
 
 export function contextOf(route: RouteRef, surface: Surface | null, role: string, section?: string): AssistantContext {
   const caseId = [route.a, route.b].find((x) => x && CASE_RX.test(x)) ?? undefined;
@@ -14,6 +16,10 @@ export function contextOf(route: RouteRef, surface: Surface | null, role: string
     caseId,
     role,
   };
+  const wf = [route.a, route.b].find((x) => x && WF_RX.test(x));
+  const run = [route.a, route.b].find((x) => x && RUN_RX.test(x));
+  if (wf) ctx.workflowId = wf;
+  if (run) ctx.runId = run;
   if (surface?.kind === 'flow') {
     const { flowId: id, name, template, org, canEdit, draftVer } = surface;
     ctx.flow = { id, name, template, org, canEdit, draftVer };
@@ -28,7 +34,17 @@ export function contextOf(route: RouteRef, surface: Surface | null, role: string
 
 /** The body of POST /api/ask's context. On the Modeler the section is the flow's template (plan 10, section 7). */
 export function askContext(ctx: AssistantContext): AskContext {
-  return { page: ctx.page, section: ctx.flow?.template ?? ctx.section, case_id: ctx.caseId };
+  const out: AskContext = { page: ctx.page, section: ctx.flow?.template ?? ctx.section, case_id: ctx.caseId };
+  if (ctx.flow) {
+    out.object = { kind: 'flow', id: String(ctx.flow.id), label: ctx.flow.name };
+    out.org = ctx.org;
+  } else if (ctx.composeId != null) {
+    out.object = { kind: 'composition', id: String(ctx.composeId) };
+    out.org = ctx.org;
+  } else if (ctx.workflowId) out.object = { kind: 'workflow', id: ctx.workflowId };
+  else if (ctx.runId) out.object = { kind: 'run', id: ctx.runId };
+  else if (ctx.caseId) out.object = { kind: 'case', id: ctx.caseId };
+  return out;
 }
 
 /** "Looking at: ...", the parts the assistant may read, in the order they matter. */
@@ -44,6 +60,8 @@ export function contextParts(ctx: AssistantContext): string[] {
     if (ctx.org) parts.push('Org: ' + ctx.org);
     if (ctx.composeId != null) parts.push('Composition ' + ctx.composeId);
   }
+  if (ctx.workflowId) parts.push('Workflow: ' + ctx.workflowId);
+  if (ctx.runId) parts.push('Run: ' + ctx.runId);
   if (ctx.caseId) parts.push('Case: ' + ctx.caseId);
   return parts;
 }

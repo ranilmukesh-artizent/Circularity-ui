@@ -24,6 +24,11 @@ export const resetAskConversation = (): void => {
   conversation = null;
 };
 
+/** Where a created draft opens. */
+/** The server's label says what was made ("Draft WF-131 · name", "Held for you · the flow change"); the link says where. */
+const createdLink = (kind: string): string =>
+  kind === 'workflow' ? 'Open in Workflow Studio' : kind === 'proposal' ? 'Review under Waiting for you' : 'Open in Modeler';
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function starters(): string[] {
@@ -39,7 +44,7 @@ export const askMode: ModeDef = {
   id: 'ask',
   label: 'Ask',
   placeholder: 'Ask about a case, a source, a figure…',
-  limits: (ctx) => `read-only · role: ${cap(ctx.role || 'unknown')}`,
+  limits: (ctx) => `answers from your data · drafts only, never publishes · role: ${cap(ctx.role || 'unknown')}`,
   unavailable: () => null,
   async send(text, ctx, io) {
     await askApi(text, {
@@ -69,7 +74,7 @@ function AskEmpty({ ctx, ask }: { ctx: AssistantContext; ask: (text: string) => 
   const list = selectStarters(starters(), server, ctx);
   return (
     <div className="as-empty">
-      <p className="as-note">Answers from your data, within what your role may see. Ask never changes anything.</p>
+      <p className="as-note">Answers from your data, within what your role may see. Drafts only, never publishes.</p>
       <div className="as-starters">
         {list.map((s) => (
           <button key={s} type="button" className="btn sm" onClick={() => ask(s)}>
@@ -107,6 +112,12 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
   return (
     <div className="as-ans">
       {d.text && <div className="as-text">{d.text}</div>}
+      {d.created?.map((c) => (
+        <p key={c.kind + c.id} className="as-note as-created">
+          {c.label || `Draft ${c.id}`} —{' '}
+          <a href={'#' + c.href} onClick={(e) => { e.preventDefault(); nav(c.href); }}>{createdLink(c.kind)}</a>
+        </p>
+      ))}
       {f?.cards.map((c, i) => <Card key={i} c={c} q={turn.text} onNext={onNext} />)}
       {f && (f.case_ids.length > 0 || f.sources.length > 0) && (
         <p className="as-note">

@@ -40,12 +40,13 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from opentelemetry.trace import StatusCode
 
 from di import telemetry
-from di.core import clock, policy
+from di.core import clock, policy, tracing
 from di.mcp import calllog
 from di.mcp.policy import outcome_of
 from di.mcp.tools import ACTIONS_OF, RUN, TOOLS, Refused, ToolCall, schema
@@ -159,6 +160,9 @@ ACTION_TOOLS: dict[str, tuple[str, str, dict, list[str]]] = {
     ),
 }
 TOOL_NAMES = (*MCP_TOOLS, *ACTION_TOOLS)
+# reads whose results carry text that people or source systems wrote into records (notes, held records, evidence): after
+# one of them, in the same answer, no draft-making tool runs (ai-tasks §4B D6; di.services.ask.build)
+UNTRUSTED_READS = ("get_case", "get_case_evidence", "list_cases", "get_inbox", "get_workflow_run", "get_case_run")
 
 # ---- read-only, asserted once
 for _t in MCP_TOOLS:
@@ -251,11 +255,22 @@ class Toolbox:
     inject: Any = None  # tests: rewrite a tool's data before the model reads it (record text planted in a field)
     used: list[Used] = field(default_factory=list)
     conversation_id: str | None = None  # plan 5: on the chat spans (gen_ai.conversation.id)
+    build: bool = False  # ai-tasks T4: also offer the three draft-making tools (di.services.ask.build)
+    page: dict | None = None  # the page context ({page, section, object, org}): the open flow or org of a build tool
+    created: list = field(default_factory=list)  # the drafts made in this answer (build.Created)
+    only: tuple[str, ...] = ()  # the tools offered for this question (engine_model.pick_tools); empty: all of them
+    trace: tuple[str, str] | None = None  # (trace id, the turn's span id): each call is a `tool` span in trace_span (T0)
+    usage: dict = field(default_factory=dict)  # the turn's model requests and tokens, set by the engine
     trace_context: Any = None  # plan 5: the OpenTelemetry context of the Ask span; tool and chat spans are its children
 
     @property
     def specs(self) -> list[dict]:
-        return specs()
+        out = specs()
+        if self.build:
+            from di.services.ask import build
+
+            out = [*out, *build.specs()]
+        return [sp for sp in out if sp["name"] in self.only] if self.only else out
 
     def ctx(self) -> CallContext:
         return CallContext(actor=Actor(account=self.account, ctx=self.pctx), session=self.session, preparer=AGENT_ID)
@@ -291,6 +306,8 @@ class Toolbox:
                 args = None
         if not isinstance(args, dict):
             res = self._done(name, {}, t0, error=("validation_error", "Arguments must be a JSON object."))
+        elif self.build and name in _build_names():
+            res = self._build(name, args, t0)
         elif name not in TOOL_NAMES:
             res = self._done(name, args, t0, error=("not_found", f"No tool {name}. Tools: {', '.join(TOOL_NAMES)}."))
         else:
@@ -339,15 +356,68 @@ class Toolbox:
             data = self.inject(name, data)
         return self._done(name, clean, t0, data=data)
 
+    def _build(self, name: str, args: dict, t0: float) -> dict:
+        """One draft-making tool (di.services.ask.build): declared string/number arguments only, through the pipeline as
+        the signed-in person; a refusal, a question or a blocked change goes back to the model as data."""
+        from di.services.ask import build
+
+        _d, props, req = build.BUILD_TOOLS[name]
+        if read := next((u.name for u in self.used if u.ok and u.name in UNTRUSTED_READS), None):
+            # D6: a write after a read of record content is not made; the person asks for it in their own next message
+            msg = (
+                f"Nothing was made: this answer already read record content ({read}), and a draft is made only from the "
+                "person's own words. Tell the person to send the request again as its own message."
+            )
+            return self._done(name, {}, t0, error=("held_untrusted", msg))
+        clean = {k: args[k] for k in props if k in args and args[k] is not None}
+        for k in req:
+            if not isinstance(clean.get(k), str) or not clean[k].strip():
+                return self._done(name, clean, t0, error=("validation_error", f'Missing required field "{k}".'))
+        for k, v in clean.items():
+            want = PY_TYPE[props[k]["type"]]
+            if not isinstance(v, want) or isinstance(v, bool):
+                return self._done(name, clean, t0, error=("validation_error", f'"{k}" must be a {props[k]["type"]}.'))
+        if prior := next((u for u in self.used if u.ok and u.name == name and u.args == clean), None):
+            # a model sometimes calls a tool twice with the same words (seen live, 27 Nov 2026: two workflow drafts for one
+            # request): the second call makes nothing and gets the first call's result
+            again = dict(prior.data) if isinstance(prior.data, dict) else {"result": prior.data}
+            again["say"] = "This was already made by your earlier call with the same words: nothing new was made. Answer from it."
+            return self._done(name, clean, t0, data=again)
+        if name == "create_workflow" and any(c.kind == "workflow" for c in self.created):
+            msg = "A workflow draft was already made in this answer. Tell the person about it; they can ask for another one."
+            return self._done(name, clean, t0, error=("conflict", msg))
+        try:
+            data, made = build.run(name, clean, self.ctx(), self.page)
+        except build.BuildError as e:
+            self.session.rollback()
+            return self._done(name, clean, t0, error=(e.code, e.message))
+        self.session.commit()  # the draft is the person's from here, whatever happens to the rest of the answer
+        if made is not None:
+            self.created.append(made)
+        return self._done(name, clean, t0, data=data)
+
     def _done(self, name: str, args: dict, t0: float, data: Any = None, error: tuple[str, str] | None = None) -> dict:
         ms = round((time.monotonic() - t0) * 1000)
         code, message = error if error else (None, None)
         self.used.append(Used(name, args, error is None, code, message, data, ms))
+        if self.trace:
+            tracing.record(
+                self.session, f"tool {name}", kind="tool", trace_id=self.trace[0], parent_id=self.trace[1],
+                started_at=datetime.now(UTC) - timedelta(milliseconds=ms), status="ok" if error is None else "error",
+                attrs={"di.agent": AGENT_ID, "di.tool": name, "di.code": code, "di.ms": ms, "content.input": args,
+                       "content.output": shrink(data if error is None else {"code": code, "message": message}, 5, 200)},
+            )  # fmt: skip
         if self.log:
             log_call(self.session, self.account, name, args, ms, code)
         if error:
             return {"ok": False, "error": {"code": code, "message": message}}
         return {"ok": True, "data": data}
+
+
+def _build_names() -> tuple[str, ...]:
+    from di.services.ask import build
+
+    return tuple(build.BUILD_TOOLS)
 
 
 def log_call(session: Any, account: policy.Account, tool: str, args: dict, ms: int, code: str | None) -> None:

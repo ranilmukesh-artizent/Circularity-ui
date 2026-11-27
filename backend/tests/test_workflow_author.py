@@ -134,15 +134,18 @@ def test_workflow_author_repairs_in_three_rounds():
     assert "cfg.condition.0.field" in prompts[2]  # and the one of round 2, naming the setting
 
 
-def test_workflow_author_hands_over_after_three_failures():
+def test_workflow_author_takes_the_planner_graph_after_three_failed_repairs():
+    """27 Nov 2026: a model whose every draft fails the checks no longer leaves the person without a draft. After the first
+    try and three repair rounds the planner's graph goes through the same checks and is saved, marked as not the model's."""
     unknown = {"nodes": [{"id": "x", "k": "xf", "ref": "x_nope"}], "edges": []}
     before = _workflows()
     calls = _scripted([_draft(unknown)])
     r = _author()
-    assert len(calls) == 4 and r["rounds"] == 4 and r["status"] == "handed_over"  # the first try and three repair rounds
-    assert r["draft_id"] is None and r["graph"] is None and r["test_run"] is None
-    assert r["errors"] and {"node", "field", "message"} <= set(r["errors"][0]) and r["errors"][0]["node"] == "x"
-    assert _workflows() == before  # nothing was saved
+    assert len(calls) == 4 and r["rounds"] == 4  # the first try and three repair rounds, no more
+    assert r["status"] == "drafted" and r["by_model"] is False and r["draft_id"] and r["errors"] == []
+    assert not [n for n in r["graph"]["nodes"] if n.get("ref") == "x_nope"]  # none of the refused draft is in it
+    assert any("did not pass the checks after 4 tries" in n for n in r["notes"])
+    assert _workflows() == before + 1  # one draft, the planner's
 
 
 def test_workflow_author_repairs_graph_rule_errors():

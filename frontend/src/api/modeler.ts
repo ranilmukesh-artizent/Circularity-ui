@@ -48,7 +48,7 @@ export interface Proposal {
   msg: string;
   /** the saveDraft note that applies it: "Proposed by the assistant: <text>" */
   note: string;
-  read_by: 'rules' | 'rules+model';
+  read_by: 'rules' | 'rules+model' | 'model' | 'guard';
 }
 
 /** A plain-language change read into a checked, simulated proposal; rejects with the refusal message. */
@@ -174,3 +174,7 @@ export interface FlowExport {
 export const exportDmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportDmn', { flow_id: flowId });
 /** The flow's case process as BPMN 2.0 (flow.exportBpmn, a read). */
 export const exportBpmn = (flowId: number): Promise<ActionResult<FlowExport>> => invoke('flow.exportBpmn', { flow_id: flowId });
+
+/** Who read a plain-language change (flow.propose's `read_by`), as the basis line under a proposal. */
+export const readBy = (by: string): string =>
+  by === 'guard' ? 'Refused by the guardrail check' : by === 'rules' ? 'Read by the rules (no language model answered)' : 'Read by a language model, checked in code';

@@ -26,6 +26,9 @@ x-api-env: &api-env
   GROQ_API_KEY: ${GROQ_API_KEY:-}
   ASK_PROVIDER: ${ASK_PROVIDER:-groq}
   GROQ_MODEL: ${GROQ_MODEL:-}
+  # a second provider for the model chain (di/services/llm): Google's Gemini API key, also only in the local .env;
+  # empty: the Gemini rows of llm_model are skipped (a row without a key is never used)
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
 
 services:
   postgres:

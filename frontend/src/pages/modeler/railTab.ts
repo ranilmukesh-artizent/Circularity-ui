@@ -1,12 +1,12 @@
 /**
- * The Modeler rail's state (plan 10, T4): which of the four tabs (Inspector, Checks, Impact, History) shows, whether the
+ * The Modeler rail's state (plan 10, T4): which of the five tabs (Overview, Inspector, Checks, Impact, History) shows, whether the
  * rail is open, and which tab the person pinned. Pure, so each rule is tested without a page:
  * - below RAIL_WIDE_PX the rail starts closed (it opens over the canvas on demand), at RAIL_WIDE_PX and wider it starts open;
  * - picking a tab opens and pins it (Inspector is the default, so it pins nothing); picking the active tab closes the rail;
  * - selecting a node opens the Inspector unless the person pinned another tab, which then stays;
  * - clicking a check goes to the Inspector (the node is selected too) and drops the pin; Esc closes.
  */
-export type RailTab = 'inspector' | 'checks' | 'impact' | 'history';
+export type RailTab = 'overview' | 'inspector' | 'checks' | 'impact' | 'history';
 
 export interface RailState {
   open: boolean;
@@ -19,6 +19,8 @@ export interface RailState {
 export const RAIL_WIDE_PX = 1600;
 
 export const RAIL_TABS: { id: RailTab; label: string; icon: string }[] = [
+  // what the flow holds, what is being watched, its proposals and the last simulation (moved here from the assistant column)
+  { id: 'overview', label: 'Overview', icon: 'eye' },
   { id: 'inspector', label: 'Inspector', icon: 'info' },
   { id: 'checks', label: 'Checks', icon: 'checks' },
   { id: 'impact', label: 'Impact', icon: 'trend' },
@@ -42,6 +44,9 @@ export function afterPick(st: RailState, tab: RailTab): RailState {
   if (st.open && st.tab === tab) return { ...st, open: false, pinned: null };
   return { open: true, tab, pinned: tab === 'inspector' ? null : tab };
 }
+
+/** The assistant made a proposal for this flow: the Overview tab, where it is listed and applied, opens and stays. */
+export const afterProposal = (): RailState => ({ open: true, tab: 'overview', pinned: 'overview' });
 
 export const afterEsc = (st: RailState): RailState => (st.open ? { ...st, open: false, pinned: null } : st);
 

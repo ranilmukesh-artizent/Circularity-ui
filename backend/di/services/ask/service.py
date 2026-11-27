@@ -32,13 +32,16 @@ import json
 import logging
 import re
 import time
+import traceback
+import uuid
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from typing import Any, cast
 
 from opentelemetry import trace
 
 from di import telemetry
-from di.core import policy
+from di.core import policy, tracing
 from di.core.auth import Principal
 from di.core.db import SessionLocal
 from di.repositories.common import next_step
@@ -47,6 +50,7 @@ from di.schemas.ask import AskBody
 from di.services.actions.pipeline import Actor, CallContext
 from di.services.ask import memory
 from di.services.ask.checked_answer import answer_checked
+from di.services.ask.engine_model import pick_tools
 from di.services.ask.fallback import ask_rule, rules_first
 from di.services.ask.model import AskModel, AskRequest, Done, ModelUnavailable, NoModel, TextDelta, ToolUse
 from di.services.ask.prompt import system_prompt
@@ -56,7 +60,7 @@ from di.services.cases import store
 log = logging.getLogger("di.services.ask")
 CASE_RX = re.compile(r"\bRT-\d{4}\b")
 ASSET_RX = re.compile(r"\b(?:MTR|PMP|CTL|DRL|BAT|ITE)-\d{4}\b")
-KINDS = ("case", "kpi", "source", "workflow", "exception", "event")
+KINDS = ("case", "kpi", "source", "workflow", "run", "flow", "composition", "exception", "event")
 WHY = {
     "no_key": "no language-model key is configured",
     "disabled": "the language model is switched off (ASK_PROVIDER=none)",
@@ -69,6 +73,9 @@ WHY = {
     "unchecked": "the language model's answer about a workflow did not match what the workflow's run shows",
     "rules_first": "workflow drafts come from the workflow builder, which uses the real palette and checks every step",
 }
+
+
+BUSY = ("rate_limited", "timeout", "unavailable")  # the model could not be reached; the question itself may be fine
 
 
 def sse(kind: str, data: dict) -> str:
@@ -88,7 +95,7 @@ def page_of(body: AskBody, account: policy.Account) -> dict:
     obj = c.object.model_dump() if c.object and c.object.kind in KINDS else None
     if obj is None and c.case_id:
         obj = {"kind": "case", "id": c.case_id}
-    return {"page": c.page or "home", "section": c.section or "", "role": account.role, "object": obj}
+    return {"page": c.page or "home", "section": c.section or "", "role": account.role, "object": obj, "org": c.org}
 
 
 def _walk(v: Any, keys: tuple[str, ...], out: list) -> None:
@@ -158,14 +165,21 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
         first = "fallback" if isinstance(model, NoModel) else model.name
         yield sse("start", {"conversation_id": conv, "provider": first, "model": model.model or None})
 
-        box = Toolbox(session=s, account=account, pctx=pctx, conversation_id=conv)
+        box = Toolbox(session=s, account=account, pctx=pctx, conversation_id=conv, build=True, page=page)
+        # T0: the turn is one trace in our Postgres (trace_span): this `run` span, a `model` span per model response and a
+        # `tool` span per tool call. Its id goes out with the answer.
+        t_start, trace_id, turn_span = datetime.now(UTC), "ask-" + uuid.uuid4().hex[:12], uuid.uuid4().hex[:16]
+        box.trace = (trace_id, turn_span)
+        earlier = next((m["content"] for m in reversed(memory.messages(turns)) if m.get("role") == "user"), "")
+        box.only = pick_tools(page, q, str(earlier))
         if root is not None:
             box.trace_context = trace.set_span_in_context(root)
             if conv:
                 root.set_attribute("gen_ai.conversation.id", conv)
-        text, reason, streamed = None, None, False
+        text, reason, streamed, sent = None, None, False, 0
+        failure: str | None = None  # why the model path did not answer: on the turn's trace span, never in the answer
         try:
-            if rules_first(q, ctx, page):
+            if isinstance(model, NoModel) and rules_first(q, ctx, page):  # with a model, create_workflow drafts it
                 raise ModelUnavailable("rules_first", "answered by the rules")
             req = AskRequest(question=q, system=system_prompt(account, pctx, page), conversation=memory.messages(turns))
             for ev in answer_checked(model, req, box):  # an answer about a workflow is checked first (P9-2.23)
@@ -174,6 +188,9 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
                     yield sse("delta", {"text": tidy(ev.text)})
                 elif isinstance(ev, ToolUse):
                     u = box.used[-1] if box.used else None
+                    for made in box.created[sent:]:  # a draft the tool just made: its card shows before the text ends
+                        yield sse("created", made.json())
+                    sent = len(box.created)
                     yield sse(
                         "tool",
                         {
@@ -190,10 +207,15 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
                 raise ModelUnavailable("model_error", "empty answer")
         except ModelUnavailable as e:
             reason = e.reason
-        except Exception:  # a provider bug must not leave the person without an answer
+            # never a key: the detail is a reason word, an exception class or a check's text
+            log.info("Ask: the model did not answer (%s): %s", e.reason, (e.detail or "")[:400])
+            failure = f"{e.reason}: {e.detail or ''}"[:300]
+        except Exception as e:  # a provider bug must not leave the person without an answer
             log.exception("Ask: the model path failed; answering with the fallback")
             s.rollback()
             reason = "error"
+            where = traceback.extract_tb(e.__traceback__)[-1]
+            failure = f"{type(e).__name__}: {str(e)[:200]} ({where.filename.rsplit('/', 1)[-1]}:{where.lineno})"
 
         if reason is None:
             used = [(u.args, u.data) for u in box.used if u.ok]
@@ -212,6 +234,7 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
                 "intent": None,
                 "result": "ok",
                 "cards": [],
+                "created": [c.json() for c in box.created],
             }
         else:
             if streamed:
@@ -219,6 +242,12 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
             t0 = time.monotonic()
             with telemetry.span("ask_fallback", attributes={"di.ask.fallback_reason": reason}, context=box.trace_context):
                 rule = ask_rule(q, ctx, page)  # its own span, a sibling of the failed chat span
+            if rule["result"] == "fallback" and reason in BUSY:
+                # no rule knows this question and the models are busy: say that, not "I can't do that yet" (D15)
+                rule["text"] = (
+                    f"I could not answer this just now: {WHY[reason]}. Nothing was changed. Ask again in a minute, "
+                    "or pick one of these, which I can answer without a model:"
+                )
             for c in rule["calls"]:
                 if not c["skipped"]:
                     log_call(s, account, c["action"], c["input"], round((time.monotonic() - t0) * 1000), c["code"])
@@ -257,7 +286,26 @@ def _answer(body: AskBody, p: Principal, model: AskModel, root: Any) -> Iterator
                 "intent": rule["intent"],
                 "result": rule["result"],
                 "cards": rule["cards"],
+                # a draft made before the model failed is still there: the answer says so whoever wrote the text
+                "created": [c.json() for c in box.created],
             }
         conv = memory.save(s, account.id, conv, turns, q, final["text"], final["provider"])
         s.commit()
-        yield sse("final", {**final, "conversation_id": conv})
+        obj = page.get("object") or {}
+        tracing.record(
+            s, "ask turn", kind="run", trace_id=trace_id, parent_id=None, started_at=t_start, span_id=turn_span,
+            status="ok" if final["by_model"] or reason in (None, "rules_first", "disabled", "no_key") else "error",
+            attrs={
+                "di.agent": "ask", "di.account": account.id, "di.role": account.role, "di.conversation": conv,
+                "di.page": page.get("page"), "di.section": page.get("section"),
+                "di.object": f"{obj.get('kind')}:{obj.get('id')}" if obj else None,
+                "di.answered_by": "model" if final["by_model"] else "rules", "di.fallback_reason": reason, "di.failure": failure,
+                "gen_ai.response.model": final["model"], "di.tools": [t["name"] for t in final["tools"]],
+                "di.tools_offered": list(box.only), "di.created": [f"{c['kind']}:{c['id']}" for c in final["created"]],
+                "gen_ai.usage.input_tokens": box.usage.get("input_tokens"),
+                "gen_ai.usage.output_tokens": box.usage.get("output_tokens"),
+                "di.model_requests": box.usage.get("requests"),
+                "content.question": q, "content.answer": final["text"],
+            },
+        )  # fmt: skip
+        yield sse("final", {**final, "conversation_id": conv, "trace_id": trace_id})

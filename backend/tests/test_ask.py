@@ -128,11 +128,19 @@ def use(model) -> None:
 
 
 # ---------------------------------------------------------------- the model path, with a fake model
-def test_workflow_drafts_take_the_rules_even_with_a_model():
-    fake = Fake(lambda seen: [], lambda seen: "I can't see any record about that.")
+def test_workflow_drafts_take_the_rules_only_without_a_model():
+    """ai-tasks I4 (27 Nov 2026): with a model, "build a workflow" reaches it and it is offered create_workflow; the rule
+    draft answers only when no model is configured."""
+    q = "Build an ingest for Dealer network with currency conversion"
+    fake = Fake(lambda seen: [], lambda seen: "Which system should it read from?")
     use(fake)
-    _, final = ask("developer", "Build an ingest for Dealer network with currency conversion", context={"page": "integration"})
-    assert fake.requests == []  # the model was not asked
+    _, final = ask("developer", q, context={"page": "integration"})
+    assert len(fake.requests) == 1 and final["provider"] == "fake" and final["fallback_reason"] is None
+    assert "create_workflow" in [sp["name"] for sp in fake.specs]
+    assert final["created"] == [] and final["trace_id"].startswith("ask-")
+
+    use(NoModel("no_key"))
+    _, final = ask("developer", q, context={"page": "integration"})
     assert final["provider"] == "fallback" and final["fallback_reason"] == "rules_first"
     assert final["intent"] == "workflow.draft" and final["cards"][0]["type"] == "wfdiff"
     assert "workflow builder" in final["notice"]
@@ -203,9 +211,23 @@ def test_tenant_boundary_refuses_customer_b():
     assert {x["outcome"] for x in logged} == {"denied · tenant boundary"} and {x["account"] for x in logged} == {"planner-b"}
 
 
-def test_only_read_tools_are_offered_and_writes_are_refused():
+def test_only_reads_and_the_three_build_tools_are_offered_and_writes_are_refused():
+    from di.services.ask import build
+
     names = {s["name"] for s in tools.specs()}
     assert names == set(tools.TOOL_NAMES)
+    build_names = {"create_workflow", "change_decision_flow", "describe_business"}
+    assert set(build.BUILD_TOOLS) == build_names
+    with SessionLocal() as s:  # what the service builds: the reads and the three draft-making tools, and nothing else
+        every = {sp["name"] for sp in tools.Toolbox(session=s, account=None, pctx=None, build=True).specs}
+    assert every == names | build_names
+    assert not every & {
+        "request_approval",
+        "send_instruction",
+        "request_missing_evidence",
+        "decision.approve",
+        "workflow.publish",
+    }
     assert not names & {"request_approval", "send_instruction", "request_missing_evidence"}
     for n in tools.MCP_TOOLS:
         assert tools.TOOLS[n]["rw"] == "read"
@@ -218,7 +240,8 @@ def test_only_read_tools_are_offered_and_writes_are_refused():
     fake = Fake(once(*wants), lambda seen: "Nothing was changed.")
     use(fake)
     _, final = ask("approver", "Approve RT-1048 now")
-    assert {s["name"] for s in fake.specs} == names
+    offered = {s["name"] for s in fake.specs}  # the few tools this question is given: reads and build tools only
+    assert offered and offered <= every and not offered & {n for n, _ in wants}
     assert [r["error"]["code"] for _, r in fake.seen] == ["not_found"] * 4
     assert journal() == j
     with SessionLocal() as s:
@@ -279,8 +302,9 @@ def test_stream_event_shape():
     assert "".join(d["text"] for k, d in ev if k == "delta") == final["text"]
     assert set(final) == {
         "type", "provider", "model", "fallback_reason", "notice", "text", "case_ids", "asset_ids", "sources", "tools",
-        "refused", "next", "intent", "result", "cards", "conversation_id", "by_model",
+        "refused", "next", "intent", "result", "cards", "conversation_id", "by_model", "created", "trace_id",
     }  # fmt: skip
+    assert final["created"] == [] and re.fullmatch(r"ask-[0-9a-f]+", final["trace_id"])
     assert re.fullmatch(r"ASK-\d+", final["conversation_id"])
 
 
@@ -342,7 +366,13 @@ def test_groq_provider_streams_tool_calls_and_text(monkeypatch):
     assert [k for k, _ in ev] == ["start", "tool", "delta", "delta", "final"]
     first, second = bodies
     assert first["model"] == "openai/gpt-oss-120b" and first["stream"] is True and first["tool_choice"] == "auto"
-    assert {t["function"]["name"] for t in first["tools"]} == set(tools.TOOL_NAMES)
+    offered = {t["function"]["name"] for t in first["tools"]}  # the question's few tools, picked in code
+    assert "get_case" in offered and offered <= set(tools.TOOL_NAMES) | {
+        "create_workflow",
+        "change_decision_flow",
+        "describe_business",
+    }
+    assert not offered & {"request_approval", "send_instruction", "decision.approve", "workflow.publish"}
     assert first["messages"][0]["role"] == "system" and first["messages"][-1] == {
         "role": "user", "content": "Why is RT-1048 recommended for redeploy?"
     }  # fmt: skip
@@ -406,6 +436,7 @@ def test_groq_failures_fall_back_to_the_rule_based_answer(monkeypatch, respond, 
 def test_no_key_or_provider_none_uses_the_fallback(monkeypatch):
     s = get_settings()
     monkeypatch.setattr(s, "groq_api_key", SecretStr(""))
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # no provider key at all: a second provider's key would answer
     assert isinstance(get_model(), NoModel)
     ev, final = ask("planner-a", "Which cases are missing evidence?")
     assert ev[0][1]["provider"] == "fallback"
@@ -477,19 +508,25 @@ LIVE = bool(os.environ.get("GROQ_API_KEY", "").strip())
 
 
 @pytest.mark.skipif(not LIVE, reason="GROQ_API_KEY is not set")
-def test_live_groq_answers_from_synced_data_and_refuses_customer_b():
+def test_live_groq_answers_from_synced_data_and_refuses_customer_b(monkeypatch):
+    from pydantic_ai import models
+
+    # the one test that calls a provider on purpose: Ask now runs on Pydantic AI, whose live requests other test modules
+    # forbid for the whole process (models.ALLOW_MODEL_REQUESTS = False); allowed here only, put back by monkeypatch
+    monkeypatch.setattr(models, "ALLOW_MODEL_REQUESTS", True)
     app.dependency_overrides.pop(get_model, None)
     q = "Why is RT-1048 recommended for redeploy?"
     _, a = ask("planner-a", q)
     if a["provider"] == "fallback" and a["fallback_reason"] == "rate_limited":
         pytest.skip("Groq's free tier is over its limit right now")
-    assert a["provider"] == "groq", a.get("fallback_reason")
+    # a model answered: "groq" or "gemini" when the chain has one provider, "chain" when it mixes them
+    assert a["provider"] in ("groq", "gemini", "chain") and a["by_model"] is True, a.get("fallback_reason")
     assert any(t["ok"] and t["args"].get("case_id") == "RT-1048" for t in a["tools"])
     assert "RT-1048" in a["text"] and "redeploy" in a["text"].lower()
     assert "RT-1048" in a["case_ids"] and a["sources"]
     time.sleep(40)  # the free tier counts tokens per minute
     _, b = ask("planner-b", q)
-    assert b["provider"] in ("groq", "fallback")
+    assert b["provider"] in ("groq", "gemini", "chain", "fallback")
     assert any(x["code"] == "tenant_boundary" for x in b["refused"])
     assert not [t for t in b["tools"] if t["ok"] and t["args"].get("case_id") == "RT-1048"]
     assert b["case_ids"] == [] and "9,600" not in b["text"]
