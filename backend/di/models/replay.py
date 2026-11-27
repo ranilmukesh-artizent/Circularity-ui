@@ -47,6 +47,7 @@ replay_run = Table(
     Column("flow_id", BigInteger, ForeignKey("decision_flow.id"), nullable=False),
     Column("flow_ver", Text, nullable=False),
     Column("dver", Integer),
+    Column("draft_hash", Text),  # 0066: the hash of the draft graph a draft replay ran on (review P9-7.9 F1)
     Column("status", Text, nullable=False),
     Column("report", JSONB),
     Column("error", Text),

@@ -119,13 +119,13 @@ def telecom_flow(maker: str = "planner-a") -> int:
             ),
             {"o": ORG},
         ).scalar_one()
-        dver = flow_repo.get_flow(s, fid).dver
+        f = flow_repo.get_flow(s, fid)
         s.execute(
             text(
-                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, status, created_by) "
-                "VALUES (:b, :f, 'draft', :d, 'done', 't')"
+                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, draft_hash, status, created_by) "
+                "VALUES (:b, :f, 'draft', :d, :h, 'done', 't')"
             ),
-            {"b": bid, "f": fid, "d": dver},
+            {"b": bid, "f": fid, "d": f.dver, "h": rollouts.draft_hash(f.draft)},
         )
         s.commit()
     return int(fid)

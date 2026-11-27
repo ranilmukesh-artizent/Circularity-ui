@@ -24,7 +24,8 @@ MINE = (
     "'access.syncDirectory'"
 )
 EVENT_TYPES = (
-    "('user.provisioned', 'user.deprovisioned', 'access.revoked', 'directory.synced', 'access.reassigned', 'identity.revoked')"
+    "('user.provisioned', 'user.deprovisioned', 'access.revoked', 'directory.synced', 'access.reassigned', 'identity.revoked', "
+    "'identity.scim.ignored')"
 )
 
 

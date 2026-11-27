@@ -74,13 +74,13 @@ def replay_done(fid: int, real: bool = True) -> None:
             ),
             {"o": ORG},
         ).scalar_one()
-        dver = flow_repo.get_flow(s, fid).dver
+        f = flow_repo.get_flow(s, fid)
         s.execute(
             text(
-                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, status, created_by) "
-                "VALUES (:b, :f, 'draft', :d, 'done', 't')"
+                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, draft_hash, status, created_by) "
+                "VALUES (:b, :f, 'draft', :d, :h, 'done', 't')"
             ),
-            {"b": bid, "f": fid, "d": dver},
+            {"b": bid, "f": fid, "d": f.dver, "h": rollouts.draft_hash(f.draft)},
         )
         s.commit()
 
@@ -222,6 +222,22 @@ def test_x_06_canary_needs_replay():
     assert again["error"]["code"] == "conflict" and "already running" in again["error"]["message"]
     bad = start(fid, share=100)
     assert bad["ok"] is False
+
+
+def test_x_06_canary_refused_when_draft_changed_after_replay():
+    """Review P9-7.9 F1: the replay binds to the draft's content, not its version number (saveDraft reuses `dver`)."""
+    fid = shadow_flow()
+    replay_done(fid)
+    changed = with_rule(default_flow(load_template("tool_fleet")), "TF-D", "exclude", "redeploy", {})
+    ok(call("flow.saveDraft", {"flow_id": fid, "graph": changed}, "planner-a"))
+    ok(call("flow.submit", {"flow_id": fid}, "planner-a"))
+    ok(call("flow.approve", {"flow_id": fid}, "approver"))
+    r = start(fid)
+    stale = "Replay again: the draft changed since the last replay."
+    assert r["ok"] is False and r["error"] == {"code": "conflict", "message": stale}
+    assert call("rollout.get", {"flow_id": fid}, "approver")["output"]["can"]["startCanary"] == stale
+    replay_done(fid)  # a replay of the draft now in the flow clears it
+    assert ok(start(fid))["stage"] == "canary"
 
 
 def test_x_06_pause_returns_new_cases_to_base():
