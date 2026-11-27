@@ -13,7 +13,7 @@ import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { describeInAssistant, openInSetup } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-a10-t3');
@@ -46,15 +46,14 @@ try {
   await p.locator('#modeler').waitFor();
 
   await check((await p.getByRole('button', { name: 'Describe your business' }).count()) === 0, 'the "Describe your business" button is still on the Modeler');
-  await p.getByRole('tab', { name: 'Set up', exact: true }).or(p.getByRole('button', { name: 'Compose', exact: true })).first().click();
-  await p.locator('section[aria-label="Compose"]').waitFor();
+  await openSetupTab(p, UI); // the page tab is a link (plan 10, 3.4); the assistant's own Set up mode button is not it
   await check((await p.locator('section[aria-label="Compose"] textarea').count()) === 0, 'the Describe step still has its own text box');
 
   const id = await describeInAssistant(p, { timeout: UI });
   const turn = p.locator('.st-turn').last();
   const t0 = await turn.innerText();
   await check(/Read \d+ words?/.test(t0), 'no reading line: ' + t0.slice(0, 200));
-  await check(/(Matched|Nearest) pack: tool_fleet/.test(t0), 'no pack line');
+  await check(/(Matched: |Closest: )Tool fleet returns/.test(t0), 'no pack line'); // matchLine names the pack by its label (UI audit A2)
   const skip = turn.getByRole('button', { name: 'Skip', exact: true });
   await skip.waitFor();
   await skip.locator('xpath=..').locator('button').first().click();

@@ -42,7 +42,9 @@ const ONLY_IF = 'return_reason=early return';
 const RULE = 'Never recycle grade A';
 const AGENT = 'coordinator'; // Handoff Coordinator, a seeded agent
 const WF_NAME = 'MVP smoke intake ' + Date.now().toString(36);
-const T = { ui: 45000, sync: 240000, run: 180000 };
+// SMOKE_TIME_SCALE=3 stretches every wait on a loaded machine (several stacks side by side); the default is 1
+const K = Number(process.env.SMOKE_TIME_SCALE) || 1;
+const T = { ui: 45000 * K, sync: 240000 * K, run: 180000 * K };
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const errors = [];
@@ -122,6 +124,11 @@ const text = (p) => p.innerText('body');
 async function waitText(p, rx, msg, timeout = T.ui) {
   return until(p, async () => (await text(p)).match(rx), msg || `no text ${rx}`, timeout, 250);
 }
+/** plan 10: the Modeler rail's Inspector, Checks, Impact and History are tabs that open on demand (closed below 1600 px) */
+async function railTab(p, name) {
+  const tab = p.locator('.mdl-strip').getByRole('tab', { name }).first();
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+}
 async function go(p, route) {
   await p.goto(`${base}/#/${route}`);
   await p.locator('#view').waitFor();
@@ -196,7 +203,7 @@ await step('2a Developer connects PostgreSQL from the catalogue, bound to compan
   await dlg(dev).getByText('Grant only what Circularity needs').waitFor();
   await dlg(dev).getByRole('button', { name: 'Continue' }).click();
   await dlg(dev).getByRole('button', { name: 'Test connection' }).click();
-  await until(dev, async () => /Connection test passed/.test(await dlg(dev).innerText()), 'Test connection did not pass', 60000);
+  await until(dev, async () => /Connection test passed/.test(await dlg(dev).innerText()), 'Test connection did not pass', 60000 * K);
   await dlg(dev).getByRole('button', { name: 'Continue' }).click();
   await dlg(dev).getByRole('button', { name: 'Suggest mappings' }).click();
   await until(dev, async () => (await dlg(dev).locator('tbody tr').count()) > 0, 'Suggest mappings returned no rows', 60000, 500);
@@ -353,12 +360,13 @@ await step('4b planner-a gives company-x its own flow, applies "Never recycle gr
   const ask = pl.locator('.mdl-agent textarea'); // plan 10: the pinned agent column replaced the Assistant panel
   await ask.fill(RULE);
   await ask.press('Enter');
-  await waitText(pl, /Proposed: /, 'the assistant proposed nothing', 30000);
+  await waitText(pl, /Proposed: /, 'the assistant proposed nothing', 30000 * K);
   const prop = (await pl.locator('.mdl-agent .as-card-title').first().innerText()).replace(/^Proposed:\s*/, '').trim();
   check(/recycle|material/i.test(prop) && /\bA\b/.test(prop), `the proposal does not read as the rule: "${prop}"`);
   await pl.getByRole('button', { name: 'Apply to draft' }).click();
   await waitText(pl, /Saved .* to draft/, 'the proposal was not applied');
   st.rule = prop.match(/^[A-Z]+-\d+/)?.[0] ?? null;
+  await railTab(pl, 'Impact');
   await pl.getByRole('button', { name: 'Simulate on open queue' }).click();
   const sim = (await waitText(pl, /\d+ of \d+ open decisions change[^\n]*/, 'no simulation result'))[0];
   await pl.getByRole('button', { name: 'Submit for approval' }).click();
@@ -399,13 +407,13 @@ await step('6 planner-a re-evaluates a company-x case: the rule shows', async ()
   const want = /Excluded by business rule [A-Z]+-\d+/;
   let found = null;
   await go(pl, `product/asset/${id}`);
-  found = await waitText(pl, want, '', 6000).catch(() => null);
+  found = await waitText(pl, want, '', 6000 * K).catch(() => null);
   for (const n of found ? [] : [6, 7]) {
     await go(pl, `product/${id}/stage/${n}`);
     for (const tab of ['Compare outcomes', 'Why this outcome', 'Checks']) {
       const tb = pl.getByRole('tab', { name: tab });
       if (await tb.count()) await tb.first().click();
-      found = await waitText(pl, want, '', 1500).catch(() => null);
+      found = await waitText(pl, want, '', 1500 * K).catch(() => null);
       if (found) break;
     }
     if (found) break;
@@ -518,7 +526,7 @@ await step('10 Admin fits a model and sees the candidate', async () => {
   // the case's run board (Process Orchestration), stage 10: the Reconciler's learning records name the candidate
   await go(admin, `orchestration/run?case=${st.case}`);
   await admin.getByText('Reconcile and learn', { exact: true }).first().click();
-  const seen = await waitText(admin, new RegExp(`candidate model ${mid} awaiting promotion[^\\n]*`), `the run board of ${st.case} does not show the candidate ${mid}`, 15000);
+  const seen = await waitText(admin, new RegExp(`candidate model ${mid} awaiting promotion[^\\n]*`), `the run board of ${st.case} does not show the candidate ${mid}`, 15000 * K);
   return `model.fit → ${mid} (${r.output.status}, ${r.output.metrics.n} outcome rows); the run board, Reconcile and learn: "${seen[0]}"`;
 });
 

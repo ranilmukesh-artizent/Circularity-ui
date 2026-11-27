@@ -32,7 +32,7 @@ await page.goto(base + '/#/signin');
 await page.fill('#si-id', 'admin');
 await page.fill('#si-pw', 'demo');
 await page.click('button[type=submit]');
-await page.waitForSelector('#view', { timeout: 15000 });
+await page.waitForSelector('#view', { timeout: 60000 });
 await page.goto(base + '/#/modeler?template=industrial&org=workspace');
 const col = page.locator('.mdl-agent');
 
@@ -52,7 +52,7 @@ const box = col.locator('textarea');
 await box.fill(SENTENCE);
 await box.press('Enter');
 check(await seen(/Proposed: /, 30000), 'the sentence becomes a card: "Proposed: ..."');
-const card = col.locator('.as-card').first();
+const card = col.locator('.as-card-flow').first(); // the preview card; held agent proposals are also .as-card (ProposalRow)
 check((await card.getByText('What changes').count()) === 1, 'the card has "What changes"');
 check((await card.getByText(/Read by (the rules|a language model)/).count()) === 1, 'the card says how it was read');
 check((await card.getByText(/Not published\. A different person approves it after you submit\./).count()) === 1, 'the card says what Apply does not do');

@@ -27,12 +27,13 @@ async function session(acct) {
   await page.fill('#si-id', acct);
   await page.fill('#si-pw', 'demo');
   await page.click('button[type=submit]');
+  await page.waitForURL((u) => !/signin/.test(u.hash), { timeout: 60000 }); // the sign-in redirect must land before the next goto
   await page.waitForTimeout(1500);
   return page;
 }
 
 const view = (p) => p.innerText('body'); // toasts are outside #view
-async function waitText(p, rx, ms = 10000) {
+async function waitText(p, rx, ms = 30000) {
   for (let t = 0; t < ms; t += 250) {
     if (rx.test(await view(p))) return true;
     await p.waitForTimeout(250);
@@ -40,10 +41,16 @@ async function waitText(p, rx, ms = 10000) {
   return false;
 }
 
+// plan 10: the Modeler's rail holds Inspector, Checks, Impact and History as tabs that open on demand at this width
+async function railTab(p, name) {
+  const tab = p.locator('.mdl-strip').getByRole('tab', { name, exact: false }).first();
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+}
+
 // 1. Planner A: the Customer A flow, a rule excluding resale for grade C
 const planner = await session('planner-a');
 await planner.goto(base + '/#/modeler');
-check(await waitText(planner, /Industrial returns · /), 'planner-a opens the Modeler');
+check(await waitText(planner, /Industrial returns · /, 40000), 'planner-a opens the Modeler'); // a cold dev server needs more than 10 s
 const fork = planner.getByRole('button', { name: /Give Customer A its own flow/ });
 if (await fork.count()) {
   await fork.click();
@@ -55,9 +62,11 @@ await planner.getByLabel('Action').selectOption('exclude');
 await planner.locator('fieldset', { hasText: 'Grade' }).getByLabel('C', { exact: true }).check();
 check(await waitText(planner, /IR-01 · never whole-asset resale/), 'the rule reads "IR-01 · never whole-asset resale"');
 await planner.waitForTimeout(3000); // the 2 s autosave
+await railTab(planner, 'Checks');
 check(await waitText(planner, /IR-01 active: grade C: never whole-asset resale\./), 'the checks show the rule active');
 
 // 2. Simulate on the open queue
+await railTab(planner, 'Impact');
 await planner.getByRole('button', { name: 'Simulate on open queue' }).click();
 check(await waitText(planner, /\d+ of \d+ open decisions change/), 'the simulation shows "N of M open decisions change"');
 console.log('impact:', ((await view(planner)).match(/\d+ of \d+ open decisions change[^\n]*/) || [''])[0]);
