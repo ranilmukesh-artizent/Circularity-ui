@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { can, canPage, canRoute, currentAccount, exchangeSsoCode, homeRoute, signInWith, signOut, ssoConfig } from './session';
+import { can, canPage, canRoute, currentAccount, exchangeSsoCode, homeRoute, isKnownRoute, signInWith, signOut, ssoConfig } from './session';
 
 /** A fake di-api with the answers sign-in and the access checks need (shapes as di/routes/auth.py and di/services/screens). */
 const REFERENCE = {
@@ -8,13 +8,13 @@ const REFERENCE = {
   RB_AV: { Planner: 'PL' },
   TENANTS: ['Customer A', 'Customer B', 'Customer C'],
   PERM_ALIAS: { approve: 'approve.decisions' },
-  PAGES: { home: {}, product: {}, access: {}, mcp: {} },
-  RB_SECS: { product: ['received', 'expected', 'asset', 'case'] },
+  PAGES: { home: {}, product: {}, access: {}, mcp: {}, analytics: {} },
+  RB_SECS: { product: ['received', 'expected', 'asset', 'case'], analytics: ['waterfall', 'eng'] },
 };
 const ME_B = {
   account: { id: 'planner-b', role: 'Planner', label: 'Planner · Customer B', tenant: 'Customer B', email: 'planner.b@northfield.example' },
   description: 'Plans returns.', home: 'home', permissions: ['submit.decisions'],
-  pages: { home: [], product: ['received', 'expected', 'asset', 'case'] }, tenants: ['Customer B'], tenant_scoped: true, warehouse: null,
+  pages: { home: [], product: ['received', 'expected', 'asset', 'case'], analytics: ['waterfall'] }, tenants: ['Customer B'], tenant_scoped: true, warehouse: null,
 };
 
 function json(body: unknown, status = 200) {
@@ -76,6 +76,13 @@ describe('session against di-api', () => {
     expect(await settle(() => canRoute({ page: 'product', a: 'RT-1048', b: null }))).toBe('tenant');
     expect(canRoute({ page: 'product', a: 'RT-1101', b: null })).toBe(true);
     expect(canRoute({ page: 'access', a: null, b: null })).toBe(false);
+  });
+
+  it("knows Analytics' Packs tab (#/analytics/packs) but not an arbitrary section", () => {
+    expect(isKnownRoute({ page: 'analytics', a: 'packs', b: null })).toBe(true);
+    expect(canRoute({ page: 'analytics', a: 'packs', b: null })).toBe(true);
+    expect(isKnownRoute({ page: 'analytics', a: 'nope', b: null })).toBe(false);
+    expect(canRoute({ page: 'analytics', a: 'eng', b: null })).toBe(false);
   });
 
   it('reads whether single sign-on is set up, and swaps a one-time code for the session (P9-8.9)', async () => {

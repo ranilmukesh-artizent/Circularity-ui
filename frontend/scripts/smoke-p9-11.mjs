@@ -34,6 +34,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { replayTheDraft } from './p9-replay.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-11');
@@ -42,6 +43,7 @@ const ORG = 'Customer A';
 const SOURCES = ['mr_rental', 'mr_assets', 'mr_decon', 'mr_biomed', 'mr_parts', 'mr_disposal'];
 const TAGS = { 1: 'SYN-MR-IP-0001', 2: 'SYN-MR-IP-0002', 20: 'SYN-MR-IP-0020', 7: 'SYN-MR-PM-0007' }; // key -> the device's asset tag
 const MODELER = `${base}/#/modeler?template=medical_rental&org=${encodeURIComponent(ORG)}`;
+const HISTORY = path.join(ROOT, 'fixtures/replay/medical_rental.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -105,8 +107,8 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
-/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
- * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+/** Analytics > Packs for one pack: open Analytics, pick its Packs tab (as a person does; #/analytics/packs opens it too), then
+ * the pack. */
 async function openPacks(p, key, question) {
   await open(p, `${base}/#/analytics`);
   await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
@@ -340,6 +342,9 @@ await step('7 The turnaround alert, the service-week suggestion and the analytic
 // ---------------------------------------------------------------- 8
 await step('8 The replay figures labelled modelled on the Compose publish step', async () => {
   const p = await as('planner.a');
+  const notes = [];
+  // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
@@ -349,7 +354,8 @@ await step('8 The replay figures labelled modelled on the Compose publish step',
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();
   if (!/modelled/i.test(t)) throw new Error('the publish step shows no replay figures labelled "modelled"');
-  return 'replay figures labelled modelled';
+  notes.push('replay figures labelled modelled');
+  return notes.join('; ');
 });
 
 if (errors.length) {

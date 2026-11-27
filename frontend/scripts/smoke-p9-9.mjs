@@ -42,6 +42,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { replayTheDraft } from './p9-replay.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-9');
@@ -51,6 +52,7 @@ const SOURCES = ['uc_lease', 'uc_dms', 'uc_title', 'uc_insp', 'uc_recall', 'uc_a
 const vin = (n) => 'SYNUC' + String(n).padStart(12, '0');
 const CARS = [1, 2, 3, 7, 90]; // the demo's cars: UC-S1 (retail South), UC-S2 (recall), UC-S3 (lien), UC-S7 (recon 2,800), 090 (inspection scheduled)
 const MODELER = `${base}/#/modeler?template=used_cars&org=${encodeURIComponent(ORG)}`;
+const HISTORY = path.join(ROOT, 'fixtures/replay/used_cars.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
 const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
@@ -128,8 +130,8 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
-/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
- * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+/** Analytics > Packs for one pack: open Analytics, pick its Packs tab (as a person does; #/analytics/packs opens it too), then
+ * the pack. */
 async function openPacks(p, key, question) {
   await open(p, `${base}/#/analytics`);
   await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
@@ -373,8 +375,10 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   });
   needs('9.18', !!alert, `the alert "EV crossovers ageing at North lot"${alert ? ` (${alert})` : ''}`, notes);
 
-  // the worked question, in Analytics > Packs
-  await openPacks(p, 'used_cars', /Why are EV crossovers sitting longer on our lots\?/);
+  // the worked question, in Analytics > Packs. The pack's card reads "Why are EV crossovers sitting longer on our lots?" (No data
+  // yet: the cases carry no lot facts); the worked question WQ-UC-1 with the chart is titled "Where do returned EV crossovers
+  // sell fastest?" in di/services/questions/used_cars.py (the plan's title is the card's): choose it by "EV crossovers"
+  await openPacks(p, 'used_cars', /EV crossovers/);
   const q = await waitText(p, /Why are EV crossovers sitting longer on our lots\?/, '', 60000).then(() => true, () => false);
   needs('9.19', q, 'the question "Why are EV crossovers sitting longer on our lots?"', notes);
   if (q) {
@@ -384,6 +388,8 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   }
 
   // the replay figures, on the Compose publish step of the composition of step 2
+  // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();

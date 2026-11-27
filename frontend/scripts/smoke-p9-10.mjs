@@ -36,6 +36,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { replayTheDraft } from './p9-replay.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-10');
@@ -54,6 +55,7 @@ const UNITS = {
   202: { model: 'LCD-100G', site: 'SITE-301' }, // never in the inventory
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
+const HISTORY = path.join(ROOT, 'fixtures/replay/telecom_network.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -117,8 +119,8 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
-/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
- * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+/** Analytics > Packs for one pack: open Analytics, pick its Packs tab (as a person does; #/analytics/packs opens it too), then
+ * the pack. */
 async function openPacks(p, key, question) {
   await open(p, `${base}/#/analytics`);
   await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
@@ -344,6 +346,8 @@ await step('8 The analytics question and the modelled replay figures', async () 
   if (!/PSU-48/.test(await text(p))) throw new Error('the power unit question shows no chart rows (PSU-48)');
   notes.push('question with its chart');
 
+  // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
