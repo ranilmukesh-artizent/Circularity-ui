@@ -162,6 +162,7 @@ async function caseText(p, id, fresh = false) {
   let all = '';
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${id}/${place}`);
+    await p.waitForFunction(() => { const t = document.querySelector('#view')?.innerText || ''; return t.trim() !== '' && !/^Loading...$/.test(t.trim()); }, null, { timeout: 60000 }).catch(() => {}); // the page can still say Loading... on a busy stack
     await p.waitForTimeout(400);
     all += '\n' + (await p.innerText('#view').catch(() => ''));
   }

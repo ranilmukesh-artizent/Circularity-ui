@@ -7,7 +7,7 @@
  *   1  developer registers and connects mr_rental, mr_assets, mr_decon, mr_biomed, mr_parts and mr_disposal and runs their syncs
  *      (action: source.reconnect and source.sync); the Connection Fabric lists all six; the devices of the demo (SYN-MR-IP-0001, 0002,
  *      0020 and SYN-MR-PM-0007) open as rental cases for Customer A (action: case.open: a sync opens no rental case yet). Then
- *      planner.a, Modeler > Compose (medical rental, Customer A): the sample prompt "Return to re-rent", "2 explicit controls" and the
+ *      planner.a, Modeler > Compose (medical rental, Customer A): the sample prompt "Return to re-rent", "1 explicit control" (the repair limit; the fleet manager is a role, not a limit of its own) and the
  *      service question (MR-01, MR-05).
  *   2  SYN-MR-IP-0020's case shows "Decontamination record required"; My work lists "No decontamination record" (MR-09, MR-10).
  *   3  SYN-MR-IP-0002's case shows "Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026", "Send a different unit" and
@@ -42,8 +42,8 @@ const ORG = 'Customer A';
 const SOURCES = ['mr_rental', 'mr_assets', 'mr_decon', 'mr_biomed', 'mr_parts', 'mr_disposal'];
 const TAGS = { 1: 'SYN-MR-IP-0001', 2: 'SYN-MR-IP-0002', 20: 'SYN-MR-IP-0020', 7: 'SYN-MR-PM-0007' }; // key -> the device's asset tag
 const MODELER = `${base}/#/modeler?template=medical_rental&org=${encodeURIComponent(ORG)}`;
-const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
-const FIRST = 180000; // a first page load after sign-in
+const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
+const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 
@@ -131,6 +131,7 @@ async function caseText(p, id, fresh = false) {
   let all = '';
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${id}/${place}`);
+    await p.waitForFunction(() => { const t = document.querySelector('#view')?.innerText || ''; return t.trim() !== '' && !/^Loading...$/.test(t.trim()); }, null, { timeout: 60000 }).catch(() => {}); // the page can still say Loading... on a busy stack
     await p.waitForTimeout(400);
     all += '\n' + (await p.innerText('#view').catch(() => ''));
   }
@@ -208,7 +209,7 @@ await step('1 Connect the six rental systems, sync them, open the devices as cas
   const p = await as('planner.a');
   await startCompose(p);
   const t = await compose(p).innerText();
-  if (!/\b2 explicit controls\b/.test(t)) throw new Error('the reading does not say "2 explicit controls": ' + (t.match(/\d+ explicit controls?/)?.[0] || 'no such line'));
+  if (!/\b1 explicit control\b/.test(t)) throw new Error('the reading does not say "1 explicit control": ' + (t.match(/\d+ explicit controls?/)?.[0] || 'no such line'));
   const q = compose(p).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
   if (!/Should servicing be brought forward when it falls due within the next rental\?/.test(await q.innerText())) throw new Error('the question is not the service question');

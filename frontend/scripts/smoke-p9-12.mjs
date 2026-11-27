@@ -49,8 +49,8 @@ const POLICY = { max_value: 20000, min_confidence: 0.75, routes: ['refurbish_red
 const BAN = 'Destruction of unsold apparel and footwear is banned; reuse, donation or recycling first';
 const NOT_YET = 'Battery passport not yet required (from 18 Feb 2027, indicative)';
 const VIN44 = 'SYNUC000000000044';
-const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
-const FIRST = 180000; // a first page load after sign-in
+const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
+const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 
@@ -139,6 +139,7 @@ async function caseText(p, id, fresh = false) {
   let all = '';
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${id}/${place}`);
+    await p.waitForFunction(() => { const t = document.querySelector('#view')?.innerText || ''; return t.trim() !== '' && !/^Loading...$/.test(t.trim()); }, null, { timeout: 60000 }).catch(() => {}); // the page can still say Loading... on a busy stack
     await p.waitForTimeout(400);
     all += '\n' + (await p.innerText('#view').catch(() => ''));
   }

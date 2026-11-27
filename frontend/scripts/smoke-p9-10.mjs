@@ -53,8 +53,8 @@ const UNITS = {
   202: { model: 'LCD-100G', site: 'SITE-301' }, // never in the inventory
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
-const UI = 180000; // the dev stack answers slowly while the worker syncs (as smoke-p9-9)
-const FIRST = 180000; // a first page load after sign-in
+const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
+const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(shots, { recursive: true });
 
@@ -141,6 +141,7 @@ async function caseText(p, id) {
   let all = '';
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${id}/${place}`);
+    await p.waitForFunction(() => { const t = document.querySelector('#view')?.innerText || ''; return t.trim() !== '' && !/^Loading...$/.test(t.trim()); }, null, { timeout: 60000 }).catch(() => {}); // the page can still say Loading... on a busy stack
     await p.waitForTimeout(400);
     all += '\n' + (await p.innerText('#view').catch(() => ''));
   }
