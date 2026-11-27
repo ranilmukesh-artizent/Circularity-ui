@@ -49,7 +49,6 @@ const SAMPLE = '359990000000428'; // iPhone 14, 128 GB, grade B, quote $410, par
 const BLACKLISTED = '359990000000219'; // reported stolen, not in a bulk batch
 const P02 = '359990000000043'; // iPhone 15, partner P02, clean registry, wiped
 const NO_PARTS = '359990000000051'; // parts declaration "unknown", clean registry
-const BATCH = 'BATCH-0007';
 const BATCH_FIRST = 240; // BATCH-0007 holds the devices 240 to 279 (i // 40 + 1 == 7); 12 of them have no wipe certificate
 const UNWIPED = ['272', '247', '250', '267', '246', '251', '242', '260', '261', '279', '269', '277'].map((n) => `3599900000${n.padStart(5, '0')}`);
 const MKT = SIM + '/device-market/v1';
