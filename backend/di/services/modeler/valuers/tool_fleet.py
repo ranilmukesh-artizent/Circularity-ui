@@ -237,6 +237,9 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
         g_ok = g == "A" if k == "release" else (g in ("B", "C") and c["rul"] >= 40)
         blocked = k == "refurb" and "DEPOT" in blk
         cands = [d for d in pool["lease"] if avail(d)] + ([d for d in pool["so"] if avail(d)] if k == "refurb" else [])
+        own_cid = c.get("contract")  # a return takes the renewal of its own contract; another's only when its own has none
+        if own_cid and any(d.get("contract") == own_cid for d in cands if d["kind"] == "lease"):
+            cands = [d for d in cands if d["kind"] != "lease" or d.get("contract") == own_cid]
         mr = FIN["rate"] / 12
 
         def lv(d: dict[str, Any]) -> dict[str, float]:

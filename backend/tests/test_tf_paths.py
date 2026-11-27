@@ -26,7 +26,7 @@ OTHER = "CMH-48299"
 RENEWAL = "FC-30117-R"
 PART = tool_fleet.CLS["CMH"]["parts"][0][0]
 AS_OF = datetime(2026, 10, 7, 9, 0, tzinfo=UTC)
-KEYS = [RENEWAL, "SO-P1", "RO-P1", "RO-P2", "BID-P1", "TPR-P1"]
+KEYS = [RENEWAL, "FC-30101-R", "SO-P1", "RO-P1", "RO-P2", "BID-P1", "TPR-P1"]
 # Demand that is not this test's: a synced stack has the fleet contract mock's renewals (no org unit, so every unit sees
 # them). The repository test seeds a few of its own and asserts only on the rows it wrote.
 _EX = {"site": "Phoenix", "tool_class": "CMH", "buyer": "Extra Co"}
@@ -268,3 +268,31 @@ def test_tf_07_held_demand_excluded(clean):
     second = _open(OTHER)
     labels = " ".join(x["label"] for p in _paths(second)["paths"] for x in p["lines"])
     assert RENEWAL not in labels
+
+
+def test_tf_07_own_contracts_renewal_wins_over_a_richer_fleet_wide_one(clean):
+    """A return takes the renewal of its OWN contract; another contract's renewal only when its own has none."""
+    _write_demand(only=[RENEWAL])
+    rich = {"kind": "lease", "need_by": "2026-12-01", "lease_rate": 900, "term_months": 12, "renew": True, "site": "Houston",
+            "tool_class": "CMH", "buyer": "Fleet Wide Co", "contract_ref": "FC-30101"}  # fmt: skip
+    with SessionLocal() as s:
+        canonical.apply(s, "fleet", _facts("FC-30101-R", "fleet", rich))
+        s.commit()
+    _grade_a()
+
+    def open_for(contract: str) -> str:
+        with SessionLocal() as s:
+            facts = tool_case_facts(SERIAL, {"tool_class": "CMH", "site": "Houston", "grade": "A", "contract_id": contract},
+                                    line={"contract_id": contract})  # fmt: skip
+            c = intake.open_case(
+                s, {"org_unit_id": ORG, "template_key": "tool_fleet", "asset_key": SERIAL, "reason": "contract_end",
+                    "facts": facts}, "system")  # fmt: skip
+            s.commit()
+            return c["id"]
+
+    own = open_for("FC-30117")
+    assert _by_k(_paths(own))["release"]["dest"]["id"] == RENEWAL
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM case_record WHERE owner = :o"), {"o": ORG})
+    none = open_for("FC-99999")  # no renewal of its own: the best of the feed
+    assert _by_k(_paths(none))["release"]["dest"]["id"] == "FC-30101-R"

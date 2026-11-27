@@ -65,7 +65,8 @@ def _item(kind: str, key: str, d: dict[str, Any], need: int | None, exp: int | N
     if kind == "lease":
         renew = d.get("renew") if d.get("renew") is not None else bool(d.get("contract_ref"))
         term = int(d.get("term_months") or DEFAULT_TERM)
-        return head | {"renew": bool(renew), "site": site, "need": need, "rate": d.get("lease_rate") or 0, "term": term}
+        own = {"contract": str(d["contract_ref"])} if d.get("contract_ref") else {}  # the contract this renews
+        return head | {"renew": bool(renew), "site": site, "need": need, "rate": d.get("lease_rate") or 0, "term": term} | own
     if kind == "so":
         return head | {"site": site, "need": need, "price": d.get("price") or 0}
     if kind == "bid":
