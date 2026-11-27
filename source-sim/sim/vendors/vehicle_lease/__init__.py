@@ -22,7 +22,8 @@ the returns changed after it. Errors are `{"error": {"code", "message"}}`.
 Data in Postgres schema `vehicle_lease` (models.py, seed.py): 60 returns, VINs `SYNUC000000000001` ... `...060`, fixed
 (no randomness), so a reset gives the same JSON again. The cars the later tasks lean on: VIN ...001 a 2022 petrol SUV
 with 38,000 miles and residual 19,500; ...004 reads 61,240 at return against 46,240 at its last service; ...005 has
-133,000 miles; ...011 and ...012 say the odometer is not actual; ...041-...048 are EV crossovers; ...050 comes from a
+133,000 miles; ...007 is a 2022 petrol SUV (pinned: the cycle would make it a compact; with its $2,800 recon, retail
+still beats the auction, P9-9.21 step 7); ...011 and ...012 say the odometer is not actual; ...041-...048 are EV crossovers; ...050 comes from a
 seller with a fleet of 40; ...001-...030 return to RC-East, the rest to RC-West.
 
 ASSUMPTION: `odometerLastService` equals `odometerAtReturn` for every car but ...004 (the mismatch UC-03 is about).

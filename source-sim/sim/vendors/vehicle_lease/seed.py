@@ -19,6 +19,10 @@ RESIDUAL_BASE = {"compact": 11000, "midsize": 14000, "suv": 19500, "truck": 2300
 CONTRACT_MILES = (36000, 30000, 45000)
 EV_FIRST, EV_LAST = 41, 48
 PINNED_ODOMETER = {1: 38000, 4: 61240, 5: 133000}
+# ...007 is the pack's UC-S7, a petrol SUV whose recon is over the limit (P9-9.21 step 7): as an SUV, retail after its
+# $2,800 recon still beats the auction, so the manager approves a retail channel (the cycle would make it a compact,
+# whose auction beats retail)
+PINNED_SEGMENT = {7: "suv"}
 LAST_SERVICE = {4: 46240}  # every other car's last-service reading equals its reading at return
 NOT_ACTUAL = {11, 12}
 FLEET_SELLERS = {50: 40}
@@ -29,6 +33,8 @@ def vin(n: int) -> str:
 
 
 def _segment(n: int) -> str:
+    if n in PINNED_SEGMENT:
+        return PINNED_SEGMENT[n]
     return "ev_crossover" if EV_FIRST <= n <= EV_LAST else SEGMENTS[(n + 1) % 4]  # n = 1 is an SUV
 
 
