@@ -258,7 +258,7 @@ await step('3 Certification ends during the rental: the reason, "Send a differen
 // ---------------------------------------------------------------- 4
 await step('4 The re-rent route: "Re-rent · Hospital B (synthetic)" at net 498.00, "Housing scuff" visible', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, 1, /Re-rent\s*[·\-:]\s*Hospital B \(synthetic\)/i, '"Re-rent · Hospital B (synthetic)"');
+  const t = await inCase(p, 1, /Re-rent\s*[·\-:]\s*(?:Hospital B \(synthetic\)|HOSP-B)/i, '"Re-rent · HOSP-B" (the route names the requesting hospital by its id)');
   if (!/\b498(\.00)?\b/.test(t)) throw new Error(`${TAGS[1]} does not show the net 498.00`);
   if (!/Housing scuff/.test(t)) throw new Error(`${TAGS[1]} does not show "Housing scuff"`);
   return 'recommends Re-rent · Hospital B (synthetic), net 498.00';

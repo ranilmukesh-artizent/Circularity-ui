@@ -210,7 +210,8 @@ await step('1 Connect the eight systems; My work lists "Serial on the manifest n
   if (!where) throw new Error('"Serial on the manifest not received" is in nobody\'s My work (warehouse1, warehouse2, admin, planner.a, approver, ops)');
 
   // SN-IT-0017 never arrived and has no erasure record: its desktop's SSD is named (opening it closes its missing item, so this comes second)
-  const id = await openCase('itad', serialKey('SN-IT-0017'), 'lease_end', { serial: 'SN-IT-0017' });
+  // the CMDB's source is shared (no org unit), so its asset key is `shared:<serial>` although the owner tenant is Customer A
+  const id = await openCase('itad', `shared:SN-IT-0017`, 'lease_end', { serial: 'SN-IT-0017' });
   const p = await as('planner.a');
   await inCase(p, id, /Sanitisation record missing for media/, '"Sanitisation record missing for media ..."');
   return `${SOURCES.length} systems synced; My work of ${where}; case ${id}`;
