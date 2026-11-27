@@ -206,7 +206,7 @@ await step('2a Developer connects PostgreSQL from the catalogue, bound to compan
   await until(dev, async () => /Connection test passed/.test(await dlg(dev).innerText()), 'Test connection did not pass', 60000 * K);
   await dlg(dev).getByRole('button', { name: 'Continue' }).click();
   await dlg(dev).getByRole('button', { name: 'Suggest mappings' }).click();
-  await until(dev, async () => (await dlg(dev).locator('tbody tr').count()) > 0, 'Suggest mappings returned no rows', 60000, 500);
+  await until(dev, async () => (await dlg(dev).locator('tbody tr').count()) > 0, 'Suggest mappings returned no rows', 60000 * K, 500);
   await dlg(dev).getByRole('button', { name: 'Accept all high' }).click();
   const acc = await dlg(dev).getByText(/\d+ of \d+ accepted/).innerText();
   await dlg(dev).getByRole('button', { name: 'Continue' }).click();
@@ -244,7 +244,7 @@ async function link(from, to) {
   if (await add.count()) await add.click();
   await insp().locator('#wfTo').selectOption({ label: to });
   await select(from);
-  await until(dev, async () => (await sendsTo()).includes(to), `${from} does not send to ${to}`, 10000, 300);
+  await until(dev, async () => (await sendsTo()).includes(to), `${from} does not send to ${to}`, 10000 * K, 300);
 }
 async function moreActions(item) {
   await dev.locator('summary', { hasText: 'More actions' }).click();
@@ -317,7 +317,7 @@ await step('3 A sync of rl opens company-x cases', async () => {
     const r = await callAction(admin, 'cases.list', { owner: ORG, limit: 500 });
     const mine = (r.output?.rows || []).filter((c) => c.owner === ORG);
     return mine.length ? mine : null;
-  }, `no ${ORG} case opened`, 60000, 2000);
+  }, `no ${ORG} case opened`, 60000 * K, 2000);
   // the case the journey follows: grade A (the rule's grade), waiting for approval, not submitted
   const pick = rows.find((c) => c.grade === 'A' && c.stage === 'awaiting_approval' && !c.submitted);
   check(pick, `no grade A ${ORG} case awaiting approval among ${rows.map((c) => `${c.id} ${c.grade} ${c.stage}`).join(', ')}`);
@@ -445,10 +445,10 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
   const row = await until(admin, async () => {
     await admin.reload();
     const r = admin.locator('#agRuns tr', { hasText: run });
-    await r.waitFor({ timeout: 5000 });
+    await r.waitFor({ timeout: 5000 * K });
     const x = await r.innerText();
     return /waiting/.test(x) && /Proposal \d+/.test(x) ? x : null;
-  }, `run ${run} did not stop at a held proposal`, 90000, 3000);
+  }, `run ${run} did not stop at a held proposal`, 90000 * K, 3000);
   const pid = +row.match(/Proposal (\d+)/)[1];
   const prow = await admin.locator(`#agp-${pid}`).innerText();
   check(/decision\.submit/.test(prow) && prow.includes(id), `proposal ${pid} is not the submit of ${id}: ${prow.replace(/\s+/g, ' ')}`);
@@ -462,7 +462,7 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
     await admin.reload();
     const x = await admin.locator('#agRuns tr', { hasText: run }).innerText();
     return /Approval of/.test(x) ? x : null;
-  }, `run ${run} does not wait for the approval after the accept`, 60000, 3000);
+  }, `run ${run} does not wait for the approval after the accept`, 60000 * K, 3000);
   st.run = run;
   return `"${t}"; ${run} waiting · Proposal ${pid} (decision.submit ${id}); planner-a accepted it (no UI: proposal.accept); the run now waits: ${after.replace(/\s+/g, ' ').trim()}`;
 });
@@ -482,7 +482,7 @@ await step('8 The Approver approves the decision; the run finishes', async () =>
     await admin.reload();
     const x = await admin.locator('#agRuns tr', { hasText: st.run }).innerText();
     return /\bdone\b/.test(x) ? x : null;
-  }, `run ${st.run} did not finish after the approval`, 90000, 3000);
+  }, `run ${st.run} did not finish after the approval`, 90000 * K, 3000);
   st.approved = true;
   return `"${t}"; ${row.replace(/\s+/g, ' ').trim()}`;
 });
@@ -510,7 +510,7 @@ await step('9 The instructions are acknowledged (sim clock); Finance confirms th
   await confirm.first().waitFor();
   const t = await clickToast(fin, confirm.first(), /onfirm|outcome/i);
   await go(fin, `product/${id}/stage/10`);
-  const done = await until(fin, async () => /^10 · Every stage is done/.test(await caseStage(fin)), `${id} did not close after the confirmation`, 20000, 500);
+  const done = await until(fin, async () => /^10 · Every stage is done/.test(await caseStage(fin)), `${id} did not close after the confirmation`, 20000 * K, 500);
   st.confirmed = done;
   return `watcher saw "${s}"; Finance: "${t}"; ${id} at stage 10 · Every stage is done`;
 });
