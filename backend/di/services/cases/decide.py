@@ -58,7 +58,7 @@ from di.services.engine.routes import POLICY, Route, fail, rank_routes
 from di.services.modeler import plain_guardrail
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
-from di.services.modeler.gate_checks.data import media_facts
+from di.services.modeler.gate_checks.data import ITAD, media_facts
 from di.services.modeler.gates import (
     Cond,
     GateDef,
@@ -534,6 +534,12 @@ def decide_case(
         for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
             if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
                 c[model] = data
+    if pack.key == ITAD and session is not None and c.get("assetId"):  # the CMDB's and the logistics' records of the asset
+        for model, data in car_facts.records(session, str(c["assetId"])).items():  # G-DATA-1 reads `asset.media` and
+            if not isinstance(c.get(model), Mapping):  # `condition.erasures`, the valuer `market.new_price` (P9-12.3)
+                c[model] = data
+        if not c.get("cls") and (c.get("asset") or {}).get("asset_class"):  # `class.has_media` triggers G-DATA-1
+            c["cls"] = c["asset"]["asset_class"]
     if sane := media_facts(c, pack):  # an ITAD asset's media: G-DATA-2 triggers on `media.sanitisable` (P9-12.3)
         c["media"] = {**(c.get("media") or {}), **sane}
     if pack.key == capital_facts.PACK:  # the device, market and work facts the medical capital gates read (P9-12.9)

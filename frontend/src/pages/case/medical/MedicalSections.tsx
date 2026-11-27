@@ -7,7 +7,7 @@
 import type { CaseRec } from '../../../api/case';
 import { Kv } from '../CaseBlocks';
 import { gateLine } from '../gates';
-import { certRows, deconLine, followRows, medicalView, repairHold, serviceDates, serviceLines, turnaroundLines, writeOffLine } from './medView';
+import { certRows, conditionRows, deconLine, followRows, medicalView, repairHold, serviceDates, serviceLines, turnaroundLines, writeOffLine } from './medView';
 
 /** G-MED-DECON: the decontamination record against check-in, with the held reason when it is missing. */
 export function Decontamination({ c }: { c: CaseRec }) {
@@ -21,11 +21,11 @@ export function Decontamination({ c }: { c: CaseRec }) {
   );
 }
 
-/** Certification and preventive maintenance against the end of each rental request. */
+/** The service read (test results, condition notes, source and age), then certification and maintenance against each rental request. */
 export function CertificationWindow({ c }: { c: CaseRec }) {
   if (!medicalView(c)) return null;
   const rows = certRows(c);
-  const dates = serviceDates(c);
+  const dates = [...conditionRows(c), ...serviceDates(c)];
   return (
     <>
       {dates.length > 0 && <Kv rows={dates} />}

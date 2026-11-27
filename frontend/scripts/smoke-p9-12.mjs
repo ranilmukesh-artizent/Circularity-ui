@@ -147,7 +147,8 @@ async function caseText(p, id, fresh = false) {
   return all;
 }
 const inCase = async (p, id, rx, label, fresh) => {
-  const t = await caseText(p, id, fresh);
+  let t = await caseText(p, id, fresh);
+  if (!rx.test(t)) t = await caseText(p, id, true); // a loaded stack can leave a page at "Loading..." past the wait: read once more
   if (!rx.test(t)) throw new Error(`case ${id} does not show ${label}`);
   return t;
 };
@@ -160,6 +161,9 @@ async function openCase(template_key, asset_key, reason, facts) {
   return (await must(planner, 'case.open', { org_unit_id: ORG, template_key, asset_key, reason, facts })).case_id;
 }
 const serialKey = (s) => `${ORG}:${s}`; // schema.serial_key / tag_key / vin_key: `<org unit>:<id>`
+// a system registered by source.reconnect without an org unit is shared: its records are keyed `shared:<id>` (cpe_bss, core_ret,
+// it_cmdb ...), although the case's owner is Customer A; a case opened under `Customer A:<id>` finds none of them
+const sharedKey = (s) => `shared:${s}`;
 const pack = (file) => JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs', file + '.json'), 'utf8'));
 async function syncAll(dev, ids) {
   for (const sid of ids) await must(dev, 'source.reconnect', { source_id: sid }); // (action) registers an extra system, then connects it
@@ -211,7 +215,7 @@ await step('1 Connect the eight systems; My work lists "Serial on the manifest n
 
   // SN-IT-0017 never arrived and has no erasure record: its desktop's SSD is named (opening it closes its missing item, so this comes second)
   // the CMDB's source is shared (no org unit), so its asset key is `shared:<serial>` although the owner tenant is Customer A
-  const id = await openCase('itad', `shared:SN-IT-0017`, 'lease_end', { serial: 'SN-IT-0017' });
+  const id = await openCase('itad', sharedKey('SN-IT-0017'), 'lease_end', { serial: 'SN-IT-0017' });
   const p = await as('planner.a');
   await inCase(p, id, /Sanitisation record missing for media/, '"Sanitisation record missing for media ..."');
   return `${SOURCES.length} systems synced; My work of ${where}; case ${id}`;
@@ -224,8 +228,8 @@ await step('2 The CPE lot of 500 is "approved by policy"; the lot of 900 waits i
   const pol = await must(admin, 'standingPolicy.save', { pack: 'telecom_cpe', org_unit_id: ORG, name: 'Lots under $20,000', rules: POLICY, owner: 'admin' });
   await must(admin, 'standingPolicy.submit', { id: pol.id });
   await must(approver, 'standingPolicy.approve', { id: pol.id });
-  const small = await openCase('telecom_cpe', serialKey('LOT-R7-B-W47'), 'rma', {});
-  const big = await openCase('telecom_cpe', serialKey('LOT-R7-B-W48'), 'rma', {});
+  const small = await openCase('telecom_cpe', sharedKey('LOT-R7-B-W47'), 'rma', {});
+  const big = await openCase('telecom_cpe', sharedKey('LOT-R7-B-W48'), 'rma', {});
   await must(admin, 'decision.submit', { case_id: small });
   await must(admin, 'decision.submit', { case_id: big });
   const p = await as('planner.a');
@@ -266,7 +270,7 @@ await step(`3 The battery case linked from VIN ...044 shows "${NOT_YET}"`, async
 // ---------------------------------------------------------------- 4
 await step('4 A core with a family mismatch is held; approver releases it with a reason', async () => {
   // C-0004: declared ALT-1450, a starter (STR-2210) arrived: the signal part_family_mismatch of the core returns system (core_ret)
-  const id = await openCase('auto_core', serialKey('C-0004'), 'manual', { family: 'alternator', deposit: 85 });
+  const id = await openCase('auto_core', sharedKey('C-0004'), 'manual', { family: 'alternator', deposit: 85 });
   const p = await as('planner.a');
   await until(
     async () => {
