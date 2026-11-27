@@ -45,6 +45,9 @@ for (const t of ['light', 'dark']) {
   await theme(t);
   await page.waitForTimeout(300);
   await shot(`modeler-${t}`);
+  // the minimap starts hidden when the canvas is narrower than 1100 px (plan 10); open it with its toggle
+  const tog = page.locator('.mdl-canvas button[aria-label="Show the minimap"]');
+  if (await tog.count()) { await tog.first().click(); await page.waitForTimeout(300); }
   const mm = await page.evaluate(() => {
     const el = document.querySelector('.mdl-canvas .react-flow__minimap');
     return el ? getComputedStyle(el).backgroundColor : null;
@@ -62,7 +65,9 @@ await theme('light');
 // ---- the Workflow Studio canvas (unchanged) ----
 await page.goto(base + '/#/integration/studio/WF-103');
 await page.waitForTimeout(1500);
-await page.waitForSelector('.graphbox', { timeout: 20000 }).catch(() => {});
+// on a slow machine the Modeler canvas is still on screen when the route changes: wait until it is gone
+await page.waitForSelector('.mdl-canvas', { state: 'detached', timeout: 60000 }).catch(() => {});
+await page.waitForSelector('.graphbox', { timeout: 60000 }).catch(() => {});
 await page.waitForTimeout(1000);
 check(await page.$('.graphbox') !== null, 'the Workflow Studio canvas opens');
 for (const t of ['light', 'dark']) { await theme(t); await page.waitForTimeout(300); await shot(`workflow-${t}`); }
