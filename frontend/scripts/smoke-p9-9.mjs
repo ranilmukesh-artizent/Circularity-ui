@@ -273,7 +273,7 @@ await step('4 The lien: "Clear title, no open finance" on the routes, "Lien foun
   for (const acct of ['planner.a', 'admin', 'approver']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/Lien found after check-in/.test(await text(q))) {
       where = acct;
       break;
@@ -301,7 +301,7 @@ await step('5 The open recall: "Open recall: no retail until remedied", Re-check
 // ---------------------------------------------------------------- 6
 await step('6 The channels: Retail South lot at 21,489.50, auction, dealer trade, salvage not considered', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, need(1), /Retail\s*[·\-:]\s*South lot/i, { vin: vin(1), label: '"Retail · South lot"' });
+  const t = await inCase(p, need(1), /Retail(?: lot)?\s*[·\-:]\s*South lot/i, { vin: vin(1), label: '"Retail lot · South lot"' }, true); // read afresh: the text cached by step 3 can predate the decision
   if (!/21,489\.50|21,490|21\.5k/.test(t)) throw new Error('VIN ...001 does not show the net 21,489.50 (or 21,490, 21.5k)');
   for (const [rx, what] of [[/Auction/i, 'auction'], [/Dealer trade/i, 'dealer trade'], [/Not considered/, '"Not considered" for salvage']]) {
     if (!rx.test(t)) throw new Error(`VIN ...001 does not list ${what}`);
