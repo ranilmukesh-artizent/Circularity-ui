@@ -20,7 +20,7 @@
  *   7  approver: My work shows "Recon $2,800 over the $2,500 limit" for VIN ...007; approves on the case page; the Execute stage
  *      shows the recon order, lot transfer and listing steps.
  *   8  planner.a tries "dealer trade within the group: skip the title check" in Compose and sees the refusal (P9-9.14).
- *   9  planner.a: the alert "EV crossovers ageing at North lot" (P9-9.18); Analytics > Packs shows "Why are EV crossovers sitting
+ *   9  planner.a: the alert "EV crossovers ageing at North lot" in My work (P9-9.18, the worker's uc.ageing job); Analytics > Packs shows "Why are EV crossovers sitting
  *      longer on our lots?" with its chart (P9-9.19); the replay figures labelled modelled on the Compose publish step (P9-9.15).
  *
  * A check that needs a task not built yet (P9-9.13 to 9.16, 9.18, 9.19) looks for its marker file in the repository: while the
@@ -341,17 +341,20 @@ await step('8 The diversion that skips the title check is refused', async () => 
 await step('9 The ageing alert, the analytics question and the modelled replay figures', async () => {
   const p = await as('planner.a');
   const notes = [];
-  // the alert, on the pages that list suggestions and alerts
-  let alert = false;
-  for (const url of [`${base}/#/home`, `${base}/#/modeler/overview`, MODELER]) {
-    await open(p, url);
-    await p.waitForTimeout(600);
-    if (/EV crossovers ageing at North lot/.test(await text(p))) {
-      alert = true;
-      break;
+  // the alert: the worker's uc.ageing job opens it as a My work exception for the Planner (within a minute of the dealer sync);
+  // Home and the Modeler are looked at too, in case a page lists it there
+  let alert = '';
+  await until(async () => {
+    for (const url of [`${base}/#/mywork`, `${base}/#/home`, `${base}/#/modeler/overview`]) {
+      await open(p, url);
+      await p.waitForTimeout(url.endsWith('mywork') ? 4000 : 800); // My work reads about 160 items: 800 ms is before it draws
+      if (/EV crossovers ageing at North lot/.test(await text(p))) return (alert = url.replace(/^.*#/, '#'));
     }
-  }
-  needs('9.18', alert, 'the alert "EV crossovers ageing at North lot"', notes);
+    return null;
+  }, 'the alert "EV crossovers ageing at North lot" is not on My work, Home or the Modeler overview', 120000, p).catch((e) => {
+    if (merged('9.18')) throw e;
+  });
+  needs('9.18', !!alert, `the alert "EV crossovers ageing at North lot"${alert ? ` (${alert})` : ''}`, notes);
 
   // the worked question, in Analytics > Packs
   await open(p, `${base}/#/analytics/packs`);

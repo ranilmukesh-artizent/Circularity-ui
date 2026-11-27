@@ -24,7 +24,7 @@ CELLS = {  # model -> (target, stock) in REGIONS order
 }
 BASE_PROBABILITY = {"RRU-4410": 0.55, "BBU-2200": 0.20, "RTR-880": 0.40, "PSU-48": 0.25, "RAD-7700": 0.35}
 NORTH_PSU_IDLE = (41, 50, 60)
-NO_NEED = "BBU-2200"
+NO_NEED = "BBU-2200"  # listed with need 0 in every region: the need is on file and no region needs the model
 REQUISITIONS = (
     {"reqId": "PR-3301", "region": "West", "model": "PSU-48", "quantity": 3, "status": "open", "createdAt": "2026-09-28"},
     {"reqId": "PR-3302", "region": "North", "model": "RRU-4410", "quantity": 1, "status": "open", "createdAt": "2026-10-02"},
@@ -46,10 +46,10 @@ def targets() -> list[dict]:
 
 def forecast6m() -> list[dict]:
     return [
-        {"region": t["region"], "model": t["model"], "need": int(t["target"] * t["useProbability12m"] + 0.5)}
+        {"region": t["region"], "model": t["model"],
+         "need": 0 if t["model"] == NO_NEED else int(t["target"] * t["useProbability12m"] + 0.5)}
         for t in targets()
-        if t["model"] != NO_NEED
-    ]
+    ]  # fmt: skip
 
 
 def stock() -> list[dict]:

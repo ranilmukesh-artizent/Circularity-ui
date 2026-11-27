@@ -405,6 +405,28 @@ def enqueue_view_alerts() -> None:
         s.commit()
 
 
+@handler("uc.ageing")
+def _uc_ageing(_payload: dict[str, Any]) -> None:
+    """The used-car lot ageing alerts (plan 9, P9-9.18, UC-19): for each org unit with cars on a lot, open one `AL-UC-AGEING`
+    item per model type ageing at one lot and close those whose cars moved (di.services.cases.uc_ageing.sync_alerts). Suggests
+    and alerts only: nothing moves without a person."""
+    from di.services.cases import uc_ageing
+
+    with SessionLocal() as s:
+        opened = {org: [g["title"] for g in uc_ageing.sync_alerts(s, org, "system")] for org in uc_ageing.orgs(s)}
+        s.commit()
+    if any(opened.values()):
+        log.info("used-car ageing: %s", {org: t for org, t in opened.items() if t})
+
+
+def enqueue_uc_ageing() -> None:
+    """Queue a `uc.ageing` job unless one is queued or running (the periodic step runs every 30 s, so a dealer sync shows in
+    the alerts within a minute)."""
+    with SessionLocal() as s:
+        jobs.enqueue(s, "uc.ageing", {}, priority=200, dedupe_key="uc.ageing")
+        s.commit()
+
+
 @handler("device.priceRefit")
 def _device_price_refit(payload: dict[str, Any]) -> None:
     """The retrained price model (plan 9, P9-6.18): when 200 sales settled since the active model's window, a candidate is
@@ -576,6 +598,10 @@ def periodic() -> None:
         enqueue_view_alerts()
     except Exception:
         log.exception("queueing the view alerts job failed")
+    try:
+        enqueue_uc_ageing()
+    except Exception:
+        log.exception("queueing the used-car ageing job failed")
     try:
         enqueue_price_refit()
     except Exception:

@@ -7,7 +7,7 @@ adapter (backend/di/connectors/adapters/spares_planning.py). No real planning sy
 
     GET  /spares-planning/api/catalogue      [{model, newPrice, generation: "current" | "previous", failureRate12m}]
     GET  /spares-planning/api/targets        [{region, model, target, stock, useProbability12m}]
-    GET  /spares-planning/api/forecast6m     [{region, model, need}]   (no row for a model no region needs)
+    GET  /spares-planning/api/forecast6m     [{region, model, need}]   (one row per region and model; need 0 when none)
     GET  /spares-planning/api/stock          [{serial, model, region, idleDays}]   the spares pool, one row per unit
     GET  /spares-planning/api/requisitions   [{reqId, region, model, quantity, status: "open", createdAt}]
     POST /spares-planning/api/requisitions/{reqId}/reduce   {qty, reason} -> the requisition after the cut
@@ -15,7 +15,7 @@ adapter (backend/di/connectors/adapters/spares_planning.py). No real planning sy
 Catalogue: `RRU-4410` 9,800 current; `BBU-2200` 4,200 previous; `RTR-880` 6,500 current; `PSU-48` 1,100 current;
 `RAD-7700` 7,300 current. Four regions (North, South, East, West) hold a target and a stock of each model: North
 `RRU-4410` has target 4, stock 2, use probability 0.55; North holds three `PSU-48` units idle 41, 50 and 60 days (every
-other unit 5 to 29 days). The six-month forecast never lists `BBU-2200`. Open requisitions: `PR-3301` West `PSU-48`
+other unit 5 to 29 days). No region needs `BBU-2200` within six months (need 0 in all four). Open requisitions: `PR-3301` West `PSU-48`
 quantity 3, `PR-3302` North `RRU-4410` quantity 1. The stock listing agrees with the targets (a cell's stock is its
 number of units).
 

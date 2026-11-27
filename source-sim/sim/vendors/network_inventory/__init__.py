@@ -18,7 +18,8 @@ The writes are ledgers: they do not change the elements.
 Data in Postgres schema `network_inventory` (models.py, seed.py): 120 elements `SN-TN-0001` ... `0120` over regions
 North, South, East, West (30 each), fixed (no randomness). The ones the later tasks lean on: every sixth serial from
 `0006` is an `RAD-7700` carrying `exportClassConfirmed` "5A002"; every sixth from `0001` is an `RRU-4410` with
-`exportClassInferred` "5A992" and no confirmed class; `0001`-`0033` are `removed` (the tracker's ordinary jobs took them
+`exportClassInferred` "5A992" and no confirmed class; `0015` (the bench's twice-failed wipe) is a `BBU-2200`, the model
+brokers bid on and no region needs; `0001`-`0033` are `removed` (the tracker's ordinary jobs took them
 off their sites). The element `SN-TN-0201` (an RAD-7700 from the North) joins one simulated day after a reset
 (scheduler handler `tn_inv.element.create`, event `inventory.element.created`); `0202`-`0208` never join.
 
