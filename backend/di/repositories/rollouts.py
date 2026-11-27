@@ -6,6 +6,7 @@ and the assignment is stored; a paused rollout sends new cases to the base versi
 decides, arm `none`. The write helpers are used by di.services.actions.rollout only.
 """
 
+import hashlib
 import json
 from collections.abc import Mapping
 from typing import Any, Literal, cast
@@ -256,15 +257,37 @@ def arm_counts(s: Session, flow_id: int, kind: str = "flow") -> dict[str, int]:
     return {"canary": 0, "control": 0} | {k: int(n) for k, n in rows}
 
 
-def done_replay(s: Session, flow_id: int, dver: int | None) -> int | None:
-    """The newest done replay run of the flow's draft version `dver` (its id), else None."""
-    if dver is None:
+def draft_hash(graph: Any) -> str | None:
+    """The hash of a draft graph's content (canonical JSON), None for no draft. A replay stores it; a canary compares it."""
+    if graph is None:
+        return None
+    return hashlib.sha256(json.dumps(graph, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def done_replay(s: Session, f: FlowRow) -> int | None:
+    """The newest done replay run of the flow's draft as it is now (version `dver` and the same draft content), else None.
+    The content matters: saveDraft gives an edited or re-made draft the same `dver` (review P9-7.9 F1)."""
+    h = draft_hash(f.draft)
+    if f.dver is None or h is None:
         return None
     r = s.execute(
-        text("SELECT id FROM replay_run WHERE flow_id = :f AND dver = :d AND status = 'done' ORDER BY id DESC LIMIT 1"),
-        {"f": flow_id, "d": dver},
+        text(
+            "SELECT id FROM replay_run WHERE flow_id = :f AND dver = :d AND draft_hash = :h AND status = 'done' "
+            "ORDER BY id DESC LIMIT 1"
+        ),
+        {"f": f.id, "d": f.dver, "h": h},
     ).scalar()
     return int(r) if r is not None else None
+
+
+def stale_replay(s: Session, f: FlowRow) -> bool:
+    """A done replay of the flow's draft version exists, but of other draft content than the draft now in the flow."""
+    if f.dver is None:
+        return False
+    r = s.execute(
+        text("SELECT 1 FROM replay_run WHERE flow_id = :f AND dver = :d AND status = 'done' LIMIT 1"), {"f": f.id, "d": f.dver}
+    ).first()
+    return r is not None and done_replay(s, f) is None
 
 
 # ---------------------------------------------------------------- the canary report (P9-7.4)

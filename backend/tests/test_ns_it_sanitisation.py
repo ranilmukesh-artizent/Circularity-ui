@@ -58,6 +58,44 @@ def test_ns_it_02_destruction_record_clears_the_step():
     assert _gate(itkit.decide(c), "G-DATA-2").passed
 
 
+def test_ns_it_02_media_not_inventoried_fails_the_leaving_routes():
+    """Review P9-12.13 F1: an asset of a class with media but no media list cannot leave without a sanitisation record."""
+    from di.services.modeler.gate_checks.data import check_media_sanitised
+    from di.services.modeler.gates import pack_gates
+
+    for media in (None, []):
+        c = itkit.case("IT-S1")
+        if media is None:
+            del c["asset"]["media"]
+        else:
+            c["asset"]["media"] = media
+        d = itkit.decide(c)
+        g = _gate(d, "G-DATA-1")
+        assert not g.passed and set(g.effect.routes) == set(LEAVING), (media, g)
+        for rid in ("resell", "harvest", "recycle"):  # return_to_lessor fails first: the lease does not ask for it
+            assert "Media not inventoried: sanitisation record required" in itkit.route(d, rid)["failReason"], rid
+        assert not itkit.route(d, "redeploy")["excluded"]  # inside the same owner and level it stays open
+    c = itkit.case("IT-S1")  # a redeploy to another owner leaves the owner's control
+    c["request"] = {"owner_org": "Customer B"}
+    del c["asset"]["media"]
+    assert "redeploy" in _gate(itkit.decide(c), "G-DATA-1").effect.routes
+    network = itkit.case("IT-S6")  # a class with no media: unchanged
+    del network["asset"]["media"]
+    gate = next(g for g in pack_gates(itkit.pack()) if g.id == "G-DATA-1")
+    assert check_media_sanitised(network, itkit.pack(), gate) is None
+
+
+def test_ns_it_02_destruction_record_must_name_the_failed_media_and_pass():
+    """Review P9-12.13 F2: only a passed destruction record of the failed media serial clears G-DATA-2."""
+    at = "2026-11-01T00:00:00+00:00"
+    for value, result in (({"mediaSerial": "MS-OTHER"}, "pass"), ({"mediaSerial": "MS-S-1"}, "fail"), ({}, "pass")):
+        c = itkit.case("IT-S3")
+        c["evidenceRecords"] = [{"type": "destruction_record", "source": "it_logistics", "at": at, "result": result,
+                                 "value": value}]  # fmt: skip
+        g2 = _gate(itkit.decide(c), "G-DATA-2")
+        assert not g2.passed and "MS-S-1" in g2.reason, (value, result)
+
+
 def test_ns_it_03_residual_decays_monthly():
     def resale(months: int) -> float:
         d = itkit.decide(itkit.case("IT-S7", asset__months_in_stock=months))

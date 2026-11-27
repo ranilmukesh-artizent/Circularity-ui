@@ -822,7 +822,7 @@ def _flow(row: dict[str, Any], ctx: CallContext) -> Any:
 
 def _report(f: Any, ctx: CallContext) -> dict[str, Any] | None:
     """The replay report of the flow's draft (I-16 `ReplayReport` as stored), or None before a replay is done."""
-    run = rollout_repo.done_replay(ctx.session, f.id, f.dver)
+    run = rollout_repo.done_replay(ctx.session, f)
     got = replay_repo.get_run(ctx.session, run) if run is not None else None
     return dict(got["report"]) if got and got["report"] else None
 

@@ -18,6 +18,7 @@ from sqlalchemy import text
 from di.core import policy
 from di.core.auth import load_context
 from di.core.db import SessionLocal, engine
+from di.repositories import rollouts
 from di.services.actions.pipeline import Actor, CallContext, invoke
 from di.services.agents import chain, runtime
 from di.services.agents.forbidden import forbidden
@@ -106,13 +107,13 @@ def with_report(fid: int, report: dict | None = REPORT) -> None:
             ),
             {"o": ORG},
         ).scalar_one()
-        dver = s.execute(text("SELECT dver FROM decision_flow WHERE id = :f"), {"f": fid}).scalar_one()
+        dver, draft = s.execute(text("SELECT dver, draft FROM decision_flow WHERE id = :f"), {"f": fid}).one()
         s.execute(
             text(
-                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, status, report, created_by) "
-                "VALUES (:b, :f, 'draft', :d, 'done', CAST(:r AS jsonb), 't')"
+                "INSERT INTO replay_run (batch_id, flow_id, flow_ver, dver, draft_hash, status, report, created_by) "
+                "VALUES (:b, :f, 'draft', :d, :h, 'done', CAST(:r AS jsonb), 't')"
             ),
-            {"b": bid, "f": fid, "d": dver, "r": json.dumps(report)},
+            {"b": bid, "f": fid, "d": dver, "h": rollouts.draft_hash(draft), "r": json.dumps(report)},
         )
         s.commit()
 

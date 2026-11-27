@@ -55,6 +55,7 @@ from di.services.service_desk import inputs as sd_inputs
 _APPROVE = "approve.flows"
 MAKER = "Maker-checker: you made these changes, so you cannot widen their rollout."
 NEEDS_REPLAY = "Run a replay of v{v} before a canary (Modeler, Replay)."
+STALE_REPLAY = "Replay again: the draft changed since the last replay."
 _NEED_REASON = {"req": True, "t": "string", "min": 15, "minText": "Add a reason of at least 15 characters."}
 # A flow, or (P9-7.7) the service-desk tables of the org's tool-fleet flow: `subject_kind` "table" with `subject_id` the flow id.
 _ID = {"flow_id": {"t": "number"}, "subject_kind": {"t": "string"}, "subject_id": {"t": "string"}}
@@ -196,9 +197,14 @@ def start_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
         return "conflict", f"{f.name} must be approved into shadow before a canary."
     if bad := _maker(ctx, f):
         return bad
-    if repo.done_replay(ctx.session, f.id, f.dver) is None:
-        return "conflict", NEEDS_REPLAY.format(v=f.dver)
+    if repo.done_replay(ctx.session, f) is None:
+        return "conflict", _replay_needed(ctx, f)
     return None
+
+
+def _replay_needed(ctx: CallContext, f: FlowRow) -> str:
+    """Why the flow's draft has no replay a canary may start from: the draft changed after one, or none ran."""
+    return STALE_REPLAY if repo.stale_replay(ctx.session, f) else NEEDS_REPLAY.format(v=f.dver)
 
 
 @implement("rollout.startCanary")
@@ -208,7 +214,7 @@ def start(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         return _table_start(i, ctx, f)
     key, region, share = (i.get("region_key") or "market").strip(), str(i["region"]).strip(), int(i["share"])
     salt = hashlib.sha256(f"{f.id}:{f.dver}:{ctx.now.isoformat()}".encode()).hexdigest()[:16]
-    run = repo.done_replay(ctx.session, f.id, f.dver)
+    run = repo.done_replay(ctx.session, f)
     rid = repo.insert(ctx.session, f.id, candidate=f.dver, base=f.ver, region_key=key, region=region, share=share,
                       salt=salt, by=ctx.actor.id, run_id=run)  # fmt: skip
     return {"flow_id": f.id, "rollout_id": rid, "stage": "canary", "region_key": key, "region": region, "share": share,
@@ -434,7 +440,7 @@ def get(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         }  # fmt: skip
     stage = current_stage(s, f)
     eff = "shadow" if stage == "rolled_back" else stage  # a rolled-back flow may start another canary
-    run = repo.done_replay(s, f.id, f.dver)
+    run = repo.done_replay(s, f)
     maker_blocked = ctx.actor.id in makers(ctx, f)
     return {
         "flow_id": f.id, "name": f.name, "stage": stage, "status": f.status, "base_ver": f.ver, "candidate_ver": f.dver,
@@ -442,7 +448,7 @@ def get(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "replay_run_id": run, "replay_done": run is not None,
         "can": {  # what this person may do now, and the reason when not (the panel shows them)
             "startCanary": None if eff == "shadow" and run is not None and not maker_blocked else (
-                MAKER if maker_blocked and eff == "shadow" else NEEDS_REPLAY.format(v=f.dver) if eff == "shadow"
+                MAKER if maker_blocked and eff == "shadow" else _replay_needed(ctx, f) if eff == "shadow"
                 else "Approve the flow into shadow first." if eff in (None, "replay") else "A canary is already running or ended."
             ),
             "widen": None if stage in ("canary", "paused") and not maker_blocked else (MAKER if maker_blocked else "No canary is running."),
