@@ -114,6 +114,7 @@ async function step(name, fn) {
     say('PASS', name, detail ? '· ' + detail : '', `(${Math.round((Date.now() - t0) / 1000)} s)`);
   } catch (e) {
     say('FAIL', name, '·', String(e?.message || e).split('\n')[0]);
+    for (const l of String(e?.message || e).split('\n').slice(1, 9)) say('   ', l.trim()); // the call log: which locator it waited for
     for (const [a, p] of Object.entries(pages)) await p.screenshot({ path: path.join(out, `fail-${a}.png`), fullPage: true }).catch(() => {});
     await browser.close().catch(() => {});
     process.exit(1);
