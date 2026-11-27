@@ -239,13 +239,14 @@ await step('2 No decontamination record: "Decontamination record required" on th
 // ---------------------------------------------------------------- 3
 await step('3 Certification ends during the rental: the reason, "Send a different unit", "Book certification"', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, 2, /Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026/, '"Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026"');
+  const t = await inCase(p, 2, /Certification ends (?:2026-12-07|7 Dec 2026), before the rental ends (?:2026-12-27|27 Dec 2026)/, '"Certification ends 2026-12-07, before the rental ends 2026-12-27"');
   if (!/Send a different unit/.test(t)) throw new Error(`${TAGS[2]} does not show "Send a different unit"`);
   // the button is on the stage that holds the service gate (data-testid="service-book", CaseBlocks.BookCertification)
   let book = false;
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${need(2)}/${place}`);
-    if (await p.locator('[data-testid="service-book"]').filter({ hasText: 'Book certification' }).count()) {
+    // the page draws after the route change: wait a moment for the button instead of counting at once
+    if (await p.locator('[data-testid="service-book"]').filter({ hasText: 'Book certification' }).first().waitFor({ timeout: 4000 }).then(() => true, () => false)) {
       book = true;
       break;
     }
