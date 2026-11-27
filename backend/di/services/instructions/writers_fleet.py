@@ -58,8 +58,10 @@ from di.services.execution import ex_doc_ref
 from di.services.instructions import writers
 from di.services.instructions.writers import NotApplicable, Refused, Sent
 
-FLEET = "/fleet/api/v1"
-PARTS = "/parts/api"
+# Paths are relative to the adapter's base path: `writers.client` already ends in /fleet/api/v1 (fleet) or /parts/api
+# (parts), so a prefix here doubled it and every lease step failed with a 404 (writer 93, smoke-p9-3 step 14).
+FLEET = ""
+PARTS = ""
 
 
 def _refused(e: SourceError) -> Exception:
