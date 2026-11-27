@@ -18,8 +18,8 @@
  *      is the mock's seeded record. planner.a's My work lists an item of one of the pack's cases (the API row and the page agree).
  *      The case page shows the gate results ("N of M passed" and a gate's name), the recommendation with its confidence
  *      ("<High|Medium|Low> confidence") and the alternatives, and the carbon line: "CO₂e avoided" with each factor's source and
- *      year. A pack whose factor set holds no factors (cfs-2026.2 has tool_fleet and device only) shows "no factor source on
- *      file" instead: the step passes and prints "GAP carbon" (a product gap, listed again at the end; not a smoke failure).
+ *      year (cfs-2026.2 holds sample factors for all five packs; medical rental's are transport only). A case whose routes
+ *      carry no factor ("no factor source on file") fails the step.
  *   b  admin writes a standing policy for the pack (the pack's value limit, the flow's confidence threshold) and approver approves
  *      it (action: standingPolicy.save/submit/approve); planner.a submits the pack's cases (action: decision.submit) until one is
  *      "approved by policy" (its page shows it); another case that waits for a person (the pack smokes' over-the-limit case where
@@ -417,20 +417,22 @@ async function showCase(pack) {
   );
   // Decide > Why this outcome: the outcome table's CO₂e column, each factor with its source and year
   const withCo2 = (c.routes || []).filter((r) => r.co2Prov && (r.co2Prov.factors || []).length);
-  let carbon;
-  if (withCo2.length) {
-    const pv = withCo2[0].co2Prov;
-    await block(
-      planner, id, 'stage/6?tab=why', 'table.tipt2',
-      (t, all) => /CO₂e avoided/i.test(t) && all.includes(pv.set) && pv.factors.every((f) => all.includes(`${f.source}, ${f.year}`)),
-      `the CO₂e line with its factors (${pv.set}: ${pv.factors.map((f) => `${f.source}, ${f.year}`).join('; ')})`,
-    );
-    carbon = `carbon ${pv.set}: ${pv.factors.map((f) => `${f.name} ${f.source}, ${f.year}`).join('; ')}`;
-  } else {
-    await block(planner, id, 'stage/6?tab=why', 'table.tipt2', (t) => /CO₂e avoided/i.test(t) && /no factor source on file/.test(t), 'the CO₂e column with "no factor source on file"');
-    carbon = 'GAP carbon: "no factor source on file"';
-    gaps.push(`${pack}: case ${id} shows no CO₂e factor ("no factor source on file"): packs/carbon.json has no ${pack} factors in cfs-2026.2`);
-  }
+  // every pack's set holds factors (cfs-2026.2: tool_fleet, device, used_cars, telecom_network, medical_rental)
+  if (!withCo2.length) throw new Error(`case ${id} (${pack}) has no route with a CO₂e factor: packs/carbon.json has no ${pack} factors for its routes`);
+  // the outcome table lists the eligible pathways only: the recommended route's factors first, else any listed route's
+  withCo2.sort((x, y) => (y.id === rec.id) - (x.id === rec.id));
+  const shows = (all, r) => all.includes(r.co2Prov.set) && r.co2Prov.factors.every((f) => all.includes(`${f.name} ${f.value}: ${f.source}, ${f.year}`));
+  let pv = withCo2[0].co2Prov;
+  await block(
+    planner, id, 'stage/6?tab=why', 'table.tipt2',
+    (t, all) => {
+      const r = withCo2.find((x) => shows(all, x));
+      if (r) pv = r.co2Prov;
+      return /CO₂e avoided/i.test(t) && !!r;
+    },
+    `the CO₂e line with its factors (${pv.set}: ${pv.factors.map((f) => `${f.name} ${f.value}: ${f.source}, ${f.year}`).join('; ')})`,
+  );
+  const carbon = `carbon ${pv.set} (${pv.label}): ${pv.factors.map((f) => `${f.name} ${f.source}, ${f.year}`).join('; ')}`;
   return `My work "${item.title}"; ${id}: ${gates.filter((g) => g.passed).length} of ${gates.length} gates passed; recommends ${rec.plan} (${conf} confidence), alternatives ${alts.join(', ') || 'none'}; ${carbon}`;
 }
 
@@ -474,6 +476,25 @@ async function approvals(pack) {
   const planner = await as('planner.a');
   const admin = await as('admin');
   let below = null;
+  if (pack === 'tool_fleet') {
+    // without telematics every tool return waits for a person ("No telematics for this tool", life confidence Low 0.50 under
+    // the flow's 0.75): the repair log and the telematics are synced (smoke-p9-3 steps 2 and 5); the sync queues a
+    // re-evaluation of each tool's open cases, after which a clean return is routed to the standing policy
+    const dev = await as('developer');
+    for (const sid of ['repairlog', 'tooltel']) {
+      await must(dev, 'source.reconnect', { source_id: sid });
+      await must(dev, 'source.sync', { source_id: sid });
+    }
+    await until(
+      async () => {
+        for (const id of cfg.cands) if ((await getJson(admin, '/api/screens/toolfleet/' + id)).approval?.kind === 'policy') return id;
+        return null;
+      },
+      'no tool return is routed to the standing policy after the repair log and telematics syncs',
+      SYNC,
+      admin,
+    );
+  }
   if (!cfg.person) {
     // no case of the pack smoke waits for a person by itself: rank the open cases by the money they move (case_value: the
     // recommended net); the policy covers up to the middle, the highest waits for the approver

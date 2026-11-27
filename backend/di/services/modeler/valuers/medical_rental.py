@@ -28,6 +28,7 @@ from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
+from di.services.modeler.carbon import co2_avoided
 from di.services.modeler.evidence import parse_time
 from di.services.modeler.pack import Pack
 from di.services.modeler.valuers.tool_fleet import PathValue, ValueLine
@@ -133,6 +134,9 @@ def value_routes(facts: Mapping[str, Any], pack: Pack, _as_of: datetime | None =
         )
     out.append(_refurbish(facts, p, cls, rate))
     out.append(_retire(facts, pack, p, cls))
+    for v in out:  # CO2e from the pack's set (transport only: a re-rent displaces nothing new), information only
+        cv = co2_avoided(pack, cls, v["k"].split(":")[0], float(facts.get("qty") or 1), confirmed=False) if v["ok"] else None
+        v["co2"], v["co2Prov"] = (cv.kg, cv.prov()) if cv else (None, None)
     return out
 
 
