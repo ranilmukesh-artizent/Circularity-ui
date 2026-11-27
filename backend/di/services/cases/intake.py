@@ -499,7 +499,10 @@ def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
     """What the template's valuer decides a case on: the snapshot taken when it opened (`valuer`), else rebuilt from
     the case's own fields (a case opened before the snapshot was kept)."""
     if isinstance(c.get("valuer"), dict):
-        return copy.deepcopy(c["valuer"])
+        out = copy.deepcopy(c["valuer"])
+        if template_key == "tool_fleet" and c.get("contract_id"):
+            out["contract"] = str(c["contract_id"])  # the return's own contract: its renewal is the one it takes
+        return out
     facts = dict(c)
     return tool_fleet_case(c["id"], facts) if template_key == "tool_fleet" else device_lot(c["id"], facts | {"model": ""})
 

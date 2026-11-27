@@ -459,10 +459,8 @@ await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R
   const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
   if ((v.paths || []).length !== 6) throw new Error(`expected six paths, got ${(v.paths || []).length}`);
   const release = v.paths.find((p) => p.k === 'release');
-  // With the fleet mock's whole book of renewals and orders in the demand pool (357 records), the valuer takes the best net
-  // for this tool, which is not always its own contract's renewal FC-30117-R (that one wins only when it is the one offer, as in
-  // the unit tests): require a named renewal or order of the feed.
-  const FLEET_LINE = /(Fleet renewal|New fleet order) FC-\d+-R/;
+  // A return takes the renewal of its OWN contract (FC-30117-R for this tool), whatever else the fleet mock offers.
+  const FLEET_LINE = /Fleet renewal FC-30117-R/;
   if (!release.lines.some((l) => FLEET_LINE.test(l.label))) {
     throw new Error('the re-issue lines do not name a fleet renewal or order: ' + release.lines.map((l) => l.label).join(' | '));
   }
