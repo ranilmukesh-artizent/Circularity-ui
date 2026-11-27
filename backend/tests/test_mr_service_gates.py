@@ -28,6 +28,7 @@ from di.services.canonical.schema import compliance_key, tag_key
 from di.services.canonical.store import Fact
 from di.services.cases import intake
 from di.services.cases import store as cases
+from di.services.cases.service_evidence import SERVICE_FIELDS
 from di.services.engine.routes import mk_route
 from di.services.modeler.gates import apply_gate_results, evaluate_gates
 from di.services.modeler.pack import load_pack
@@ -300,6 +301,44 @@ def test_mr_15_open_notice_holds_rerent():
     _recheck()
     c = _get(c["id"])
     assert _gate(c, "G-MED-FSN")["passed"] and c.get("gateHold") is None and "rerent" not in _failed(c)
+
+
+def _case_without_service(n: int, *, service_only: bool = False) -> dict:
+    """A return of pump n as `_case`, but the biomedical system has no record of it (or, `service_only`, a service record
+    with no field safety notice status)."""
+    c = _case(n)
+    key = tag_key(ORG, tag(n))
+    drop = ["correction_open", "correction_ref"] if service_only else [*SERVICE_FIELDS, "correction_open", "correction_ref"]
+    with SessionLocal() as s:
+        for f in drop:
+            s.execute(text("UPDATE canonical SET data = data - :f WHERE model = 'condition' AND key = :k"), {"f": f, "k": key})
+        s.commit()
+        found = cases.get(s, c["id"], for_update=True)
+        assert found is not None
+        intake.revalue(s, found)
+        cases.save(s, found)
+        s.commit()
+    return _get(c["id"])
+
+
+def test_no_service_record_holds_rerent():
+    """Owner decision (review P1, phase 11): a unit with no service record is not re-rented, held until the record is read."""
+    c = _case_without_service(40)
+    g = _gate(c, "G-MED-SVC")
+    assert not g["passed"] and g["hold"] and g["reason"] == "Service record missing"
+    assert sorted(g["routes"]) == ["rerent", "service_rerent"] and g["missingTypes"] == ["service_record"]
+    assert "G-MED-SVC" in c["gateHold"]["gates"]
+    assert _failed(c)["rerent"] == "Service and certification in date for the whole rental: Service record missing"
+
+
+def test_no_safety_status_holds_rerent():
+    """Owner decision (review P1, phase 11): a unit whose safety status was never read is not re-rented."""
+    c = _case_without_service(41, service_only=True)
+    assert _gate(c, "G-MED-SVC")["passed"]
+    g = _gate(c, "G-MED-FSN")
+    assert not g["passed"] and g["hold"] and g["reason"] == "Safety status not checked"
+    assert sorted(g["routes"]) == ["rerent", "service_rerent"] and g["missingTypes"] == ["field_safety_status"]
+    assert c["gateHold"]["gates"] == ["G-MED-FSN"] and c["recommendation"] is None
 
 
 def test_mr_15_a_unit_outside_the_serial_range_is_clear():

@@ -38,10 +38,16 @@ def pending_doc(cycle_id: str, tag: str, enhanced: bool, start: datetime, end: d
 
 
 def finished() -> list[dict]:
-    """The cycles that are finished from the start: one per return, but the batch (and none for no one else)."""
+    """The cycles that are finished from the start: one per return, but the batch (and none for no one else). The pumps'
+    cycles are `DC-<n>`; another device's (the patient monitor SYN-MR-PM-0007) `DC-<900 + n>`, one standard cycle: a plain
+    number, as the POST route's next id counts on, below the route's own DC-1001 on."""
     out = []
     for r in rental.returns():
         n = int(r["tag"][-4:])
+        if not r["tag"].startswith("SYN-MR-IP-"):
+            start = datetime.fromisoformat(r["checkedInAt"]) + timedelta(minutes=30)
+            out.append(_doc(f"DC-{900 + n:04d}", r["tag"], False, start, start + CYCLE_LENGTH))
+            continue
         if n in BATCH:
             continue
         check_in = datetime.fromisoformat(r["checkedInAt"])

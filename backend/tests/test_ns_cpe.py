@@ -14,6 +14,7 @@ from sqlalchemy import text
 from di import worker
 from di.core import state
 from di.core.db import SessionLocal
+from di.services.cases import intake
 from di.services.modeler import carbon
 from di.services.modeler.pack import load_pack
 from di.services.modeler.valuers import standard
@@ -83,6 +84,22 @@ def test_ns_cpe_02_reset_record_per_serial():
     after = cpe.get(c["id"])
     assert (after["lot"]["released"], after["lot"]["held"]) == (498, 2)
     assert cpe.route(after, "refurbish_redeploy")["net"] == 15438.0
+
+
+def test_ns_cpe_02_shared_source_lot_reads_shared_serials():
+    """A shared cpe_bss source keys the lot and its serials `shared:`; a case of Customer A opened on that lot reads the
+    serials' reset records under the lot's prefix, not the case owner's (smoke p9-12 step 2)."""
+    with SessionLocal() as s:
+        s.execute(text("UPDATE source_system SET org_unit_id = NULL WHERE id = 'cpe_bss'"))
+        s.commit()
+    cpe.sync_lot("LOT-R7-B-W47")
+    body = {"org_unit_id": cpe.ORG, "template_key": "telecom_cpe", "asset_key": "shared:LOT-R7-B-W47", "reason": "rma"}
+    with SessionLocal() as s:
+        c = dict(intake.open_case(s, body | {"facts": {}}, "system"))
+        s.commit()
+    lot = c["lot"]
+    assert (lot["qty"], lot["released"], lot["held"]) == (500, 500, 0)
+    assert cpe.route(c, "refurbish_redeploy")["net"] == 15500.0
 
 
 def test_ns_cpe_03_carbon_with_provenance():

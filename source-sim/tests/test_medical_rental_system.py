@@ -68,7 +68,7 @@ def test_rental_returns_and_isolation_ward(client):
     rows = get(client, "returns")
     by = {r["tag"]: r for r in rows}
     assert set(rows[0]) == {"returnId", "tag", "hospitalId", "ward", "wardType", "depot", "checkedInAt", "previousRentalEnd"}
-    assert len(by) == len(rows) == 45 and by["SYN-MR-IP-0001"]["depot"] == "EAST"
+    assert len(by) == len(rows) == 46 and by["SYN-MR-IP-0001"]["depot"] == "EAST"  # 45 pumps and the monitor SYN-MR-PM-0007
     iso = sorted(r["tag"] for r in rows if r["wardType"] == "isolation")
     assert iso == ["SYN-MR-IP-0010", "SYN-MR-IP-0011"]
     assert {by[t]["hospitalId"] for t in iso} == {"HOSP-D"}

@@ -23,11 +23,14 @@ end. Otherwise it fails that request: "Certification ends <date>, before the ren
 serve; it never holds the case: the exception `EX-MR-CERT` goes to the biomedical engineer, and the case's `serviceCheck` names
 "Send a different unit: <tag>" and proposes `service.book` for this one (a person books it). A failed functional or electrical
 safety test blocks `rerent` only (service then re-rent is how a unit gets fixed); a cosmetic note changes nothing (MR-07).
+A unit with NO service record fails both re-rent routes and IS held until one is read: "Service record missing" (owner
+decision, review P1 phase 11).
 
 G-MED-FSN (P9-11.7) reads the evidence `field_safety_status`: it fails while a notice that covers the model and serial is open,
 "Open field safety notice <id>: re-rent held until corrected", `rerent` and `service_rerent` blocked and the case held; a later
-`field_safety_status` record that passes (the correction record) makes the unit eligible again and releases the case. A gate
-check returns None to leave a passing unit to the data.
+`field_safety_status` record that passes (the correction record) makes the unit eligible again and releases the case. In the
+medical rental pack a unit with NO safety status fails the same way, "Safety status not checked", held until one is read
+(owner decision, review P1 phase 11). A gate check returns None to leave a passing unit to the data.
 
 G-MED-REFURB (P9-11.10, story MR-16, stage 5) reads the evidence `servicing_assessment` (`service_evidence`: the biomedical
 system's `condition.servicing_assessment`, value `{assessment}`). `refurbish` needs it: with none the route fails with
@@ -66,6 +69,8 @@ SVC_GATE, FSN_GATE = "G-MED-SVC", "G-MED-FSN"
 REFURB_GATE, ASSESSMENT = "G-MED-REFURB", "servicing_assessment"
 FULL = ("remanufacturing", "full_refurbishment")
 SERVICE_RECORD, SAFETY_STATUS = "service_record", "field_safety_status"
+MISSING_SERVICE, MISSING_SAFETY = "Service record missing", "Safety status not checked"
+RENTAL_PACK = "medical_rental"  # G-MED-FSN is also the medical capital pack's; only a rental unit is held for no status
 TESTS = {"functional_test": "Functional test", "electrical_safety": "Electrical safety test (IEC 62353)"}
 
 
@@ -155,11 +160,12 @@ def proposal(case: Mapping[str, Any], checks: Sequence[Mapping[str, Any]]) -> di
 
 
 def check_service_in_date(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
-    """G-MED-SVC (module docstring); None leaves a unit that is in date, or has no service record, to the data."""
+    """G-MED-SVC (module docstring); None leaves a unit that is in date to the data. A rental unit with no service record fails
+    the re-rent routes, held until the record is read: "Service record missing" (owner decision, review P1 phase 11)."""
     e = evidence_of(case, SERVICE_RECORD)
-    if e is None:
-        return None
     routes = gate_routes(gate, pack)
+    if e is None:
+        return GateResult(gate.id, False, GateEffect("block", routes, True, gate.effect.step), (SERVICE_RECORD,), MISSING_SERVICE)
     checks = request_checks(e.value, case.get("rentalRequests") or [])
     short = bool(checks) and all(not c["ok"] for c in checks)
     failed = [TESTS[t] for t in e.value.get("failed") or [] if t in TESTS] if e.result == "fail" else []
@@ -173,8 +179,13 @@ def check_service_in_date(case: Mapping[str, Any], pack: Pack, gate: GateDef) ->
 
 
 def check_safety_notice(case: Mapping[str, Any], pack: Pack, gate: GateDef) -> GateResult | None:
-    """G-MED-FSN (module docstring); None leaves a unit with no open notice, or with the correction record, to the data."""
+    """G-MED-FSN (module docstring); None leaves a unit with no open notice, or with the correction record, to the data. A
+    rental unit whose safety status was never read fails the re-rent routes, held until it is: "Safety status not checked"
+    (owner decision, review P1 phase 11; the medical capital pack keeps its own reading, no status is not held there)."""
     e = evidence_of(case, SAFETY_STATUS)
+    if e is None and pack.key == RENTAL_PACK:
+        effect = GateEffect("block", gate_routes(gate, pack), True, gate.effect.step)
+        return GateResult(gate.id, False, effect, (SAFETY_STATUS,), MISSING_SAFETY)
     if e is None or e.result != "fail":
         return None
     reason = f"Open field safety notice {e.value.get('notice_id') or '(not named)'}: re-rent held until corrected"

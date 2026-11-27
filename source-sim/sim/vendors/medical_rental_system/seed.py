@@ -52,6 +52,18 @@ ISOLATION = {10, 11}  # SYN-MR-IP-0010 and 0011 come back from HOSP-D's isolatio
 HOSPITAL_OVERRIDE = {10: "HOSP-D", 11: "HOSP-D", 12: "HOSP-B"}
 EAST_CYCLE = ("HOSP-A", "HOSP-B", "HOSP-C", "HOSP-D")
 GROUP_HOSPITAL = {"WEST": "HOSP-E", "NORTH": "HOSP-F"}
+# the patient monitor with the $1,350 repair (biomed_service's SYN-MR-PM-0007): a return 40 days old, so it is in no depot's
+# turnaround window (no turnaround row) and no return count above changes
+MONITOR = {
+    "returnId": "RET-0046",
+    "tag": "SYN-MR-PM-0007",
+    "hospitalId": "HOSP-B",
+    "ward": "Ward 2",
+    "wardType": "general",
+    "depot": "EAST",
+    "checkedInAt": (AS_OF - timedelta(days=40, hours=2)).isoformat(),
+    "previousRentalEnd": "2026-10-17",
+}
 
 
 def tag(n: int) -> str:
@@ -119,7 +131,8 @@ def _returns() -> list[tuple[dict, dict]]:
 
 
 def returns() -> list[dict]:
-    return [r for r, _t in _returns()]
+    """The pumps' returns (tags 1 to 45), then the patient monitor's (MONITOR)."""
+    return [r for r, _t in _returns()] + [dict(MONITOR)]
 
 
 def turnaround() -> list[dict]:
