@@ -2,6 +2,7 @@
 
     flagged(s, org, pack=None)         the cars on a lot more than `SR-UC-AGE45`'s days, each with its suggested move
     sync_alerts(s, org, by, pack=None) open or close the `AL-UC-AGEING` work items to match the flagged cars
+    orgs(s)                            the org units with cars on a lot (the worker's `uc.ageing` job syncs each one)
 
 Reads the dealer system's facts (`asset.lot_id`, `asset.days_on_lot`, `asset.segment`, and `market.lot_days_to_sale` per lot,
 all under `vin_key(org, vin)`) and the two rules of the pack's `runtime.suggestion_rules`: `SR-UC-AGE45` (days) and
@@ -135,6 +136,17 @@ def alert_groups(flags: list[dict[str, Any]], pack: Pack) -> list[dict[str, Any]
                 "cause": f"{len(group)} cars over {p['days_on_lot_gt']} days on the lot, the oldest {oldest}",
             })  # fmt: skip
     return sorted(out, key=lambda g: (-g["n"], g["title"]))
+
+
+def orgs(s: Session) -> list[str]:
+    """The org units with a car on a lot (the dealer system wrote `lot_id` and `days_on_lot` under their keys)."""
+    rows = s.execute(
+        text(
+            "SELECT DISTINCT split_part(key, ':', 1) AS org FROM canonical WHERE model = 'asset' "
+            "AND data ? 'lot_id' AND data ? 'days_on_lot' ORDER BY 1"
+        )
+    ).scalars()
+    return [r for r in rows if r]
 
 
 def sync_alerts(s: Session, org: str, by: str, pack: Pack | None = None) -> list[dict[str, Any]]:

@@ -28,6 +28,9 @@ MODELS = (
     ("MWL-60", "PN-0060-09", "MFR-A", "B1", None, None),
 )
 LATE_SERIAL = "SN-TN-0201"
+# SN-TN-0015, the bench's unit whose wipe failed twice, is a previous-generation baseband that brokers bid on and no region
+# needs: without the wipe it would resell, so its case shows the wipe gate as what closes the resale (story TN-06).
+PINNED = {15: ("BBU-2200", "PN-2200-04", "MFR-B", "C1", None, None)}
 
 
 def serial(n: int) -> str:
@@ -40,7 +43,7 @@ def _status(n: int) -> str:
 
 
 def element(n: int) -> dict:
-    model, part, maker, hw, confirmed, inferred = MODELS[n % len(MODELS)]
+    model, part, maker, hw, confirmed, inferred = PINNED.get(n) or MODELS[n % len(MODELS)]
     firmware = f"{5 + n % 4}.{n % 3}.{n % 5}" if model == "RTR-880" else f"3.{n % 3}.{n % 5}"
     return {
         "serial": serial(n),

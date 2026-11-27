@@ -43,13 +43,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const ORG = 'Customer A';
 const SOURCES = ['tn_inv', 'tn_decom', 'tn_bench', 'tn_spares', 'tn_broker', 'tn_recycler'];
 const sn = (n) => 'SN-TN-' + String(n).padStart(4, '0');
-// The mocks' units: n % 6 picks the model (0 RAD-7700, 1 RRU-4410, 3 BBU-5200, 4 LCD-100G); 0001-0033 are the removed ones.
+// The mocks' units: n % 6 picks the model (0 RAD-7700, 1 RRU-4410, 3 BBU-5200, 4 LCD-100G), except 0015, pinned a BBU-2200 (the
+// model brokers bid on and no region needs, so only its failed wipe closes the resale); 0001-0033 are the removed ones.
 const UNITS = {
   1: { model: 'RRU-4410', site: 'SITE-100' },
   6: { model: 'RAD-7700', site: 'SITE-105' },
   7: { model: 'RRU-4410', site: 'SITE-106' },
   12: { model: 'RAD-7700', site: 'SITE-111' },
-  15: { model: 'BBU-5200', site: 'SITE-114' },
+  15: { model: 'BBU-2200', site: 'SITE-114' },
   202: { model: 'LCD-100G', site: 'SITE-301' }, // never in the inventory
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;

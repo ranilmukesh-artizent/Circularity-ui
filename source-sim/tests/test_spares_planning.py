@@ -49,7 +49,8 @@ def test_spares_catalogue_targets_forecast(client):
     assert (north["target"], north["stock"], north["useProbability12m"]) == (4, 2, 0.55)
     forecast = get(client, "forecast6m")
     assert forecast and all(set(f) == {"region", "model", "need"} for f in forecast)
-    assert "BBU-2200" not in {f["model"] for f in forecast}
+    assert len(forecast) == 20  # one row per target cell
+    assert [f["need"] for f in forecast if f["model"] == "BBU-2200"] == [0, 0, 0, 0]  # on file, and no region needs it
     stock = get(client, "stock")
     psu = sorted(u["idleDays"] for u in stock if (u["region"], u["model"]) == ("North", "PSU-48"))
     assert len(psu) == 3 and all(41 <= d <= 60 for d in psu)
