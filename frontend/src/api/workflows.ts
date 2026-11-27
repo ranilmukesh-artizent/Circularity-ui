@@ -19,6 +19,7 @@
 import * as G from './workflowGraph';
 import { invoke } from './actions';
 import { ApiError, cached, onStream, ref } from './client';
+import { canPage } from './session';
 import type { ActionResult } from './types';
 
 export type StepKind = 'fixed' | 'conn' | 'wconn' | 'act' | 'xf' | 'map' | 'tool';
@@ -154,6 +155,9 @@ const seenAt = new WeakMap<object, number>();
 const T0 = Date.now();
 /** "Now" on the clock the run times are on: the workspace clock. */
 export function nowMs(): number {
+  // the workflow list is the Studio's: an account without the Studio (Engineer, Finance on the Monitor) is refused it,
+  // so it runs on the demo's clock from the page's load
+  if (!canPage('integration', 'studio')) return Date.parse(ref('AS_OF')) + (Date.now() - T0);
   const a = listA();
   if (!seenAt.has(a)) seenAt.set(a, Date.now());
   return a.now != null ? a.now + (Date.now() - seenAt.get(a)!) : Date.parse(ref('AS_OF')) + (Date.now() - T0);
