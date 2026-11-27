@@ -225,8 +225,12 @@ await step('1 Compose: sample prompt 1, the reading, the pack and one question',
   await describeInAssistant(p); // plan 10: the Describe step is Ask Circularity's Set up mode; sample prompt 1
   await openInSetup(p);
   await panel(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
-  const t = await panel(p).innerText();
-  if (!/Matched pack|Nearest pack/.test(t) || !/tool_fleet/.test(t)) throw new Error('no matched pack line naming tool_fleet');
+  // the pack line names the pack by its display name (UI audit A2): "Matched: Tool fleet returns (86)"; below the bar "Closest: Tool fleet returns (n)".
+  // The score and the names come from a second read after the panel shows (until then the line has the key and no score): wait for it.
+  const MATCH = /(Matched|Closest): Tool fleet returns \(\d+\)/;
+  await until(async () => MATCH.test(await panel(p).innerText()), 'no matched pack line naming tool_fleet (Tool fleet returns)', UI, p).catch(async (e) => {
+    throw new Error(e.message + ': ' + ((await panel(p).innerText()).match(/(Matched|No pack fits).*/)?.[0] ?? 'none'));
+  });
   const q = panel(p).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
   COMP = Number((await stateLine(p)).match(/composition (\d+) is/)?.[1]);

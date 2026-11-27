@@ -56,7 +56,7 @@ const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-2');
 const here = path.dirname(fileURLToPath(import.meta.url));
 const packFile = process.env.PACK_FILE || path.join(here, '../../backend/di/services/modeler/packs/tool_fleet.json');
 const HERO = 'RT-1048';
-const UI = 30000;
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a longer wait on a slow or shared machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -139,7 +139,8 @@ async function step(name, fn) {
 }
 
 // The Modeler's template and organisation are in its URL (plan 10 T8); the selects are checked too.
-const modeler = async (p, template, org) => {
+// `tab`: the page's sections are tabs (plan 10): data-tab layer, policies, tables, packs, setup; Flow is the default.
+const modeler = async (p, template, org, tab) => {
   await go(p, `modeler?template=${template}&org=${encodeURIComponent(org)}`);
   for (const [sel, want] of [['#mdl-tpl', template], ['#mdl-org', org]]) {
     const el = p.locator(sel);
@@ -151,6 +152,10 @@ const modeler = async (p, template, org) => {
   }
   // the picks change at once; the flow they read follows: wait until it is shown
   await p.locator('.mdl-picks[aria-busy="false"]').waitFor({ timeout: 60000 });
+  if (tab) {
+    await p.locator(`.mdl-tabs [data-tab="${tab}"]`).click();
+    await p.locator(`.mdl-tabs [data-tab="${tab}"][aria-current="page"]`).waitFor();
+  }
 };
 
 /** Start a playbook run from the Agents page (Admin): the Start run form of the Runs section. */
@@ -202,7 +207,7 @@ await step('1 Agents: seeded language model, tool search lists evidence_request 
 // ---------------------------------------------------------------- 2
 await step('2 Standing policy: maker-checker refusal for admin, approver puts it in force', async () => {
   const ad = await as('admin');
-  await modeler(ad, 'industrial', 'workspace');
+  await modeler(ad, 'industrial', 'workspace', 'policies');
   const draft = ad.locator('[data-standing-draft]');
   await draft.waitFor();
   await draft.locator('#sp-name').fill('Smoke standing policy');
@@ -217,7 +222,7 @@ await step('2 Standing policy: maker-checker refusal for admin, approver puts it
   await list.locator('li').first().getByRole('button', { name: 'Approve', exact: true }).click();
   await expectText(ad, 'Maker-checker: you drafted this policy, so another person approves it.', '[data-standing-refusal]');
   const ap = await as('approver');
-  await modeler(ap, 'industrial', 'workspace');
+  await modeler(ap, 'industrial', 'workspace', 'policies');
   await ap.locator('[data-standing-policies] li').first().getByRole('button', { name: 'Approve', exact: true }).click();
   await ap.locator('[data-standing-policies] [data-standing-status="active"]').waitFor();
   await expectText(ap, /In force · v1/, '[data-standing-policies]');
@@ -352,9 +357,12 @@ await step('6 Device case: held for fraud review with its signal, approver relea
   await go(ap, `product/${id}/overview`);
   await expectText(ap, 'Held for fraud review', '[data-testid=fraud-hold]');
   await ap.locator('#fraud-reason').fill('Checked the register: a name clash, not this asset.');
+  // the confirmation is a toast that fades after a few seconds: watch for it before the click (a slow page would miss it afterwards)
+  const toastSeen = ap.getByText('released from fraud review').first().waitFor();
+  toastSeen.catch(() => {});
   await ap.locator('[data-testid=fraud-hold]').getByRole('button', { name: 'Release', exact: true }).click();
   await ap.locator('[data-testid=fraud-hold]').waitFor({ state: 'detached' });
-  await expectText(ap, 'released from fraud review', 'body');
+  await toastSeen;
   return id;
 });
 

@@ -42,7 +42,7 @@ const packFile = process.env.PACK_FILE || path.join(here, '../../backend/di/serv
 const ORG = 'Customer A';
 const ORG_Q = encodeURIComponent(ORG);
 const ORDER = 'L-SMOKE-1';
-const UI = 30000;
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a longer wait on a slow or shared machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -121,7 +121,8 @@ async function step(name, fn) {
 }
 
 // The page keeps its template and organisation in its own state (the query is not read): pick them in its selects.
-const modeler = async (p, template) => {
+// The page's sections are tabs (plan 10): `tab` opens one of them (data-tab: layer, policies, tables, packs, setup); Flow is the default.
+const modeler = async (p, template, tab) => {
   await go(p, `modeler?template=${template}&org=${ORG_Q}`);
   const tpl = p.locator('#mdl-tpl');
   await tpl.waitFor();
@@ -130,6 +131,10 @@ const modeler = async (p, template) => {
     await p.waitForFunction((t) => document.querySelector('#mdl-tpl')?.value === t, template);
     // the pick changes at once; the flow follows (writer 23): wait until the new template's screen is shown
     await p.locator('.mdl-picks[aria-busy="false"]').waitFor({ timeout: 60000 });
+  }
+  if (tab) {
+    await p.locator(`.mdl-tabs [data-tab="${tab}"]`).click();
+    await p.locator(`.mdl-tabs [data-tab="${tab}"][aria-current="page"]`).waitFor();
   }
 };
 const caseOpen = async (p, asset, facts) => {
@@ -144,7 +149,7 @@ await step('1 Packs: tool_fleet 3.2.0, Published, 13 of 13 parts', async () => {
   const [maj, min, pat] = doc.version.split('.').map(Number);
   doc.version = `${maj}.${min}.${pat + 1}`; // an import must be newer than the pack file's version
   const pl = await as('planner.a');
-  await modeler(pl, 'tool_fleet');
+  await modeler(pl, 'tool_fleet', 'packs');
   const panel = pl.locator('[data-pack-key="tool_fleet"]');
   await panel.waitFor();
   await pl.locator('#mdl-pk-file').setInputFiles({ name: 'tool_fleet.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(doc)) });
@@ -152,9 +157,9 @@ await step('1 Packs: tool_fleet 3.2.0, Published, 13 of 13 parts', async () => {
   await panel.locator('[data-pack-version]').first().getByRole('button', { name: 'Submit for approval' }).click();
   await expectText(pl, /In review/, '[data-pack-key="tool_fleet"]');
   const ap = await as('approver');
-  await modeler(ap, 'tool_fleet');
+  await modeler(ap, 'tool_fleet', 'packs');
   await ap.locator('[data-pack-key="tool_fleet"] [data-pack-version]').first().getByRole('button', { name: 'Approve', exact: true }).click();
-  await pl.reload();
+  await pl.reload(); // the tab is in the URL: Packs stays open
   for (const w of ['3.2.0', 'Published', '13 of 13 parts']) await expectText(pl, w, '[data-pack-key="tool_fleet"]');
   return `file 3.2.0, imported ${doc.version} approved`;
 });
@@ -162,7 +167,7 @@ await step('1 Packs: tool_fleet 3.2.0, Published, 13 of 13 parts', async () => {
 // ---------------------------------------------------------------- 2
 await step('2 Customer layer: skip refused, GR-D2 0.60 saves, 0.50 refused', async () => {
   const pl = await as('planner.a');
-  await modeler(pl, 'device');
+  await modeler(pl, 'device', 'layer');
   const box = pl.locator('.mdl-overlay');
   await box.waitFor();
   const dv = box.locator('[data-overlay-diversion]');
@@ -244,13 +249,13 @@ await step('6 Analytics > Packs > tool_fleet: Redeploy rate, two questions', asy
 // ---------------------------------------------------------------- 7
 await step('7 Overlay: approver approves, planner.a is not offered Approve', async () => {
   const pl = await as('planner.a');
-  await modeler(pl, 'device');
+  await modeler(pl, 'device', 'layer');
   const box = pl.locator('.mdl-overlay');
   await box.getByRole('button', { name: 'Submit for approval' }).click();
   await expectText(pl, 'In review', '.mdl-overlay');
   if (await box.getByRole('button', { name: 'Approve', exact: true }).count()) throw new Error('planner.a is offered Approve on their own draft');
   const ap = await as('approver');
-  await modeler(ap, 'device');
+  await modeler(ap, 'device', 'layer');
   await ap.locator('.mdl-overlay').getByRole('button', { name: 'Approve', exact: true }).click();
   await expectText(ap, 'Published', '.mdl-overlay');
 });

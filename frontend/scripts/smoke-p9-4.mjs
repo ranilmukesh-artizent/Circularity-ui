@@ -38,9 +38,9 @@ const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-4');
 const ORG = 'tool-fleet-a';
-const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}`;
-const UI = 30000;
-const FIRST = 20000; // a first page load after sign-in
+const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}&tab=tables`; // the Tables tab of the Modeler (plan 10: the page's sections are tabs)
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a longer wait on a slow or shared machine
+const FIRST = Math.max(20000, Number(process.env.SMOKE_UI_MS) || 0); // a first page load after sign-in
 const SYNC = 180000;
 mkdirSync(out, { recursive: true });
 
@@ -199,6 +199,8 @@ const synced = (p, sid) =>
 
 // ---------------------------------------------------------------- 1
 await step('1 Market tables: finance edits FR labour to 48 EUR, the Approver approves v2', async () => {
+  // the Modeler refuses an org unit that does not exist ("No org unit tool-fleet-a"): create it first (smoke-p9-3 did, on a database it had not reset)
+  await callAction(await as('admin'), 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' });
   const fin = await as('finance');
   await openPage(fin, MODELER, '#mt-market');
   await fin.locator('#mt-market').selectOption('FR');
@@ -256,11 +258,13 @@ await step('2 Sources: sdesk and rephist synced, the service-desk cases open', a
   const maps = (src.mappings || []).filter(Array.isArray);
   await must(admin, 'source.update', { mode: 'edit', id: 'sdesk', d, maps, ops: { read: src.read || [], write: src.write || [] }, note: '', org_unit_id: ORG });
   await synced(dev, 'sdesk');
-  let id = await caseOf(admin, 'CS0010042', 20000).catch(() => null);
+  let id = await caseOf(admin, 'CS0010042', Math.max(20000, UI)).catch(() => null);
   if (!id) {
     // the first sync read the tickets before the bind: read everything again through the source's ingest workflow
     const wf = await must(dev, 'workflow.create', { type: 'ingest', src: 'sdesk' });
-    const w = (await getJson(dev, '/api/screens/workflows/' + encodeURIComponent(wf.id))).workflow;
+    const detail = await getJson(dev, '/api/screens/workflows/' + encodeURIComponent(wf.id));
+    const w = detail.workflow || detail;
+    if (!w.graph) throw new Error(`workflow ${wf.id} has no graph: ${JSON.stringify(detail).slice(0, 200)}`);
     const g = JSON.parse(JSON.stringify(w.graph));
     const conn = g.nodes.find((n) => n.k === 'conn');
     conn.cfg = { ...(conn.cfg || {}), mode: 'full' };

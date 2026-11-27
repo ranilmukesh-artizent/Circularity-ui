@@ -47,7 +47,7 @@ export function ModelerPage({ query }: PageProps) {
   const loading = shownTemplate !== template || shownOrg !== org;
   const s = useModeler(shownTemplate, shownOrg);
   const compose = composeParam(query.get('compose'));
-  const tabs = visibleTabs({ managePacks: can('managePacks'), template: s.template.key });
+  const tabs = visibleTabs({ managePacks: can('managePacks'), approvePacks: can('approve.packs'), template: s.template.key });
   const tab = pageTab(query.get('tab'), compose, tabs);
   /** The query for a tab link: the other parameters stay, Flow is the absence of `?tab=`. */
   const searchFor = (id: PageTab) => {

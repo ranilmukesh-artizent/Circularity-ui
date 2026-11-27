@@ -8,14 +8,15 @@ export interface TabDef {
   label: string;
 }
 
-/** Which tabs this person sees: Tables for the tool fleet, Packs and Set up for those who manage packs. */
-export function visibleTabs(o: { managePacks: boolean; template: string }): TabDef[] {
+/** Which tabs this person sees: Tables for the tool fleet, Packs for those who manage or approve packs (an approver reaches the Approve button there), Set up for those who manage packs. */
+export function visibleTabs(o: { managePacks: boolean; approvePacks?: boolean; template: string }): TabDef[] {
   return [
     { id: 'flow', label: 'Flow' },
     { id: 'layer', label: 'Customer layer' },
     { id: 'policies', label: 'Policies' },
     ...(o.template === 'tool_fleet' ? [{ id: 'tables' as const, label: 'Tables' }] : []),
-    ...(o.managePacks ? [{ id: 'packs' as const, label: 'Packs' }, { id: 'setup' as const, label: 'Set up' }] : []),
+    ...(o.managePacks || o.approvePacks ? [{ id: 'packs' as const, label: 'Packs' }] : []),
+    ...(o.managePacks ? [{ id: 'setup' as const, label: 'Set up' }] : []),
   ];
 }
 
