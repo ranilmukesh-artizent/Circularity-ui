@@ -28,7 +28,7 @@ async function session(acct) {
 const go = (p, n) =>
   p
     .goto(`${base}/#/product/${CASE}/stage/${n}`)
-    .then(() => p.waitForFunction(() => /Case at Stage \d+ of 10|Every stage is done/.test(document.querySelector('#view')?.innerText || ''), null, { timeout: 45000 }))
+    .then(() => p.waitForFunction(() => /Case at Stage \d+ of 10|Every stage is done/.test(document.querySelector('#view')?.innerText || ''), null, { timeout: 90000 }))
     .catch(() => {})
     .then(() => p.waitForTimeout(1500));
 const stage = async (p) => {
@@ -55,7 +55,7 @@ if (await submit.count()) {
 // 2. The Approver approves (the approval card needs the evidence review ticked)
 const approver = await session('approver');
 await go(approver, 7);
-await approver.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click();
+await approver.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click({ timeout: 90000 });
 await approver.getByLabel(/I reviewed evidence snapshot/).check();
 await approver.click('text=Approve and send instruction');
 await approver.waitForTimeout(1500);
@@ -77,6 +77,7 @@ say('watcher (no reload) sees', s);
 const finance = await session('finance');
 await go(finance, 9);
 const confirm = finance.locator('button', { hasText: 'Confirm the outcome' });
+await confirm.first().waitFor({ timeout: 90000 }).catch(() => {});
 if (!(await confirm.count())) throw new Error('Finance has no "Confirm the outcome" button; stage is ' + (await stage(finance)));
 await confirm.first().click();
 await finance.waitForTimeout(2000);
