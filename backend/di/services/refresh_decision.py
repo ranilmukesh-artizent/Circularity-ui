@@ -39,7 +39,7 @@ from di.core import clock
 from di.repositories import contract_history
 from di.repositories import market_tables as tables_repo
 from di.services.actions.registry import ActionError
-from di.services.cases import intake, lifecycle, store, tool_queue
+from di.services.cases import intake, lifecycle, process, store, tool_queue
 from di.services.engine.routes import mk_route, rank_routes, term
 from di.services.modeler import tables
 from di.services.modeler.pack import load_pack
@@ -63,7 +63,7 @@ class Quote:
 
 def _match(s: Session, c: dict[str, Any]) -> list[dict[str, Any]]:
     """The like-life unit of each swap of this case (tool_queue.refresh_match, over the org's open refresh cases together)."""
-    return tool_queue.refresh_match(s, str(c["owner"])).get(str(c["id"]), [])
+    return tool_queue.case_match(s, c)
 
 
 def contract_block(s: Session, c: dict[str, Any]) -> str | None:
@@ -152,11 +152,12 @@ def _exists(s: Session, case_id: str) -> bool:
 def attach(s: Session, c: dict[str, Any]) -> bool:
     """Price the refresh and make its routes the case's decision (module docstring). A case not stored yet is priced without
     unit matches (the match reads the stored open cases). False, and the case without a decision, when there is nothing to price;
-    a contract the gate blocks (`contract_block`) keeps `refreshBlock` {gate, reason} and no routes, holds or proposal."""
+    a contract the gate blocks (`contract_block`) keeps `refreshBlock` {gate, reason}, no proposal, and the holds it had."""
     if block := contract_block(s, c):
-        for k in ("approvalRoute", "approvalHolds", "refreshProposal"):
-            c.pop(k, None)
+        c.pop("refreshProposal", None)
         c["refreshBlock"] = {"gate": fleet_evidence.GATE, "reason": block}
+        # the holds the case had stay (review M7): a block that appears after the case opened never leaves a decision the
+        # standing policy could cover, and the approval is refused with the gate's reason (`block_refusal`)
         return False
     c.pop("refreshBlock", None)
     q = quote(s, c, match=None if _exists(s, str(c["id"])) else [])
@@ -226,3 +227,25 @@ def send_back(s: Session, case_id: str, reason: str) -> None:
     c["submitted"] = None
     c["cycle"] = (c.get("cycle") or 0) + 1  # a new decision cycle: new approval reference and keys
     lifecycle.move(s, c, "reeval", reason, "system")
+
+
+def block_refusal(c: dict[str, Any]) -> tuple[str, str] | None:
+    """The approval refusal of a contract the gate blocks (GR-07): its reason, as `refreshBlock` shows it (review M7)."""
+    b = c.get("refreshBlock")
+    return ("conflict", f"{c['id']}: {b['reason']}") if isinstance(b, dict) and b.get("reason") else None
+
+
+def approver_refusal(s: Session, c: dict[str, Any], plan: str | None, role: str) -> tuple[str, str] | None:
+    """Who may approve the route the person chooses (plan `plan`, else the recommendation): GR-C1 is computed again on that
+    route's own credits (an override to `upgrade_all` credits every tool), and the role it names (Sales: Approver) is the role
+    the approver must hold, Admin included (review M4 and M5). None when the actor may."""
+    route = next((r for r in c.get("routes") or [] if r["plan"] == plan), None) or c.get("recommendation")
+    doc = (c.get("refreshProposal") or {}).get(str((route or {}).get("id")))
+    if doc is None:
+        return None
+    credit = Decimal(str(doc.get("credit_total") or 0)) / fx_per_usd(s, str(doc.get("currency") or "USD"), clock.now().date())
+    ar = tool_approval.refresh_route(float(credit), load_pack(tool_queue.PACK))
+    needed = process.role_of_owner(ar.role or DESK)
+    if needed == "Approver" and role not in ("Approver", "Admin"):
+        return "out_of_scope", f"{c['id']}: {'; '.join(ar.reasons)}, so {ar.role} (an Approver) must approve it, not a {role}."
+    return None

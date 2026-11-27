@@ -306,10 +306,12 @@ def _checks(lot: Lot, channel: str, cash: float, why: str) -> tuple[bool, str]:
     live = inp.get("live_buynow")
     if channel == "market" and live is not None and cash < float(live):
         return False, f"Marketplace never undercuts the live Buy Now price (GR-D5): {_money(cash)} < {_money(float(live))}"
-    if channel in LISTING and lot.get("imei") and "parts_status" in inp:
+    if (
+        (channel in LISTING or channel == "repair_sell") and lot.get("imei") and "parts_status" in inp
+    ):  # repair then sell lists it too
         status = inp["parts_status"]
         if status == "non_genuine":
-            return True, "Parts declared non-genuine (GR-D9)"
+            return True, (f"{why}; " if channel == "repair_sell" and why else "") + "Parts declared non-genuine (GR-D9)"
         if status != "genuine":
             return False, "No genuine-parts declaration (GR-D9)"
     return True, why

@@ -6,7 +6,7 @@ GET /api/screens/refresh/{case_id}
     `contract` is `{id, customer, market, start, end, notice, term_months, status}` as the case opened with it; `window` is
     `{opens, basis}`, `basis` "end" (the window counts back from the contract's end date) or "notice" (from its notice
     date); `lines` are `{serial, cls, model, fee, months}` from the contract's lines.
-    `outcome` is null until the task that fills it.
+    `outcome` is the recorded renewal outcome (`renewalOutcome`, P9-5.7), null until the contract renews or lapses.
 
     `execution` (P9-5.5, CR-05) is null until a person approves, then `{approval, route, approver, valid_until, steps: [{kind,
     system, state, ref, text}], done, back}`: the three steps of the approved plan (propsend, propdraft, propreserve; a route
@@ -75,7 +75,7 @@ def _tools(s: Session, c: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[st
 
 def _match(s: Session, c: dict[str, Any]) -> list[dict[str, Any]]:
     """The like-life unit of each swap of this case (tool_queue.refresh_match, over the org's open refresh cases together)."""
-    return tool_queue.refresh_match(s, str(c["owner"])).get(str(c["id"]), [])
+    return tool_queue.case_match(s, c)
 
 
 def _pricing(
@@ -157,5 +157,5 @@ def view(s: Session, principal: Principal, case_id: str) -> dict[str, Any]:
         "pricing": pricing,
         "approval": approval,
         "execution": _execution(c),
-        "outcome": None,
+        "outcome": c.get("renewalOutcome"),
     }  # fmt: skip

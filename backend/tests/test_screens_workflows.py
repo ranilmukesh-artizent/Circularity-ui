@@ -93,3 +93,20 @@ def test_detail_refusals():
     r = client.get("/api/screens/workflows/WF-101", headers=h("planner-a"))
     assert r.status_code == 403 and r.json()["error"]["code"] == "out_of_scope"
     assert client.get("/api/screens/workflows").status_code == 401
+
+
+def test_detail_of_an_ingest_workflow_for_a_source_the_fabric_made():
+    """The detail of a workflow made for a source that is not one of the demo's (the plan 9 fleet source) builds its template
+    from the live sources: it answers 200 with the graph (the smoke tests read `graph.nodes` from it)."""
+    from di.connectors import extra
+    from di.core.db import SessionLocal
+    from tests.helpers import call
+
+    with SessionLocal() as s:
+        assert extra.register(s, "fleet", "workspace") == "fleet"
+        s.commit()
+    made = call("workflow.create", {"type": "ingest", "src": "fleet"}, "developer")
+    assert made["ok"], made
+    r = client.get(f"/api/screens/workflows/{made['output']['id']}", headers=h("developer"))
+    assert r.status_code == 200, r.text
+    assert r.json()["workflow"]["src"] == "fleet" and r.json()["template"]["nodes"]

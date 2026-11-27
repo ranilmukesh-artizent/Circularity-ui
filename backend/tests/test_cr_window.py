@@ -125,7 +125,7 @@ def test_cr_01_opens_once_per_contract_and_term():
         "contract_refresh",
         "FC-30117",
     )
-    assert c["intake"]["reason"] == "contract_refresh" and c["intake"]["key"] == "FC-30117@2027-01-05:contract_refresh"
+    assert c["intake"]["reason"] == "contract_refresh" and c["intake"]["key"] == f"{ORG}/FC-30117@2027-01-05:contract_refresh"
     # priced when it opens (P9-5.5): the three routes wait for a person's approval, nothing is sent yet
     assert c["stage"] == "awaiting_approval" and {r["id"] for r in c["routes"]} == {"proposal", "renew_as_is", "upgrade_all"}
     assert c["recommendation"] is not None and not c.get("submitted") and not c.get("exec")
@@ -275,3 +275,56 @@ def test_cr_01_job_scans_each_org_with_a_fleet_source_and_queues_the_next_day():
     with engine.connect() as conn:
         assert conn.execute(text("SELECT count(*) FROM case_record WHERE owner = :o"), {"o": ORG}).scalar() == 1
         assert conn.execute(text("SELECT count(*) FROM job WHERE kind = 'refresh.scan' AND status = 'queued'")).scalar() == 1
+
+
+# ------------------------------------------------------------------ the tenant boundary (review H1)
+def _org(org_id: str) -> None:
+    assert call("org.create", {"id": org_id, "parent_id": "workspace", "kind": "company", "name": org_id}, "admin")["ok"]
+
+
+def _drop(org_id: str, *sources: str) -> None:
+    """The second org's cases and items, and the sources a test registered (the sources outlive the org that a reset removes)."""
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM case_record WHERE owner = :o"), {"o": org_id})
+        conn.execute(text("DELETE FROM work_item WHERE org_unit_id = :o"), {"o": org_id})
+        for sid in sources:
+            conn.execute(text("DELETE FROM provenance WHERE source_id = :s"), {"s": sid})
+            conn.execute(text("DELETE FROM source_system WHERE id = :s"), {"s": sid})
+
+
+def _scan_as(org_id: str) -> list[str]:
+    with SessionLocal() as s:
+        ids = refresh_intake.scan(s, org_id, TODAY)
+        s.commit()
+    return ids
+
+
+def test_cr_01_scan_reads_only_the_contracts_of_the_orgs_own_source():
+    org_b, sources = "tool-fleet-b", []
+    _org(org_b)
+    try:
+        with SessionLocal() as s:
+            sources = [extra.register(s, "fleet", ORG), extra.register(s, "fleet", org_b)]  # one source for each org
+            canonical.apply(s, sources[0], [*_contract("FC-A1", "2027-01-05"), *_lines("FC-A1", 2)])
+            canonical.apply(s, sources[1], [*_contract("FC-B1", "2027-01-05"), *_lines("FC-B1", 3)])
+            s.commit()
+        first, other = _scan_as(ORG), _scan_as(org_b)
+        assert [_case(i)["assetId"] for i in first] == ["FC-A1"]
+        assert [_case(i)["assetId"] for i in other] == ["FC-B1"]
+        assert len(_case(other[0])["refresh"]["lines"]) == 3 and _case(other[0])["owner"] == org_b
+    finally:
+        _drop(org_b, *sources)
+
+
+def test_cr_01_a_shared_source_contract_opens_a_case_for_each_org_that_scans_it():
+    org_b, sources = "tool-fleet-b2", []
+    _org(org_b)
+    try:
+        with SessionLocal() as s:
+            sources = [extra.register(s, "fleet")]  # shared: no org unit
+            canonical.apply(s, sources[0], [*_contract("FC-S1", "2027-01-05"), *_lines("FC-S1", 2)])
+            s.commit()
+        a, b = _scan_as(ORG), _scan_as(org_b)  # the same term, another org: not a duplicate
+        assert len(a) == 1 and len(b) == 1 and _case(b[0])["owner"] == org_b
+    finally:
+        _drop(org_b, *sources)

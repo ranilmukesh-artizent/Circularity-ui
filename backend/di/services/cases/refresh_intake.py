@@ -6,7 +6,8 @@ window has opened, once per term.
     run(s, today) -> {org: [case id]}          `scan` for each org unit with a registered fleet source (the job
                                                `refresh.scan`, which then queues itself for the next day)
 
-- **Once per term.** The case's asset key is the contract id; its dedupe key is `<contractId>@<endDate>`, so a renewed
+- **Once per term.** The case's asset key is the contract id; its dedupe key is `<org>/<contractId>@<endDate>` (the org is in it:
+  two orgs may each hold a case of one shared contract), so a renewed
   contract (a new end date) opens a new case and the same term never opens twice (`dedupe_as` of intake).
 - **Facts.** `flow` `contract_refresh`, `contract_id`, `term_end`, `market`, the contract's customer, dates and status,
   the window (`window_opens`, `window_basis`) and the `lines` of canonical `contract_line` (serial, class, model, fee,
@@ -40,15 +41,29 @@ def settings() -> dict[str, Any]:
     return dict(load_pack(PACK).valuer.params["contract_refresh"])
 
 
-def _contracts(s: Session) -> list[dict[str, Any]]:
-    return list(s.execute(text("SELECT data FROM canonical WHERE model = 'contract' ORDER BY key")).scalars())
-
-
-def _lines(s: Session, contract_id: str) -> list[dict[str, Any]]:
-    """The contract's tools from canonical `contract_line`, by serial."""
+# A record is the org's own when a source it came from is bound to the org or shared (no org unit). A record only another org's
+# source gave is not: the tenant boundary of the scan (review H1). Each query spells the condition out (no formatted SQL).
+def _contracts(s: Session, org_unit_id: str) -> list[dict[str, Any]]:
     rows = s.execute(
-        text("SELECT key, data FROM canonical WHERE model = 'contract_line' AND data ->> 'contract_id' = :c ORDER BY key"),
-        {"c": contract_id},
+        text(
+            "SELECT c.data FROM canonical c WHERE c.model = 'contract' AND EXISTS (SELECT 1 FROM provenance p "
+            "LEFT JOIN source_system ss ON ss.id = p.source_id WHERE p.model = c.model AND p.key = c.key "
+            "AND (ss.org_unit_id IS NULL OR ss.org_unit_id = :org)) ORDER BY c.key"
+        ),
+        {"org": org_unit_id},
+    )
+    return list(rows.scalars())
+
+
+def _lines(s: Session, contract_id: str, org_unit_id: str) -> list[dict[str, Any]]:
+    """The contract's tools from canonical `contract_line` of the org's own sources, by serial."""
+    rows = s.execute(
+        text(
+            "SELECT c.key, c.data FROM canonical c WHERE c.model = 'contract_line' AND c.data ->> 'contract_id' = :c "
+            "AND EXISTS (SELECT 1 FROM provenance p LEFT JOIN source_system ss ON ss.id = p.source_id "
+            "WHERE p.model = c.model AND p.key = c.key AND (ss.org_unit_id IS NULL OR ss.org_unit_id = :org)) ORDER BY c.key"
+        ),
+        {"c": contract_id, "org": org_unit_id},
     )
     return [
         {"serial": r.key, "cls": r.data.get("tool_class"), "model": r.data.get("model"), "fee": r.data.get("fee_month"),
@@ -57,7 +72,7 @@ def _lines(s: Session, contract_id: str) -> list[dict[str, Any]]:
     ]  # fmt: skip
 
 
-def _facts(s: Session, c: dict[str, Any], days: int) -> dict[str, Any]:
+def _facts(s: Session, c: dict[str, Any], days: int, org_unit_id: str) -> dict[str, Any]:
     end = refresh_window.as_date(c["end_date"])
     notice = refresh_window.as_date(c.get("notice_date"))
     if end is None:  # not reached: due() only returns contracts with an end date
@@ -67,7 +82,7 @@ def _facts(s: Session, c: dict[str, Any], days: int) -> dict[str, Any]:
         "customer": c.get("customer"), "start_date": c.get("start_date"), "notice_date": notice.isoformat() if notice else None,
         "term_months": c.get("term_months"), "status": c.get("status"),
         "window_opens": refresh_window.window_opens(end, notice, days).isoformat(), "window_basis": refresh_window.basis(c),
-        "lines": _lines(s, str(c["contract_id"])),
+        "lines": _lines(s, str(c["contract_id"]), org_unit_id),
     }  # fmt: skip
 
 
@@ -91,13 +106,13 @@ def scan(s: Session, org_unit_id: str, today: date) -> list[str]:
     transaction (one savepoint per contract, so a refused one leaves the others)."""
     cfg = settings()
     days = int(cfg["window_days"])
-    contracts = _contracts(s)
+    contracts = _contracts(s, org_unit_id)
     by_id = {str(c["contract_id"]): c for c in contracts if c.get("contract_id")}
     opened = []
     for cid in refresh_window.due(contracts, today, days):
-        facts = _facts(s, by_id[cid], days)
+        facts = _facts(s, by_id[cid], days, org_unit_id)
         i = {"org_unit_id": org_unit_id, "template_key": PACK, "asset_key": cid, "reason": REASON, "facts": facts,
-             "dedupe_as": f"{cid}@{facts['term_end']}", "by": "refresh scan"}  # fmt: skip
+             "dedupe_as": f"{org_unit_id}/{cid}@{facts['term_end']}", "by": "refresh scan"}  # fmt: skip
         try:
             with s.begin_nested():
                 case = intake.open_case(s, i, "system")
@@ -138,3 +153,16 @@ def ensure_queued(s: Session, today: date) -> bool:
         return False
     jobs.enqueue(s, JOB, {}, priority=200, dedupe_key=f"{JOB}:{today.isoformat()}")
     return True
+
+
+def close_proposal_item(s: Session, case_id: str, by: str) -> int:
+    """Close the case's open `refresh_late` item: the proposal was submitted in time, so the timer has nothing to escalate (review
+    M3). The number of items closed. In the caller's transaction."""
+    ids = s.execute(
+        text("SELECT id FROM work_item WHERE case_id = :c AND type = :t AND status = 'open'"), {"c": case_id, "t": EXCEPTION}
+    ).scalars()
+    n = 0
+    for i in list(ids):
+        process.close_item(s, i, "proposal submitted", by)
+        n += 1
+    return n

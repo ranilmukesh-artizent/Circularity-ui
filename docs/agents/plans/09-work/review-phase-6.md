@@ -50,3 +50,8 @@ Checked with no issue:
 - F9: refuse an agent on `device.ageingSuggestions` (and `telecom.crossRegion`); fix the test to use an agent on a person's token.
 - F10: shadow statistics only on sales after the candidate's window and the shadow's date.
 - Low items 11-18 as listed (small, may be batched).
+
+## Status after the fixes (27 Nov)
+
+Fixed in cc00e21 (merged as d8a1ac38): F1, F2, F4, F5, F7, F9, F10, each with a test written first.
+Open, need a decision: F3 (lot post bypasses the instruction queue and pilot mode: queue it as an instruction or record a decision), F6 (GR-D5 never fires on a received device: which channel does it guard), F8 (ageing move leaves the old listing live: needs a market PATCH and an event). F11 to F18 (Low) not attempted.

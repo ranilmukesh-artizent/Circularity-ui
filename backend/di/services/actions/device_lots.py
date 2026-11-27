@@ -194,9 +194,10 @@ def _post(ctx: CallContext, lot: LotRow) -> str | None:
 
 
 def _bid_of(ctx: CallContext, lot: LotRow) -> Bid | None:
-    """The bid the lot is proposed on (still among its approved bids), else the best approved one now."""
+    """The bid the lot was proposed on, while it is still among its approved bids; None when it is gone (never another bid: the
+    person accepted that one, phase 6 review F5)."""
     rk = repo.ranking(ctx.session, lot, _today())
-    return next((b for b in rk.ranked if b.bid_id == lot.best_bid_id), None) or rk.best
+    return next((b for b in rk.ranked if b.bid_id == lot.best_bid_id), None)
 
 
 def _members_problem(ctx: CallContext, lot: LotRow) -> str | None:
@@ -209,6 +210,24 @@ def _members_problem(ctx: CallContext, lot: LotRow) -> str | None:
             return f"{cid} is not awaiting approval, so the lot cannot be approved."
         if _fraud(c):
             return f"{cid} is held for fraud review: release it first."
+        rec = c.get("recommendation")
+        if not rec or rec.get("id") != _ROUTE or rec.get("excluded"):
+            return (
+                f"{cid} is no longer recommended for the wholesale route, so the lot cannot be approved: take it out of the lot."
+            )
+        if c.get("blocked") or c.get("gateHold"):
+            return f"{cid} is blocked or held, so the lot cannot be approved."
+        if stale := decisions._stale_tables(ctx, c):
+            return stale[1]
+    return None
+
+
+def _decision_guard(i: dict[str, Any], ctx: CallContext, lot: LotRow) -> tuple[str, str] | tuple[str, str, dict[str, Any]] | None:
+    """The approval policy of `decision.approve` (no self-approval, the approver's limit) for each member on its wholesale route."""
+    for cid in repo.members(ctx.session, lot.id):
+        c = store.get(ctx.session, cid)
+        if c is not None and (rec := c.get("recommendation")) and (g := decisions._ap_policy({"route": rec["plan"]} | i, ctx, c)):
+            return g
     return None
 
 
@@ -233,10 +252,16 @@ def _policy_row(ctx: CallContext, lot: LotRow, value: float) -> PolicyRow | None
 def _approve_lot(ctx: CallContext, lot: LotRow, by: str, label: str, bid: Bid) -> None:
     """Mark the lot approved by `by` and approve each member case on the wholesale route (the sale plan follows from the route). `label`
     is who approves, as a case's approval records it."""
+    if bad := _members_problem(ctx, lot):  # again under the lock: a member re-valued since the guard
+        raise ActionError("conflict", bad)
     ctx.session.execute(text("UPDATE device_lot SET status = 'approved', approved_by = :a WHERE id = :i"), {"a": by, "i": lot.id})
     note = f"Wholesale lot {lot.lot_ref} sold to buyer {bid.buyer_code} at {usd(bid.net)} net a unit"
     for cid in repo.members(ctx.session, lot.id):
-        decisions._approve("decision.approve", {"case_id": cid, "rationale": note, "spend": 0}, ctx, approver=label)
+        mine = store.get(ctx.session, cid)
+        route = mine["recommendation"]["plan"] if mine is not None and mine.get("recommendation") else None  # checked above
+        decisions._approve(
+            "decision.approve", {"case_id": cid, "rationale": note, "spend": 0, "route": route}, ctx, approver=label
+        )
         c = store.get(ctx.session, cid, for_update=True)
         if c is not None:
             c["lotSale"] = {
@@ -282,6 +307,8 @@ def build_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
 @implement("lot.build")
 def build(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     org = str(i["org_unit_id"])
+    # the lock before the candidates are read: two builds never see the same open case (phase 6 review F2)
+    ctx.session.execute(text("SELECT pg_advisory_xact_lock(hashtext('device_lot.build'))"))
     cap = lots.lot_cap(active_pack(ctx.session, PACK, org))
     made: list[LotRow] = list(repo.drafts(ctx.session, org))  # built earlier, not taken by the market yet
     for d in lots.build_lots(_candidates(ctx, org), cap):
@@ -372,18 +399,22 @@ def approve_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tupl
         return lot
     if ctx.actor.id in (lot.created_by, lot.proposed_by):
         return "conflict", MAKER_CHECKER
-    value, lim = lot.value_usd or 0.0, limit_for(ctx.actor.account, ctx.actor.ctx)
+    bid = _bid_of(ctx, lot)
+    if bid is None:
+        return "conflict", f"The bid {lot.lot_ref} was proposed on is no longer available: propose the lot again."
+    value, lim = (
+        lots.lot_value(bid.net, lot.units),
+        limit_for(ctx.actor.account, ctx.actor.ctx),
+    )  # the sale value, not a stale one
     if value > lim:
         return (
             "limit_exceeded",
             f"{lot.lot_ref} is worth {usd(value)}, above your approval limit of {usd(lim)}. It escalates to Admin.",
             {"escalate": "admin"},
         )
-    if _bid_of(ctx, lot) is None:
-        return "conflict", f"{lot.lot_ref} has no bid from an approved buyer any more."
     if bad := _members_problem(ctx, lot):
         return "conflict", bad
-    return None
+    return _decision_guard(i, ctx, lot)
 
 
 @implement("lot.approve")

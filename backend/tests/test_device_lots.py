@@ -75,6 +75,16 @@ def _seed(lot_id: str = "L-T-1", ref: str = "LOT-T-0001", *, units: int = 100, s
                 ),
                 {"b": f"BID-T-{lot_id}-{n}", "r": ref, "c": code, "a": amount, "f": fees, "l": logistics, "t": when},
             )
+        if (
+            status == "proposed"
+        ):  # a proposed lot names the bid it was proposed on and its value (the best approved net, as propose does)
+            bids = [Bid(f"BID-T-{lot_id}-{n}", c, *t) for n, (c, t) in enumerate((MOCK if terms is None else terms).items(), 1)]
+            best = lots.rank_bids(bids, APPROVED).best
+            if best is not None:
+                conn.execute(
+                    text("UPDATE device_lot SET best_bid_id = :b, value_usd = :v WHERE id = :i"),
+                    {"b": best.bid_id, "v": lots.lot_value(best.net, units), "i": lot_id},
+                )
     return lot_id
 
 
@@ -238,8 +248,8 @@ def test_dv_07_approve_approves_the_member_cases_and_reject_needs_a_reason():
 def test_dv_07_the_valuer_reads_the_best_open_approved_bid_per_unit():
     _seed("L-T-7", "LOT-T-0007", units=100)  # a lot of Galaxy S23 grade C in bidding, the mock's six bids
     with SessionLocal() as s:
-        net = device_lots.best_net_per_unit(s, "Galaxy S23", "C", clock.now().date())
-        none = device_lots.best_net_per_unit(s, "iPhone 14", "A", clock.now().date())
+        net = device_lots.best_net_per_unit(s, "Galaxy S23", "C", clock.now().date(), ORG)
+        none = device_lots.best_net_per_unit(s, "iPhone 14", "A", clock.now().date(), ORG)
     assert net == 310.0 and none is None
 
 
@@ -365,3 +375,121 @@ def _wholesale_case(case_id: str) -> str:
         store.save(s, c)
         s.commit()
     return cid
+
+
+# ------------------------------------------------------------------ the phase 6 review (P9-6 fixes)
+def _member_lot(case_id: str, lot: str = "L-T-5", **kw) -> str:
+    _seed(lot, "LOT-T-0005", units=1, proposed_by="admin", status="proposed", **kw)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO device_lot_member (lot_id, case_id) VALUES (:l, :c)"), {"l": lot, "c": case_id})
+    return lot
+
+
+def _edit_case(cid: str, fn) -> None:
+    with SessionLocal() as s:
+        c = store.get(s, cid, for_update=True)
+        assert c is not None
+        fn(c)
+        store.save(s, c)
+        s.commit()
+
+
+def _stage(cid: str) -> str:
+    with SessionLocal() as s:
+        c = store.get(s, cid)
+    assert c is not None
+    return c["stage"]
+
+
+def test_dv_07_f1_lot_approve_refuses_a_member_no_longer_on_wholesale():
+    cid = _wholesale_case("D-T-3")
+    lot = _member_lot(cid)
+    _edit_case(cid, lambda c: c["recommendation"].update(id="buynow"))  # re-valued after the lot was built
+    r = call("lot.approve", {"lot_id": lot}, "approver")
+    assert r["ok"] is False and r["error"]["code"] == "conflict" and cid in r["error"]["message"], r
+    assert _lot(lot)["status"] == "proposed" and _stage(cid) == "awaiting_approval"
+
+
+def test_dv_07_f1_lot_approve_refuses_a_blocked_or_held_member():
+    cid = _wholesale_case("D-T-4")
+    lot = _member_lot(cid)
+    _edit_case(cid, lambda c: c.update(blocked={"reason": "Evidence is missing"}))
+    r = call("lot.approve", {"lot_id": lot}, "approver")
+    assert r["ok"] is False and r["error"]["code"] == "conflict", r
+    _edit_case(cid, lambda c: c.update(blocked=None, gateHold={"gate": "G-DEV-LOCK", "reason": "held"}))
+    r = call("lot.approve", {"lot_id": lot}, "approver")
+    assert r["ok"] is False and r["error"]["code"] == "conflict", r
+    assert _lot(lot)["status"] == "proposed" and _stage(cid) == "awaiting_approval"
+
+
+def test_dv_07_f1_lot_approve_keeps_the_decision_guards():
+    cid = _wholesale_case("D-T-5")
+    lot = _member_lot(cid)
+    _edit_case(cid, lambda c: c.update(submitted={"byId": "approver", "by": "Approver", "at": "x"}))  # no self-approval
+    r = call("lot.approve", {"lot_id": lot}, "approver")
+    assert r["ok"] is False, r
+    assert _lot(lot)["status"] == "proposed" and _stage(cid) == "awaiting_approval"
+
+
+def test_dv_07_f1_the_policy_does_not_approve_a_revalued_member():
+    cid = _wholesale_case("D-T-6")
+    _seed("L-T-5", "LOT-T-0005", units=1, terms={"B01": (310, 5, 5)})
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO device_lot_member (lot_id, case_id) VALUES ('L-T-5', :c)"), {"c": cid})
+    _policy()
+    _edit_case(cid, lambda c: c["recommendation"].update(id="auction"))
+    r = call("lot.propose", {"lot_id": "L-T-5"}, "planner.a")
+    assert r["ok"] is True and r["output"]["status"] == "proposed" and r["output"]["approved_by_policy"] is False, r
+    assert _stage(cid) == "awaiting_approval"
+
+
+def test_dv_07_f1_an_approved_member_is_approved_on_the_wholesale_route():
+    cid = _wholesale_case("D-T-7")
+    lot = _member_lot(cid)
+    assert call("lot.approve", {"lot_id": lot}, "approver")["ok"] is True
+    with SessionLocal() as s:
+        c = store.get(s, cid)
+    assert c is not None and c["chosen"]["id"] == "wholesale" and c["lotSale"]["lot_id"] == lot
+
+
+def test_dv_07_f2_lot_build_takes_the_lock_before_it_reads_the_candidates():
+    """Two builds of one org cannot both read the same open cases: the second waits for the first to finish."""
+    import threading
+
+    _wholesale_case("D-T-8")
+    out: list[dict] = []
+    holder = SessionLocal()
+    holder.execute(text("SELECT pg_advisory_xact_lock(hashtext('device_lot.build'))"))
+    t = threading.Thread(target=lambda: out.append(call("lot.build", {"org_unit_id": ORG}, "planner.a")))
+    t.start()
+    t.join(3)
+    waiting = t.is_alive()
+    holder.commit()
+    holder.close()
+    t.join(60)
+    assert waiting, "lot.build read the candidates without taking the build lock"
+    assert not t.is_alive() and out and out[0]["ok"] is True, out
+
+
+def test_dv_07_f4_the_best_bid_is_of_the_cases_own_org():
+    _seed("L-T-7", "LOT-T-0007", org="Customer B")
+    today = clock.now().date()
+    with SessionLocal() as s:
+        assert device_lots.best_net_per_unit(s, "Galaxy S23", "C", today, "Customer B") == 310.0
+        assert device_lots.best_net_per_unit(s, "Galaxy S23", "C", today, ORG) is None
+        from di.services.device import inputs
+
+        mine = {"imei": "1", "model": "Galaxy S23", "grade": "C", "org": ORG}
+        assert inputs.bid_per_unit(s, mine, today) is None
+        assert inputs.bid_per_unit(s, mine | {"org": "Customer B"}, today) == 310.0
+        assert inputs.bid_per_unit(s, {k: v for k, v in mine.items() if k != "org"}, today) is None  # no owner, no bid
+
+
+def test_dv_07_f5_approve_refuses_when_the_proposed_bid_is_gone():
+    _seed()
+    assert call("lot.propose", {"lot_id": "L-T-1"}, "planner.a")["ok"] is True
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM device_bid WHERE bid_id = (SELECT best_bid_id FROM device_lot WHERE id = 'L-T-1')"))
+    r = call("lot.approve", {"lot_id": "L-T-1"}, "approver")
+    assert r["ok"] is False and r["error"]["code"] == "conflict" and "bid" in r["error"]["message"], r
+    assert _lot()["status"] == "proposed"

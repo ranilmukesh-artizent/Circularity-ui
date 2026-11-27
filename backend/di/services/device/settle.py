@@ -69,12 +69,19 @@ def channel_of(case: Mapping[str, Any]) -> str | None:
 def listing_body(case: Mapping[str, Any]) -> dict[str, Any] | None:
     """The listing to post for a case on a listing channel: the unit, the channel's name, the forecast P50 as the asking price."""
     lot, channel = case.get("valuer"), channel_of(case)
-    if not isinstance(lot, dict) or not lot.get("imei") or channel not in LISTING:
+    if not isinstance(lot, dict) or not lot.get("imei"):
+        return None
+    uplift = 0.0
+    if channel == "repair_sell":  # a repaired device is listed on the channel it sells best on (`via`), at the repaired price
+        via = device.score(lot, "repair_sell").get("via")
+        channel = str(via) if via else None
+        uplift = float(((lot.get("inputs") or {}).get("repair_quote") or {}).get("price_uplift") or 0)
+    if channel not in LISTING:
         return None
     return {
         "listingId": listing_id(case["id"], channel), "caseKey": listing_key(case["id"], channel), "imei": lot["imei"],
         "skuKey": lot.get("sku_key"), "grade": lot["grade"], "channel": device.DCN[channel],
-        "price": round(forecast_p50(lot, channel), 2), "offers": 0, "status": "live",
+        "price": round(forecast_p50(lot, channel) + uplift, 2), "offers": 0, "status": "live",
     }  # fmt: skip
 
 

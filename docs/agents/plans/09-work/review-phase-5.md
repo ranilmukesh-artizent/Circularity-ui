@@ -48,3 +48,8 @@ Counts: High 1, Medium 7, Low 12 (including 3 on tests and process).
 - M6: tie the recorded renewal outcome to the term it belongs to.
 - M7: clear routes and recommendation when the contract gate blocks at submit, or refuse the submit with the gate's reason.
 - Low items L1, L4, L5, L7, L8, L9 are small code changes that can go with the related fix.
+
+## Status after the fixes (27 Nov)
+
+Fixed in ebc14874 (merged as 3b38c8d0): H1, M1 to M7 and L7, with tests in 	est_cr_review_p5.py.
+Open: L1 (whatIf permission name), L2 (reads write market tables), L4, L5, L6, L8, L9 and T1 (a rewrite of the paths-agree split checks); L3 is accepted in the decision log. M1's returns-queue filter has no test of its own; M6 relies on the contract end date moving on renewal, not confirmed against the mock source.

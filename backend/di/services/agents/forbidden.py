@@ -86,6 +86,8 @@ def caution_only(action_id: str) -> bool:
 
 # Reads no agent may call: they handle a secret (step 6 of the pipeline refuses them).
 NO_AGENT_READS = ("source.test", "source.sandboxKey")
+# Reads only a person may run (also in FORBIDDEN_ACTIONS): the pipeline refuses an agent-prepared call to them (review F9).
+PERSON_ONLY_READS = ("device.ageingSuggestions", "telecom.crossRegion")
 # An action whose name deletes, discards, reverts, cancels, resolves, waives or decides must be forbidden (check_person_only).
 PERSON_ONLY_NAME = re.compile(
     r"\.(delete|remove|discard|revert|cancel|purge|approve|publish|reject|promote|override|decline|rollback|retire|release"
