@@ -502,6 +502,15 @@ def _extra(rec: Route | None, figures: Mapping[str, Mapping[str, float]]) -> Map
 
 
 # ---------------------------------------------------------------- the decider
+def vendors_for(pack: Pack, session: Session | None) -> list[dict[str, Any]] | None:
+    """The canonical vendors G-DS-1 qualifies a route's downstream vendors on (P9-13.3), read with `session`; None without a
+    session, or for a pack with no route that names downstream roles or no G-DS-1. `decide_case` sets them on the case it
+    decides; the replay reads them once per run and sets them on each item (review 13 F3), so both judge the same vendors."""
+    if session is None or not any(r.downstream_roles for r in pack.routes) or not any(g.id == "G-DS-1" for g in pack_gates(pack)):
+        return None
+    return vendor_facts.records(session)
+
+
 def decide_case(
     case_or_facts: str | Mapping[str, Any],
     pack: Pack,
@@ -545,9 +554,10 @@ def decide_case(
     if pack.key == capital_facts.PACK:  # the device, market and work facts the medical capital gates read (P9-12.9)
         capital_facts.lay(c)
     roled = [r for r in pack.routes if r.downstream_roles]
-    own_vendors = "vendors" not in c and bool(roled) and session is not None and any(g.id == "G-DS-1" for g in pack_gates(pack))
-    if own_vendors:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
-        c["vendors"] = vendor_facts.records(cast(Session, session))
+    vendors = None if "vendors" in c else vendors_for(pack, session)
+    own_vendors = vendors is not None
+    if vendors is not None:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
+        c["vendors"] = vendors
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)

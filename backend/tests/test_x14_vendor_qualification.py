@@ -116,6 +116,32 @@ def test_x_14_packs_name_their_downstream_roles(key):
     assert roles and all(r for r in roles.values())
 
 
+def test_p9_13_14_f3_replay_judges_vendors_as_intake(monkeypatch):
+    """Review 13 F3 (Review Focus 3): the replay reads the canonical vendors as intake does. The only recycler's certificate
+    ran out before the history's dates, so redeploy (handed to a recycler here) is excluded by intake and by the replay alike."""
+    from di.services.cases import vendor_facts
+    from di.services.cases.decide import decide_case
+    from di.services.modeler.compile import FlowVersion
+    from di.services.modeler.replay_samples import telecom_network as G
+    from di.services.replay import run as replay_run
+    from di.services.replay import telecom as T
+
+    monkeypatch.setattr(vendor_facts, "records", lambda s: [VND_U])  # the canonical store holds only the expired recycler
+    pack, fv = _redeploy_pack(), FlowVersion(None, 3, ())
+    items = T.items(G.rows()[:63], pack)
+    blind = T.replay(items, fv, pack=pack).decided  # no session: what the replay decided before the fix
+    redeployed = [it for it in items if blind[str(it["item_id"])][0] == "redeploy"]
+    assert redeployed, "the sample day has units the flow redeploys when vendors are not judged"
+    with SessionLocal() as s:
+        replayed = T.replay(items, fv, pack=pack, session=s).decided
+        for it in redeployed[:5]:
+            facts, _ = replay_run.as_of_facts(it)
+            case = T.telecom_case(replay_run.case_input(it, facts, pack))
+            intake = decide_case(case, pack, fv, it["decided_at"], session=s, queue=[])
+            assert intake.route != "redeploy"
+            assert replayed[str(it["item_id"])] == (intake.route, intake.net), it["item_id"]
+
+
 def test_x_14_industrial_unchanged():
     assert all(not r.downstream_roles for r in load_pack("industrial").routes)
     assert "G-DS-1" not in {g.id for g in pack_gates(load_pack("industrial"))}

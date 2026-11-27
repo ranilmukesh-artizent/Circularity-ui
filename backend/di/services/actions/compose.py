@@ -553,7 +553,7 @@ def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         return d
 
     if ready:
-        replay_run.replay(batch, ready, FlowVersion(None, 0, ()), pack=draft, decide=watch, label="draft")
+        replay_run.replay(batch, ready, FlowVersion(None, 0, ()), pack=draft, decide=watch, label="draft", session=s)
     traces += [_trace(k, d, stages, limits) for k, d in decided.items()]
     stops = stop_reasons.group(traces, stages)
     n_decided = sum(1 for t in traces if t.stage is None)

@@ -20,7 +20,7 @@ The reads and their SQL: di.services.sources.
 from fastapi import APIRouter
 
 from di.core.auth import Principal
-from di.core.deps import CurrentPrincipal, DbSession
+from di.core.deps import CurrentPrincipal, DbSession, PersonPrincipal
 from di.services import sources as service
 
 router = APIRouter(prefix="/api", tags=["Connectors"])
@@ -46,13 +46,13 @@ def source(source_id: str, p: CurrentPrincipal, session: DbSession):
 
 
 @router.post("/sources/{source_id}/connect")
-def connect(source_id: str, p: CurrentPrincipal, session: DbSession):
+def connect(source_id: str, p: PersonPrincipal, session: DbSession):
     p.require("manageIntegrations")
     return service.connect(session, source_id)
 
 
 @router.post("/sources/{source_id}/disconnect")
-def disconnect(source_id: str, p: CurrentPrincipal, session: DbSession, purge: bool = False):
+def disconnect(source_id: str, p: PersonPrincipal, session: DbSession, purge: bool = False):
     p.require("manageIntegrations")
     return service.disconnect(session, source_id, purge)
 
