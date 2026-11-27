@@ -225,12 +225,12 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
 // ---------------------------------------------------------------- 2 (TN-05)
 await step('2 The unit not in the inventory: "Unit not in network inventory" on the case and in My work', async () => {
   const p = await as('planner.a');
-  await inCase(p, 202, /Unit not in network inventory/, '"Unit not in network inventory"');
+  await inCase(p, 202, /Serial not in network inventory/, '"Serial not in network inventory" (the gate reason; the exception "Unit not in network inventory" is in My work below)');
   let where = '';
   for (const acct of ['warehouse1', 'warehouse2', 'admin', 'planner.a']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/Unit not in network inventory/.test(await text(q)) || (await text(q)).includes(sn(202))) {
       where = acct;
       break;

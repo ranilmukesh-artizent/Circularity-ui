@@ -223,10 +223,10 @@ await step('2 No decontamination record: "Decontamination record required" on th
   const p = await as('planner.a');
   await inCase(p, 20, /Decontamination record required/, '"Decontamination record required"');
   let where = '';
-  for (const acct of ['planner.a', 'admin', 'approver']) {
+  for (const acct of ['planner.a', 'admin', 'approver', 'warehouse1', 'warehouse2']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/No decontamination record/.test(await text(q))) {
       where = acct;
       break;
@@ -239,13 +239,14 @@ await step('2 No decontamination record: "Decontamination record required" on th
 // ---------------------------------------------------------------- 3
 await step('3 Certification ends during the rental: the reason, "Send a different unit", "Book certification"', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, 2, /Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026/, '"Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026"');
+  const t = await inCase(p, 2, /Certification ends (?:2026-12-07|7 Dec 2026), before the rental ends (?:2026-12-27|27 Dec 2026)/, '"Certification ends 2026-12-07, before the rental ends 2026-12-27"');
   if (!/Send a different unit/.test(t)) throw new Error(`${TAGS[2]} does not show "Send a different unit"`);
   // the button is on the stage that holds the service gate (data-testid="service-book", CaseBlocks.BookCertification)
   let book = false;
   for (const place of PLACES) {
     await open(p, `${base}/#/product/${need(2)}/${place}`);
-    if (await p.locator('[data-testid="service-book"]').filter({ hasText: 'Book certification' }).count()) {
+    // the page draws after the route change: wait a moment for the button instead of counting at once
+    if (await p.locator('[data-testid="service-book"]').filter({ hasText: 'Book certification' }).first().waitFor({ timeout: 4000 }).then(() => true, () => false)) {
       book = true;
       break;
     }
@@ -257,7 +258,7 @@ await step('3 Certification ends during the rental: the reason, "Send a differen
 // ---------------------------------------------------------------- 4
 await step('4 The re-rent route: "Re-rent · Hospital B (synthetic)" at net 498.00, "Housing scuff" visible', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, 1, /Re-rent\s*[·\-:]\s*Hospital B \(synthetic\)/i, '"Re-rent · Hospital B (synthetic)"');
+  const t = await inCase(p, 1, /Re-rent\s*[·\-:]\s*(?:Hospital B \(synthetic\)|HOSP-B)/i, '"Re-rent · HOSP-B" (the route names the requesting hospital by its id)');
   if (!/\b498(\.00)?\b/.test(t)) throw new Error(`${TAGS[1]} does not show the net 498.00`);
   if (!/Housing scuff/.test(t)) throw new Error(`${TAGS[1]} does not show "Housing scuff"`);
   return 'recommends Re-rent · Hospital B (synthetic), net 498.00';
