@@ -386,7 +386,16 @@ await step('3 Sample, suggestions with the five choices, the owner answers, mapp
 // ---------------------------------------------------------------- 4
 await step('4 Test run: reached and stopped counts by stage', async () => {
   const p = await as('planner-a');
-  await open(p, MODELER, '.mdl-bar');
+  await open(p, MODELER, '.mdl-tabs');
+  // plan 10: Replay is a drawer opened by the Replay step of the lifecycle bar, which shows for a flow that is not published:
+  // an org on the workspace's published flow takes its own flow first (a draft), as a person would
+  const replay = p.locator('.mdl-life').getByRole('button', { name: 'Replay', exact: true });
+  if (!(await replay.count())) {
+    await p.getByRole('button', { name: /Give .* its own flow/ }).click();
+    await replay.waitFor({ timeout: UI });
+  }
+  await replay.click();
+  await p.locator('.mdl-replay').waitFor({ timeout: UI });
   await p.locator('#mdl-rp-file').setInputFiles(HISTORY);
   await p.locator('[data-replay-batch]').first().waitFor({ timeout: UI });
   await composeTab(p, 'Adapter mapping');

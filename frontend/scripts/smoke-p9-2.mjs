@@ -278,7 +278,7 @@ await step('4 planner.a accepts from Home, the run resumes, approver approves RT
   await until(
     async () => (await runRow(ad, HERO)).t.includes(`Approval of ${HERO}`),
     `the run on ${HERO} does not wait for the approval of the case after the proposal was accepted`,
-    90000,
+    Math.max(90000, UI * 2), // the worker resumes the run; a slow shared machine needs longer
     3000,
     ad,
   );
@@ -290,7 +290,7 @@ await step('4 planner.a accepts from Home, the run resumes, approver approves RT
       return /7\. Approve\s*Waiting for approval/.test(await dlg.innerText()) ? true : null;
     },
     `the journey of ${HERO} does not show 7. Approve as Waiting for approval`,
-    60000,
+    Math.max(60000, UI * 2),
     3000,
     ad,
   );

@@ -165,21 +165,33 @@ await step('1 Packs: tool_fleet 3.2.0, Published, 13 of 13 parts', async () => {
 });
 
 // ---------------------------------------------------------------- 2
+// A form the page rebuilds while it loads (a live update refetches the screen and the panel starts again) loses what was picked:
+// pick again until the button is on, then press it. Nothing is skipped: the button must be enabled by what a person picked.
+async function fillThenClick(p, button, fill) {
+  for (let i = 0; i < 8; i++) {
+    await fill();
+    if (await button.isEnabled()) return button.click();
+    await p.waitForTimeout(3000);
+  }
+  throw new Error('the Save button stayed off after the form was filled 8 times: ' + ((await button.getAttribute('title').catch(() => null)) || 'no reason given'));
+}
 await step('2 Customer layer: skip refused, GR-D2 0.60 saves, 0.50 refused', async () => {
   const pl = await as('planner.a');
   await modeler(pl, 'device', 'layer');
   const box = pl.locator('.mdl-overlay');
   await box.waitFor();
   const dv = box.locator('[data-overlay-diversion]');
-  await dv.locator('#mdl-ov-stage').selectOption('receive');
-  await dv.locator('#mdl-ov-kind').selectOption('shortcut');
-  await dv.locator('#mdl-ov-to').selectOption('execute');
-  await dv.getByRole('button', { name: 'Save', exact: true }).click();
+  await fillThenClick(pl, dv.getByRole('button', { name: 'Save', exact: true }), async () => {
+    await dv.locator('#mdl-ov-stage').selectOption('receive');
+    await dv.locator('#mdl-ov-kind').selectOption('shortcut');
+    await dv.locator('#mdl-ov-to').selectOption('execute');
+  });
   await expectText(pl, 'Blocked: this skips the compliance guardrail', '.mdl-overlay [data-overlay-refusal]');
   const tg = box.locator('[data-overlay-tighten]');
-  await tg.locator('#mdl-ov-g').selectOption('GR-D2');
-  await tg.locator('#mdl-ov-v').fill('0.6');
-  await tg.getByRole('button', { name: 'Save', exact: true }).click();
+  await fillThenClick(pl, tg.getByRole('button', { name: 'Save', exact: true }), async () => {
+    await tg.locator('#mdl-ov-g').selectOption('GR-D2');
+    await tg.locator('#mdl-ov-v').fill('0.6');
+  });
   await expectText(pl, /Tighten GR-D2: floor 0\.55 → 0\.6/, '.mdl-overlay [data-overlay-ops]');
   await tg.locator('#mdl-ov-v').fill('0.5');
   await expectText(pl, 'can only be tightened', '.mdl-overlay [data-overlay-tighten]');
