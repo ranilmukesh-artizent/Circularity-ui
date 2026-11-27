@@ -105,6 +105,23 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
+/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
+ * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+async function openPacks(p, key, question) {
+  await open(p, `${base}/#/analytics`);
+  await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
+  const pick = p.locator('select[aria-label="Pack"]');
+  await pick.waitFor({ timeout: UI });
+  await pick.selectOption(key);
+  // a worked question draws its chart only once chosen (PackQuestions: "Choose a question.")
+  const btn = p.getByTestId('pack-questions').getByRole('button', { name: question });
+  if (await btn.waitFor({ timeout: 60000 }).then(() => true, () => false)) {
+    await btn.click();
+    await p.locator('[data-question]').first().waitFor({ timeout: UI }).catch(() => {});
+  }
+  await p.waitForTimeout(800);
+}
+
 async function step(name, fn) {
   const t0 = Date.now();
   try {
@@ -312,10 +329,7 @@ await step('7 The turnaround alert, the service-week suggestion and the analytic
   if (!(await find(/Service .* in the week of 7 Dec 2026/, places))) throw new Error('no "Service ... in the week of 7 Dec 2026" suggestion on Home, Overview, Alerts or the Modeler');
   notes.push('suggestion "Service ... in the week of 7 Dec 2026"');
 
-  await open(p, `${base}/#/analytics/packs`);
-  const pick = p.locator('select[aria-label="Pack"]');
-  if (await pick.count()) await pick.selectOption('medical_rental').catch(() => {});
-  await p.waitForTimeout(800);
+  await openPacks(p, 'medical_rental', /Why did turnaround slip at the East depot\?/);
   const t = await text(p);
   if (!/Why did turnaround slip at the East depot\?/.test(t)) throw new Error('Analytics > Packs does not show "Why did turnaround slip at the East depot?"');
   if (!/\bEast\b/.test(t)) throw new Error('the turnaround question shows no chart rows (East depot)');
@@ -330,6 +344,7 @@ await step('8 The replay figures labelled modelled on the Compose publish step',
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();

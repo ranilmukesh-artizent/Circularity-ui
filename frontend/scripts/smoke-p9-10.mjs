@@ -117,6 +117,23 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
+/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
+ * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+async function openPacks(p, key, question) {
+  await open(p, `${base}/#/analytics`);
+  await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
+  const pick = p.locator('select[aria-label="Pack"]');
+  await pick.waitFor({ timeout: UI });
+  await pick.selectOption(key);
+  // a worked question draws its chart only once chosen (PackQuestions: "Choose a question.")
+  const btn = p.getByTestId('pack-questions').getByRole('button', { name: question });
+  if (await btn.waitFor({ timeout: 60000 }).then(() => true, () => false)) {
+    await btn.click();
+    await p.locator('[data-question]').first().waitFor({ timeout: UI }).catch(() => {});
+  }
+  await p.waitForTimeout(800);
+}
+
 async function step(name, fn) {
   const t0 = Date.now();
   try {
@@ -322,10 +339,7 @@ await step('7 Cross-region alert "Transfer to the region buying new" and the hel
 await step('8 The analytics question and the modelled replay figures', async () => {
   const p = await as('planner.a');
   const notes = [];
-  await open(p, `${base}/#/analytics/packs`);
-  const pick = p.locator('select[aria-label="Pack"]');
-  if (await pick.count()) await pick.selectOption('telecom_network').catch(() => {});
-  await p.waitForTimeout(800);
+  await openPacks(p, 'telecom_network', /Why are we still buying new power units when returns are coming in\?/);
   await waitText(p, /Why are we still buying new power units when returns are coming in\?/, 'Analytics > Packs does not show the question "Why are we still buying new power units when returns are coming in?"', UI);
   if (!/PSU-48/.test(await text(p))) throw new Error('the power unit question shows no chart rows (PSU-48)');
   notes.push('question with its chart');
@@ -334,6 +348,7 @@ await step('8 The analytics question and the modelled replay figures', async () 
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();

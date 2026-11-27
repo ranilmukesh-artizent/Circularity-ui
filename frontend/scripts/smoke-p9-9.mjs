@@ -128,6 +128,23 @@ async function open(p, url, ready = '#view') {
   await p.locator(ready).first().waitFor({ timeout: FIRST });
 }
 
+/** Analytics > Packs for one pack. The shell knows no route #/analytics/packs (isKnownRoute: "packs" is no section of RB_SECS
+ * or the menu, so it says "Page not found"): open Analytics, pick its Packs tab, then the pack. */
+async function openPacks(p, key, question) {
+  await open(p, `${base}/#/analytics`);
+  await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
+  const pick = p.locator('select[aria-label="Pack"]');
+  await pick.waitFor({ timeout: UI });
+  await pick.selectOption(key);
+  // a worked question draws its chart only once chosen (PackQuestions: "Choose a question.")
+  const btn = p.getByTestId('pack-questions').getByRole('button', { name: question });
+  if (await btn.waitFor({ timeout: 60000 }).then(() => true, () => false)) {
+    await btn.click();
+    await p.locator('[data-question]').first().waitFor({ timeout: UI }).catch(() => {});
+  }
+  await p.waitForTimeout(800);
+}
+
 async function step(name, fn) {
   const t0 = Date.now();
   try {
@@ -357,11 +374,8 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   needs('9.18', !!alert, `the alert "EV crossovers ageing at North lot"${alert ? ` (${alert})` : ''}`, notes);
 
   // the worked question, in Analytics > Packs
-  await open(p, `${base}/#/analytics/packs`);
-  const pick = p.locator('select[aria-label="Pack"]');
-  if (await pick.count()) await pick.selectOption('used_cars').catch(() => {});
-  await p.waitForTimeout(800);
-  const q = /Why are EV crossovers sitting longer on our lots\?/.test(await text(p));
+  await openPacks(p, 'used_cars', /Why are EV crossovers sitting longer on our lots\?/);
+  const q = await waitText(p, /Why are EV crossovers sitting longer on our lots\?/, '', 60000).then(() => true, () => false);
   needs('9.19', q, 'the question "Why are EV crossovers sitting longer on our lots?"', notes);
   if (q) {
     const t = await text(p);
@@ -374,6 +388,7 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();
