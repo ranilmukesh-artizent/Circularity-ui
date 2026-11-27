@@ -223,10 +223,10 @@ await step('2 No decontamination record: "Decontamination record required" on th
   const p = await as('planner.a');
   await inCase(p, 20, /Decontamination record required/, '"Decontamination record required"');
   let where = '';
-  for (const acct of ['planner.a', 'admin', 'approver']) {
+  for (const acct of ['planner.a', 'admin', 'approver', 'warehouse1', 'warehouse2']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/No decontamination record/.test(await text(q))) {
       where = acct;
       break;

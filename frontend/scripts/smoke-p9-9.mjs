@@ -273,7 +273,7 @@ await step('4 The lien: "Clear title, no open finance" on the routes, "Lien foun
   for (const acct of ['planner.a', 'admin', 'approver']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/Lien found after check-in/.test(await text(q))) {
       where = acct;
       break;

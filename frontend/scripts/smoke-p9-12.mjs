@@ -201,7 +201,7 @@ await step('1 Connect the eight systems; My work lists "Serial on the manifest n
     const q = await as(acct);
     for (let k = 0; k < 6 && !where; k++) {
       await open(q, base + '/#/mywork');
-      await q.waitForTimeout(800);
+      await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
       if (/Serial on the manifest not received/.test(await text(q))) where = acct;
       else await q.waitForTimeout(4000); // the job runs after the sync
     }
