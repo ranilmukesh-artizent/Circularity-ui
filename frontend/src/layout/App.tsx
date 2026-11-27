@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useBackend } from '../api/useBackend';
 import { navigation } from '../api/nav';
-import { canRoute, currentAccount, homeRoute, isKnownRoute, setBackendTheme, signOut } from '../api/session';
+import { canRoute, currentAccount, homeRoute, isKnownRoute, needsSessionRead, rereadSession, setBackendTheme, signOut } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';
 import { pageFor } from '../pages/registry';
 import { OAuthConsentPage } from '../pages/OAuthConsentPage';
 import { SignInPage } from '../pages/SignInPage';
-import { Boundary } from '../components/Boundary';
+import { Boundary, Loading } from '../components/Boundary';
 import { useTheme } from '../utils/theme';
 import { toast, Toasts } from '../components/toast';
 import { AssistantDock } from './assistant/AssistantDock';
@@ -71,10 +71,20 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
   const Page = (known && pageFor(route.page)) || NotPortedPage;
 
   useEffect(() => setMenu(false), [route.page, route.a, route.b]);
+  // a tenant made since sign-in (an org unit, a grant) is not in the session yet: read it again once before refusing the route
+  const routeKey = route.page + '/' + (route.a ?? '') + '/' + (route.b ?? '');
+  const [readFor, setReadFor] = useState<string | null>(null);
+  const rereading = needsSessionRead(allowed, readFor, routeKey);
   useEffect(() => {
-    if (allowed === true || !known) return;
+    if (!rereading) return;
+    let live = true;
+    rereadSession().catch(() => undefined).finally(() => live && setReadFor(routeKey));
+    return () => { live = false; };
+  }, [rereading, routeKey]);
+  useEffect(() => {
+    if (allowed === true || !known || rereading) return;
     toast(allowed === 'tenant' ? 'That record belongs to a tenant or warehouse you cannot see.' : 'That page is not available for your role.');
-  }, [allowed, known]);
+  }, [allowed, known, rereading]);
 
   const doSignOut = () => {
     const label = currentAccount()?.label;
@@ -92,6 +102,7 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
       return !r;
     });
 
+  if (known && rereading) return <Loading />;
   if (known && allowed !== true) return <Navigate to={'/' + homeRoute()} replace />;
 
   return (

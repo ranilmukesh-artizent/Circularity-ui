@@ -4,7 +4,7 @@
  * (ROLE_POLICY, RB_AV, TENANTS, PERM_ALIAS, PAGES, RB_SECS). can, canPage and canRoute are evaluated here from
  * /api/auth/me as the demo does (di/services/screens/nav.py has the mapping).
  */
-import { ApiError, cached, http, login, logout, openSession, ref, session } from './client';
+import { ApiError, cached, http, login, logout, openSession, ref, refreshMe, session } from './client';
 import type { Account, RolePolicy, RouteRef } from './types';
 import { setView, view } from './view';
 
@@ -97,6 +97,15 @@ function recordOK(caseId: string | null): boolean | null {
   const [owner, location] = sc;
   return me.tenants.includes(owner) && (!me.warehouse || location === me.warehouse);
 }
+
+/**
+ * Read the session again before a route is refused for its tenant? The tenants an account sees are read at sign-in; one made
+ * since (an org unit, a grant) is missing from them until the session is read again, so the first refusal of a route is checked
+ * against a fresh session (`readFor`: the route the session was last read for). A second refusal stands.
+ */
+export const needsSessionRead = (allowed: boolean | 'tenant', readFor: string | null, key: string): boolean =>
+  allowed === 'tenant' && readFor !== key;
+export const rereadSession = (): Promise<void> => refreshMe();
 
 /** true, false, or 'tenant' when the record belongs to a tenant or warehouse the account cannot see. */
 export function canRoute(r: RouteRef): boolean | 'tenant' {
