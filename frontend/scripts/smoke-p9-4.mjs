@@ -38,7 +38,7 @@ const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-4');
 const ORG = 'tool-fleet-a';
-const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}`;
+const MODELER = `${base}/#/modeler?template=tool_fleet&org=${encodeURIComponent(ORG)}&tab=tables`; // the market tables are on the Tables page tab
 const UI = 30000;
 const FIRST = 20000; // a first page load after sign-in
 const SYNC = 180000;
@@ -199,6 +199,8 @@ const synced = (p, sid) =>
 
 // ---------------------------------------------------------------- 1
 await step('1 Market tables: finance edits FR labour to 48 EUR, the Approver approves v2', async () => {
+  // the org unit exists after smoke-p9-3 only; on a fresh stack the Modeler page says "No org unit tool-fleet-a"
+  await callAction(await as('admin'), 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' });
   const fin = await as('finance');
   await openPage(fin, MODELER, '#mt-market');
   await fin.locator('#mt-market').selectOption('FR');
@@ -261,9 +263,11 @@ await step('2 Sources: sdesk and rephist synced, the service-desk cases open', a
     // the first sync read the tickets before the bind: read everything again through the source's ingest workflow
     const wf = await must(dev, 'workflow.create', { type: 'ingest', src: 'sdesk' });
     const w = (await getJson(dev, '/api/screens/workflows/' + encodeURIComponent(wf.id))).workflow;
-    const g = JSON.parse(JSON.stringify(w.graph));
-    const conn = g.nodes.find((n) => n.k === 'conn');
+    const g0 = JSON.parse(JSON.stringify(w.graph));
+    const conn = g0.nodes.find((n) => n.k === 'conn');
     conn.cfg = { ...(conn.cfg || {}), mode: 'full' };
+    // the connector alone (the default graph's gateway and map fail the publish checks); the source's own hook opens the cases
+    const g = { ...g0, nodes: [conn], edges: [] };
     await must(dev, 'workflow.save', { id: wf.id, name: w.name, owner: w.owner, trig: w.trig, graph: g });
     await must(dev, 'workflow.publish', { id: wf.id });
     await must(dev, 'source.sync', { source_id: 'sdesk' });
