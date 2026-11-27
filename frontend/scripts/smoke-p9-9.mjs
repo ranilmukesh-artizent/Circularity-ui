@@ -53,6 +53,7 @@ const vin = (n) => 'SYNUC' + String(n).padStart(12, '0');
 const CARS = [1, 2, 3, 7, 90]; // the demo's cars: UC-S1 (retail South), UC-S2 (recall), UC-S3 (lien), UC-S7 (recon 2,800), 090 (inspection scheduled)
 const MODELER = `${base}/#/modeler?template=used_cars&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/used_cars.csv'); // replayed before the publish step (owner decision, 28 Nov)
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
 const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
 const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
@@ -389,7 +390,7 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
 
   // the replay figures, on the Compose publish step of the composition of step 2
   // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
-  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, sim: SIM, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();

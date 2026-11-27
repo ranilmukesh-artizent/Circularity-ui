@@ -56,6 +56,7 @@ const UNITS = {
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/telecom_network.csv'); // replayed before the publish step (owner decision, 28 Nov)
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -347,7 +348,7 @@ await step('8 The analytics question and the modelled replay figures', async () 
   notes.push('question with its chart');
 
   // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
-  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, sim: SIM, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();

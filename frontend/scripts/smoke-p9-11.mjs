@@ -44,6 +44,7 @@ const SOURCES = ['mr_rental', 'mr_assets', 'mr_decon', 'mr_biomed', 'mr_parts', 
 const TAGS = { 1: 'SYN-MR-IP-0001', 2: 'SYN-MR-IP-0002', 20: 'SYN-MR-IP-0020', 7: 'SYN-MR-PM-0007' }; // key -> the device's asset tag
 const MODELER = `${base}/#/modeler?template=medical_rental&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/medical_rental.csv'); // replayed before the publish step (owner decision, 28 Nov)
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -344,7 +345,7 @@ await step('8 The replay figures labelled modelled on the Compose publish step',
   const p = await as('planner.a');
   const notes = [];
   // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
-  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, timeout: UI })})`);
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, sim: SIM, timeout: UI })})`);
   await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
   if (!COMP) await openSetupTab(p);
   await compose(p).waitFor();
