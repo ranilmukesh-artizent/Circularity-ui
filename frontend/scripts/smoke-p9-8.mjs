@@ -390,10 +390,13 @@ await step('4 Test run: reached and stopped counts by stage', async () => {
   // plan 10: Replay is a drawer opened by the Replay step of the lifecycle bar, which shows for a flow that is not published:
   // an org on the workspace's published flow takes its own flow first (a draft), as a person would
   const replay = p.locator('.mdl-life').getByRole('button', { name: 'Replay', exact: true });
-  if (!(await replay.count())) {
-    await p.getByRole('button', { name: /Give .* its own flow/ }).click();
-    await replay.waitFor({ timeout: UI });
+  const fork = p.getByRole('button', { name: /Give .* its own flow/ });
+  if (!(await replay.count()) && (await fork.count())) await fork.click();
+  // an own flow that is published has no Replay step either: a change (Add rule) makes the draft that the step is for
+  if (!(await replay.count()) && !(await replay.waitFor({ timeout: 8000 }).then(() => true, () => false))) {
+    await p.getByRole('button', { name: 'Add rule', exact: true }).click();
   }
+  await replay.waitFor({ timeout: UI });
   await replay.click();
   await p.locator('.mdl-replay').waitFor({ timeout: UI });
   await p.locator('#mdl-rp-file').setInputFiles(HISTORY);
