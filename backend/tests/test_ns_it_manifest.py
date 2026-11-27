@@ -200,6 +200,22 @@ def test_ns_it_01_the_cmdb_adapter_maps_identity_and_lease_terms():
     assert got[("asset", "owner_tenant")] == ORG
 
 
+def test_ns_it_02_stored_case_reads_the_cmdb_media():
+    """A case opened from data with only its serial (smoke P9-12 step 1): G-DATA-1 reads the CMDB's class and media from the
+    canonical store, so a desktop's SSD with no erasure record fails the routes that leave with the media's serial."""
+    ci = {
+        "ciId": "CI00017", "serial": "SN-IT-0017", "model": "DT-30 S5", "assetClass": "desktop", "ownerOrg": ORG,
+        "securityLevel": "standard", "leaseRef": "LS-IT-0017", "lessorReturnRequired": False, "consentToResell": True,
+        "newPrice": 900.0, "media": [{"mediaSerial": "MS-IT-0017-1", "type": "ssd"}], "org_unit_id": ORG,
+    }  # fmt: skip
+    with SessionLocal() as s:
+        canonical.apply(s, "it_cmdb", ADAPTERS["it_cmdb"].map(Record("cis", "SN-IT-0017", ci)))
+        s.commit()
+    g = next((x for x in _case(_open("SN-IT-0017")).get("gates") or [] if x["id"] == "G-DATA-1"), None)
+    assert g is not None and not g["passed"]
+    assert g["reason"] == "Sanitisation record missing for media MS-IT-0017-1" and "resell" in g["routes"]
+
+
 def test_ns_it_01_erasures_group_by_serial():
     adapter: Any = ADAPTERS["it_logistics"]
     rows = [{"mediaSerial": f"MS-IT-0005-{k}", "method": "purge", "verification": "passed"} for k in (1, 2)]
