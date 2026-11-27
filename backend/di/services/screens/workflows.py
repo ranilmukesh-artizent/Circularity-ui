@@ -95,7 +95,7 @@ class NotFound(LookupError):
     """No such workflow or version; the message says which (the route answers 404 `not_found`)."""
 
 
-def template(tpl: dict | None, saved: list[dict] | None = None) -> dict | None:
+def template(tpl: dict | None, saved: list[dict] | None = None, session: Session | None = None) -> dict | None:
     """wfBuild(tpl): the recorded template graph, or (for a template no starting workflow uses, such as a new blank
     pipeline) the port in di.services.actions.workflows. A workflow created from a saved template ({k: "tpl", id}) resets to
     that template's graph, from `saved` (the demo gives it {k: "none"}, which resets it to an empty canvas)."""
@@ -103,9 +103,13 @@ def template(tpl: dict | None, saved: list[dict] | None = None) -> dict | None:
         return next((t["tpl"] for t in saved or [] if t["id"] == tpl.get("id")), {"nodes": [], "edges": []})
     t = _TEMPLATES.get(json.dumps(tpl, sort_keys=True))
     if t is None and tpl:
-        from di.services.actions.workflows import build
+        from di.services.actions.workflows import build, live_sources
 
-        t = build(tpl)
+        if session is None:
+            t = build(tpl)
+        else:
+            with live_sources(session):  # a source connected from the catalogue (fleet ...) is not in the demo's SOURCES
+                t = build(tpl)
     return t
 
 
@@ -326,7 +330,7 @@ def workflow_detail(session: Session, workflow_id: str, account_id: str) -> dict
         "saved": saved
         and {"graph": saved["g"], "name": saved["m"]["name"], "owner": saved["m"]["owner"], "trig": saved["m"]["trig"]}
         | {k: saved["m"][k] for k in ("retries", "alert") if k in saved["m"]},  # the run settings, once saved
-        "template": template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None),
+        "template": template(tpl, templates(session) if tpl and tpl.get("k") == "tpl" else None, session),
         "history": history(w, [r for _, r in runs]),
         "run_figures": figures(session, w, runs),  # one per history entry: in / out / held of the runs that happened
         "run_counts": c,

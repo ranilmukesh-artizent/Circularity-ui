@@ -32,7 +32,7 @@ const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-5');
 const ORG = 'tool-fleet-a';
 const SID = 'fleet';
 const TODAY = '2026-10-07'; // FC-30117 ends 2027-01-05: its window opens on this day
-const UI = 30000;
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
 const SYNC = 180000;
 mkdirSync(out, { recursive: true });
 
@@ -67,6 +67,11 @@ const callAction = (p, id, body) =>
       return r.json();
     },
     [id, body],
+  );
+const getJson = (p, url) =>
+  p.evaluate(
+    async (url) => (await fetch(url, { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('circ-api-token') } })).json(),
+    url,
   );
 const postJson = (p, url, body) =>
   p.evaluate(
@@ -132,14 +137,10 @@ await step('1 Refresh: the scan opens FC-30117 with 14 lines', async () => {
     SYNC,
     admin,
   );
-  await admin.goto(`${base}/#/product/received`);
-  await admin.locator('#view').waitFor();
-  await until(
-    async () => /Case opened from contract_refresh/.test(await admin.locator('#view').innerText()),
-    'Returned assets does not show "Case opened from contract_refresh"',
-    UI,
-    admin,
-  );
+  // "Case opened from contract_refresh" is the stage log row, which no page prints: the reason is read from the case's own
+  // intake record (the case screen's `intake.reason`); the panel below is what a person sees of it
+  const reason = (await getJson(admin, '/api/screens/case/' + id)).case?.intake?.reason;
+  if (reason !== 'contract_refresh') throw new Error(`the case ${id} was opened from "${reason}", not contract_refresh`);
   await admin.goto(`${base}/#/product/${id}/overview`);
   await admin.locator('#view').waitFor();
   const t = await until(

@@ -54,7 +54,7 @@ const BATCH_FIRST = 240; // BATCH-0007 holds the devices 240 to 279 (i // 40 + 1
 const UNWIPED = ['272', '247', '250', '267', '246', '251', '242', '260', '261', '279', '269', '277'].map((n) => `3599900000${n.padStart(5, '0')}`);
 const MKT = SIM + '/device-market/v1';
 const LAB = SIM + '/device-lab/v1';
-const UI = 30000;
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
 const SYNC = 240000;
 mkdirSync(out, { recursive: true });
 

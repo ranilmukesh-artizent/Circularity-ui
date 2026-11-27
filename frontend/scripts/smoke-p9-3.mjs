@@ -49,7 +49,7 @@ const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-3');
 const ORG = 'tool-fleet-a';
 const SID = 'fleet';
-const UI = 30000;
+const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
 const SYNC = 180000;
 mkdirSync(out, { recursive: true });
 
@@ -132,7 +132,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   const w = d.workflow || d;
   // the graph is the connector and the Open case step only (the default one has a gateway and a map the checks refuse)
   const conn = w.graph.nodes.find((n) => n.k === 'conn');
-  conn.cfg = { ...(conn.cfg || {}), resources: ['returns'] };
+  conn.cfg = { ...(conn.cfg || {}), resources: ['returns'], mode: 'full' }; // full: reconnect already queued a sync, so a delta one reads nothing
   const caseNode = {
     id: 'case', k: 'xf', ref: 'x_case', x: conn.x + 120, y: conn.y,
     cfg: { template: 'tool_fleet', reason: 'contract_end', asset_field: 'serial', org_unit_id: ORG, reason_field: 'kind', facts: ['toolClass', 'contractId', 'lineId', 'site'] },
@@ -143,9 +143,10 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   await must(dev, 'source.sync', { source_id: SID });
   const n = await until(
     async () => {
-      // the Returned assets read, counted by the tool serials in it (CMH-48213 ...): 18 once the sync has run
-      const r = JSON.stringify(await getJson(dev, '/api/screens/product/returned'));
-      const serials = new Set(r.match(/\b(?:CMH|BRK|DCD|CRH|AGR|LSR)-\d+\b/g) || []);
+      // the Returned assets read (Admin's: the Developer view has no such screen), counted by the five-digit tool serials in
+      // it (CMH-48213 ...; the demo's own DEMO-CMH-0001 ... have four): 18 once the sync has run
+      const r = JSON.stringify(await getJson(await as('admin'), '/api/screens/product/returned'));
+      const serials = new Set(r.match(/\b(?:CMH|BRK|DCD|CRH|AGR|LSR)-\d{5}\b/g) || []);
       return serials.size === 18 ? serials.size : 0;
     },
     'the sync did not open 18 tool cases in ' + ORG,
@@ -155,12 +156,22 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   const p = await as('admin');
   await p.goto(`${base}/#/product/received`);
   await p.locator('#view').waitFor();
+  // the list shows the serial in the org unit; "Case opened from contract_end" is the stage log row, which no page prints,
+  // so the reason is read from the case's own intake record (the case screen's `intake.reason`)
   await until(
-    async () => /CMH-48213/.test(await p.locator('#view').innerText()) && /Case opened from contract_end/.test(await p.locator('#view').innerText()),
-    'Returned assets does not show CMH-48213 with "Case opened from contract_end"',
+    async () => {
+      const t = await p.locator('#view').innerText();
+      return /CMH-48213\s+tool-fleet-a/.test(t);
+    },
+    'Returned assets does not list CMH-48213 in tool-fleet-a',
     UI,
     p,
   );
+  const rows = (await must(p, 'cases.list', { q: 'CMH-48213', limit: 5 })).rows || [];
+  const id = rows.find((x) => x.id)?.id;
+  if (!id) throw new Error('no case for CMH-48213');
+  const reason = (await getJson(p, '/api/screens/case/' + id)).case?.intake?.reason;
+  if (reason !== 'contract_end') throw new Error(`the case of CMH-48213 was opened from "${reason}", not contract_end`);
   return `${n} cases`;
 });
 

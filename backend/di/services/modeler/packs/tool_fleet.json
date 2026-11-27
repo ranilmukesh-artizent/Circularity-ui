@@ -1483,6 +1483,7 @@
           "list_price.CRH": 570,
           "list_price.AGR": 239,
           "list_price.LSR": 1012,
+          "list_price.BAT": 690,
           "swap_days": 2,
           "upgrade_days": 3,
           "proposal_valid_days": 14
@@ -1498,6 +1499,7 @@
           "list_price.CRH": 570,
           "list_price.AGR": 239,
           "list_price.LSR": 1012,
+          "list_price.BAT": 690,
           "swap_days": 2,
           "upgrade_days": 3,
           "proposal_valid_days": 14
@@ -1513,6 +1515,7 @@
           "list_price.CRH": 490,
           "list_price.AGR": 205,
           "list_price.LSR": 869,
+          "list_price.BAT": 590,
           "swap_days": 2,
           "upgrade_days": 3,
           "proposal_valid_days": 14
@@ -1528,6 +1531,7 @@
           "list_price.CRH": 620,
           "list_price.AGR": 260,
           "list_price.LSR": 1100,
+          "list_price.BAT": 750,
           "swap_days": 2,
           "upgrade_days": 3,
           "proposal_valid_days": 14
@@ -1543,6 +1547,7 @@
           "list_price.CRH": 942,
           "list_price.AGR": 395,
           "list_price.LSR": 1672,
+          "list_price.BAT": 1140,
           "swap_days": 2,
           "upgrade_days": 3,
           "proposal_valid_days": 14
