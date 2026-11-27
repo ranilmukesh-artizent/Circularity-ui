@@ -193,20 +193,41 @@ await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-441
   };
   const panel = async (serial, re, msg) => {
     const id = await caseId(serial);
-    await admin.goto(`${base}/#/product/${id}/overview`);
-    await admin.locator('#view').waitFor();
+    let last = '';
+    let pg = null;
+    let n = 0;
     return until(
       async () => {
-        const t = await admin.locator('[data-testid="tf-grade"]').first().innerText({ timeout: 20000 }).catch(async () => {
-          await admin.reload(); // the page can stay on "Loading..." while the worker regrades the cases after a sync
-          return '';
-        });
-        return re.test(t) ? t : null;
+        // The long-lived admin tab can keep an old "no such case" read and send the case page home for good (seen right after
+        // the first syncs): read the page with a freshly signed-in browser context, renewed every third attempt.
+        if (!pg || n++ % 3 === 0) {
+          if (pg) await pg.context().close().catch(() => {});
+          const ctx = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
+          pg = await ctx.newPage();
+          pg.setDefaultTimeout(UI);
+          await pg.goto(base + '/#/signin');
+          await pg.fill('#si-id', 'admin');
+          await pg.fill('#si-pw', 'demo');
+          await pg.click('button[type=submit]');
+          await pg.waitForURL((u) => !/signin/.test(u.hash), { timeout: UI });
+        }
+        await pg.goto(`${base}/#/product/${id}/overview`);
+        try {
+          last = await pg.locator('[data-testid="tf-grade"]').first().innerText({ timeout: 45000 });
+        } catch (e) {
+          last = 'no grade panel: ' + String((await pg.locator('#view').innerText({ timeout: 3000 }).catch(() => '(no view)'))).replace(/\s+/g, ' ').slice(0, 120);
+          return null;
+        }
+        return re.test(last) ? last : null;
       },
       `${serial} (${id}) does not read ${msg}`,
       LONG, // the case page can take minutes to load while the worker is busy with the syncs and regrades
       admin,
-    );
+    )
+      .catch((e) => {
+        throw new Error(`${e.message}; last seen: ${last}`);
+      })
+      .finally(() => pg?.context().close().catch(() => {}));
   };
   await panel('CMH-48213', /estimate/i, '"estimate"');
   await must(dev, 'source.reconnect', { source_id: 'repairlog' });
@@ -580,13 +601,14 @@ await step('11 CO2e and GR-06: a path reads its CO2e and factor source; Finance 
   const eng = await as('engineer');
   await until(
     async () => {
+      await advance(3); // the custody step answers only once the clock has moved enough
       const r = await callAction(eng, 'case.attachReporting', { case_id: id, mass_kg: 12, material: 'steel', treatment_code: 'R4', source_ref: 'smoke-p9-3' });
       if (r.ok) return true;
       const row = ((await must(eng, 'cases.list', { q: id, limit: 3 })).rows || []).find((x) => x.id === id); // a rerun: already closed
       return /not waiting for reporting evidence/.test(r.error?.message || '') && row?.stage === 'closed';
     },
     `${id}: the reporting evidence could not be attached`,
-    UI,
+    SYNC,
     eng,
   );
   const fin = await as('finance');
@@ -628,16 +650,23 @@ await step('12 Approval: a $702 repair waits for the Fleet manager, a clean retu
   // a return the policy may approve: the first open tool case of the org whose route is the policy (CMH-48213 is left for step 14)
   const r = JSON.stringify(await getJson(admin, '/api/screens/product/returned'));
   const serials = [...new Set(r.match(/\b(?:CMH|BRK|DCD|CRH|AGR|LSR)-\d{5}\b/g) || [])].filter((x) => x !== 'CMH-48213');
+  // A policy approves only a case with no open exception, and every case opened from the feed carries "Not in the system of
+  // record" (the tools are not in the lease system's assets): a person (planner.a) closes that item first, as My work offers.
+  await plannerAccess();
+  const planner = await as('planner.a');
+  const work = (await getJson(planner, '/api/screens/mywork')).items || [];
   let clean = null;
   for (const serial of serials) {
     const id = await caseIdOf(admin, serial);
     const a = (await toolView(admin, id)).approval;
-    if (a && a.kind === 'policy' && !a.by) {
+    const open = work.filter((x) => x.kind === 'exception' && x.case_id === id);
+    if (a && a.kind === 'policy' && !a.by && open.every((x) => /Not in the system of record/i.test(x.title))) {
+      for (const x of open) await must(planner, 'work.resolve', { item_id: Number(String(x.id).replace(/^w:/, '')), outcome: 'resolved', note: 'Smoke: the tool is held by the fleet system, not the lease system' });
       clean = id;
       break;
     }
   }
-  if (!clean) throw new Error('no open tool return is covered by the standing policy (every one waits for a person)');
+  if (!clean) throw new Error('no open tool return is covered by the standing policy (every one waits for a person or has an open exception)');
   await submitAndApprove(clean, (await toolView(admin, clean)).best); // the recommended path, whatever the case's grade allows
   const after = await until(
     async () => {
