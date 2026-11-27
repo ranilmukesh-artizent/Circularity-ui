@@ -34,9 +34,15 @@ def _clean() -> None:
     with engine.begin() as conn:
         # every row the telecom analytics read (stock, targets, requisitions, ...) came in through these sources: whatever
         # else is in the database (the demo seed's units, a sibling test's leftovers) must not count here
-        src = "SELECT model, key FROM provenance WHERE source_id IN ('tn_spares', 'tn_inv', 'tn_decom', 'tn_bench')"
-        conn.execute(text(f"DELETE FROM canonical WHERE model <> 'part' AND (model, key) IN ({src})"))
-        conn.execute(text("DELETE FROM provenance WHERE model <> 'part' AND source_id IN ('tn_spares','tn_inv','tn_decom','tn_bench')"))
+        conn.execute(
+            text(
+                "DELETE FROM canonical WHERE model <> 'part' AND (model, key) IN "
+                "(SELECT model, key FROM provenance WHERE source_id IN ('tn_spares', 'tn_inv', 'tn_decom', 'tn_bench'))"
+            )
+        )
+        conn.execute(
+            text("DELETE FROM provenance WHERE model <> 'part' AND source_id IN ('tn_spares','tn_inv','tn_decom','tn_bench')")
+        )
         for p in CELLS:
             conn.execute(text("DELETE FROM provenance WHERE model <> 'part' AND key LIKE :p"), {"p": p})
             conn.execute(text("DELETE FROM canonical WHERE model <> 'part' AND key LIKE :p"), {"p": p})

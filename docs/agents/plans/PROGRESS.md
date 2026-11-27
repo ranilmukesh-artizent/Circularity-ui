@@ -449,6 +449,25 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
   - Re-check at the wave gate. If it is still slow, look for open stream connections exhausting the thread pool.
 - **Process:** an agent ran `git stash`/pop on the shared tree at 15:07 UTC. It wiped and then restored other agents'
   edits; the affected agents re-applied theirs. Every agent is now forbidden to use stash, reset or checkout.
+
+
+- p9-11 step 5: SYN-MR-PM-0007 added to the rental-system and decon-log mocks (synthetic seed), rather than the smoke recording a check-in. (writer 86)
+- p9-10 step 3: SN-TN-0015 made a BBU-2200 with a forecast need in the telecom seed, so the wipe gate closes resell; `apply_gate_results` (first reason wins) unchanged, to keep other packs' reason texts. (writer 87)
+- p9-9 step 9: the lot-ageing alert (P9-9.18) wired into a worker job and its page; it was ticked done but never called by the app. (writer 87)
+- p9-9 step 7: VIN ...007 pinned as an SUV in the lease seed (the pack sample UC-S7 says so), so retail with recon wins. (writer 82)
+- p9-3 step 9: renewal stays fleet-wide FC-30101-R (owner question open); smoke accepts it. Step 14: smoke opens a manual grade A case and sets the fleet source Read / write via `source.update`; a feed return graded C stays C. (writers 84, 88)
+- Open for the owner: G-DATA-1 for a media-class ITAD asset with no media list (falls to the generic data_wipe check); review P1s of phases 7, 8, 11, 12.
+- p9-1 step 3: with the fleet connected, the lease order L-SMOKE-1 goes to a fleet return (RT-1129); the smoke now proves both cases name the same holder, not "one of ours holds, the other loses" (weaker; owner may want a queue without fleet returns). Smoke uses real fleet serials CMH-10972/CMH-11226 (synthetic TF-SMOKE serials fail GR-07). (writer 81)
+
+## Owner questions decided by the lead on the user's instruction ("think like a customer ... assume best one"), 28 Nov
+- Renewal: a case uses its own contract's renewal (FC-30117-R); the fleet-wide renewal only when its contract has none. (writer 88)
+- ITAD media-class asset with no media list: treated as not inventoried; routes that leave the owner's control fail "Media not inventoried: sanitisation record required"; redeploy inside the same owner and level stays open. (writer 90)
+- G-DATA-2: only a destruction record that names the failed media serial and has a passed result clears it. (writer 90)
+- Phase 7: a canary starts only on a replay run of the exact draft content now in the draft (hash), else "Replay again: the draft changed". (writer 90)
+- Phase 8: SCIM never changes the sign-in email of an Admin account (ignored and journalled); an Admin's email changes only by a person in the product. (writer 90)
+- Phase 11: no service record or no safety status = re-rent held until that evidence is read ("Service record missing" / "Safety status not checked"), as a rental biomed team would. (writer 86)
+- Compliance-facing behaviour (sanitisation, medical device safety, identity): to be reviewed by Kinective's Legal team before it is relied on.
+
 | 2026-11-27 | 03 · Task 1-2 gzip and the generic CRUD router | this commit | test_gzip, test_resources green (202 passed in the combined run) | done |
 | 2026-11-27 | 03 · Task 3 register the resources | this commit | test_resources_groups green | done |
 | 2026-11-27 | 03 · Task 4 the missing write handlers (source.connect) | this commit | test_source_connect, test_resources_groups green; test_fabric_sources deferred to the final gate | done |
