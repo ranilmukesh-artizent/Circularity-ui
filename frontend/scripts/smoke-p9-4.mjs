@@ -263,8 +263,8 @@ await step('2 Sources: sdesk and rephist synced, the service-desk cases open', a
     // the first sync read the tickets before the bind: read everything again through the source's ingest workflow
     const wf = await must(dev, 'workflow.create', { type: 'ingest', src: 'sdesk' });
     const detail = await getJson(dev, '/api/screens/workflows/' + encodeURIComponent(wf.id));
-    const w = detail.workflow || detail;
-    if (!w.graph) throw new Error(`workflow ${wf.id} has no graph: ${JSON.stringify(detail).slice(0, 200)}`);
+    const w = detail.workflow;
+    if (!w?.graph) throw new Error(`workflow ${wf.id} has no graph: ${JSON.stringify(detail).slice(0, 200)}`);
     const g = JSON.parse(JSON.stringify(w.graph));
     const conn = g.nodes.find((n) => n.k === 'conn');
     conn.cfg = { ...(conn.cfg || {}), mode: 'full' };
