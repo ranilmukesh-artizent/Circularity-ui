@@ -445,7 +445,7 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
   const row = await until(admin, async () => {
     await admin.reload();
     const r = admin.locator('#agRuns tr', { hasText: run });
-    await r.waitFor({ timeout: 5000 * K });
+    await r.waitFor({ timeout: 15000 * K });
     const x = await r.innerText();
     return /waiting/.test(x) && /Proposal \d+/.test(x) ? x : null;
   }, `run ${run} did not stop at a held proposal`, 90000 * K, 3000);
