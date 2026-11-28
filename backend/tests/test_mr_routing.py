@@ -174,6 +174,22 @@ def test_mr_10_repair_over_limit_to_fleet_manager():
     assert [h["id"] for h in case["approvalHolds"]] == ["AP-MR-REPAIR"]  # the case carries it for I-10 and I-11
 
 
+def test_mr_10_the_hold_opens_an_approval_item_in_my_work():
+    """The approval item: `approval_hold.sync` opens one for a hold of kind "value" (smoke p9-11 step 5: the $1,350 repair in
+    the Approver's My work), with the hold's own cause and the pack's action, not the used-car recon wording."""
+    from di.services.cases import approval_hold
+
+    case = _s5()
+    write_back(case, _decide(case))
+    [h] = approval_hold._holds(case)
+    assert h["id"] == "AP-MR-REPAIR" and h["kind"] == "value"
+    cause = approval_hold._cause(case, h)
+    assert cause.startswith("Repair estimate $1,350 against a $1,000 limit.")
+    assert "Rental income over the next period $1,512" in cause
+    assert "Instead, retire: net 495." in cause and "recon" not in cause.lower()
+    assert h["action"] == "Approve when modelled rental income over the next period clearly exceeds the repair"
+
+
 def test_mr_10_within_the_limit_or_no_estimate_holds_nothing():
     assert _decide(_s5(repair_estimate=1000)).approval_holds == []  # the limit is "over", not "at"
     assert _decide(_facts()).approval_holds == []

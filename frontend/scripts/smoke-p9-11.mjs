@@ -45,6 +45,11 @@ const TAGS = { 1: 'SYN-MR-IP-0001', 2: 'SYN-MR-IP-0002', 20: 'SYN-MR-IP-0020', 7
 const MODELER = `${base}/#/modeler?template=medical_rental&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/medical_rental.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -352,7 +357,8 @@ await step('8 The replay figures labelled modelled on the Compose publish step',
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
   await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
-  await p.waitForTimeout(800);
+  // the replay report loads after the step draws: wait for its "modelled" label rather than a fixed 800 ms
+  await compose(p).getByText(/modelled/i).first().waitFor({ timeout: 60000 }).catch(() => {});
   const t = await compose(p).innerText();
   if (!/modelled/i.test(t)) throw new Error('the publish step shows no replay figures labelled "modelled"');
   notes.push('replay figures labelled modelled');

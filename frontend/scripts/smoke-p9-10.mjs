@@ -57,6 +57,11 @@ const UNITS = {
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/telecom_network.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -276,14 +281,16 @@ await step('3 The unit whose wipe failed twice: "Wipe failed twice: storage dest
 await step('4 The export approvals: RAD-7700 with "keep as spares", the approver approves one', async () => {
   const ap = await as('approver');
   await open(ap, base + '/#/mywork');
-  await waitText(ap, /RAD-7700/, 'no RAD-7700 export approval in the approver\'s My work (the seed has no screened-clear RAD-7700 bid?)', UI);
+  // the item names the bid (BID-7700-OS, the broker's RAD-7700 bid), the class and the alternative, not the model
+  await waitText(ap, /BID-7700-\S+.*Export class 5A002/, 'no RAD-7700 export approval (bid BID-7700-..., class 5A002) in the approver\'s My work', UI);
   const t = await text(ap);
   if (!/keep as spares/i.test(t)) throw new Error('the RAD-7700 export approval does not show "keep as spares"');
   // the case page of one of the two RAD-7700 units (SN-TN-0006, 0012): approve where the page offers it
   let id = '';
   for (const n of [6, 12]) {
     await open(ap, `${base}/#/product/${need(n)}/stage/7`);
-    if (await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).count()) { id = need(n); break; }
+    // the stage draws after the route change: wait a moment for the button instead of counting at once
+    if (await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().waitFor({ timeout: 60000 }).then(() => true, () => false)) { id = need(n); break; }
   }
   if (!id) throw new Error('neither RAD-7700 case (SN-TN-0006, SN-TN-0012) offers Approve on stage 7');
   await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click();
@@ -311,7 +318,8 @@ await step('6 The diversion that skips the configuration wipe is refused, with t
   await startCompose(p, 'urgent site outage: skip the configuration wipe');
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();
-  if (!/Blocked \(/.test(t) || !/wipe|G-NET-CFG/i.test(t)) throw new Error('Compose shows no "Blocked (...)" refusal naming the wipe guardrail');
+  // the refusal reads "Blocked by Configuration wipe certificate: Blocked: this skips the compliance guardrail ..." (was "Blocked (...)")
+  if (!/Blocked (?:by|\()[^\n]*(?:wipe|G-NET-CFG)/i.test(t)) throw new Error('Compose shows no "Blocked by ..." refusal naming the wipe guardrail');
   return /already wiped spare/i.test(t) ? 'refused, with the suggestion (an already wiped spare)' : 'refused (the suggestion text "already wiped spare" is not shown on the draft)';
 });
 
@@ -355,7 +363,8 @@ await step('8 The analytics question and the modelled replay figures', async () 
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
   await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
-  await p.waitForTimeout(800);
+  // the replay report loads after the step draws: wait for its "modelled" label rather than a fixed 800 ms
+  await compose(p).getByText(/modelled/i).first().waitFor({ timeout: 60000 }).catch(() => {});
   const t = await compose(p).innerText();
   if (!/modelled/i.test(t)) throw new Error('the Compose publish step does not label the replay figures "modelled"');
   notes.push('replay figures labelled modelled');

@@ -39,6 +39,11 @@ import { fileURLToPath } from 'node:url';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-12');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ORG = 'Customer A';

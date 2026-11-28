@@ -17,7 +17,8 @@ bad body 422 (invalid JSON 400). A listing is a ledger entry: it does not change
 
 Data in Postgres schema `broker_marketplace` (models.py, seed.py): fixed, no randomness. `RRU-4410`: the best bid is 3,400,
 domestic (an overseas bid, screening `refer`, is lower); `BBU-2200`: best 1,450, domestic; `RAD-7700`: one bid,
-`BID-7700-OS`, 40 units at 1,900 from an overseas buyer with end-user screening `none` (the export gate's case).
+`BID-7700-OS`, 40 units at 1,900 from an overseas buyer, end-user screening `clear` (ref EUS-0106): the export gate asks
+trade compliance to approve (TN-08; the smoke p9-10 demo). An unscreened bid (TN-07) is covered by the api tests.
 
 ASSUMPTION: `domestic` is true when `buyerCountry` is "US"; an unscreened bid has `ref` null.
 ASSUMPTION: the spec names no cleared-sale fields; `{saleId, model, qty, unitPrice, soldAt}` is the guess.

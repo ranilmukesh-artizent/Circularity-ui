@@ -21,7 +21,7 @@ def bids() -> list[dict]:
         _bid("BID-4410-OS", "RRU-4410", 100, 3300, "VN", "refer", "EUS-0103"),
         _bid("BID-2200-A", "BBU-2200", 80, 1450, "US", "clear", "EUS-0104"),
         _bid("BID-2200-B", "BBU-2200", 40, 1300, "US", "clear", "EUS-0105"),
-        _bid("BID-7700-OS", "RAD-7700", 40, 1900, "AE", "none", None),
+        _bid("BID-7700-OS", "RAD-7700", 40, 1900, "AE", "clear", "EUS-0106"),  # screened clear: TN-08 approval
     ]
 
 

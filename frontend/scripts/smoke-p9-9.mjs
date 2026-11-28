@@ -54,6 +54,11 @@ const CARS = [1, 2, 3, 7, 90]; // the demo's cars: UC-S1 (retail South), UC-S2 (
 const MODELER = `${base}/#/modeler?template=used_cars&org=${encodeURIComponent(ORG)}`;
 const HISTORY = path.join(ROOT, 'fixtures/replay/used_cars.csv'); // replayed before the publish step (owner decision, 28 Nov)
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
 const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
@@ -397,7 +402,8 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
   await tab.waitFor({ timeout: 60000 }).catch(() => {}); // the composition loads behind a skeleton: the step tabs come after it
   if (await tab.count()) await tab.click();
-  await p.waitForTimeout(800);
+  // the replay report loads after the step draws (Replay report, then the figures): wait for it rather than a fixed 800 ms
+  await compose(p).getByText(/modelled/i).first().waitFor({ timeout: 60000 }).catch(() => {});
   const t = await compose(p).innerText();
   needs('9.15', /modelled/i.test(t) && /uplift|straight-through/i.test(t), 'the replay figures labelled modelled on the publish step', notes);
   return notes.join('; ');

@@ -28,7 +28,16 @@ export async function describeInAssistant(p, { title, typed, timeout = 180000, l
   }
   const turn = p.locator('.st-turn').nth(before);
   await turn.waitFor({ timeout });
-  const foot = await turn.locator('.st-foot').innerText({ timeout });
+  let foot = await turn.locator('.st-foot').innerText({ timeout });
+  // a description no pack matches well (e.g. a diversion typed on its own) asks first: draft against the picked pack anyway
+  const anyway = turn.locator('.st-foot button', { hasText: /^Draft against .* anyway$/ });
+  if (!/Composition \d+/.test(foot) && (await anyway.count())) {
+    const feet = p.locator('.st-turn .st-foot', { hasText: /Composition \d+/ });
+    const had = await feet.count();
+    await anyway.first().click();
+    await p.waitForFunction(([n]) => [...document.querySelectorAll('.st-turn .st-foot')].filter((x) => /Composition \d+/.test(x.textContent || '')).length > n, [had], { timeout });
+    foot = await feet.last().innerText({ timeout });
+  }
   const id = Number(foot.match(/Composition (\d+)/)?.[1]);
   if (!id) throw new Error('the Set up turn names no composition: ' + foot);
   return id;
