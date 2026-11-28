@@ -57,6 +57,9 @@ def reset() -> None:
         # plan 9: no open work items (P9-1.7), customer overlays (P9-1.3) or imported pack versions (P9-1.6): the packs
         # in force are the files, as shipped
         conn.execute(text("DELETE FROM work_item"))
+        # plan 9 P9-5.3: no refurbished unit held for a refresh (the cases are reset), and none left pointing at an org unit
+        # removed below (an approved refresh in smoke-p9-5's tool-fleet-a made the next reset fail on the foreign key)
+        conn.execute(text("DELETE FROM unit_reservation"))
         conn.execute(text("DELETE FROM customer_overlay"))
         conn.execute(text("DELETE FROM pack_version"))
         conn.execute(text("DELETE FROM standing_policy_version"))  # plan 9 P9-2.5: no standing policy approves anything

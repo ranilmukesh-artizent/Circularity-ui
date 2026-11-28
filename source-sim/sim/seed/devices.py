@@ -378,25 +378,32 @@ def build() -> DeviceWorld:
         for n, (code, (amount, fees, logistics, status)) in enumerate(terms.items(), start=1)
     ]
 
-    by_model: dict[str, list[int]] = {}
+    # sales per SKU (model and storage): each SKU sells 20 times, 19 single units and one lot of 5, each time devices of that SKU
+    # not sold before (until its devices run out), so every SKU has at least 20 sold devices in the 90 days to AS_OF and clears
+    # the device pack's GR-D8 (`min_sales_90d` 20; lead decision 28 Nov: the seed, never the guardrail)
+    by_sku: dict[str, list[int]] = {}
     for b in base:
-        by_model.setdefault(b["m"][1], []).append(b["i"])
+        by_sku.setdefault(sku_key(b["m"][1], b["storage"]), []).append(b["i"])
+    sold: dict[str, int] = {}
     sales = []
     for n in range(400):
         m = DMOD[n % len(DMOD)]
-        w = (n // len(DMOD)) % 12
+        r = n // len(DMOD)
+        w = r % 12
         wk = SALES_START + timedelta(weeks=w)
-        storage = STORAGE[_h("ss", n) % 2]
+        storage = STORAGE[(r + r // 12) % 2]  # 20 rounds each, spread over the weeks
         grade = "ABBCCD"[_h("sg", n) % 6]
         key = sku_key(m[1], storage)
         settled = datetime.combine(wk + timedelta(days=_h("sd", n) % (2 if w == 11 else 7)), datetime.min.time(), UTC) + timedelta(hours=12)
         on = feed[(key, grade, wk.isoformat())]
         hit = m[1] == launches[0]["replaces"] and LAUNCH_DATE <= wk < LAUNCH_DATE + timedelta(days=21)
         price = round(on * (1 - (0.085 + 0.03 * _u("sl", n))), 2) if hit else round(on * (0.97 + 0.06 * _u("sp", n)), 2)
-        pool_m = by_model[m[1]]
+        pool_s = by_sku[key]
         lot_sale = n >= 380
-        at = _h("si", n) % len(pool_m)
-        imeis = [_imei(pool_m[(at + j) % len(pool_m)]) for j in range(5 if lot_sale else 1)]
+        at = _h("si", key) % len(pool_s) + sold.get(key, 0)
+        units = 5 if lot_sale else 1
+        sold[key] = sold.get(key, 0) + units
+        imeis = [_imei(pool_s[(at + j) % len(pool_s)]) for j in range(units)]
         sales.append(
             {
                 "saleId": f"SALE-{n + 1:04d}",

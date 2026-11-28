@@ -2,16 +2,21 @@
  * Plan 9, Phase 5 demo smoke (P9-5): contract renewals, one line per step (PASS, or FAIL with the step and the text that
  * was missing, then exit 1 at once). This file holds the steps built so far; the later P9-5 tasks add theirs.
  *
- *   1  Admin creates org unit `tool-fleet-a` if it is missing; Developer connects and syncs `fleet`. Admin runs the daily
- *      scan from the worker's job (no UI: the smoke posts the job `refresh.scan` for 2026-10-07 to the tasks API,
- *      /api/v1/tasks, as Admin's Tasks screen does). The Returned assets list shows the refresh cases ("Case opened from
- *      contract_refresh") and FC-30117's panel shows 14 lines.
+ *   1  Admin creates org unit `tool-fleet-a` if it is missing; Developer connects and syncs `fleet` (the contracts),
+ *      `parts` (the refurbished stock) and `repairlog` (the measured lives) and waits until each sync has finished. Admin
+ *      then runs the daily scan from the worker's job (no UI: the smoke posts the job `refresh.scan` for 2026-10-07 to the
+ *      tasks API, /api/v1/tasks, as Admin's Tasks screen does). The Returned assets list shows the refresh cases ("Case
+ *      opened from contract_refresh") and FC-30117's panel shows 14 lines.
  *   2  The same panel lists each tool with its action and reason and the split "keep N, swap M, upgrade K" (the three add
  *      up to FC-30117's 14 lines).
+ *   3  Each swap line is matched to a refurbished unit RU-7... of the parts system's stock (whichever families the lives
+ *      make a swap).
  *   6  (runs before 5: the levers hide once a person approves) Admin moves the swap threshold to 40 on FC-30117's panel and reads
  *      the split before and after, the tools that change action and the fee and renewal impact (refresh.whatIf: nothing stored
  *      or sent).
- *   5  planner.a submits FC-30117, the Approver (Sales or Fleet desk) approves the proposal route; only time moves (the source-sim
+ *   5  Admin sets the fleet and parts sources to Read / write (source.update, as smoke-p9-3 does; a reset leaves them
+ *      read-only, and nothing is sent to a read-only system); planner.a (after a tenant access request to `tool-fleet-a` that
+ *      the Admin approves) submits FC-30117, the Approver (Sales or Fleet desk) approves the proposal route; only time moves (the source-sim
  *      clock) and the panel shows "Proposal sent PR-…", "Contract lines drafted DL-…" and "Units reserved RU-…".
  *
  * Needs the worker (the sync and the job run on it) and source-sim with the fleet mock. Changes state, and resets nothing
@@ -40,7 +45,11 @@ const ORG = 'tool-fleet-a';
 const SID = 'fleet';
 const TODAY = '2026-10-07'; // FC-30117 ends 2027-01-05: its window opens on this day
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
-const SYNC = 180000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 180000; // SMOKE_SYNC_MS: a longer wait for a sync on a loaded machine
+const LONG = Number(process.env.SMOKE_LONG_MS) || 720000; // SMOKE_LONG_MS: a longer wait for the worker on a loaded machine
+// the sources the refresh panel reads: the contracts and their lines (fleet), the refurbished stock a swap is matched to (parts)
+// and the measured lives that decide keep or swap (repairlog). Every smoke runs from a reset, so this one connects them itself.
+const SOURCES = [SID, 'parts', 'repairlog'];
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -92,6 +101,17 @@ const postJson = (p, url, body) =>
     },
     [url, body],
   );
+/** The first object in `o` (depth first) that `ok` accepts, or null. */
+const deepFind = (o, ok) => {
+  if (o && typeof o === 'object') {
+    if (ok(o)) return o;
+    for (const v of Object.values(o)) {
+      const r = deepFind(v, ok);
+      if (r) return r;
+    }
+  }
+  return null;
+};
 const must = async (p, id, body) => {
   const r = await callAction(p, id, body);
   if (!r.ok) throw new Error(`${id}: ${JSON.stringify(r.error || r).slice(0, 200)} (reset the stack first?)`);
@@ -127,21 +147,44 @@ await step('1 Refresh: the scan opens FC-30117 with 14 lines', async () => {
   const admin = await as('admin');
   await callAction(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' }); // exists after smoke-p9-3
   const dev = await as('developer');
-  await must(dev, 'source.reconnect', { source_id: SID });
-  await must(dev, 'source.sync', { source_id: SID });
-  // no UI for the schedule: the job the worker runs daily is posted to the tasks API (a shared fleet source names no org unit)
+  // each source's sync is queued by its reconnect (a second sync asked meanwhile is dropped as a duplicate); the worker runs
+  // one job at a time, so the scan is posted only once every sync has FINISHED (the repair log's first full sync takes minutes)
+  const lastRun = async (sid) => (await getJson(dev, '/api/screens/integration/sources/' + sid))?.sync_history?.[0] || null;
+  const before = {};
+  for (const sid of SOURCES) {
+    before[sid] = JSON.stringify(await lastRun(sid));
+    await must(dev, 'source.reconnect', { source_id: sid });
+    await must(dev, 'source.sync', { source_id: sid });
+  }
+  const synced = [];
+  for (const sid of SOURCES) {
+    const h = await until(
+      async () => {
+        const r = await lastRun(sid);
+        return r && JSON.stringify(r) !== before[sid] && r.dur !== '—' ? r : null; // a new run that has finished
+      },
+      `the ${sid} sync did not finish`,
+      SYNC,
+      dev,
+    );
+    if (!h.ok) throw new Error(`the ${sid} sync did not succeed: ${JSON.stringify(h)}`);
+    synced.push(`${sid} ${h.rows} rows`);
+  }
+  // no UI for the schedule: the job the worker runs daily is posted to the tasks API (a shared fleet source names no org unit);
+  // the dedupe key keeps one such job queued while the worker is still busy with what the syncs queued
   const caseOf = async () => {
     const r = await must(admin, 'cases.list', { q: 'FC-30117', limit: 5 });
     return (r.rows || []).find((x) => x.id)?.id || null;
   };
+  const scan = { kind: 'refresh.scan', payload: { today: TODAY, org_unit_id: ORG }, dedupe_key: `refresh.scan:smoke:${ORG}:${TODAY}` };
   const id = await until(
     async () => {
-      await postJson(admin, '/api/v1/tasks', { kind: 'refresh.scan', payload: { today: TODAY, org_unit_id: ORG } });
-      await admin.waitForTimeout(3000);
+      await postJson(admin, '/api/v1/tasks', scan);
+      await admin.waitForTimeout(5000);
       return caseOf();
     },
-    'the scan did not open a refresh case for FC-30117 in ' + ORG,
-    SYNC,
+    'the scan did not open a refresh case for FC-30117 in ' + ORG + ' (synced: ' + synced.join(', ') + ')',
+    LONG,
     admin,
   );
   // "Case opened from contract_refresh" is the stage log row, which no page prints: the reason is read from the case's own
@@ -159,7 +202,7 @@ await step('1 Refresh: the scan opens FC-30117 with 14 lines', async () => {
     UI,
     admin,
   );
-  return `${id}: ${t}`;
+  return `${id}: ${t} (synced: ${synced.join(', ')})`;
 });
 // ---------------------------------------------------------------- 2
 await step('2 Refresh: FC-30117 shows its keep, swap and upgrade split', async () => {
@@ -180,18 +223,28 @@ await step('2 Refresh: FC-30117 shows its keep, swap and upgrade split', async (
   return text;
 });
 // ---------------------------------------------------------------- 3
-await step('3 Refresh: the CMH swap is matched to refurbished stock RU-7...', async () => {
+await step('3 Refresh: each swap is matched to refurbished stock RU-7... from the parts system', async () => {
+  // whichever families the measured lives make a swap: each swap line names a unit of the parts system's refurbished stock
   const admin = await as('admin');
-  const unit = await until(
+  const swaps = Number(((await admin.locator('[data-testid="rf-tools-totals"]').first().innerText()).match(/swap (\d+)/) || [])[1]);
+  if (!swaps) throw new Error('FC-30117 has no swap to match (step 2 split)');
+  let last = 'no match table';
+  const rows = await until(
     async () => {
-      const x = await admin.locator('[data-testid="rf-match"] tbody tr[data-cls="CMH"]').first().getAttribute('data-unit');
-      return x && /^RU-7/.test(x) ? x : null;
+      const r = await admin
+        .locator('[data-testid="rf-match"] tbody tr')
+        .evaluateAll((trs) => trs.map((t) => ({ serial: t.dataset.serial, cls: t.dataset.cls, unit: t.dataset.unit, text: t.innerText })));
+      last = r.map((x) => `${x.serial} ${x.unit || x.text.replace(/\s+/g, ' ')}`).join('; ') || 'no match rows';
+      const ok = r.length === swaps && r.every((x) => /^RU-7/.test(x.unit) && /refurbished stock/.test(x.text));
+      return ok ? r : null;
     },
-    'the refresh panel does not match the CMH swap to a unit RU-7...',
+    `the refresh panel does not match each of the ${swaps} swaps to refurbished stock RU-7...`,
     UI,
     admin,
-  );
-  return unit;
+  ).catch((e) => {
+    throw new Error(`${e.message}; last seen: ${last}`);
+  });
+  return rows.map((x) => `${x.serial} (${x.cls}) → ${x.unit}`).join(', ');
 });
 // ---------------------------------------------------------------- 4
 await step('4 Refresh: the proposal is priced and waits for a person', async () => {
@@ -234,11 +287,29 @@ await step('6 Refresh: moving the swap threshold to 40 shows the tools that chan
   return `${split}; ${changed.replace(/\n/g, '; ')}`;
 });
 // ---------------------------------------------------------------- 5
-await step('5Refresh: planner.a submits, the Approver approves, the panel shows proposal sent, lines drafted, units reserved', async () => {
+await step('5 Refresh: planner.a submits, the Approver approves, the panel shows proposal sent, lines drafted, units reserved', async () => {
   const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
+  const admin = await as('admin');
+  // planner.a belongs to Customer A and cannot see the new org unit's cases from a reset: the real flow is a tenant access
+  // request the Admin approves (access.requestTenant, access.decideRequest, as smoke-p9-3 does); then it signs in afresh
+  const asked = await callAction(await as('planner.a'), 'access.requestTenant', { tenant: ORG, reason: 'Smoke: submit the refresh case of ' + ORG });
+  if (asked.ok) await must(admin, 'access.decideRequest', { id: asked.output.id, decision: 'approve' });
+  else if (!/already|access/i.test(JSON.stringify(asked.error || asked))) throw new Error('access.requestTenant: ' + JSON.stringify(asked.error || asked).slice(0, 200));
+  await pages['planner.a'].context().close();
+  delete pages['planner.a'];
   const planner = await as('planner.a');
   const approver = await as('approver');
-  const admin = await as('admin');
+  // the fleet contract system (proposal, draft lines) and the parts system (reserve units) are connected read-only from a reset:
+  // the steps are only sent once their access is Read / write (source.update with a write operation sets it, as smoke-p9-3 does)
+  for (const [sid, write] of [[SID, ['proposal send', 'draft lines']], ['parts', ['reserve units']]]) {
+    const src = deepFind(await getJson(admin, '/api/screens/integration/sources/' + sid), (o) => o.id === sid && 'method' in o);
+    if (!src) throw new Error(`no ${sid} source on the Integration screen`);
+    if (src.rw && !/^(Read|Read \(import\)|—)$/.test(src.rw)) continue; // Read / write already
+    const d = { type: src.type, name: src.name, vendor: src.vendor, ver: src.ver, env: src.env, url: src.url, method: src.method, cfg: { ...(src.cfg || {}) }, interval: src.interval, auth: src.auth, owner: src.owner };
+    const ops = { read: src.read?.length ? src.read : ['records'], write: [...new Set([...(src.write || []), ...write])] };
+    const up = await callAction(admin, 'source.update', { mode: 'edit', id: sid, d, maps: (src.mappings || []).filter(Array.isArray), ops, note: 'Smoke: send the refresh proposal' });
+    if (!up.ok && !/No changes to save/.test(JSON.stringify(up.error || up))) throw new Error(`source.update ${sid}: ${JSON.stringify(up.error || up).slice(0, 200)}`);
+  }
   const r = await must(admin, 'cases.list', { q: 'FC-30117', limit: 5 });
   const id = (r.rows || []).find((x) => x.id)?.id;
   if (!id) throw new Error('no refresh case for FC-30117 (run steps 1 to 4 first)');
@@ -276,7 +347,10 @@ await step('7 Analytics: the Contract renewals section shows both rates, the seg
   const exec = await as('exec');
   await exec.goto(`${base}/#/analytics`);
   await exec.locator('#view').waitFor();
-  await exec.getByRole('radio', { name: 'Packs' }).or(exec.getByRole('button', { name: 'Packs' })).first().click();
+  // the Analytics view picker is a tab list (components/kit/Segmented: role tab)
+  await exec.getByRole('tab', { name: 'Packs', exact: true }).or(exec.getByRole('radio', { name: 'Packs' })).first().click();
+  // the Packs view opens on the first pack the account sees: the renewals belong to the tool fleet pack's view
+  await exec.getByLabel('Pack', { exact: true }).selectOption('tool_fleet');
   const sec = exec.locator('[data-testid="renewals"]');
   await sec.waitFor({ timeout: UI });
   const text = await sec.innerText();

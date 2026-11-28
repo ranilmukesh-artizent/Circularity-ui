@@ -8,7 +8,10 @@ from typing import Any
 
 from di.services.modeler import carbon
 from di.services.modeler.pack import Pack, load_pack
-from di.services.modeler.valuers import device, tool_fleet
+from di.services.modeler.valuers import device, medical_rental, telecom_network, tool_fleet, used_cars
+from tests import test_valuer_medical_rental as mr_t
+from tests import test_valuer_telecom_network as tn_t
+from tests import test_valuer_used_cars as uc_t
 
 LOT = {"id": "LOT-T", "brand": "Apple", "model": "iPhone 15", "band": "0-24m", "grade": "A", "ref": 470, "qty": 10, "doh": 5}
 
@@ -81,3 +84,19 @@ def test_x_12_no_provenance_no_figure():
     other_set = pack.valuer.carbon.model_copy(update={"set": "other"})
     other = pack.model_copy(update={"valuer": pack.valuer.model_copy(update={"carbon": other_set})})
     assert carbon.co2_avoided(other, "CMH", "release", 1, confirmed=True) is None
+
+
+def test_x_12_three_packs_have_factor_source():
+    """Used cars, telecom network and medical rental name cfs-2026.2: a case of each gets a factor source, not "no factor
+    source on file" (carbon.json's sample factors; low demand, named demand and transport only respectively)."""
+    uc = {v["k"]: v for v in used_cars.value_routes(uc_t.facts_s1(), load_pack("used_cars"), None)}
+    assert uc["retail:LOT-S"]["co2"] == 175  # 7000 x carbon_d 0.05 - 150 - 25
+    tn = {v["k"]: v for v in telecom_network.value_routes(tn_t.facts_s1(), load_pack("telecom_network"), None)}
+    assert tn["redeploy"]["co2"] == 436  # radio 450 x 1 (named site demand) - 8 - 6
+    mr = {v["k"]: v for v in medical_rental.value_routes(mr_t.S1, load_pack("medical_rental"), mr_t.AS_OF)}
+    assert mr["rerent:REQ-2"]["co2"] is None  # transport only: a re-rent avoids nothing new
+    assert mr["rerent:REQ-2"]["co2Prov"]["transportKg"] == 2.5
+    for prov in (uc["retail:LOT-S"]["co2Prov"], tn["redeploy"]["co2Prov"], mr["rerent:REQ-2"]["co2Prov"]):
+        assert prov["set"] == "cfs-2026.2"
+        assert prov["factors"], prov
+        assert all(f["source"] and f["year"] == 2026 for f in prov["factors"]), prov
