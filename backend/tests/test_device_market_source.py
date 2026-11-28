@@ -217,6 +217,23 @@ def test_listing_links_case_by_imei():
     assert count("device_listing") == 2
 
 
+def test_a_listing_without_listed_at_is_held_and_the_others_land():
+    """A listing the market serves without `listedAt` (one the app posted before the mock stamped it) is held in
+    `failed_record` with its payload; it does not fail the read, and the other listings land (P9-13.11)."""
+    bare = {k: v for k, v in listing(2, imei="359990000000001").items() if k != "listedAt"}
+    with SessionLocal() as s:
+        got = read(s, "listings", [listing(1), bare])
+        s.commit()
+    assert [r.ext_id for r in got] == ["LST-0001"] and count("device_listing") == 1
+    with engine.begin() as conn:
+        held = conn.execute(
+            text("SELECT field, rule, step, payload FROM failed_record WHERE source_id = 'dvmkt' AND ext_id = 'LST-0002'")
+        ).all()
+        conn.execute(text("DELETE FROM failed_record WHERE source_id = 'dvmkt' AND ext_id = 'LST-0002'"))
+    got_held = [(h.field, h.rule, h.step, h.payload["imei"]) for h in held]
+    assert got_held == [("listedAt", "required", "connector", "359990000000001")]
+
+
 def test_live_listings_are_as_of_and_by_channel():
     land("listings", [listing(1), listing(2, channel="Buy Now", listedAt="2026-09-10T10:00:00+00:00"), listing(3, status="sold")])
     with SessionLocal() as s:

@@ -4,8 +4,9 @@
 Owns: the step list (`case.reevaluate` when the case waits for re-evaluation, else the read `case.routes`; the legacy
 `case_autopilot` alias skips that read so its calls stay as they were), the stage's output (the two best eligible routes
 of the case, as the engine valued them, the case's recommendation first when a hold or a rule left the top-net route to a
-person; the second is the best DISTINCT alternative: a route of the same channel to the same destination, `plan`, is the same
-decision and is skipped) and its confidence:
+person; the second is the best route of another CHANNEL: a route of the same channel, the id before a colon, is the same
+decision whatever its lot or demand line, so it is skipped, as replay groups routes, `replay/run.py` `_by_channel`) and its
+confidence:
 - when both routes carry `p10` and `p90`: 1 minus the overlap of the two best intervals over the width of the best
   one, clipped to [0, 1];
 - else 0.5 plus the lead of the best net over the second, as a share of the best net (at most 0.5 more);
@@ -51,15 +52,16 @@ def _top_two(case: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         ranked = [chosen, *(r for r in ranked if r is not chosen)]
     if not ranked:
         return []
-    # the same route to the same customer is one decision (two demand lines of one hospital, `rerent:REQ-2` and `rerent:REQ-4`):
-    # the best is compared with the best DISTINCT alternative, else their identical bands read as 0.00 (lead decision 28 Nov)
-    first = _decision(ranked[0])
-    return [ranked[0], *[r for r in ranked[1:] if _decision(r) != first][:1]]
+    # one channel is one decision: retail at two lots (`retail:LOT-S`, `retail:LOT-C`; the lot is logistics) or two demand lines
+    # of one hospital (`rerent:REQ-2`, `rerent:REQ-4`); the best is compared with the best route of the next distinct channel,
+    # else their overlapping bands read as no confidence (lead decision 28 Nov, as replay groups routes)
+    first = _channel(ranked[0])
+    return [ranked[0], *[r for r in ranked[1:] if _channel(r) != first][:1]]
 
 
-def _decision(r: Mapping[str, Any]) -> tuple[str, Any]:
-    """A route as a decision: its channel (the id before a colon) and whom it goes to (`plan`, the destination's name)."""
-    return str(r.get("id")).split(":", 1)[0], r.get("plan")
+def _channel(r: Mapping[str, Any]) -> str:
+    """A route's channel: the id before a colon (`retail:LOT-S` is `retail`)."""
+    return str(r.get("id")).split(":", 1)[0]
 
 
 def confidence(st: dict[str, Any], case: Mapping[str, Any]) -> float | None:

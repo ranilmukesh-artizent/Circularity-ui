@@ -19,6 +19,7 @@ from di.core.db import SessionLocal
 from di.services.actions import standing_policy as sp
 from di.services.actions.pipeline import SYSTEM, Actor, CallContext, invoke
 from di.services.agents.forbidden import FORBIDDEN_ACTIONS, forbidden
+from di.services.agents.stages import valuation
 from di.services.cases import process, store
 from di.services.modeler.pack import GuardParam, PackGuardrail, load_pack
 from di.services.policy_standing import StandingRules, covers, parse_rules, rules_problem
@@ -68,7 +69,8 @@ def shape(cid: str, net: float, overlap: float = 10.0) -> None:
         assert c is not None
         top = copy.deepcopy(c["recommendation"])
         top |= {"net": net, "p10": 0, "p90": 100, "excluded": False}
-        second = copy.deepcopy(top) | {"id": "resell", "plan": "Resell " + cid, "net": net / 2, "p10": 100 - overlap, "p90": 200}
+        other = "recycle" if str(top["id"]).split(":", 1)[0] == "resell" else "resell"  # another channel (lead decision 28 Nov)
+        second = copy.deepcopy(top) | {"id": other, "plan": "Resell " + cid, "net": net / 2, "p10": 100 - overlap, "p90": 200}
         c["routes"] = [top, second]
         c["recommendation"] = c["routes"][0]
         c.pop("chosen", None)
@@ -220,18 +222,23 @@ def test_x_05_policy_skips_holds_exceptions_and_conflicts():
     assert journal("decision.approveByPolicy") == []
 
 
-def test_policy_confidence_counts_one_route_to_one_customer_once():
-    """The same route to the same customer is one decision (the medical pack's two demand lines of one hospital, `rerent:REQ-2`
-    and `rerent:REQ-4`, the same plan): the policy compares the best with the best DISTINCT alternative, not with its twin, whose
-    identical band would read as 0.00 confidence (final smoke; lead decision 28 Nov)."""
+def test_policy_confidence_reads_distinct_channels():
+    """One channel is one decision, whatever its lot or demand line (a used car's retail at the South lot and at the Central lot,
+    `retail:LOT-S` and `retail:LOT-C`, two plans; the lot is logistics): the policy compares the best route with the best route of
+    the next distinct channel, not with its twin, whose overlapping band would read as near 0 confidence (final smoke; lead
+    decision 28 Nov, as replay groups routes by channel)."""
     c = pick_case()
     with SessionLocal() as s:
         k = store.get(s, c["id"], for_update=True)
         assert k is not None
-        top = copy.deepcopy(k["recommendation"]) | {"net": 300, "p10": 0, "p90": 100, "excluded": False}
-        twin = copy.deepcopy(top) | {"id": f"{top['id']}:REQ-4", "net": 290}  # same channel, same plan
-        other = copy.deepcopy(top) | {"id": "resell", "plan": "Resell " + c["id"], "net": 150, "p10": 90, "p90": 200}  # 0.9
+        base = str(k["recommendation"]["id"]).split(":", 1)[0]
+        top = copy.deepcopy(k["recommendation"]) | {"id": f"{base}:LOT-S", "plan": "South lot", "net": 300, "p10": 0, "p90": 100}
+        top |= {"excluded": False}
+        twin = copy.deepcopy(top) | {"id": f"{base}:LOT-C", "plan": "Central lot", "net": 290, "p10": 9, "p90": 100}  # 0.09
+        alt = "recycle" if base == "resell" else "resell"
+        other = copy.deepcopy(top) | {"id": alt, "plan": "Resell " + c["id"], "net": 150, "p10": 90, "p90": 200}  # 0.9
         k["routes"] = [top, twin, other]
+        assert valuation.confidence({}, k | {"recommendation": top}) == pytest.approx(0.9)
         k["recommendation"] = k["routes"][0]
         k.pop("chosen", None)
         store.save(s, k)

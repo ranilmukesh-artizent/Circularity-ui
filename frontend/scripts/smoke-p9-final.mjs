@@ -515,14 +515,18 @@ async function ensurePolicy(pack, org, below, cands = [], person = null) {
   if (st.in_force) return st.in_force.id;
   if (below == null && st.pack_limit == null) {
     // the pack sets no value limit (used cars, telecom network, medical rental): a flat $20,000 is under every used car's value,
-    // so the policy covers the cheapest candidate that awaits approval, rounded up to the next $1,000 (writer 104)
+    // so the policy covers every candidate that awaits approval, up to the dearest rounded up to the next $1,000 (writer 104).
+    // Covering only the cheapest left none to approve when that one is below the policy's confidence (a 0.71 auction under
+    // 0.75 is rightly held; writer 112, lead decision 28 Nov): the policy takes the first candidate it covers, in the pack's
+    // order. The person's case waits by its own hold whatever its value (UC-S7's recon over the limit, SN-TN-0007's AP-TN-EXP,
+    // the monitor's repair over $1,000); the check after the approval says so
     const vals = [];
     for (const id of cands) {
       if (id === person) continue;
       const c = await caseScreen(admin, id);
       if (c && c.stage === 'awaiting_approval' && !c.approval && !c.blocked && typeof c.recommendation?.net === 'number') vals.push(Math.abs(c.recommendation.net));
     }
-    if (vals.length) below = Math.ceil(Math.min(...vals) / 1000) * 1000;
+    if (vals.length) below = Math.ceil(Math.max(...vals) / 1000) * 1000;
   }
   const limit = st.pack_limit ?? 20000;
   const rules = { max_value: below != null ? (st.pack_limit != null ? Math.min(limit, below) : below) : limit, min_confidence: Math.max(0.75, st.threshold || 0) };
