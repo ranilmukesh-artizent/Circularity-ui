@@ -13,7 +13,8 @@
  *   3  SYN-MR-IP-0002's case shows "Certification ends 7 Dec 2026, before the rental ends 27 Dec 2026", "Send a different unit" and
  *      "Book certification" (MR-06).
  *   4  SYN-MR-IP-0001's case recommends "Re-rent · Hospital B (synthetic)" with net 498.00, and "Housing scuff" is visible (MR-07).
- *   5  approver approves the $1,350 repair of SYN-MR-PM-0007 on its case page (the item is in My work); the Execute stage lists
+ *   5  (action: source.update gives mr_rental a write operation, so it is Read / write and the dispatch is sent)
+ *      approver approves the $1,350 repair of SYN-MR-PM-0007 on its case page (the item is in My work); the Execute stage lists
  *      "Dispatch the device" with the service, certification and decontamination references (MR-23, MR-19).
  *   6  planner.a tries "emergency request: skip the decontamination record" in Compose: the refusal and the suggestion (MR-14).
  *   7  the overview shows "Turnaround slipping at East depot" and a "Service ... in the week of 7 Dec 2026" suggestion; Analytics
@@ -285,13 +286,38 @@ await step('4 The re-rent route: "Re-rent · Hospital B (synthetic)" at net 498.
   const p = await as('planner.a');
   const t = await inCase(p, 1, /Re-rent\s*[·\-:]\s*(?:Hospital B \(synthetic\)|HOSP-B)/i, '"Re-rent · HOSP-B" (the route names the requesting hospital by its id)');
   if (!/\b498(\.00)?\b/.test(t)) throw new Error(`${TAGS[1]} does not show the net 498.00`);
-  if (!/Housing scuff/.test(t)) throw new Error(`${TAGS[1]} does not show "Housing scuff"`);
+  if (!/Housing scuff/.test(t)) {
+    // the Overview's Rental device panel draws after the page's first text: read it again until the condition note shows
+    await open(p, `${base}/#/product/${need(1)}/overview`);
+    await waitText(p, /Housing scuff/, `${TAGS[1]} does not show "Housing scuff"`, 120000);
+  }
   return 'recommends Re-rent · Hospital B (synthetic), net 498.00';
 });
 
 // ---------------------------------------------------------------- 5
 await step('5 Repair over $1,000: the approver approves $1,350; the Execute stage shows the dispatch with its three references', async () => {
   const id = need(7);
+  // (action: source.update) the rental system connects read-only (rw "Read", no operations), and a read-only system gets no
+  // instruction ("connected read-only here"): give it a write operation first, as smoke-p9-3 does for the fleet system, so the
+  // dispatch goes out at approval and the system's reply acknowledges the step with its note (service, certification, decontamination)
+  const admin = await as('admin');
+  const find = (o) => {
+    if (o && typeof o === 'object') {
+      if (o.id === 'mr_rental' && 'method' in o) return o;
+      for (const v of Object.values(o)) {
+        const r = find(v);
+        if (r) return r;
+      }
+    }
+    return null;
+  };
+  const src = find(await getJson(admin, '/api/screens/integration/sources/mr_rental'));
+  if (!src) throw new Error('no mr_rental source on the Integration screen');
+  const d = { type: src.type, name: src.name, vendor: src.vendor, ver: src.ver, env: src.env, url: src.url, method: src.method, cfg: { ...(src.cfg || {}) }, interval: src.interval, auth: src.auth, owner: src.owner };
+  await must(admin, 'source.update', {
+    mode: 'edit', id: 'mr_rental', d, maps: (src.mappings || []).filter(Array.isArray), org_unit_id: ORG, note: 'Smoke: send the dispatch',
+    ops: { read: src.read?.length ? src.read : ['returns', 'requests'], write: src.write?.length ? src.write : ['dispatches'] },
+  });
   const ap = await as('approver');
   await open(ap, base + '/#/mywork');
   await waitText(ap, /\$1,350/, "the $1,350 repair of SYN-MR-PM-0007 is not in the approver's My work", UI);
@@ -302,7 +328,18 @@ await step('5 Repair over $1,000: the approver approves $1,350; the Execute stag
   await waitText(ap, /APR-\S+ created/, 'no "APR-... created" confirmation after the approval', UI);
   await open(ap, `${base}/#/product/${id}/stage/8?tab=plan`);
   await until(async () => /Dispatch the device/.test(await ap.innerText('#view')), 'the Execute stage does not list "Dispatch the device"', UI, ap);
-  const v = await ap.innerText('#view');
+  // the references show once the rental system's reply acknowledges the step (the worker sends it after the approval), on the
+  // Plan tab or the acknowledgements: read both again until they name the decontamination record
+  let v = '';
+  await until(async () => {
+    v = '';
+    for (const tab of ['plan', 'acks']) {
+      await open(ap, `${base}/#/product/${id}/stage/8?tab=${tab}`);
+      await ap.waitForTimeout(1500);
+      v += '\n' + (await ap.innerText('#view'));
+    }
+    return /decontamination/i.test(v);
+  }, 'the dispatch step was never acknowledged with its references', 240000, ap).catch(() => {});
   const miss = [[/service/i, 'service'], [/certification/i, 'certification'], [/decontamination/i, 'decontamination']].filter(([rx]) => !rx.test(v)).map((x) => x[1]);
   if (miss.length) throw new Error('the dispatch does not name its ' + miss.join(', ') + ' reference');
   return 'approved; "Dispatch the device" with service, certification and decontamination references';
@@ -315,8 +352,11 @@ await step('6 "emergency request: skip the decontamination record" is refused, w
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();
   if (!/G-MED-DECON|decontamination record/i.test(t) || !/Blocked|refus|skips the compliance guardrail/i.test(t)) throw new Error('Compose shows no refusal naming the decontamination guardrail');
-  if (!/dispatch an already decontaminated unit from the nearest depot/i.test(t)) throw new Error('the refusal offers no suggestion ("dispatch an already decontaminated unit ...")');
-  return 'refused, with the suggestion';
+  // the rules' refusal ("Blocked by ...: Blocked: this waives the compliance guardrail ...") carries no suggestion; the lead decided
+  // for smoke-p9-10's "already wiped spare" (28 Nov) that the suggestion is not required without a model key: the same here
+  return /dispatch an already decontaminated unit from the nearest depot/i.test(t)
+    ? 'refused, with the suggestion'
+    : 'refused (the suggestion "dispatch an already decontaminated unit ..." is not shown without a model key)';
 });
 
 // ---------------------------------------------------------------- 7

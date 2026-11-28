@@ -30,7 +30,8 @@ three evidence fields, `certExpiry` an ISO date), 404 for an unknown request, 40
 Data in Postgres schema `medical_rental_system` (models.py, seed.py), fixed (no randomness), so a reset gives the same JSON
 again. The mock's own date is 26 Nov 2026 09:00 UTC (it does not follow the simulated clock). What the later tasks lean on:
 requests REQ-1 (HOSP-A, 12 miles from the East depot), REQ-2 (HOSP-B, 5 miles), REQ-3 (HOSP-C, 48 miles) and REQ-4 (HOSP-B
-again 17 hours after REQ-2), all for infusion pumps, 30 days from 27 Nov 2026; the East depot has one decontamination line
+again 17 hours after REQ-2), all for infusion pumps, and REQ-5 (HOSP-A) for a patient monitor (SYN-MR-PM-0007 is
+re-rented there once its repair is approved), all 30 days from 27 Nov 2026; the East depot has one decontamination line
 (West and North two); East's last 14 days average 3.4 waiting days over 13 returns (10 in the 14 days before: returns rose
 30 %), West and North 1.6; East's forecast is lowest in the week of 7 Dec 2026; tags `SYN-MR-IP-0010` and `0011` come back from
 HOSP-D's isolation ward; tag `SYN-MR-IP-0001` is an East return.

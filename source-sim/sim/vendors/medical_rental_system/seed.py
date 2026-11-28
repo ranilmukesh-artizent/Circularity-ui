@@ -28,11 +28,15 @@ DEPOTS = (  # id, label, latitude, longitude, decontamination lines
     ("WEST", "West depot (synthetic)", 37.5, -122.0, 2),
     ("NORTH", "North depot (synthetic)", 44.0, -93.0, 2),
 )
-REQUESTS = (  # id, hospital, requested at
-    ("REQ-1", "HOSP-A", "2026-11-25T14:00:00+00:00"),
-    ("REQ-2", "HOSP-B", "2026-11-25T15:00:00+00:00"),
-    ("REQ-3", "HOSP-C", "2026-11-25T16:00:00+00:00"),
-    ("REQ-4", "HOSP-B", "2026-11-26T08:00:00+00:00"),  # asks again 17 hours after REQ-2
+MONITOR_CLASS = "patient_monitor"
+REQUESTS = (  # id, hospital, requested at, device class
+    ("REQ-1", "HOSP-A", "2026-11-25T14:00:00+00:00", DEVICE_CLASS),
+    ("REQ-2", "HOSP-B", "2026-11-25T15:00:00+00:00", DEVICE_CLASS),
+    ("REQ-3", "HOSP-C", "2026-11-25T16:00:00+00:00", DEVICE_CLASS),
+    ("REQ-4", "HOSP-B", "2026-11-26T08:00:00+00:00", DEVICE_CLASS),  # asks again 17 hours after REQ-2
+    # the one request for a patient monitor: after the $1,350 repair is approved SYN-MR-PM-0007 is re-rented here (lead
+    # decision, 28 Nov), not retired
+    ("REQ-5", "HOSP-A", "2026-11-26T10:00:00+00:00", MONITOR_CLASS),
 )
 WEEKS = tuple((date(2026, 11, 30) + timedelta(weeks=i)).isoformat() for i in range(8))
 FORECAST = {  # weekly requests for the 8 weeks from 30 Nov 2026
@@ -88,10 +92,10 @@ def requests() -> list[dict]:
     region = {h: r for h, _lat, _lon, r in HOSPITALS}
     return [
         {
-            "reqId": req, "hospitalId": h, "deviceClass": DEVICE_CLASS, "startDate": START_DATE, "days": DAYS,
+            "reqId": req, "hospitalId": h, "deviceClass": cls, "startDate": START_DATE, "days": DAYS,
             "region": region[h], "requestedAt": at,
         }
-        for req, h, at in REQUESTS
+        for req, h, at, cls in REQUESTS
     ]  # fmt: skip
 
 

@@ -304,7 +304,11 @@ await step('4 The export approvals: RAD-7700 with "keep as spares", the approver
 await step('5 The routes: redeploy with New spend avoided and net 9,435.00; the second RRU-4410 fills nothing twice', async () => {
   const p = await as('planner.a');
   const t1 = await inCase(p, 1, /Redeploy to a site/, '"Redeploy to a site"');
-  if (!/New spend avoided/.test(t1)) throw new Error(`${sn(1)} does not show "New spend avoided"`);
+  if (!/New spend avoided/.test(t1)) {
+    // the Decision packet's "How ... is built" draws after the page's first text: read that tab again until the line shows
+    await open(p, `${base}/#/product/${need(1)}/stage/6?tab=packet`);
+    await waitText(p, /New spend avoided/, `${sn(1)} does not show "New spend avoided"`, 120000);
+  }
   if (!/9,435\.00|9,435|9\.4k/.test(t1)) throw new Error(`${sn(1)} does not show the net 9,435.00`);
   const t7 = await inCase(p, 7, /Site demand SD-112 filled by SN-TN-0001/, '"Site demand SD-112 filled by SN-TN-0001"');
   if (!/Refurbish as a spare/.test(t7)) throw new Error(`${sn(7)} does not recommend "Refurbish as a spare"`);
@@ -326,6 +330,14 @@ await step('6 The diversion that skips the configuration wipe is refused, with t
 // ---------------------------------------------------------------- 7 (TN-18, TN-19)
 await step('7 Cross-region alert "Transfer to the region buying new" and the held proposal "Reduce purchase requisition"', async () => {
   const p = await as('planner.a');
+  // Customer A reads the workspace's telecom flow until it has its own, and planner.a may not read the workspace (tenant
+  // boundary): give the org its own flow in the Modeler first, as a person does (p9-replay.mjs does the same before the replay)
+  await open(p, MODELER, '.mdl-life');
+  const fork = p.getByRole('button', { name: /^Give .* its own flow$/ });
+  if (await fork.waitFor({ timeout: 8000 }).then(() => true, () => false)) {
+    await fork.click();
+    await fork.waitFor({ state: 'detached', timeout: UI });
+  }
   // (action: telecom.crossRegion) no page lists the alert yet: the Modeler's read action
   const m = await getJson(p, `/api/screens/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`);
   const fid = m?.flow?.id;
