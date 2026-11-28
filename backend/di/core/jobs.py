@@ -1,7 +1,8 @@
 """A small Postgres job queue (plan decision D6: no Redis; hardened in plan 2).
 
     enqueue(s, kind, payload, priority=100, run_after=None, max_attempts=None, dedupe_key=None) -> Job
-        a dedupe hit (a queued or running job with the same key: unique index ux_job_dedupe) returns that job
+        a dedupe hit (a queued or running job with the same key: unique index ux_job_dedupe) returns that job, a queued
+        one raised to the lower of the two priorities
     claim(s) -> ClaimedJob | None      the next ready job by priority (lower first), run_after, id; SKIP LOCKED
     heartbeat(s, id)                   a running job is alive (the worker beats every 30 s)
     complete(s, id) / fail(s, job, error)
@@ -29,6 +30,9 @@ from di.models import Job
 from di.telemetry import inject_trace
 
 ACTIVE = ("queued", "running")  # the statuses a dedupe key is unique among (ux_job_dedupe)
+# priorities (lower runs first): a case re-check on new evidence (a webhook or a synced certificate, canonical.store) runs
+# before the default 100 (syncs, bulk case work, SLA timers) and the 200 of sweeps and refits
+EVIDENCE_PRIORITY = 50
 RETRYABLE = ("dead", "failed", "cancelled")
 
 
@@ -74,10 +78,14 @@ def enqueue(
         .returning(Job.id)
     )
     job_id = session.execute(stmt).scalar()
-    if job_id is None:  # a dedupe hit
+    if job_id is None:  # a dedupe hit: a queued job takes the more urgent of the two priorities
         job_id = session.execute(
             text("SELECT id FROM job WHERE dedupe_key = :k AND status IN ('queued','running')"), {"k": dedupe_key}
         ).scalar_one()
+        session.execute(
+            text("UPDATE job SET priority = :p, updated_at = now() WHERE id = :id AND status = 'queued' AND priority > :p"),
+            {"id": job_id, "p": priority},
+        )
     return session.get_one(Job, job_id)
 
 

@@ -10,6 +10,8 @@ The seed is deterministic (md5, as sim/generic/specs/sandbox.py) and anchored on
 (320 on the six tool classes, 12 batteries `BAT`), 18 open returns, 25 renewals, 60 ended contracts of history.
 Lines of the two ended contracts (one ended, one terminated) read `returned`; their returns were processed before the
 anchor, so only the 18 recent ones are in `/returns` (the repair log grades those 18, sim/generic/specs/repair_log.py).
+P9-4: a 41st contract, FC-30141 (US, Fleet North America), holds an active line for each of the 71 tools the service desk's
+tickets name (`service_desk`), so 403 lines in all; it adds no return, renewal or history.
 `proposals` and `draftLines` start empty: a client creates them (P9-5.5).
 """
 
@@ -57,6 +59,7 @@ NAMED_CONTRACTS: dict[str, dict[str, Any]] = {
     "FC-30110": {"status": "terminated"},
 }  # fmt: skip
 FIXED_LINES = {"FC-30117": 14}  # a contract with a fixed number of non-battery lines
+SERVICE_DESK_CONTRACT = "FC-30141"  # the service desk's tools (`service_desk` below)
 
 
 def h(*parts: object) -> int:
@@ -224,8 +227,37 @@ def build() -> dict[str, Any]:
              "outcome": "renewed" if renewed else "lapsed", "hadProposal": proposal, "feeBefore": before,
              "feeAfter": round(before * (1 + delta), 2)}
         )  # fmt: skip
+    service_desk(contracts, lines)
     return {"contracts": contracts, "lines": lines, "returns": returns, "renewals": renewals, "history": history,
             "proposals": [], "draftLines": []}  # fmt: skip
+
+
+def service_desk(contracts: list[dict], lines: list[dict]) -> None:
+    """Add SERVICE_DESK_CONTRACT: one active US contract (Fleet North America) with an active line for every tool the service
+    desk's tickets name (sim/vendors/servicenow/seed.py, CRH-46042, the batch's 45000 serials ...), so GR-07 passes for them.
+    Added after every pick of `build`, so the 40 contracts, their lines, returns and renewals stay as they were."""
+    from sim.vendors.servicenow.seed import ticket_serials  # read when the seed is built, not at import
+
+    cid, end, term = SERVICE_DESK_CONTRACT, date(2027, 12, 31), 36
+    start = shift_months(end, -term)
+    ids = []
+    for j, serial in enumerate(ticket_serials(), 1):
+        cls, lid = serial.split("-")[0], f"FL-{cid[3:]}-{j:02d}"
+        lines.append(
+            {"lineId": lid, "contractId": cid, "serial": serial, "toolClass": cls, "model": MODELS[cls][0], "status": "active",
+             "returnReason": None, "theftClaimOpen": False, "claimRef": None, "damageChargeOpen": False, "chargeRef": None,
+             "feeMonth": RATE[cls], "coverType": "none", "coverActive": False, "coverUntil": None, "swapAllowed": True,
+             "nonReturnFee": 0.0, "monthsOnContract": (TODAY.year - start.year) * 12 + TODAY.month - start.month,
+             "updatedAt": stamp("line", lid)}
+        )  # fmt: skip
+        ids.append(lid)
+    fee = sum(ln["feeMonth"] for ln in lines if ln["contractId"] == cid)
+    contracts.append(
+        {"contractId": cid, "customer": "Ridgeway Facilities", "market": "US", "startDate": start.isoformat(),
+         "endDate": end.isoformat(), "noticeDate": None, "termMonths": term, "status": "active", "rateCardVersion": "v4",
+         "feeMonth": round(fee, 2), "keyAccount": False, "ownerOrg": OWNER["US"], "renewalStatus": None, "lineIds": ids,
+         "updatedAt": stamp("contract", cid)}
+    )  # fmt: skip
 
 
 def seed(s: Seed) -> dict[str, list[dict]]:  # noqa: ARG001 - anchored on its own date, as the sandbox

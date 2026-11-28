@@ -17,7 +17,7 @@ Any `compliance` fact (gate evidence, plan 9 P9-1.2) also enqueues a `case.gateR
 `condition.wipe_certificate` (a device's data-wipe certificate, P9-6.7); a rental device's decontamination facts
 (`DECON_FIELDS`, P9-11.6) re-check the `medical_rental` cases held on it. A `condition`
 `grade` or `test_result` fact (the workbench grade, P9-3.5) enqueues a `case.reevaluate` job for each open tool-fleet case
-of that serial.
+of that serial. These re-checks run at `jobs.EVIDENCE_PRIORITY`, before bulk jobs and sweeps (lead decision, 28 Nov).
 """
 
 import hashlib
@@ -103,6 +103,12 @@ def _dumps(v: Any) -> str:
     return json.dumps(v, default=str)
 
 
+def _recheck(session: Session, kind: str, field: str, key: str) -> None:
+    """Queue one re-check of a case on new evidence (deduped), ahead of bulk work and sweeps (`jobs.EVIDENCE_PRIORITY`): a
+    certificate that arrives behind hundreds of queued jobs still releases its case within the minute."""
+    jobs.enqueue(session, kind, {field: key}, priority=jobs.EVIDENCE_PRIORITY, dedupe_key=f"{kind}:{key}")
+
+
 def apply(session: Session, source_id: str, facts: list[Fact], default_confidence: float | None = None) -> int:
     """Record the facts of one source and update the canonical values and conflicts they touch. Returns facts written."""
     now = datetime.now(UTC)
@@ -138,10 +144,10 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         _settle(session, model, key, field, now)
     # new evidence may release the cases held for it (plan 9, P9-1.2): one recheck job per asset (deduped)
     for asset_key in sorted({compliance_asset(f.key) for f in facts if f.model == "compliance"}):
-        jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+        _recheck(session, "case.gateRecheck", "asset_key", asset_key)
     # a device's wipe certificate may release the cases held on it (plan 9, P9-6.7): one recheck job per device (deduped)
     for key in sorted({f.key for f in facts if f.model == "condition" and f.field == "wipe_certificate"}):
-        jobs.enqueue(session, "case.gateRecheck", {"asset_key": key}, dedupe_key=f"case.gateRecheck:{key}")
+        _recheck(session, "case.gateRecheck", "asset_key", key)
     # a change of a contract line re-checks the cases held on it (plan 9, P9-3.6): one recheck job per serial (deduped)
     lines = sorted({f.key for f in facts if f.model == "contract_line"})
     if lines:
@@ -153,7 +159,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
             {"k": lines},
         ).scalars()
         for asset_key in sorted(held):
-            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+            _recheck(session, "case.gateRecheck", "asset_key", asset_key)
     # facts that can release a gate hold re-check the cases held on that asset, one recheck job per asset (deduped):
     # a car's title (P9-9.8), a rental device's decontamination (P9-11.6), a telecom unit's inventory record (P9-10.6)
     for model, fields, template in (
@@ -175,7 +181,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
             {"k": keys, "t": template},
         ).scalars()
         for asset_key in sorted(held):
-            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+            _recheck(session, "case.gateRecheck", "asset_key", asset_key)
     # a device's reset record releases its line of the open telecom CPE lot that holds it (plan 9, P9-12.6): one job per lot
     resets = sorted({f.key for f in facts if f.model == "condition" and f.field == "factory_reset"})
     if resets:
@@ -187,7 +193,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
             {"k": resets},
         ).scalars()
         for asset_key in sorted(lots):
-            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+            _recheck(session, "case.gateRecheck", "asset_key", asset_key)
     # a late workbench grade re-evaluates the open tool-fleet cases of the serial (plan 9, P9-3.5): one job per case (deduped)
     for serial in sorted({f.key for f in facts if f.model == "condition" and f.field in GRADE_FIELDS}):
         ids = session.execute(
@@ -198,7 +204,7 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
             {"k": serial},
         ).scalars()
         for case_id in list(ids):
-            jobs.enqueue(session, "case.reevaluate", {"case_id": case_id}, dedupe_key=f"case.reevaluate:{case_id}")
+            _recheck(session, "case.reevaluate", "case_id", case_id)
     return len(facts)
 
 

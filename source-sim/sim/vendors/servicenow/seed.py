@@ -622,6 +622,10 @@ def _tickets(R: _Rows, as_of: datetime) -> None:
         if n == 42:  # the sample ticket: a US CRH motor fault at 18 months under fleet cover
             account, market, site, loaner = SAMPLE_ACCOUNT, "US", "Austin", False
             lines = [_line("CRH-46042", "CRH", 18, "MOT", "fleet", "2027-06-30")]
+        if n == 30:  # the held upgrade: a US BRK motor fault at 85% of life under fleet cover, opened after the 1 Oct tables,
+            # so the estimate is priced on the tables in force (no GR-S3) and the credit (25%, capped at 400) is Sales' (GR-C1)
+            opened = (as_of - timedelta(days=2)).replace(hour=9, minute=0, second=0, microsecond=0)  # the seed drew a US account
+            lines = [_line("BRK-46030", "BRK", 41, "MOT", "fleet", "2027-06-30")]
         if n == 50:  # the sample batch: 22 lines, 9 past 50% of life without cover, 11 under it, 2 covered CRH
             account, market, site, batch, role, loaner = "ACC-US-0057", "US", "Denver", "BATCH-0050", "Fleet desk", False
             lines = []
@@ -651,6 +655,17 @@ def _tickets(R: _Rows, as_of: datetime) -> None:
             state=6 if 31 <= n <= 40 else 1,  # ten resolved, forty open
             opened_at=opened,
         )
+
+
+def ticket_serials() -> list[str]:
+    """Every tool serial the seeded tickets name, once each, in ticket order. The fleet contract mock gives each one an active
+    line (sim/generic/specs/fleet_contracts.py), so the service desk's tools pass the contract-right gate GR-07."""
+    R = _Rows()
+    _tickets(R, datetime(2026, 11, 7, tzinfo=UTC))  # the serials come from the seeded source alone, not from the date
+    out: list[str] = []
+    for row in R.rows["sn_customerservice_case"]:
+        out += [ln["serial"] for ln in json.loads(row["u_lines"]) if ln["serial"] not in out]
+    return out
 
 
 def _offers(R: _Rows, as_of: datetime) -> None:
