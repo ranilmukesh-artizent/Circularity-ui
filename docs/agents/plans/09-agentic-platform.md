@@ -926,7 +926,7 @@ each story went.
 - [x] P9-3.19 Batteries valued as their own class
 - [x] P9-3.20 Fit-for-use threshold owned by Quality
 - [x] P9-3.21 Paths agree and order invariant for tool returns
-- [ ] P9-3.22 Phase 3 gate
+- [x] P9-3.22 Phase 3 gate
 - [x] P9-4.1 Service desk mocks with repair history and offers
 - [x] P9-4.2 Per-market decision tables with maker-checker
 - [x] P9-4.3 One case per service ticket or batch
@@ -939,7 +939,7 @@ each story went.
 - [x] P9-4.10 Test a credit before offering it
 - [x] P9-4.11 Take-up model learned from past offers
 - [x] P9-4.12 Service desk browser smoke
-- [ ] P9-4.13 Phase 4 gate
+- [x] P9-4.13 Phase 4 gate
 - [x] P9-5.1 Refresh case per contract entering the window
 - [x] P9-5.2 Keep, like-life swap or upgrade per tool
 - [x] P9-5.3 Like-life units matched and reserved once
