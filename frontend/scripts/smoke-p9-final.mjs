@@ -139,7 +139,7 @@ async function step(name, fn) {
 // ---------------------------------------------------------------- sources and cases
 const packDoc = (key) => JSON.parse(readFileSync(path.join(ROOT, 'backend/di/services/modeler/packs', key + '.json'), 'utf8'));
 const lastRun = async (p, sid) => (await getJson(p, '/api/screens/integration/sources/' + encodeURIComponent(sid)))?.sync_history?.[0] || null;
-async function syncAndWait(p, sid) {
+async function syncAndWait(p, sid, ms = SYNC) {
   const before = JSON.stringify(await lastRun(p, sid));
   await must(p, 'source.sync', { source_id: sid });
   return until(
@@ -148,7 +148,7 @@ async function syncAndWait(p, sid) {
       return h && JSON.stringify(h) !== before && h.ok ? h : null;
     },
     `${sid} did not finish a sync`,
-    SYNC,
+    ms,
     p,
   );
 }
@@ -563,9 +563,11 @@ async function approvals(pack) {
     // the flow's 0.75): the repair log and the telematics are synced (smoke-p9-3 steps 2 and 5); the sync queues a
     // re-evaluation of each tool's open cases, after which a clean return is routed to the standing policy
     const dev = await as('developer');
+    // each sync is waited for, on a longer clock: on a loaded machine the repair log's first sync (3,358 records) took 13
+    // minutes, past the one SYNC wait that used to cover both syncs and the routing (writer 108, run 2)
     for (const sid of ['repairlog', 'tooltel']) {
       await must(dev, 'source.reconnect', { source_id: sid });
-      await must(dev, 'source.sync', { source_id: sid });
+      await syncAndWait(dev, sid, 3 * SYNC);
     }
     await until(
       async () => {
