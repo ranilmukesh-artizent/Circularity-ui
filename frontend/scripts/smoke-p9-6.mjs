@@ -204,7 +204,7 @@ async function tabText(p, id, stage, key, label) {
   await p.waitForTimeout(400);
   return panel.innerText();
 }
-const tabHas = async (p, id, stage, key, label, rx, what) => {
+const tabHas = async (p, id, stage, key, label, rx, what, ms = UI) => {
   let t = '';
   await until(
     async () => {
@@ -212,7 +212,7 @@ const tabHas = async (p, id, stage, key, label, rx, what) => {
       return rx.test(t);
     },
     `the "${label}" tab of case ${id} does not show ${what}`,
-    UI,
+    ms,
     p,
   ).catch((e) => {
     throw new Error(`${e.message}: ${t.replace(/\s+/g, ' ').slice(0, 220)}`);
@@ -312,7 +312,7 @@ await step('4 Payout and wipe: $410 -> $385.40 (-6%); BATCH-0007 waits for 12 of
   }
   const waitingText = /Waiting for the wipe certificate \(batch BATCH-0007: (\d+) of 40 waiting\)/;
   const a = await needCase(admin, UNWIPED[0]);
-  const t0 = await tabHas(admin, a, 5, 'compliance', 'Compliance', waitingText, '"Waiting for the wipe certificate (batch BATCH-0007: 12 of 40 waiting)"');
+  const t0 = await tabHas(admin, a, 5, 'compliance', 'Compliance', waitingText, '"Waiting for the wipe certificate (batch BATCH-0007: 12 of 40 waiting)"', SYNC);
   if (waitingText.exec(t0)[1] !== '12') throw new Error('the batch shows ' + waitingText.exec(t0)[0] + ', not 12 of 40');
   // the lab's wipe tool posts a certificate for one device; the event queues a delta sync of dvlab (the case releases on its own)
   const token = await labToken();
@@ -338,7 +338,7 @@ await step('4 Payout and wipe: $410 -> $385.40 (-6%); BATCH-0007 waits for 12 of
     admin,
   );
   const b = await needCase(admin, UNWIPED[1]);
-  await tabHas(admin, b, 5, 'compliance', 'Compliance', /Waiting for the wipe certificate \(batch BATCH-0007: 11 of 40 waiting\)/, '"11 of 40 waiting" for another device of the batch');
+  await tabHas(admin, b, 5, 'compliance', 'Compliance', /Waiting for the wipe certificate \(batch BATCH-0007: 11 of 40 waiting\)/, '"11 of 40 waiting" for another device of the batch', SYNC);
   return `${a} released (${t1.split('\n').find((l) => /Data wipe/.test(l))}); ${b} still waits, 11 of 40`;
 });
 
