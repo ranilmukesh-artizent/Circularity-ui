@@ -222,7 +222,9 @@ def test_dv_01_the_hook_opens_in_the_sync_session_and_a_dry_run_writes_nothing(m
     monkeypatch.setattr(adapter, "flat", lambda *a, **k: iter(()))
     with SessionLocal() as s:
         client = SimpleNamespace(session=s, source_id="dvlab")
-        list(adapter.read("disputes", "/disputes", "disputeId")(client, None))  # the last resource: the hook
+        list(adapter.read("disputes", "/disputes", "disputeId")(client, None))  # reading opens nothing (P9-13.11)
+        assert len(device_tradeins.pending(s, ORG)) == 1
+        adapter.after_sync(s)  # di.connectors.sync calls it once the records are stored as facts
         assert (
             len(device_tradeins.pending(s, ORG)) == 0
             and s.execute(

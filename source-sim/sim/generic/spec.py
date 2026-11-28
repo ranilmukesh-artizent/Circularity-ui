@@ -64,6 +64,7 @@ class Resource:
     update: bool = False  # PATCH {path}/{id}
     id_format: str = "{n:06d}"  # id for created documents, from a per-resource counter
     event: str | None = None  # outbox event type prefix, e.g. "manhattan.reservation" -> ".created", ".updated"
+    stamps: tuple[str, ...] = ()  # fields a POST without them gets at the simulated time, e.g. a listing's "listedAt"
 
 
 def _default_error(status: int, code: str, message: str) -> dict:  # noqa: ARG001 - same signature as the specs' error builders

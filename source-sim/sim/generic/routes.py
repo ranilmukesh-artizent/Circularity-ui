@@ -240,6 +240,7 @@ def build(spec: Spec) -> Mock:
                         return err(409, "conflict", f"{res.name} {item_id} already exists")
                     at = now()
                     doc = body | {res.id_field: item_id, "createdAt": body.get("createdAt") or at.isoformat()}
+                    doc |= {f: at.isoformat() for f in res.stamps if not doc.get(f)}
                     conn.execute(insert(docs).values(resource=res.name, id=item_id, doc=doc, updated_at=at))
                     if res.event:
                         events.emit(conn, spec.source_id, f"{res.event}.created", item_id, doc, at)

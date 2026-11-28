@@ -217,6 +217,23 @@ def test_listing_links_case_by_imei():
     assert count("device_listing") == 2
 
 
+def test_a_listing_without_listed_at_is_held_and_the_others_land():
+    """A listing the market serves without `listedAt` (one the app posted before the mock stamped it) is held in
+    `failed_record` with its payload; it does not fail the read, and the other listings land (P9-13.11)."""
+    bare = {k: v for k, v in listing(2, imei="359990000000001").items() if k != "listedAt"}
+    with SessionLocal() as s:
+        got = read(s, "listings", [listing(1), bare])
+        s.commit()
+    assert [r.ext_id for r in got] == ["LST-0001"] and count("device_listing") == 1
+    with engine.begin() as conn:
+        held = conn.execute(
+            text("SELECT field, rule, step, payload FROM failed_record WHERE source_id = 'dvmkt' AND ext_id = 'LST-0002'")
+        ).all()
+        conn.execute(text("DELETE FROM failed_record WHERE source_id = 'dvmkt' AND ext_id = 'LST-0002'"))
+    got_held = [(h.field, h.rule, h.step, h.payload["imei"]) for h in held]
+    assert got_held == [("listedAt", "required", "connector", "359990000000001")]
+
+
 def test_live_listings_are_as_of_and_by_channel():
     land("listings", [listing(1), listing(2, channel="Buy Now", listedAt="2026-09-10T10:00:00+00:00"), listing(3, status="sold")])
     with SessionLocal() as s:
@@ -319,6 +336,33 @@ def test_sale_links_cases_by_imei():
     land("sales", [sale])
     with SessionLocal() as s:
         assert device_market.sales(s, date(2026, 8, 1), date(2026, 9, 1))[0].case_ids == ["RT-9001"]
+
+
+def test_sales_of_a_sku_count_the_lab_trade_ins_before_their_canonical_facts():
+    """GR-D8 reads the sales of the case's SKU in 90 days: a sold device counts by the lab's trade-in row too, whether or not
+    its canonical facts are stored (P9-13.11)."""
+    from di.services.device.inputs import sales_of_sku
+
+    other = "359990000000001"
+    with engine.begin() as conn:
+        rows = (
+            ("TI-1", IMEI, '{"model": "iPhone 14", "storageGb": 128}'),
+            ("TI-2", other, '{"model": "Pixel 8", "storageGb": 256}'),
+        )
+        for tid, imei, sku in rows:
+            conn.execute(
+                text(
+                    "INSERT INTO device_tradein (trade_in_id, imei, sku, quote, partner, bulk, received_at, source) "
+                    "VALUES (:t, :i, CAST(:k AS jsonb), '{}', 'P01', false, now(), 'dvlab')"
+                ),
+                {"t": tid, "i": imei, "k": sku},
+            )
+    land("sales", [{"saleId": "SALE-1", "imeis": [IMEI, other], "price": 600.0, "fees": 72.0, "buyerReturns": 0,
+                    "settledAt": "2026-09-26T12:00:00+00:00"}])  # fmt: skip
+    with SessionLocal() as s:
+        got = {k: sales_of_sku(s, k, date(2026, 10, 7)) for k in (KEY, "Pixel 8|256", "Galaxy S24|128")}
+        assert got == {KEY: 1, "Pixel 8|256": 1, "Galaxy S24|128": 0}
+        assert sales_of_sku(s, KEY, date(2027, 2, 1)) == 0  # older than 90 days
 
 
 # ------------------------------------------------------------------ a dry run changes nothing

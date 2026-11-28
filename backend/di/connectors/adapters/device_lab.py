@@ -10,9 +10,11 @@ Not one of the demo's 21 sources: it starts unregistered (no source_system row),
 unchanged. di.connectors.extra registers it and source.reconnect connects it. It implements no registry entry of its
 own: it fills the canonical models `asset` and `condition` (the evidence the device pack reads, entry I-3) and lands two
 tables, `device_tradein` and `device_dispute` (migration 0047). Rows are upserts on the source's id, so a sync twice is a
-sync once, and a row's `case_id` (set when a case opens) is never overwritten. After the last resource is read, the
-post-sync hook (`open_cases`, P9-6.4) opens a case for each pending trade-in (di.services.device.intake), in the same
-session: a dry or failed run undoes the cases with the rows. The rows are landed by the readers in the
+sync once, and a row's `case_id` (set when a case opens) is never overwritten. Once the sync has stored its records as
+canonical facts, the post-sync hook (`after_sync` -> `open_cases`, P9-6.4, called by di.connectors.sync) opens a case for
+each pending trade-in (di.services.device.intake), in the same session, so the valuation reads the diagnostics, grades and
+SKUs of this sync (P9-13.11; it used to run after the last resource was read, before the facts were stored). A dry or
+failed run opens none. The rows are landed by the readers in the
 sync's own session (`client.session`), so a failed, dry or sample run undoes them with it; `map` makes only facts.
 Nothing is ever written to the source.
 
@@ -111,9 +113,6 @@ def land_dispute(s: Session, doc: dict[str, Any]) -> None:
     )  # fmt: skip
 
 
-LAST = list(PATHS)[-1]  # the resource read last: the post-sync hook runs after it
-
-
 def open_cases(s: Session) -> None:
     """The post-sync hook (P9-6.4): one case per pending trade-in (a lot case per bulk batch) of each org whose device flow is
     published (di.services.device.intake). In the sync's session, in a savepoint, so a dry or failed run undoes the cases
@@ -154,10 +153,12 @@ class DeviceLabAdapter(GenericAdapter):
                 elif name == "disputes":
                     land_dispute(client.session, rec.payload)
                 yield rec
-            if name == LAST:  # every resource has been read: open the cases of the trade-ins that have none (P9-6.4)
-                open_cases(client.session)
 
         return reader
+
+    def after_sync(self, session: Session) -> None:
+        """Called by di.connectors.sync once the records are stored: open the cases of the trade-ins that have none."""
+        open_cases(session)
 
     def map(self, record: Record) -> list[Fact]:
         p = record.payload
