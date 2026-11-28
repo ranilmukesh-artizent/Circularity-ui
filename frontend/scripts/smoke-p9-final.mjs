@@ -27,9 +27,9 @@
  *      there is one) is approved by `approver` on its case page (Approve, I reviewed evidence snapshot, Approve and send
  *      instruction). Then only source-sim's clock moves (action: /_sim/clock/advance) until the instructions of both cases are
  *      sent and at least one step of each is acknowledged.
- *      Used cars (lead decision 28 Nov): a car under the flow's 0.75 confidence stays a person's decision. Every sample vehicle
- *      of the used-car systems is opened (action: case.open, VINs ...001-...100) and the policy is tried on those that may
- *      clear 0.75. If none does, the step proves the hold instead: the submit's answer names each tried car's confidence under
+ *      Used cars (lead decision 28 Nov): a car under the flow's 0.75 confidence stays a person's decision. The sample vehicles
+ *      of the used-car systems are opened in batches of 10 (action: case.open, VINs ...001-...100) until one may clear 0.75,
+ *      and the policy is tried on those that may. If none of the 100 does, the step proves the hold instead: the submit's answer names each tried car's confidence under
  *      0.75 (`policy.reasons`), and the approver's case and its instructions are proved as above. The PASS line starts with
  *      "APPROVED BY POLICY" or "HOLD" to say which.
  *
@@ -368,26 +368,38 @@ P.used_cars = {
     this.cands = [c[1], c[90], c[3], c[2]];
     return `cases ${Object.entries(c).map(([n, id]) => `...${String(n).padStart(3, '0')}=${id}`).join(', ')} (action: case.open)`;
   },
-  /** Step 4b (lead decision 28 Nov): a used car under the flow's 0.75 stays a person's decision, so the policy is tried on every
-   *  sample vehicle of the used-car systems: the 60 returned leases (...001-...060) and the 40 trade-ins (...061-...100) are
-   *  opened as cases (action: case.open; the ones step 4a opened are kept), four at a time. A VIN that does not open is skipped. */
-  async openAll() {
+  /** Step 4b (lead decision 28 Nov): a used car under the flow's 0.75 stays a person's decision, so the policy is tried on the
+   *  sample vehicles of the used-car systems: the 60 returned leases (...001-...060) and the 40 trade-ins (...061-...100) are
+   *  opened as cases (action: case.open; the ones step 4a opened are kept) in batches of 10, and the opening stops as soon as one
+   *  case that awaits approval clears 0.75 (`clears(id)`; opening all 100 took 19 minutes on a loaded machine, writer 114). If
+   *  none does, all 100 are open. A VIN that does not open is skipped. */
+  async openAll(clears) {
     const ids = new Set(this.ids);
     const skipped = [];
+    for (const id of ids) if (await clears(id)) return { opened: ids.size, skipped, batches: 0 };
     const ns = Array.from({ length: 100 }, (_, k) => k + 1).filter((n) => ![1, 2, 3, 7, 90].includes(n));
-    for (let k = 0; k < ns.length; k += 4) {
+    let batches = 0;
+    for (let k = 0; k < ns.length; k += 10) {
+      batches += 1;
       const got = await Promise.all(
-        ns.slice(k, k + 4).map((n) =>
+        ns.slice(k, k + 10).map((n) =>
           openCase('used_cars', `${ORG}:${vin(n)}`, n > 60 ? 'trade_in' : 'lease_end', { vin: vin(n), return_date: '2026-11-20' }).catch((e) => {
             skipped.push(`...${String(n).padStart(3, '0')}: ${String(e.message).slice(0, 80)}`);
             return null;
           }),
         ),
       );
-      for (const id of got) if (id) ids.add(id);
+      let hit = false;
+      for (const id of got) {
+        if (!id || ids.has(id)) continue;
+        ids.add(id);
+        if (!hit && (await clears(id))) hit = true;
+      }
+      this.ids = [...ids];
+      if (hit) break;
     }
     this.ids = [...ids];
-    return { opened: this.ids.length, skipped };
+    return { opened: this.ids.length, skipped, batches };
   },
 };
 /** The policy's confidence of a case as the server reads it (di.services.agents.stages.valuation `confidence`): the best route
@@ -425,11 +437,13 @@ P.telecom_network = {
     }
     this.show = c[1]; // SN-TN-0001: Redeploy to a site
     this.ids = Object.values(c);
-    // the trade compliance approval (AP-TN-EXP, an open item that keeps any policy off the case) opens on the RRU-4410s, whose
-    // bids are screened clear: SN-TN-0007 waits for the approver; the RAD-7700 SN-TN-0006 (Refurbish as a spare, no open item)
-    // is the policy's (writer 104, pre-check of run 2: the roles were the other way round)
-    this.person = c[7];
-    this.cands = [c[6], c[1], c[15], c[12]];
+    // the trade compliance approval (AP-TN-EXP) opens on SN-TN-0001, -0006, -0007 and -0012, but holds a case only when its
+    // route is a resale (an approval on a route not chosen does not hold it, writer 108): SN-TN-0006 and -0007 recommend
+    // Refurbish as a spare and the policy approves either (writer 118, debug run 1: SP-2 approved SN-TN-0007, the approver's
+    // case). The approver takes SN-TN-0001 (Redeploy to a site, $9,435), the dearest that awaits approval: the policy's value
+    // stops under it (ensurePolicy); SN-TN-0006 ($2,243) is the policy's
+    this.person = c[1];
+    this.cands = [c[6], c[7], c[15], c[12]];
     return `cases ${Object.entries(c).map(([n, id]) => `${sn(n)}=${id}`).join(', ')} (action: case.open)`;
   },
 };
@@ -574,6 +588,11 @@ async function ensurePolicy(pack, org, below, cands = [], person = null) {
       if (c && c.stage === 'awaiting_approval' && !c.approval && !c.blocked && typeof c.recommendation?.net === 'number') vals.push(Math.abs(c.recommendation.net));
     }
     if (vals.length) below = Math.ceil(Math.max(...vals) / 1000) * 1000;
+    // the person's case is kept over the policy's value too where it is dearer than every candidate: its own hold may not apply
+    // to the route it recommends (an approval item on a route not chosen does not hold the case, writer 108; debug run of
+    // writer 118: SN-TN-0007's trade compliance item is for resale, its route is Refurbish as a spare, so SP-2 approved it)
+    const pv = person ? (await caseScreen(admin, person))?.recommendation?.net : null;
+    if (vals.length && typeof pv === 'number' && Math.abs(pv) > Math.max(...vals)) below = Math.min(below, Math.floor(Math.abs(pv)) - 1);
   }
   const limit = st.pack_limit ?? 20000;
   const rules = { max_value: below != null ? (st.pack_limit != null ? Math.min(limit, below) : below) : limit, min_confidence: Math.max(0.75, st.threshold || 0) };
@@ -651,19 +670,24 @@ async function approvals(pack) {
   let pool = '';
   if (pack === 'used_cars') {
     // lead decision 28 Nov: a used car under 0.75 stays a person's decision (the threshold is never lowered). Every sample
-    // vehicle is opened, ranked by the policy's confidence (confOf), and the policy is tried on those that may clear 0.75
-    const all = await cfg.openAll();
+    // vehicles are opened in batches of 10 until one may clear 0.75 by the policy's confidence (confOf; all 100 if none does),
+    // ranked by it, and the policy is tried on those that may clear 0.75
     const est = [];
-    for (const id of cfg.ids) {
-      if (id === cfg.person) continue;
-      const c = await caseScreen(admin, id);
-      if (c && c.stage === 'awaiting_approval' && !c.approval && !c.blocked && typeof c.recommendation?.net === 'number') est.push([confOf(c) ?? 0, id]);
-    }
+    const clears = async (id) => {
+      if (id === cfg.person) return false;
+      // a case just opened is valued on the open; a slow stack may draw it a moment later
+      const c = await until(async () => { const x = await caseScreen(admin, id); return x && (x.recommendation || x.stage !== 'awaiting_approval') ? x : null; }, '', 20000, admin).catch(() => null);
+      if (!(c && c.stage === 'awaiting_approval' && !c.approval && !c.blocked && typeof c.recommendation?.net === 'number')) return false;
+      const v = confOf(c) ?? 0;
+      est.push([v, id]);
+      return v >= 0.75;
+    };
+    const all = await cfg.openAll(clears);
     est.sort((x, y) => y[0] - x[0]);
     const clear = est.filter(([v]) => v >= 0.75).map((x) => x[1]);
     // none may clear: the three closest are submitted, to read why the policy leaves them to a person
     cfg.cands = clear.length ? clear : est.slice(0, 3).map((x) => x[1]);
-    pool = `${all.opened} used-car cases opened${all.skipped.length ? ` (${all.skipped.length} VINs did not open: ${all.skipped.slice(0, 3).join('; ')})` : ''}, ${est.length} await approval, ${clear.length} at 0.75 or over (best ${est[0] ? `${est[0][1]} ${est[0][0].toFixed(2)}` : 'none'})`;
+    pool = `${all.opened} used-car cases opened (${all.batches} batches of 10)${all.skipped.length ? ` (${all.skipped.length} VINs did not open: ${all.skipped.slice(0, 3).join('; ')})` : ''}, ${est.length} read await approval, ${clear.length} at 0.75 or over (best ${est[0] ? `${est[0][1]} ${est[0][0].toFixed(2)}` : 'none'})`;
     say('  4b', pool);
   }
   const pol = await ensurePolicy(pack, cfg.org, below, cfg.cands, cfg.person);
