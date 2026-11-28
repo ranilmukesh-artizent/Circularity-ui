@@ -60,6 +60,7 @@ CLASS_VOLUME = {"CMH": 1300, "BRK": 900, "DCD": 700, "CRH": 1700, "AGR": 800, "L
 FAULT_SHARE = {"MOT": 0.40, "GBX": 0.25, "ELE": 0.20, "WEA": 0.15}
 BAND_SHARE = {"0-12": 0.15, "13-24": 0.35, "25-36": 0.30, "37+": 0.20}
 PINNED = {("CRH", "MOT", "13-24"): 186, ("DCD", "ELE", "37+"): 37}  # the A 1.9.1 samples
+TIGHT = {("CRH", "MOT", "13-24")}  # the sample ticket CS0010042's cell: labour 2.0 to 2.5 h (`_repair`)
 BAND_MONTHS = {"0-12": (1, 12), "13-24": (13, 24), "25-36": (25, 36), "37+": (37, 72)}
 REFURBISHED_PER_CLASS = 30
 
@@ -93,7 +94,10 @@ def _repair(rng: random.Random, cls: str, fault: str, band: str) -> dict:
     if rng.random() < 0.18:  # a second part, the class's cheapest wear item
         idx = idx + [len(PARTS[cls]) - 1] if idx[-1] != len(PARTS[cls]) - 1 else idx
     parts = [{"PART_NUMBER": f"{cls}-{i}", "QUANTITY": 1} for i in idx]
-    hours = round(rng.randrange(4, 15) * 0.25, 2)
+    draw = rng.randrange(4, 15)
+    # the sample ticket's cell is a well-known repair (2.0 to 2.5 h), so its estimate is priced without a technician (plan 9
+    # P9-4 demo: "186 similar repairs", within GR-S1's 30 % range); the same draw keeps every other row as it was
+    hours = 2.0 + 0.25 * (draw % 3) if (cls, fault, band) in TIGHT else round(draw * 0.25, 2)
     fee = rng.random() < 0.25
     usd = sum(PARTS[cls][i][1] for i in idx) + hours * LABOUR_RATE_USD[market] + (TEST_FEE_USD if fee else 0.0)
     cur = CURRENCY[market]

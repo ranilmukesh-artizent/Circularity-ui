@@ -347,10 +347,13 @@ def finance(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: 
         raise NotApplicable("no actual cost lines")
     ref = journal_ref(c["exec"]["ref"])
     plant = S4_PLANTS.get(c["location"])
+    # Only an industrial asset is a material in S/4 (MARA, one per returned asset); a pack's asset (a tool serial, a device) is
+    # not, and S/4 refuses an item naming a material it lacks: those lines go without one, like the fee and residual postings
+    material = c["assetId"] if (c.get("template") or "industrial") == "industrial" else None
     items = []
     for n, ln in enumerate(lines, start=1):
         # a cost (negative term) is a debit; a value (avoided purchase, residual) a credit
-        items.append(_item(n, GL.get(ln["kind"], GL_OTHER), -ln["act"], ln["label"], ln["kind"], c["assetId"], plant))
+        items.append(_item(n, GL.get(ln["kind"], GL_OTHER), -ln["act"], ln["label"], ln["kind"], material, plant))
     total = sum(ln["act"] for ln in lines)
     items.append(_item(len(lines) + 1, GL_CLEARING, total, f"Decision clearing {c['id']}", CLEARING, None, None))
     doc, detail = post_journal(s, ins, ref, f"Actuals {c['id']}", items)

@@ -240,6 +240,11 @@ def _value(c: Case, k: str, p: Params, ctx: _Ctx) -> PathValue:
         own_cid = c.get("contract")  # a return takes the renewal of its own contract; another's only when its own has none
         if own_cid and any(d.get("contract") == own_cid for d in cands if d["kind"] == "lease"):
             cands = [d for d in cands if d["kind"] != "lease" or d.get("contract") == own_cid]
+        # a re-issue takes another contract's renewal only when the fleet writer can issue the tool to it (tool_demand marks it
+        # `issuable` False when its contract has no line the re-issue writes to, as writers_fleet.fleet_issue reads the lines);
+        # a refurbishment has no fleet step (execution.steps: refurb), so it keeps every renewal
+        if k == "release":
+            cands = [d for d in cands if d["kind"] != "lease" or d.get("contract") == own_cid or d.get("issuable", True)]
         mr = FIN["rate"] / 12
 
         def lv(d: dict[str, Any]) -> dict[str, float]:

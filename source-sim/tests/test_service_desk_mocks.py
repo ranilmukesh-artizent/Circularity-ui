@@ -59,6 +59,27 @@ def test_repair_history_counts_match_samples():
     assert history.fault_parts("CRH", "MOT") == [0]
 
 
+def test_sample_cell_is_narrow_enough_to_price_without_a_technician():
+    # CS0010042 (CRH, MOT, 18 months) is priced without a technician in the plan-9 demo: GR-S1 wants (p90 - p10) / point
+    # <= 30 %. The cell's labour is 2.0 to 2.5 h (1.0 to 3.5 h gave 42 %, smoke-p9-4 step 3), at a fixed rate and fee.
+    import statistics
+
+    rows = history.generate(seed=26110)
+    key = ("CRH", "MOT", "13-24")
+    fixed = [r for r in rows if r["REPAIR_TYPE"] == "Repair and Return"]
+    cell = [r for r in fixed if (r["MODEL_CLASS"], r["FAULT_CODE"], history.age_band(r["AGE_MONTHS"])) == key]
+    assert len(cell) == 186 and {r["LABOUR_HOURS"] for r in cell} <= {2.0, 2.25, 2.5}
+    price = dict(enumerate(p for _, p in history.PARTS["CRH"]))
+    parts = [sum(price[int(p["PART_NUMBER"].split("-")[1])] for p in r["PARTS"]) for r in cell]
+    totals = sorted(x + r["LABOUR_HOURS"] * 58 + 14 for x, r in zip(parts, cell, strict=True))
+    q = statistics.quantiles(totals, n=10, method="inclusive")
+    assert (q[8] - q[0]) / statistics.median(totals) <= 0.30
+    # every other cell keeps its rows: the same random draws, so the counts and the other cells' hours are as before
+    mine = {r["REPAIR_NUMBER"] for r in cell}
+    other = [r["LABOUR_HOURS"] for r in fixed if r["REPAIR_NUMBER"] not in mine]
+    assert min(other) == 1.0 and max(other) == 3.5
+
+
 def test_get_repair_history_pages_and_filters(client):
     first = history_page(client, P_MODEL_CLASS="CRH", P_FAULT_CODE="MOT", P_MAX_RECORDS=500)
     total = int(first["X_TOTAL_COUNT"])

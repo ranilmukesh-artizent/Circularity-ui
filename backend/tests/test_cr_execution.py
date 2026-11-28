@@ -33,8 +33,8 @@ from di.services.instructions import queue, writers
 from tests.helpers import call, client, h
 from tests.test_cr_tool_action import ORG, refresh_case  # noqa: F401 - the fixture: FC-30140, one swap and one keep, US
 
-FLEET = "/fleet/api/v1"
-PARTS = "/parts/api"
+FLEET = ""  # relative to the adapter's base path (writers.client adds /fleet/api/v1)
+PARTS = ""
 UNITS = [("RU-7001", 58, "A"), ("RU-7002", 70, "A")]
 
 
