@@ -736,7 +736,9 @@ async function approvals(pack) {
         moved[id].to = doneSteps(c);
         moved[id].of = (c?.exec?.steps || []).length;
         moved[id].stage = c?.stage;
-        if (!c?.exec || moved[id].to <= moved[id].from) all = false;
+        // every step already done counts: the policy's case can be acknowledged in full while the approver approves the
+        // other, before `from` is read (writer 114, debug run 2: RT-1151 2 of 2 done, from 2)
+        if (!c?.exec || (moved[id].to <= moved[id].from && !(moved[id].of > 0 && moved[id].to === moved[id].of))) all = false;
       }
       if (all) return true;
       await advance(3);

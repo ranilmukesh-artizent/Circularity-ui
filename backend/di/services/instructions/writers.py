@@ -594,7 +594,7 @@ def salvage_sale(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # n
 
 
 # ---------------------------------------------------------------- the close of a used-car lease return (P9-9.20)
-UC_LEASE = "/vehicle-lease/api/v1"
+UC_LEASE = ""  # relative to the lease adapter's base path (`/vehicle-lease/api/v1`), which `client` puts in front
 
 
 def _close_amount(ins: dict) -> tuple[str, float]:
