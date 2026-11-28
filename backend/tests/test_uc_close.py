@@ -56,6 +56,7 @@ class Stub:
         if self.source == "erp":
             Stub.calls.append(("journal", (content or b"").decode(), headers or {}))
             return _Reply(content=S4_REPLY.encode())
+        assert path == "/charges", path  # relative to the lease adapter's base path, which the real client puts in front
         Stub.calls.append((path.rsplit("/", 1)[1], json, headers or {}))
         return _Reply({"chargeId": f"CH-{len(Stub.calls):04d}", **(json or {})})
 

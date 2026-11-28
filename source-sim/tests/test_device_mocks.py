@@ -172,3 +172,27 @@ def test_wipe_create_emits_event(client, lab):
             {"s": r.json()["certificateId"]},
         ).scalar()
     assert n == 1
+
+
+def test_sales_give_every_sku_twenty_sold_devices():
+    """GR-D8 of the device pack needs 20 sales of a SKU in 90 days (`min_sales_90d`): the seed sells at least 20 distinct
+    devices of every SKU, each sale of devices of its own SKU (lead decision 28 Nov: the seed, never the guardrail)."""
+    w = devices.build()
+    sku = {t["imei"]: devices.sku_key(t["sku"]["model"], t["sku"]["storageGb"]) for t in w.tradeins}
+    sold: dict[str, set[str]] = {}
+    for s in w.sales:
+        assert all(sku[i] == s["skuKey"] for i in s["imeis"])
+        sold.setdefault(s["skuKey"], set()).update(s["imeis"])
+    assert len(sold) == 20 and min(len(v) for v in sold.values()) >= 20
+
+
+def test_listing_post_is_stamped_listed_now(client):
+    """A listing the app posts carries no `listedAt`: the market stamps it at the simulated time (the dvmkt sync reads it)."""
+    body = {"listingId": "RT-9999:offers", "imei": SAMPLE, "skuKey": "iPhone 14|128", "grade": "B", "channel": "Offers",
+            "price": 300.0, "offers": 0, "status": "live"}  # fmt: skip
+    r = client.post(MKT + "/listings", headers=MKT_H, json=body)
+    assert r.status_code == 201, r.text
+    assert r.json()["listedAt"] and r.json()["listedAt"] == r.json()["createdAt"]
+    stamped = {"listedAt": "2026-10-01T09:00:00+00:00"}
+    r = client.post(MKT + "/listings", headers=MKT_H, json=body | {"listingId": "RT-9999:auction"} | stamped)
+    assert r.status_code == 201 and r.json()["listedAt"] == stamped["listedAt"]

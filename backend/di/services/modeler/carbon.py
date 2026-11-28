@@ -3,7 +3,8 @@
 Owns the read of `packs/carbon.json` and `co2_avoided`, the one place a valuer asks for a route's CO2e. A pack names
 its factor set in `valuer.carbon.set`; a pack naming a set this file does not hold has no CO2e. The pack's
 `valuer.carbon.d_rule` says how the demand share d is found: `demand` (1 on a confirmed named order, the forecast
-otherwise), `low` (`params.d_low`), `transport_only` (no avoided figure, the transport kg only) or `none`.
+otherwise), `low` (`params.d_low`, else the route's `params.params.carbon_d`), `transport_only` (no avoided figure,
+the transport kg only) or `none`.
 
 Formula (B 5.7, "avoided, not inventory"): kg = (e_new x d - e_prep - e_log) x qty, rounded as the demo rounds.
 Every factor that enters the figure is returned with its own provenance (source, year, set): a figure without a factor
@@ -99,9 +100,13 @@ def co2_avoided(pack: Pack, cls: str | None, route: str, qty: float, *, confirme
         return None
     if rule == "low":
         d_low = pack.valuer.params.get("d_low")
-        if d_low is None:
+        source = "Pack parameter d_low (low-confidence demand)"
+        if d_low is None:  # a standard valuer keeps its numbers in `params.params`: its per-route `carbon_d` (used cars)
+            d_low = ((pack.valuer.params.get("params") or {}).get("carbon_d") or {}).get(route)
+            source = f"Pack parameter carbon_d.{route} (low-confidence demand)"
+        if not isinstance(d_low, int | float):
             return None
-        d_entry = {**entry["d_forecast"], "value": d_low, "source": "Pack parameter d_low (low-confidence demand)"}
+        d_entry = {**entry["d_forecast"], "value": d_low, "source": source}
     else:
         d_entry = entry["d_confirmed"] if confirmed else entry["d_forecast"]
     e_new = _factor("e_new", e_new_entry, set_name)

@@ -476,8 +476,10 @@ def credit(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # noqa: A
 
 
 # ---------------------------------------------------------------- used-car channels (P9-9.17)
-UC_DMS = "/dealer-dms/api/v1"
-UC_AUCTION = "/vehicle-auction/v1"
+# the paths are relative to the adapter's base path, which `client` already puts in front (`/dealer-dms/api/v1`,
+# `/vehicle-auction/v1`): naming it here too sent every used-car instruction to a doubled path, a 404 (P9-13.11)
+UC_DMS = ""
+UC_AUCTION = ""
 
 
 def _uc_post(s: Session, source: str, path: str, ins: dict, body: dict, id_field: str, step: bool = True) -> Sent:
@@ -592,7 +594,7 @@ def salvage_sale(s: Session, ins: dict, c: store.Case, prev: dict) -> Sent:  # n
 
 
 # ---------------------------------------------------------------- the close of a used-car lease return (P9-9.20)
-UC_LEASE = "/vehicle-lease/api/v1"
+UC_LEASE = ""  # relative to the lease adapter's base path (`/vehicle-lease/api/v1`), which `client` puts in front
 
 
 def _close_amount(ins: dict) -> tuple[str, float]:

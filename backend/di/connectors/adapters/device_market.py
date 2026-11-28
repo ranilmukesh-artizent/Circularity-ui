@@ -19,7 +19,8 @@ changes nothing). They are upserts on the source's key, so a sync twice is a syn
     sales              device_sale                   imeis; case_ids linked by IMEI the same way
     replacementDemand  device_replacement_demand     sku_key, grade_min, qty (units), unit_cost (price); `reserved` is kept
     lots               not read: the bids name their lot
-Only listings carry an org unit (the source's; None: shared).
+Only listings carry an org unit (the source's; None: shared). A record without a field its table needs is held in
+`failed_record` (step `connector`, rule `required`) and the rest of the sync goes on.
 
 The reads change nothing at the source. The one write to it is a received device's listing (`POST /listings`, the `list`
 step of an approved case, `di.services.instructions.writers.list_device`). A sale new to us settles the cases it names
@@ -36,6 +37,7 @@ from sqlalchemy.orm import Session
 from di.connectors.base import Record, Resource
 from di.connectors.generic import GenericAdapter
 from di.connectors.http import SourceClient
+from di.services.canonical.failed import hold
 from di.services.canonical.store import Fact
 
 SOURCE = "dvmkt"
@@ -152,15 +154,31 @@ class DeviceMarketAdapter(GenericAdapter):
             for row, url in self.pages(client, path, since):
                 batch.append(Record(name, str(row[id_field]), row, url, now))
                 if len(batch) >= BATCH:
-                    yield from self.land(client.session, name, batch, org)
+                    yield from self.land(client.session, name, batch, org, getattr(client, "run_id", None))
                     batch = []
-            yield from self.land(client.session, name, batch, org)
+            yield from self.land(client.session, name, batch, org, getattr(client, "run_id", None))
 
         return reader
 
     @staticmethod
-    def land(s: Session, name: str, batch: list[Record], org: str | None) -> list[Record]:
-        """Upsert a batch in the sync's session (a rolled-back run undoes it), then hand its records on."""
+    def land(s: Session, name: str, batch: list[Record], org: str | None, run_id: Any = None) -> list[Record]:
+        """Upsert a batch in the sync's session (a rolled-back run undoes it), then hand its records on. A record that lacks
+        a field the table needs (a listing without `listedAt`) is held in `failed_record` and not handed on; the others land."""
+        rows: list[dict[str, Any]] = []
+        good: list[Record] = []
+        for r in batch:
+            try:
+                rows.append(params(name, r.payload, org))
+            except KeyError as e:  # one bad record is held, the sync goes on (P9-13.11)
+                field = str(e.args[0]) if e.args else "?"
+                hold(
+                    s, run_kind="sync", run_id=run_id, source_id=SOURCE, step="connector", resource=name, ext_id=r.ext_id,
+                    field=field, rule="required", value=None, reason=f"{name}/{r.ext_id}: the record has no {field}",
+                    payload=r.payload,
+                )  # fmt: skip
+                continue
+            good.append(r)
+        batch = good
         if batch:
             ids = [r.ext_id for r in batch]
             known = (
@@ -168,7 +186,7 @@ class DeviceMarketAdapter(GenericAdapter):
                 if name == "sales"
                 else set()
             )
-            s.execute(UPSERT[name], [params(name, r.payload, org) for r in batch])
+            s.execute(UPSERT[name], rows)
             if name == "sales":  # a sale new to us settles its cases (P9-6.12); one we had does not settle again
                 from di.repositories import device_market
                 from di.services.device import settle
