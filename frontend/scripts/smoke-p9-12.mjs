@@ -14,7 +14,8 @@
  *   3  The used car of VIN SYNUC000000000044 (its pack needs replacing) opens a battery case linked from it; the battery case shows
  *      "Battery passport not yet required (from 18 Feb 2027, indicative)" (action: the car's case.open; the battery assessment
  *      is asked of the inspection mock and its clock moves one day, then uc_insp syncs).
- *   4  The core C-0004 (declared an alternator, a starter arrived) is held for fraud review; approver releases it with a reason
+ *   4  The core C-0004 (declared an alternator, a starter arrived) is held for fraud review once the agent chain triages it at
+ *      intake (action: agent.startRun, stage_chain); approver releases it with a reason
  *      on the case page (action: case.open).
  *   5  A medical capital device for another market with no UDI (SYN-MC-0005) shows "UDI missing"; engineer records the assessment
  *      "servicing" on its case page (Record assessment) (action: case.open).
@@ -276,6 +277,9 @@ await step(`3 The battery case linked from VIN ...044 shows "${NOT_YET}"`, async
 await step('4 A core with a family mismatch is held; approver releases it with a reason', async () => {
   // C-0004: declared ALT-1450, a starter (STR-2210) arrived: the signal part_family_mismatch of the core returns system (core_ret)
   const id = await openCase('auto_core', sharedKey('C-0004'), 'manual', { family: 'alternator', deposit: 85 });
+  // the X-15 triage runs in the intake stage of the agent chain, not in case.open: start the chain on the case (action:
+  // agent.startRun, as tests/test_ns_core.py does; another playbook than the autopilot is the Admin's)
+  await must(await as('admin'), 'agent.startRun', { agent: 'recover-chain', playbook: 'stage_chain', case_id: id });
   const p = await as('planner.a');
   await until(
     async () => {

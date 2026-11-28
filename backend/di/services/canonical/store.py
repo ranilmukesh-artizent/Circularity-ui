@@ -176,6 +176,19 @@ def apply(session: Session, source_id: str, facts: list[Fact], default_confidenc
         ).scalars()
         for asset_key in sorted(held):
             jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
+    # an EV's assessment also reaches an open car case that is not held (no EV step in its overlay): the recheck links the
+    # pack's battery case when the pack needs replacing (P9-12.7, gate_hold.recheck)
+    cars = sorted({f.key for f in facts if f.model == "condition" and f.field == "battery_assessment_result"})
+    if cars:
+        unheld = session.execute(
+            text(
+                "SELECT DISTINCT data ->> 'assetId' FROM case_record WHERE stage <> 'closed' AND data ->> 'assetId' = ANY(:k) "
+                "AND data ->> 'template' = 'used_cars' AND jsonb_typeof(data -> 'gateHold') IS DISTINCT FROM 'object'"
+            ),
+            {"k": cars},
+        ).scalars()
+        for asset_key in sorted(unheld):
+            jobs.enqueue(session, "case.gateRecheck", {"asset_key": asset_key}, dedupe_key=f"case.gateRecheck:{asset_key}")
     # a device's reset record releases its line of the open telecom CPE lot that holds it (plan 9, P9-12.6): one job per lot
     resets = sorted({f.key for f in facts if f.model == "condition" and f.field == "factory_reset"})
     if resets:
