@@ -13,6 +13,11 @@ by part name). `need` and `exp` are whole days from `as_of`. A record counts whe
 - no approved or executing decision of the org holds it (the recommended route's destination names it), except the decision of
   `case_id` itself, which keeps its own order.
 
+A renewal whose contract has lines on file (canonical `contract_line`) but none the fleet's re-issue writes to
+(`fleet_contracts.issuable`: a returned line of the class) is marked `issuable: False`: the valuer offers it for a re-issue only
+to a return of that same contract; a refurbishment, which has no fleet step, still takes it (smoke-p9-3 step 14: the writer
+refused FC-30120-R, a contract with no returned CMH line).
+
 Owns: the read and the mapping. Never does: value anything (the valuer, I-21), plan the queue (di.services.engine.queue, I-5),
 read a model or write. `rcq` (the recycler quote) is the case's own: "" here.
 """
@@ -23,6 +28,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.connectors.adapters import fleet_contracts
 from di.core.orgs import OrgUnit, ancestors
 from di.services.modeler.evidence import parse_time
 from di.services.modeler.valuers import tool_fleet
@@ -57,6 +63,22 @@ def _held(s: Session, org_unit_id: str, case_id: str | None) -> set[str]:
         dest = route.get("dest") or {}
         out |= {x.strip() for x in str(dest.get("id") or "").split(",") if x.strip()}
     return out
+
+
+def _not_issuable(s: Session, contracts: set[str], cls: str) -> set[str]:
+    """The contracts among `contracts` whose lines are on file and none of which the re-issue writes a `cls` tool to."""
+    rows = s.execute(
+        text("SELECT data FROM canonical WHERE model = 'contract_line' AND data ->> 'contract_id' = ANY(:c)"),
+        {"c": sorted(contracts)},
+    ).scalars()
+    seen: set[str] = set()
+    ok: set[str] = set()
+    for d in rows:
+        cid = str(d.get("contract_id"))
+        seen.add(cid)
+        if fleet_contracts.issuable(fleet_contracts.source_line(d), cls):
+            ok.add(cid)
+    return seen - ok
 
 
 def _item(kind: str, key: str, d: dict[str, Any], need: int | None, exp: int | None) -> dict[str, Any]:
@@ -109,4 +131,7 @@ def named_demand(s: Session, org_unit_id: str, cls: str, as_of: datetime, *, cas
         else:
             out[kind].append(_item(kind, key, d, days, days))
     out["proj"] = min(proj, key=lambda x: x[0])[1] if proj else None
+    if refs := {x["contract"] for x in out["lease"] if x.get("contract")}:
+        blocked = _not_issuable(s, refs, cls)
+        out["lease"] = [x | {"issuable": False} if x.get("contract") in blocked else x for x in out["lease"]]
     return out

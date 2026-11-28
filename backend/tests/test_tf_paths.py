@@ -296,3 +296,41 @@ def test_tf_07_own_contracts_renewal_wins_over_a_richer_fleet_wide_one(clean):
         c.execute(text("DELETE FROM case_record WHERE owner = :o"), {"o": ORG})
     none = open_for("FC-99999")  # no renewal of its own: the best of the feed
     assert _by_k(_paths(none))["release"]["dest"]["id"] == "FC-30101-R"
+
+
+def test_tf_07_another_contracts_renewal_only_when_the_fleet_writer_can_issue_to_it(clean):
+    """Smoke-p9-3 step 14: a return with no renewal of its own is offered another contract's renewal only when that contract
+    has a line the re-issue writes to (a returned line of the class, fleet_contracts.issuable); a richer renewal on a contract
+    with no returned line of the class is passed over, since the fleet writer would refuse it."""
+    ren = {"kind": "lease", "need_by": "2026-12-01", "renew": True, "site": "Houston", "tool_class": "CMH"}
+    rows = {
+        "FC-T1-R": ren | {"lease_rate": 410, "term_months": 12, "buyer": "Can Issue Co", "contract_ref": "FC-T1"},
+        "FC-T2-R": ren | {"lease_rate": 900, "term_months": 24, "buyer": "No Line Co", "contract_ref": "FC-T2"},
+    }
+    lines = {"CMH-90001": ("FC-T1", "returned"), "CMH-90002": ("FC-T2", "active")}
+    k = {"d": list(rows), "l": list(lines)}
+
+    def drop() -> None:
+        with engine.begin() as c:
+            for t in ("provenance", "canonical"):
+                c.execute(text(f"DELETE FROM {t} WHERE model = 'demand' AND key = ANY(:d)"), k)  # noqa: S608
+                c.execute(text(f"DELETE FROM {t} WHERE model = 'contract_line' AND key = ANY(:l)"), k)  # noqa: S608
+
+    drop()
+    try:
+        with SessionLocal() as s:
+            for key, row in rows.items():
+                canonical.apply(s, "fleet", _facts(key, "fleet", row))
+            for serial, (cid, st) in lines.items():
+                ln = {"line_id": f"FL-{serial}", "contract_id": cid, "serial": serial, "status": st, "tool_class": "CMH"}
+                facts = [canonical.Fact("contract_line", serial, f, v, resource="lines") for f, v in ln.items()]
+                canonical.apply(s, "fleet", facts)
+            s.commit()
+            d = {x["id"]: x for x in tool_demand.named_demand(s, ORG, "CMH", AS_OF)["lease"]}
+        assert "issuable" not in d["FC-T1-R"] and d["FC-T2-R"]["issuable"] is False
+        _grade_a()
+        rel = _by_k(_paths(_open()))["release"]  # a case with no contract of its own: neither renewal is its own
+        assert rel["ok"] and rel["dest"]["id"] == "FC-T1-R"
+        assert "FC-T2-R" not in " ".join(x["label"] for x in rel["lines"])
+    finally:
+        drop()

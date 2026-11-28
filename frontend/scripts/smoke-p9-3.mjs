@@ -216,7 +216,7 @@ await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-441
         await pg.goto(`${base}/#/product/${id}/overview`);
         try {
           last = await pg.locator('[data-testid="tf-grade"]').first().innerText({ timeout: 45000 });
-        } catch (e) {
+        } catch {
           last = 'no grade panel: ' + String((await pg.locator('#view').innerText({ timeout: 3000 }).catch(() => '(no view)'))).replace(/\s+/g, ' ').slice(0, 120);
           return null;
         }
@@ -578,11 +578,23 @@ async function runToFinance(id, reached = /^9 .*Finance|^10 /) {
   await w.goto(`${base}/#/product/${id}/stage/8`);
   await w.locator('#view').waitFor();
   let s = '';
-  for (let i = 0; i < 40; i++) {
+  // The clock moves only while no step waits on the worker to send it (a queued step that waits for nothing else): on a
+  // loaded machine one long sync (repairlog, ~10 min) holds the one worker, and 40 moves spent meanwhile ran out before the
+  // step was even sent (writer 105). At most 40 moves, as before; the wait is bounded by LONG.
+  const admin = await as('admin');
+  const end = Date.now() + LONG;
+  for (let moves = 0, held = 0; Date.now() < end; ) {
     s = await stageOf(w);
     if (reached.test(s)) break;
-    await advance();
+    const steps = (await toolView(admin, id).catch(() => ({}))).followThrough?.steps || [];
+    const sending = steps.some((x) => x.status === 'queued' && !x.waiting);
+    held = sending ? held + 1 : 0;
+    if ((!sending || held % 20 === 0) && moves < 40) { // a queued step that waits on the clock still gets a move a minute
+      await advance();
+      moves++;
+    }
     await w.waitForTimeout(3000);
+    if (sending || moves >= 40) await w.reload().then(() => w.locator('#view').waitFor()).catch(() => {});
   }
   if (!reached.test(s)) throw new Error(`${id} did not reach Finance after the clock moved: ${s}`);
   return s;

@@ -50,6 +50,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from di.connectors.adapters.fleet_contracts import issuable
 from di.connectors.http import SourceClient, SourceError
 from di.repositories import unit_reservations
 from di.services.actions.registry import ActionError
@@ -71,9 +72,7 @@ def _refused(e: SourceError) -> Exception:
 
 def _line_of(lines: list[dict], serial: str, cls: str) -> dict | None:
     """The line to issue (module docstring): the tool's own returned line, else the first returned line of its class."""
-    returned = sorted(
-        (x for x in lines if x.get("status") == "returned" and x.get("toolClass") == cls), key=lambda x: x["lineId"]
-    )
+    returned = sorted((x for x in lines if issuable(x, cls)), key=lambda x: x["lineId"])
     return next((x for x in returned if x.get("serial") == serial), returned[0] if returned else None)
 
 
