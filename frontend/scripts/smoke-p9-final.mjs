@@ -185,6 +185,19 @@ async function readOnly(p, sid, resources) {
   const g = JSON.parse(JSON.stringify(w.graph));
   const conn = g.nodes.find((n) => n.k === 'conn');
   conn.cfg = { ...(conn.cfg || {}), resources, mode: 'full' };
+  // an extra system registered here (dvmkt) has no field mapping, and the default graph's Map step then fails the publish
+  // checks ("No field mapping is defined for dvmkt yet"): drop the Map step and what follows it, as smoke-p9-3's fleet graph
+  // has no Map step either (writer 101, run 3)
+  const maps = (await getJson(p, '/api/screens/integration/sources/' + encodeURIComponent(sid)))?.mappings || [];
+  if (!maps.length) {
+    const drop = new Set(g.nodes.filter((n) => n.k === 'map').map((n) => n.id));
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const e of g.edges || []) if (drop.has(e.a) && !drop.has(e.b)) { drop.add(e.b); grew = true; }
+    }
+    g.nodes = g.nodes.filter((n) => !drop.has(n.id));
+    g.edges = (g.edges || []).filter((e) => !drop.has(e.a) && !drop.has(e.b));
+  }
   await must(p, 'workflow.save', { id: wf.id, name: w.name, owner: w.owner, trig: w.trig, graph: g });
   await must(p, 'workflow.publish', { id: wf.id });
 }
