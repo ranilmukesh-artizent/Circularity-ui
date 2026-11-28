@@ -9,6 +9,13 @@
 import { chromium } from '@playwright/test';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+// Guard: this smoke moves source-sim's clock. Against a stack other than the main one (web :5173), say which
+// source-sim belongs to it; the default :8100 is the main stack's, and a run without it moved that clock.
+if (new URL(base).port !== '5173' && !process.env.SIM_PORT && !process.env.SIM_URL) {
+  console.error(`smoke-rt1048: ${base} is not the main stack (:5173). Set SIM_PORT or SIM_URL to its source-sim; ` +
+    'the default localhost:8100 belongs to the main stack.');
+  process.exit(2);
+}
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const CASE = 'RT-1048';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });

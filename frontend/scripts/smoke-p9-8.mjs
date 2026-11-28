@@ -49,6 +49,13 @@ import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+// Guard: this smoke moves source-sim's clock. Against a stack other than the main one (web :5173), say which
+// source-sim belongs to it; the default :8100 is the main stack's, and a run without it moved that clock.
+if (new URL(base).port !== '5173' && !process.env.SIM_PORT && !process.env.SIM_URL) {
+  console.error(`smoke-p9-8: ${base} is not the main stack (:5173). Set SIM_PORT or SIM_URL to its source-sim; ` +
+    'the default localhost:8100 belongs to the main stack.');
+  process.exit(2);
+}
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-8');
 const HISTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../fixtures/replay/tool_fleet_returns.csv');
