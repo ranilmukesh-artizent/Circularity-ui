@@ -167,7 +167,7 @@ def test_fleet_adapter_maps_contract_line():
         raw = dict(
             conn.execute(text("SELECT resource, count(*) FROM raw_record WHERE source_id = :i GROUP BY 1"), {"i": SID}).all()
         )
-    assert n == len(lines) == 332 and c == 40
+    assert n == len(lines) == 403 and c == 41  # 40 contracts and FC-30141, the service desk's tools
     assert (raw["returns"], raw["renewals"], raw["history"]) == (18, 25, 60)  # read, kept raw, no fact
 
 
