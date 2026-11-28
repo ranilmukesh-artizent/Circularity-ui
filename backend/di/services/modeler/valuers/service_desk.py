@@ -32,7 +32,7 @@ D = Decimal
 CENT = D("0.01")
 KEYS = ("fix", "swap", "upgrade")
 NAMES = {
-    "fix": "Fix and return", "swap": "Covered swap", "upgrade": "Upgrade offer",
+    "fix": "Fix and return", "swap": "Covered swap", "upgrade": "Upgrade with credit",
     "split": "Batch split", "all_fix": "Fix every tool", "all_upgrade": "Upgrade every tool",
 }  # fmt: skip
 COMPARE = (

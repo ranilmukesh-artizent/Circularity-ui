@@ -11,7 +11,8 @@
  *      "US labour rates v1"), the Credit lever flips the recommendation; an Engineer posts a fault on a draft line and its
  *      options appear (skipped when no draft line exists).
  *   4  The Models panel shows "Repair estimate accuracy" with one row per family (the page rows equal the API rows).
- *   5  The batch CS0010050 reads "Upgrade 9 · Fix 11 · Covered swap 2" on its Batch tab and in the API.
+ *   5  The batch CS0010050 reads its computed split (Upgrade 12 · Fix 5 · Covered swap 2 on the seed) on its Batch tab and in
+ *      the API; its 3 lines with no fault code read "None yet" and need a technician.
  *   6  The Approver approves a held upgrade (owner label "Sales"); the Options tab shows the market terms; the take-back is
  *      acknowledged (source-sim clock) and opens a Returns case.
  *   7  Admin fits a take-up model with the button; the candidate row shows its log loss against the pack prior.
@@ -115,7 +116,7 @@ const deep = (o, pred) => {
   }
   return null;
 };
-const NAME = { fix: 'Fix and return', swap: 'Covered swap', upgrade: 'Upgrade' };
+const NAME = { fix: 'Fix and return', swap: 'Covered swap', upgrade: 'Upgrade with credit' };
 const pct = (v) => Math.round(v * 100);
 
 let stepsRun = 0;
@@ -355,7 +356,7 @@ await step('3 Ticket CS0010042: estimate, three options, credit lever, a fault p
   await lever.locator('input[aria-label="Credit"]').fill(String(pct(flipAt.credit)));
   await pageHas(p, ['This differs from the recommendation the case holds.'], 'Credit lever at ' + pct(flipAt.credit) + '%');
   const x = flipAt.r.crossing;
-  if (x) await pageHas(p, [`${NAME[x.to]} beats ${NAME[x.from]} with credit above ${pct(x.credit_pct)}% credit`], 'Credit lever flip line');
+  if (x) await pageHas(p, [`${NAME[x.to]} beats ${NAME[x.from]} above ${pct(x.credit_pct)}% credit`], 'Credit lever flip line');
   const flipText = `${NAME[flipAt.r.from]} to ${NAME[flipAt.r.to]} at ${pct(flipAt.credit)}% credit`;
 
   // Post a fault on a draft line (any open ticket case with one; skipped when the data has none)
@@ -418,7 +419,10 @@ await step('4 Models: Repair estimate accuracy has one row per family', async ()
 });
 
 // ---------------------------------------------------------------- 5
-await step('5 Batch CS0010050 splits Upgrade 9 · Fix 11 · Covered swap 2', async () => {
+// The split is the product's, computed per tool (lead decision, 28 Nov: on the seeded batch it reads "Upgrade 12 · Fix 5 ·
+// Covered swap 2", not the plan's "Upgrade 9 · Fix 11 · Covered swap 2"); the 3 lines with no fault code take no option and
+// must read as needing a technician. The step reads the split and the lines from the screen API and requires the page to agree.
+await step('5 Batch CS0010050: the computed split, and the lines with no fault code need a technician', async () => {
   const admin = await as('admin');
   const id = await caseOf(admin, 'CS0010050');
   const c = await until(
@@ -433,13 +437,24 @@ await step('5 Batch CS0010050 splits Upgrade 9 · Fix 11 · Covered swap 2', asy
   const sd = c.serviceDesk;
   const k = sd.split.counts;
   const expect = [['Upgrade', k.upgrade], ['Fix', k.fix], ['Covered swap', k.swap]].filter(([, n]) => n > 0).map(([l, n]) => `${l} ${n}`).join(' · ');
+  if (sd.lines.length !== 22) throw new Error(`the batch has ${sd.lines.length} lines, not 22`);
+  const noCode = sd.lines.filter((l) => !l.fault_code).map((l) => l.serial);
+  const unchosen = sd.split.lines.filter((x) => !x.k).map((x) => x.serial);
+  if (noCode.slice().sort().join() !== unchosen.slice().sort().join()) throw new Error(`the lines with no fault code (${noCode.join(', ')}) are not the lines with no option (${unchosen.join(', ')})`);
+  const counted = (k.upgrade || 0) + (k.fix || 0) + (k.swap || 0);
+  if (counted + noCode.length !== 22) throw new Error(`the split counts ${counted} lines and ${noCode.length} have no fault code: not 22`);
   await openTab(admin, id, 'batch');
   await pageHas(admin, [expect], 'Batch tab');
-  if (expect !== 'Upgrade 9 · Fix 11 · Covered swap 2') throw new Error(`the batch splits as "${expect}", not "Upgrade 9 · Fix 11 · Covered swap 2"`);
-  if (sd.lines.length !== 22) throw new Error(`the batch has ${sd.lines.length} lines, not 22`);
+  const table = admin.locator('table[aria-label="The lines of the batch and the option each takes"]');
+  for (const serial of noCode) {
+    const row = table.locator('tbody tr').filter({ has: admin.locator('td', { hasText: serial }) });
+    await row.first().waitFor({ timeout: UI });
+    const cells = (await row.first().locator('td').allInnerTexts()).map(flat);
+    if (cells[2] !== 'None yet' || !/technician/i.test(cells[3])) throw new Error(`the Batch tab row of ${serial} (no fault code) reads "${cells.slice(1, 4).join(' | ')}", not "None yet" with a technician`);
+  }
   await openTab(admin, id, 'ticket');
   await pageHas(admin, [`Ticket CS0010050 · batch ${sd.batchId} · 22 tools`], 'Ticket tab of the batch');
-  return expect;
+  return `${expect}; ${noCode.length} with no fault code need a technician (${noCode.join(', ')})`;
 });
 
 // ---------------------------------------------------------------- 6

@@ -221,7 +221,7 @@ export function CreditLeverTab({ c }: TabProps) {
   );
 }
 
-const optionName = (k: string) => (k === 'fix' ? 'Fix and return' : k === 'swap' ? 'Covered swap' : 'Upgrade');
+const optionName = (k: string) => (k === 'fix' ? 'Fix and return' : k === 'swap' ? 'Covered swap' : 'Upgrade with credit');
 
 // The Batch tab (P9-4.8): its own imports sit with it, so the block stands alone.
 import { batchTotalsLine, splitLine, termsLine } from '../serviceDesk';
