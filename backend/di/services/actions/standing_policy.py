@@ -364,17 +364,30 @@ def _exception_on_choice(ctx: CallContext, case: dict[str, Any], route: str) -> 
 def decision_covered(ctx: CallContext, case: dict[str, Any], row: PolicyRow) -> bool:
     """Does the policy approve the case's submitted decision (its recommended route)? The rules, the hold policy's reasons, an open
     exception, a conflict, a fraud hold, and the owner's approval limit as it is now."""
+    return not why_not_covered(ctx, case, row)
+
+
+def _usd(v: Decimal) -> str:
+    return f"${v:,.0f}" if v == v.to_integral_value() else f"${v:,.2f}"
+
+
+def why_not_covered(ctx: CallContext, case: dict[str, Any], row: PolicyRow) -> list[str]:
+    """Why the policy leaves the case's submitted decision to a person, one line a reason (empty: the policy approves it). The
+    verdict is `covers` (di.services.policy_standing), as before; the lines are the hold policy's reasons (e.g. "Confidence 0.15
+    is below 0.75") and the policy's own rules the decision misses (P9-13.11)."""
     from di.services.agents.chain import case_value  # lazy: the chain imports the stage modules that import the pipeline
     from di.services.agents.stages.valuation import confidence as valuation_confidence
 
     rules = parse_rules(row.rules)
     rec = case.get("recommendation")
     value = case_value(case)
-    if isinstance(rules, str) or not rec or value is None:
-        return False
+    if isinstance(rules, str):
+        return [f"The policy's rules are not valid: {rules}"]
+    if not rec or value is None:
+        return ["The case has no recommended decision with a value"]
     limit = owner_limit(ctx, row.owner)
     if limit is None or abs(value) > limit:
-        return False
+        return [f"Value {_usd(abs(value))} is above the approval limit of the policy's owner, {row.owner}"]
     pack: Pack = live_pack(ctx.session, case)
     conf = valuation_confidence({}, case)
     action = ACTIONS["decision.approveByPolicy"]
@@ -386,23 +399,42 @@ def decision_covered(ctx: CallContext, case: dict[str, Any], row: PolicyRow) -> 
         action=action, autonomy="limits", confidence=conf, value=value, bulk=1, open_exception=exception, conflict=conflict,
         guardrail_holds=guardrails, taint=False, policy=hold.HoldPolicy(pack_value_limit(pack), None, decide_threshold(pack)),
     )  # fmt: skip
-    return covers(
-        rules, value=value, confidence=conf, route=rec.get("id"), cls=case.get("cls"), market=case.get("market"),
-        holds=holds, open_exception=exception, conflict=conflict, fraud_hold=_fraud(case),
-    )  # fmt: skip
+    route, cls, market, fraud = rec.get("id"), case.get("cls"), case.get("market"), _fraud(case)
+    if covers(
+        rules, value=value, confidence=conf, route=route, cls=cls, market=market,
+        holds=holds, open_exception=exception, conflict=conflict, fraud_hold=fraud,
+    ):  # fmt: skip
+        return []
+    why = [h.detail for h in holds]
+    if fraud:
+        why.append("The case carries a fraud hold")
+    if abs(value) > rules.max_value:
+        why.append(f"Value {_usd(abs(value))} is above the policy's {_usd(rules.max_value)}")
+    if conf is None:
+        why.append("The case has no confidence")
+    elif conf < rules.min_confidence and not any(h.reason == "confidence" for h in holds):
+        why.append(f"Confidence {conf:.2f} is below the policy's {rules.min_confidence:.2f}")
+    for what, allowed, fact in (("route", rules.routes, route), ("class", rules.classes, cls), ("market", rules.markets, market)):
+        if allowed is not None and fact not in allowed:
+            why.append(f"The policy does not cover the {what} {fact}")
+    return why or ["The policy does not cover the decision"]
 
 
 @after("decision.submit")
-def _approve_when_covered(i: dict[str, Any], out: dict[str, Any], ctx: CallContext) -> None:  # noqa: ARG001 - hooks take (input, output, ctx)
+def _approve_when_covered(i: dict[str, Any], out: dict[str, Any], ctx: CallContext) -> None:
     """The active policy of the case's pack and owner approves the decision it covers, as SYSTEM, in this transaction. A refusal
-    leaves the case awaiting approval, as without a policy."""
+    leaves the case awaiting approval, as without a policy, and the submit's output says why (`policy.reasons`)."""
     from di.services.cases import store
 
     case = store.get(ctx.session, str(i["case_id"]))
     if case is None or case.get("approval") or case["stage"] != "awaiting_approval":
         return
     row = repo.effective(ctx.session, case.get("template") or "industrial", case["owner"])
-    if row is None or not decision_covered(ctx, case, row):
+    if row is None:
+        return
+    why = why_not_covered(ctx, case, row)
+    if why:  # the submit's answer says why the policy in force leaves the decision to a person (P9-13.11)
+        out["policy"] = {"id": row.id, "ver": row.ver, "approved": False, "reasons": why}
         return
     sys_ctx = CallContext(actor=SYSTEM, session=ctx.session, run_id=ctx.run_id, now=ctx.now)
     invoke("decision.approveByPolicy", {"case_id": case["id"], "policy_id": row.id, "ver": row.ver}, sys_ctx)

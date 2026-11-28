@@ -167,9 +167,11 @@ def test_x_05_policy_cannot_approve_above_threshold():
 def test_x_05_policy_needs_the_confidence():
     c = pick_case()
     shape(c["id"], 300, overlap=40)  # 0.6, below the policy's 0.75
-    activate(c["owner"])
-    ok(submit(c["id"]))
+    pid = activate(c["owner"])
+    out = ok(submit(c["id"]))
     hold_stays(c["id"])
+    # the submit's answer names why the policy left it to a person (P9-13.11)
+    assert out["policy"] == {"id": pid, "ver": 1, "approved": False, "reasons": ["Confidence 0.60 is below 0.75"]}
 
 
 def test_x_05_policy_skips_holds_exceptions_and_conflicts():

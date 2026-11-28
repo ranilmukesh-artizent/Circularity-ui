@@ -27,6 +27,11 @@
  *      there is one) is approved by `approver` on its case page (Approve, I reviewed evidence snapshot, Approve and send
  *      instruction). Then only source-sim's clock moves (action: /_sim/clock/advance) until the instructions of both cases are
  *      sent and at least one step of each is acknowledged.
+ *      Used cars (lead decision 28 Nov): a car under the flow's 0.75 confidence stays a person's decision. Every sample vehicle
+ *      of the used-car systems is opened (action: case.open, VINs ...001-...100) and the policy is tried on those that may
+ *      clear 0.75. If none does, the step proves the hold instead: the submit's answer names each tried car's confidence under
+ *      0.75 (`policy.reasons`), and the approver's case and its instructions are proved as above. The PASS line starts with
+ *      "APPROVED BY POLICY" or "HOLD" to say which.
  *
  * Not covered here (the spec's items 4-9: the close, X-13, X-14, X-16, Finance's confirmation and the six model fits) are the
  * subjects of smoke-p9-3 (14, 11), smoke-p9-6 (8) and the plan-9 closing smokes; this script stops at the instructions.
@@ -363,7 +368,49 @@ P.used_cars = {
     this.cands = [c[1], c[90], c[3], c[2]];
     return `cases ${Object.entries(c).map(([n, id]) => `...${String(n).padStart(3, '0')}=${id}`).join(', ')} (action: case.open)`;
   },
+  /** Step 4b (lead decision 28 Nov): a used car under the flow's 0.75 stays a person's decision, so the policy is tried on every
+   *  sample vehicle of the used-car systems: the 60 returned leases (...001-...060) and the 40 trade-ins (...061-...100) are
+   *  opened as cases (action: case.open; the ones step 4a opened are kept), four at a time. A VIN that does not open is skipped. */
+  async openAll() {
+    const ids = new Set(this.ids);
+    const skipped = [];
+    const ns = Array.from({ length: 100 }, (_, k) => k + 1).filter((n) => ![1, 2, 3, 7, 90].includes(n));
+    for (let k = 0; k < ns.length; k += 4) {
+      const got = await Promise.all(
+        ns.slice(k, k + 4).map((n) =>
+          openCase('used_cars', `${ORG}:${vin(n)}`, n > 60 ? 'trade_in' : 'lease_end', { vin: vin(n), return_date: '2026-11-20' }).catch((e) => {
+            skipped.push(`...${String(n).padStart(3, '0')}: ${String(e.message).slice(0, 80)}`);
+            return null;
+          }),
+        ),
+      );
+      for (const id of got) if (id) ids.add(id);
+    }
+    this.ids = [...ids];
+    return { opened: this.ids.length, skipped };
+  },
 };
+/** The policy's confidence of a case as the server reads it (di.services.agents.stages.valuation `confidence`): the best route
+ *  against the best route of another channel (the id before a colon), by the overlap of their P10-P90 bands, else by the lead
+ *  of the best net. Only ranks the cases to try; the server's verdict is what the step checks. */
+function confOf(c) {
+  if (typeof c?.decisionConfidence === 'number') return c.decisionConfidence;
+  let ranked = (c?.routes || []).filter((r) => r && !r.excluded && typeof r.net === 'number').sort((a, b) => b.net - a.net);
+  const rec = ranked.find((r) => r.id === c?.recommendation?.id);
+  if (rec && rec !== ranked[0]) ranked = [rec, ...ranked.filter((r) => r !== rec)];
+  if (!ranked.length) return null;
+  const ch = (r) => String(r.id).split(':')[0];
+  const b = ranked.slice(1).find((r) => ch(r) !== ch(ranked[0]));
+  if (!b) return 1;
+  const a = ranked[0];
+  if ([a.p10, a.p90, b.p10, b.p90].every((v) => typeof v === 'number')) {
+    const width = a.p90 - a.p10;
+    const overlap = Math.max(0, Math.min(a.p90, b.p90) - Math.max(a.p10, b.p10));
+    const share = width <= 0 ? (overlap > 0 ? 1 : 0) : overlap / width;
+    return Math.min(1, Math.max(0, 1 - share));
+  }
+  return 0.5 + Math.min(0.5, (a.net - b.net) / Math.max(Math.abs(a.net), 1));
+}
 
 // ---------------------------------------------------------------- telecom network (smoke-p9-10, step 1)
 const sn = (n) => 'SN-TN-' + String(n).padStart(4, '0');
@@ -600,10 +647,30 @@ async function approvals(pack) {
     cfg.person = ranked[ranked.length - 1][1];
     cfg.cands = ranked.filter(([v]) => v <= below).map((x) => x[1]);
   }
+  let held = null; // used cars: the hold the policy proves when no sample vehicle clears the flow's 0.75 confidence
+  let pool = '';
+  if (pack === 'used_cars') {
+    // lead decision 28 Nov: a used car under 0.75 stays a person's decision (the threshold is never lowered). Every sample
+    // vehicle is opened, ranked by the policy's confidence (confOf), and the policy is tried on those that may clear 0.75
+    const all = await cfg.openAll();
+    const est = [];
+    for (const id of cfg.ids) {
+      if (id === cfg.person) continue;
+      const c = await caseScreen(admin, id);
+      if (c && c.stage === 'awaiting_approval' && !c.approval && !c.blocked && typeof c.recommendation?.net === 'number') est.push([confOf(c) ?? 0, id]);
+    }
+    est.sort((x, y) => y[0] - x[0]);
+    const clear = est.filter(([v]) => v >= 0.75).map((x) => x[1]);
+    // none may clear: the three closest are submitted, to read why the policy leaves them to a person
+    cfg.cands = clear.length ? clear : est.slice(0, 3).map((x) => x[1]);
+    pool = `${all.opened} used-car cases opened${all.skipped.length ? ` (${all.skipped.length} VINs did not open: ${all.skipped.slice(0, 3).join('; ')})` : ''}, ${est.length} await approval, ${clear.length} at 0.75 or over (best ${est[0] ? `${est[0][1]} ${est[0][0].toFixed(2)}` : 'none'})`;
+    say('  4b', pool);
+  }
   const pol = await ensurePolicy(pack, cfg.org, below, cfg.cands, cfg.person);
   // the policy approves the first candidate it covers on the submit
   let byPolicy = null;
   const tried = [];
+  const reasons = {}; // case -> why the policy left it to a person (the submit's output, `policy.reasons`)
   for (const id of cfg.cands) {
     if (id === cfg.person) continue;
     let c = await caseScreen(admin, id);
@@ -628,12 +695,20 @@ async function approvals(pack) {
       byPolicy = id;
       break;
     }
-    tried.push(`${id} ${r.ok ? 'not covered' : (r.error?.message || '').slice(0, 60)} (value ${c?.recommendation?.net ?? '?'})`);
+    if (r.ok && r.output?.policy?.reasons) reasons[id] = r.output.policy.reasons;
+    tried.push(`${id} ${r.ok ? `not covered${reasons[id] ? ': ' + reasons[id].join(', ') : ''}` : (r.error?.message || '').slice(0, 60)} (value ${c?.recommendation?.net ?? '?'})`);
   }
-  if (!byPolicy) throw new Error(`policy ${pol} approved none of the ${pack} cases tried: ${tried.join('; ').slice(0, 400)}`);
+  if (!byPolicy && pack === 'used_cars') {
+    // the hold instead (lead decision 28 Nov): the policy in force leaves each tried car to a person, with a reason naming its
+    // confidence under the flow's 0.75 (the submit's output); the approver's path and the instructions are proved below
+    const low = Object.entries(reasons).filter(([, why]) => why.some((x) => /^Confidence 0\.\d\d is below (the policy's )?0\.75$/.test(x)));
+    if (!low.length) throw new Error(`policy ${pol} approved none of the used-car cases tried, and none was left to a person for its confidence under 0.75: ${tried.join('; ').slice(0, 400)}`);
+    held = low.map(([id, why]) => `${id} (${why.join(', ')})`).join('; ');
+  }
+  if (!byPolicy && !held) throw new Error(`policy ${pol} approved none of the ${pack} cases tried: ${tried.join('; ').slice(0, 400)}`);
   const p = await as('planner.a');
   // the approval's journal line, on the Approve stage's History tab ("Approve by standing policy", by "policy SP-n v1")
-  await block(p, byPolicy, 'stage/7?tab=history', '#view', (t) => /Approved? by (standing )?policy/i.test(t) && /policy \S+ v\d+/.test(t), '"Approve by standing policy" by "policy <id> vN" in its History');
+  if (byPolicy) await block(p, byPolicy, 'stage/7?tab=history', '#view', (t) => /Approved? by (standing )?policy/i.test(t) && /policy \S+ v\d+/.test(t), '"Approve by standing policy" by "policy <id> vN" in its History');
   // a person approves another: the pack smoke's over-the-limit case, else the next case the policy did not cover
   let person = cfg.person;
   if (!person) {
@@ -652,7 +727,7 @@ async function approvals(pack) {
   await approveOnPage(person);
   // only time moves: the worker sends the instructions, the mocks acknowledge them
   const moved = {};
-  for (const id of [byPolicy, person]) moved[id] = { from: doneSteps(await caseScreen(admin, id)), to: 0 };
+  for (const id of [byPolicy, person].filter(Boolean)) moved[id] = { from: doneSteps(await caseScreen(admin, id)), to: 0 };
   await until(
     async () => {
       let all = true;
@@ -672,7 +747,9 @@ async function approvals(pack) {
     SYNC,
     admin,
   );
-  return `${byPolicy} approved by policy ${pol}; ${person} approved by approver; ${Object.entries(moved).map(([id, m]) => `${id} ${m.to} of ${m.of} steps acknowledged`).join(', ')}`;
+  const steps = Object.entries(moved).map(([id, m]) => `${id} ${m.to} of ${m.of} steps acknowledged`).join(', ');
+  if (held) return `HOLD, no used car approved by policy: ${pool}; policy ${pol} left them to a person: ${held}; ${person} approved by approver; ${steps}`;
+  return `${pool ? 'APPROVED BY POLICY: ' + pool + '; ' : ''}${byPolicy} approved by policy ${pol}; ${person} approved by approver; ${Object.entries(moved).map(([id, m]) => `${id} ${m.to} of ${m.of} steps acknowledged`).join(', ')}`;
 }
 
 // ---------------------------------------------------------------- 1

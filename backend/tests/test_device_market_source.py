@@ -339,8 +339,8 @@ def test_sale_links_cases_by_imei():
 
 
 def test_sales_of_a_sku_count_the_lab_trade_ins_before_their_canonical_facts():
-    """GR-D8 reads the sales of the case's SKU in 90 days: a sold device counts by the lab's trade-in row too, because the lab's
-    first sync opens its cases before its records are stored as canonical facts (P9-13.11)."""
+    """GR-D8 reads the sales of the case's SKU in 90 days: a sold device counts by the lab's trade-in row too, whether or not
+    its canonical facts are stored (P9-13.11)."""
     from di.services.device.inputs import sales_of_sku
 
     other = "359990000000001"

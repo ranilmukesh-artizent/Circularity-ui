@@ -206,8 +206,8 @@ def imei_key(imei: str) -> str:
 
 def sales_of_sku(s: Session, sku_key: str, as_of: date, days: int = 90) -> int:
     """Devices of the SKU (canonical `asset.sku_key`, else the lab's trade-in row) sold in the `days` to `as_of` (a settled
-    sale counts each device). The trade-in row counts too: the lab's first sync opens its cases after reading every resource
-    and before its records are stored as canonical facts (di.connectors.adapters.device_lab, P9-13.11)."""
+    sale counts each device). The trade-in row counts too, so a device whose lab facts are not stored (yet) is not "unseen":
+    the lab's sync now opens its cases after storing its facts (di.connectors.adapters.device_lab `after_sync`, P9-13.11)."""
     imeis = sorted({i for x in device_market.sales(s, as_of - timedelta(days=days), as_of) for i in x.imeis})
     if not imeis:
         return 0

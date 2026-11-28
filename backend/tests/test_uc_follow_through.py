@@ -57,6 +57,8 @@ class Stub:
 
     def request(self, method: str, path: str, json: dict[str, Any] | None = None, headers: dict[str, str] | None = None):
         assert method == "POST" and json is not None
+        # relative to the adapter's base path, which the real client puts in front (P9-13.11: a doubled path was a 404)
+        assert self.source not in ("uc_dms", "uc_auction") or path.count("/") == 1, path
         kind = path.rsplit("/", 1)[1]
         if kind == "salvage-sales" and not BUYERS.get(json["buyerId"]):
             raise SourceError("client", "buyer_not_reporting", 422)
@@ -64,7 +66,7 @@ class Stub:
         return _Reply({self.ids[kind]: f"{kind[:3].upper()}-{len(Stub.calls):04d}", **json})
 
     def get_json(self, path: str, params: dict[str, Any] | None = None):
-        assert path.endswith("/partner-bids")
+        assert path == "/partner-bids", path
         return {"items": [{"partner": "Partner A", "amount": 20900}, {"partner": "Partner B", "amount": 21300}]}
 
     def close(self) -> None:
