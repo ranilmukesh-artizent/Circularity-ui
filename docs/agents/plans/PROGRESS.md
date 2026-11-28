@@ -363,6 +363,7 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 | 2026-11-28 | 09 · P9-12.13 Phase 12 gate | this commit | smoke-p9-12 8/8 (w111); gate 28 Nov on private stacks: api parallel-suite 6,233 passed (4 order-dependent, rerun alone 11 passed), serial-only 40 files 808 passed (mcp_modeler timeout once, rerun 5 passed); web 987; source-sim 529; lint.sh all passed; story-matrix 159 rows, 481 tests, 0 missing; merge batch 127 passed | done |
 | 2026-11-28 | 09 · P9-3.22 Phase 3 gate | this commit | smoke-p9-3 17/17 (w109), smoke-p9-4 7/7 (w113); gate 28 Nov on private stacks: api parallel-suite 6,233 passed (4 order-dependent, rerun alone 11 passed), serial-only 808 passed, web 987, source-sim 529, lint.sh all passed, story-matrix 0 missing; merge batch 66897329: api-test 49 passed, source-sim 65 passed, lint all passed | done |
 | 2026-11-28 | 09 · P9-4.13 Phase 4 gate | this commit | smoke-p9-3 17/17 (w109), smoke-p9-4 7/7 (w113); gate 28 Nov on private stacks: api parallel-suite 6,233 passed (4 order-dependent, rerun alone 11 passed), serial-only 808 passed, web 987, source-sim 529, lint.sh all passed, story-matrix 0 missing; merge batch 66897329: api-test 49 passed, source-sim 65 passed, lint all passed | done |
+| 2026-11-28 | 09 · P9-13.11 Final end-to-end smoke over the five packs | this commit | smoke-p9-final 11/11 in one full run (97 min, writer 118: device, tool fleet, used cars, telecom, medical; each approved by a standing policy and by an approver, instructions acknowledged); merge batch 92368e63: wt-check 75 passed, api-test 362 passed, source-sim 59 passed, lint all passed, web 987 | done |
 
 ## Decisions taken without the user (to review)
 
@@ -521,6 +522,12 @@ Run by an Opus lead with Sonnet and Haiku writers in their own worktrees, on the
 - 28 Nov, final smoke 4b: the smoke opens the used-car sample vehicles in batches of 10 and stops once one clears the policy's 0.75 (a planner works the queue, not all 100 at once); with none in the 100, it proves the hold. (writer 118)
 - 28 Nov: when a standing policy leaves a case to a person, the submit returns its reasons ("Confidence 0.60 is below 0.75"). Showing them on the case page is a known gap for after plan 9. (writer 114)
 - 28 Nov, device lab: cases open after the sync stores its records; a manual "Run now" of the lab workflow no longer opens cases, the next sync does (known gap). (writer 114)
+- 28 Nov: a smoke never starts on a busy stack: when wait-idle times out, the run waits once more, and if the stack is still busy the run is not counted. (writer 116)
+- 28 Nov, reset: the test reset deletes unit reservations first (they held a foreign key to org units, so every reset after p9-5 step 5 failed and kept old cases). (writer 116)
+- 28 Nov, p9-6 step 5: when a market feed lands, the open device cases of the SKUs it prices are valued again (prices change, the valuation follows), queued at evidence priority. Syncs a person or a webhook starts also run at evidence priority, so a burst of re-checks does not starve them; scheduled syncs keep the default. (writer 119)
+- 28 Nov, p9-6 step 4: a posted wipe certificate clears its case's wipe hold; the case can stay held for another reason (a registry check over 7 days old, G-DEV-LOCK). The smoke step says "clears the wipe hold". (writer 119)
+- 28 Nov: when the worker re-checks a case it puts `case.rechecked` on the live stream, and open pages of that case refetch. (writer 117)
+- 28 Nov, final smoke telecom: the trade compliance (export) approval holds only a unit whose route takes it out of the owner's control (resale); a unit kept as a spare is not held by it. Kinective's Legal team reviews the export-control behaviour. (writer 118)
 
 | 2026-11-27 | 03 · Task 1-2 gzip and the generic CRUD router | this commit | test_gzip, test_resources green (202 passed in the combined run) | done |
 | 2026-11-27 | 03 · Task 3 register the resources | this commit | test_resources_groups green | done |
