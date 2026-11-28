@@ -14,7 +14,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Header
 from fastapi.responses import JSONResponse
 
-from di.core.deps import CurrentPrincipal, DbSession, OptionalPrincipal
+from di.core.deps import CurrentPrincipal, DbSession, OptionalPrincipal, PersonPrincipal
 from di.schemas.actions import Undo
 from di.services import agent_credentials
 from di.services import journal as journal_service
@@ -77,6 +77,6 @@ def journal(p: CurrentPrincipal, session: DbSession, case_id: str | None = None,
 
 
 @router.post("/journal/undo")
-def undo(body: Undo, p: CurrentPrincipal, session: DbSession):
+def undo(body: Undo, p: PersonPrincipal, session: DbSession):
     """Marks entries as undone. Reversing their effects is each handler's undo (added with the handlers, B10-B13)."""
     return journal_service.undo(p, session, body.seqs)

@@ -36,11 +36,12 @@ from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from di.repositories.replay import Batch
 from di.services.actions.registry import ActionError
 from di.services.cases import car_facts
-from di.services.cases.decide import Decision, decide_case
+from di.services.cases.decide import Decision, decide_case, vendors_for
 from di.services.engine.jsmath import js_round
 from di.services.engine.queue import Capacity, Dem, QueuePlanner, planner_for
 from di.services.modeler.compile import FlowVersion
@@ -445,6 +446,7 @@ def replay(
     run_id: int = 0,
     label: str | None = None,
     demand: Sequence[Mapping[str, Any]] = (),
+    session: Session | None = None,
 ) -> ReplayReport:
     """Decide each ok item as of its date under `flow_ver` (the draft or a published version, resolved by the caller:
     `label` names it in the report, default its version) and measure the result. An item the valuer refuses is counted
@@ -453,7 +455,17 @@ def replay(
     `demand` (P9-7.5) are the batch's demand windows. For a pack with a queue planner (the tool fleet) and demand rows, the
     items are decided per decision date, in date order, through `QueuePlanner.plan` (I-5): the day's returns share the
     demand open that day and the repair slots open that day; a unit a return took is not offered again. Without demand rows
-    each item is decided on its own, as before."""
+    each item is decided on its own, as before.
+
+    `session` (review 13 F3): the canonical vendors G-DS-1 judges are read with it once (`vendors_for`) and set on every item,
+    as intake reads them, so a route whose downstream vendor has no valid certificate is excluded here too. The decider itself
+    is called without the session: the item is decided on its as-of facts, never on today's canonical records."""
+    vendors = vendors_for(pack, session)
+
+    def built_case(it: Mapping[str, Any], facts: Mapping[str, Any]) -> dict[str, Any]:
+        case = case_input(it, facts, pack)
+        return case if vendors is None or "vendors" in case else case | {"vendors": vendors}
+
     rows: list[dict[str, Any]] = []
     flips: list[Flip] = []
     leakage: list[dict[str, Any]] = []
@@ -502,7 +514,7 @@ def replay(
                 facts, leaked = as_of_facts(it)
                 leakage += leaked
                 try:
-                    built.append((it, case_input(it, facts, pack)))
+                    built.append((it, built_case(it, facts)))
                 except ActionError as e:
                     dq[f"Not decided: {e.message}"] += 1
             queue = [c for _, c in built]
@@ -527,7 +539,7 @@ def replay(
         facts, leaked = as_of_facts(it)
         leakage += leaked
         try:
-            d = decide(case_input(it, facts, pack), pack, flow_ver, as_of=it["decided_at"])
+            d = decide(built_case(it, facts), pack, flow_ver, as_of=it["decided_at"])
         except ActionError as e:
             dq[f"Not decided: {e.message}"] += 1
             continue

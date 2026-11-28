@@ -358,7 +358,7 @@ def run_job(payload: dict[str, Any]) -> dict[str, Any]:
             pack = live_pack(s, {"template": f.template_key, "owner": batch.org_unit_id})
             rep = replay_run.replay(
                 batch, repo.ok_items(s, batch.id), flow_version(s, f, pack, r["flow_ver"]), pack=pack, run_id=run_id,
-                label=r["flow_ver"], demand=repo.ok_demand(s, batch.id),
+                label=r["flow_ver"], demand=repo.ok_demand(s, batch.id), session=s,
             )  # fmt: skip
             replayed = rollout_repo.draft_hash(f.draft) if r["flow_ver"] == "draft" else None  # the draft it ran on
             repo.set_status(s, run_id, "done", report=rep.model_dump(mode="json"), draft_hash=replayed)

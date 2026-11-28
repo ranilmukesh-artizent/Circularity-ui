@@ -149,6 +149,37 @@ def test_x_16_resolve_accept_erp_closes():
     assert again["ok"] is False  # nothing is waiting any more
 
 
+def test_p9_13_14_f2_accept_erp_keeps_reporting_check():
+    """Review 13 F2 (X-16): accepting the ERP's amount closes only with the reporting evidence, as the last acknowledgement
+    does. The org is in CSRD scope (G-REP-1) and nothing was attached: the case stays executing and waits for the evidence.
+    To be reviewed by Kinective's Legal team before it is relied on."""
+    from di.core import state
+    from di.services.actions import reporting as rep
+
+    Stub.erp_amount = 150.0
+    with SessionLocal() as s:
+        state.put(s, rep.COLLECTION, uc.ORG, {"csrd_scope": True})
+        s.commit()
+    try:
+        done = _priced()
+        _run(done["id"], 5)
+        r = call("settlement.resolve", {"case_id": done["id"], "resolution": "accept_erp", "note": NOTE}, "finance")
+        assert r["ok"], r
+        after = uc.get(done["id"])
+        assert after["finance"]["credit"]["status"] == "accepted"
+        assert after["stage"] == "executing", after["stage"]
+        assert after["exec"]["steps"][-1]["state"] == rep.WAITING
+        assert "mass in kilograms (G-REP-1)" in after["exec"]["steps"][-1]["waiting"]
+        body = {"case_id": done["id"], "mass_kg": 1.4, "material": "steel", "treatment_code": "R4", "source_ref": "FAC-1"}
+        assert call("case.attachReporting", body, "admin")["ok"]
+        assert uc.get(done["id"])["stage"] == "closed"
+    finally:
+        with SessionLocal() as s:
+            state.put(s, rep.COLLECTION, uc.ORG, {"csrd_scope": False})
+            s.execute(text("DELETE FROM work_item WHERE type = :t"), {"t": rep.TYPE})
+            s.commit()
+
+
 def test_x_16_resend_posts_under_the_same_key():
     Stub.erp_amount = 150.0
     done = _priced()

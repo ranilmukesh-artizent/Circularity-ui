@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from di.repositories.replay import Batch
 from di.services.cases.decide import Decision, decide_case
 from di.services.modeler.compile import FlowVersion
@@ -132,10 +134,16 @@ def spend_avoided(d: Decision) -> float:
 
 
 def replay(
-    data: Sequence[Mapping[str, Any]], flow_ver: FlowVersion | None = None, *, pack: Pack | None = None, run_id: int = 0
+    data: Sequence[Mapping[str, Any]],
+    flow_ver: FlowVersion | None = None,
+    *,
+    pack: Pack | None = None,
+    run_id: int = 0,
+    session: Session | None = None,
 ) -> TelecomReplay:
     """The as-of replay (`di.services.replay.run.replay`, I-16) of `data` (`items()`) under `flow_ver` (default: the flow with no
-    rules), each unit decided by the one decider as `telecom_case` builds it. Numbers are code; labelled *modelled*."""
+    rules), each unit decided by the one decider as `telecom_case` builds it. Numbers are code; labelled *modelled*. With a
+    `session` the canonical vendors are judged as at intake (review 13 F3)."""
     p = pack or load_pack(PACK)
     spent: list[float] = []
     chose: dict[str, tuple[str | None, float]] = {}
@@ -149,5 +157,7 @@ def replay(
     first = min(i["decided_at"].date() for i in data)
     last = max(i["decided_at"].date() for i in data)
     batch = Batch(0, PACK, "history", len(data), 0, (first, last), {})
-    report = replay_run.replay(batch, data, flow_ver or FlowVersion(None, 1, ()), pack=p, decide=decide, run_id=run_id)
+    report = replay_run.replay(
+        batch, data, flow_ver or FlowVersion(None, 1, ()), pack=p, decide=decide, run_id=run_id, session=session
+    )
     return TelecomReplay(report, round(sum(spent), 2), chose)

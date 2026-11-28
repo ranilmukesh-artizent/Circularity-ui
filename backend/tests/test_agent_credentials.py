@@ -209,3 +209,23 @@ def test_mcp_agent_token_names_the_agent_and_refuses_another():
     assert other["ok"] is False and other["error"]["code"] == "conflict"
     assert mine["agent"] == SCOPED
     assert policy.effective_agent(tok, "gap") == SCOPED
+
+
+def test_p9_13_14_f1_agent_token_refused_on_write_routes_outside_actions():
+    """Review 13 F1 (rule 10): an agent's own token, owned by Admin, cannot use the write routes that are not actions."""
+    tok = token_of(SCOPED, "admin")
+    refused = [
+        client.put("/api/access/delegations/decisions", json={"enabled": False}, headers=bearer(tok)),
+        client.post("/api/sources/nope/connect", headers=bearer(tok)),
+        client.post("/api/sources/nope/disconnect", headers=bearer(tok)),
+        client.post("/api/journal/undo", json={"seqs": [999999999]}, headers=bearer(tok)),
+        client.post("/api/v1/tasks", json={"kind": "noop"}, headers=bearer(tok)),
+        client.patch("/api/v1/tasks/999999999", json={"action": "cancel"}, headers=bearer(tok)),
+        client.delete("/api/v1/tasks/999999999", headers=bearer(tok)),
+        client.post("/api/auth/stream-ticket", headers=bearer(tok)),
+    ]
+    for r in refused:
+        assert r.status_code == 403, (r.request.method, r.request.url.path, r.status_code, r.text)
+        assert r.json()["error"] == {"code": "out_of_scope", "message": "Agents cannot call this route."}
+    person = client.put("/api/access/delegations/decisions", json={"enabled": True}, headers=h("admin"))
+    assert person.status_code == 200, person.text
