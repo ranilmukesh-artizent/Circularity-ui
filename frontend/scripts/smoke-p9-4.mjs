@@ -60,6 +60,9 @@ async function as(acct) {
   await p.fill('#si-pw', 'demo');
   await p.click('button[type=submit]');
   await p.waitForURL((u) => !/signin/.test(u.hash), { timeout: UI });
+  // the post-sign-in redirect to Home lands first, or a goto right after it races it and the page ends on Home (writer 102)
+  await p.locator('#view').first().waitFor({ timeout: Math.max(FIRST, UI) });
+  await p.waitForTimeout(1500);
   pages[acct] = p;
   return p;
 }
