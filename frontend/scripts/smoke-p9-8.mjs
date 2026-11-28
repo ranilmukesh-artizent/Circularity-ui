@@ -477,23 +477,61 @@ await step('7 Shadow and replay, then publish to Customer A at 20 %', async () =
     await fork.click();
     await waitText(p, /Tool fleet returns · Customer A|· Customer A/, 'Customer A did not get its own flow');
   }
-  if (!(await p.getByRole('button', { name: 'Submit for approval' }).count())) {
-    // a fork is published v1, not a draft: one rule makes the draft to submit (as smoke-modeler.mjs does)
-    await p.getByRole('button', { name: 'Add rule' }).click();
-    const paths = await p.getByLabel('Path', { exact: true }).locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
-    await p.getByLabel('Path', { exact: true }).selectOption(paths[paths.length - 1]);
+  // the flow's own lifecycle buttons live in its status bar (.mdl-life); other panels have a "Submit for approval" too
+  const life = p.locator('.mdl-bar .mdl-life').first();
+  const submit = life.getByRole('button', { name: 'Submit for approval', exact: true });
+  /** Give the selected rule a path, an action and a grade (an empty rule is a blocking check), then let the autosave run. */
+  const fillRule = async () => {
+    const pathSel = p.getByLabel('Path', { exact: true });
+    if (!(await pathSel.isVisible().catch(() => false))) {
+      const tab = p.locator('.mdl-strip').getByRole('tab', { name: /Inspector/ }).first(); // plan 10: a rail tab below 1600 px
+      if ((await tab.count()) && (await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+    }
+    await pathSel.waitFor({ timeout: UI });
+    const paths = await pathSel.locator('option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+    await pathSel.selectOption(paths[paths.length - 1]);
     await p.getByLabel('Action', { exact: true }).selectOption('exclude');
     await p.locator('.mdl-inspector fieldset input[type=checkbox], fieldset input[type=checkbox]').first().check();
     await p.waitForTimeout(3000); // the 2 s autosave
-    await p.getByRole('button', { name: 'Submit for approval' }).first().waitFor({ timeout: UI });
+  };
+  if (!(await submit.count())) {
+    // a fork is published v1, not a draft: one rule makes the draft to submit (as smoke-modeler.mjs does)
+    await p.getByRole('button', { name: 'Add rule' }).click();
+    await fillRule();
+    await submit.waitFor({ timeout: UI });
   }
-  await p.getByRole('button', { name: 'Submit for approval' }).first().click();
+  // step 4 adds an empty rule to get a draft for Replay ("BR-nn · set a path"): it is a blocking check, so give it a path
+  const pill = life.locator('.mdl-st');
+  const empty = p.locator('.mdl-node', { hasText: /set a path/ });
+  if (/blocking/.test(await pill.innerText()) && (await empty.count())) {
+    await empty.first().click();
+    await fillRule();
+    await until(async () => !/blocking/.test(await pill.innerText()) || null, 'the draft still has blocking checks: ' + (await pill.innerText()), UI, p);
+  }
+  await until(async () => (await submit.isEnabled()) || null, 'Submit for approval stayed off', UI, p);
+  // a Playwright click on a Modeler lifecycle button has sent no request on a loaded stack (p9-1): click it in the DOM
+  const sent = p.waitForResponse((r) => r.url().includes('/api/actions/flow.submit'), { timeout: UI });
+  await submit.evaluate((b) => b.click());
+  const ans = await (await sent).json().catch(() => ({}));
+  say('  flow.submit:', JSON.stringify(ans.ok ? { ok: true, output: ans.output } : ans).slice(0, 240));
+  if (!ans.ok) throw new Error('flow.submit refused: ' + JSON.stringify(ans.error || ans).slice(0, 240));
   await waitText(p, /In review · v\d+/, 'the flow was not submitted');
   const ap = await as('approver');
   await open(ap, MODELER, '.mdl-bar');
-  await ap.getByRole('button', { name: 'Approve', exact: true }).first().click();
+  const approve = ap.locator('.mdl-bar .mdl-life').first().getByRole('button', { name: 'Approve', exact: true });
+  await approve.waitFor({ timeout: UI });
+  const approved = ap.waitForResponse((r) => r.url().includes('/api/actions/flow.approve'), { timeout: UI });
+  await approve.evaluate((b) => b.click());
+  const apAns = await (await approved).json().catch(() => ({}));
+  say('  flow.approve:', JSON.stringify(apAns.ok ? { ok: true, output: apAns.output } : apAns).slice(0, 240));
+  if (!apAns.ok) throw new Error('flow.approve refused: ' + JSON.stringify(apAns.error || apAns).slice(0, 240));
   await waitText(ap, /Shadow · v\d+/, 'the flow did not go to shadow');
   await open(p, MODELER, '.mdl-bar');
+  if (!(await p.locator('.mdl-replay').count())) {
+    // plan 10: Replay is a drawer opened by the Replay step of the lifecycle bar (as step 4 opens it)
+    await p.locator('.mdl-life').getByRole('button', { name: 'Replay', exact: true }).first().click();
+    await p.locator('.mdl-replay').waitFor({ timeout: UI });
+  }
   await p.locator('[data-replay-run] button').first().click(); // "Replay the draft"
   await p.locator('[data-replay-report]').first().waitFor({ timeout: 180000 });
 
@@ -560,7 +598,7 @@ await step('9 The joiner signs in with the organisation', async () => {
 await step('10 Studio: Build with AI, the drafted graph, node samples', async () => {
   const dev = await as('developer');
   await open(dev, base + '/#/integration/studio');
-  await dev.getByRole('button', { name: 'Build with AI' }).click();
+  await dev.getByRole('button', { name: /^(Build a workflow|Build with AI)$/ }).click(); // the Studio's button reads "Build a workflow" (its modal: "Build a workflow with AI")
   await dev.locator('#wbPrompt').fill('every 15 minutes pull returns from rl and drop records without a serial');
   await dev.getByRole('button', { name: 'Plan it' }).click();
   const draft = dev.getByRole('button', { name: 'Draft with the assistant' });
@@ -606,9 +644,22 @@ await step('10 Studio: Build with AI, the drafted graph, node samples', async ()
 await step('11 Modeler History: Export DMN and Export BPMN', async () => {
   const p = await as('planner-a');
   await open(p, MODELER, '.mdl-bar');
+  // plan 10: History is a rail tab that opens on demand (the rail is closed below 1600 px)
+  const hist = p.locator('.mdl-strip').getByRole('tab', { name: /History/ }).first();
+  if ((await hist.count()) && (await hist.getAttribute('aria-selected')) !== 'true') await hist.click();
   const got = [];
   for (const name of ['Export DMN', 'Export BPMN']) {
-    const [dl] = await Promise.all([p.waitForEvent('download', { timeout: UI }), p.getByRole('button', { name, exact: true }).click()]);
+    // a DOM click (a Playwright click on a Modeler button has sent no request on a loaded stack) and the action's answer
+    const btn = p.getByRole('button', { name, exact: true }).first();
+    await btn.waitFor({ timeout: UI });
+    await until(async () => (await btn.isEnabled()) || null, `${name} stayed off`, UI, p);
+    const id = name === 'Export DMN' ? 'flow.exportDmn' : 'flow.exportBpmn';
+    const sent = p.waitForResponse((r) => r.url().includes('/api/actions/' + id), { timeout: UI });
+    const saved = p.waitForEvent('download', { timeout: UI });
+    await btn.evaluate((b) => b.click());
+    const ans = await (await sent).json().catch(() => ({}));
+    if (!ans.ok) throw new Error(`${id} refused: ${JSON.stringify(ans.error || ans).slice(0, 240)}`);
+    const dl = await saved;
     const file = await dl.path();
     const xml = readFileSync(file, 'utf8');
     if (!xml.trim()) throw new Error(`${name} saved an empty file`);
