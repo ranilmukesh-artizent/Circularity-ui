@@ -133,7 +133,8 @@ async function step(name, fn) {
 // ---------------------------------------------------------------- 1
 await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async () => {
   const admin = await as('admin');
-  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' });
+  // named after the fleet programme the pack serves (the contracts' owner_org): its non-return fees come here (step 15)
+  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Fleet North America' });
   const dev = await as('developer');
   await must(dev, 'source.reconnect', { source_id: SID });
   // the Open case step names the org unit itself (source.update's edit form needs the whole connection, so no bind here)
@@ -817,16 +818,32 @@ await step('17 Fit-for-use threshold: planner.a proposes 60, lowering is refused
 });
 
 // ---------------------------------------------------------------- 15
-await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a posts the $180 fee from My work', async () => {
+// A fee belongs to the programme that owns the contract (lead decision, 28 Nov): the org unit named after the contract's owner_org
+// (step 1 names tool-fleet-a "Fleet North America"). AGR-20991's line FL-30128-04 is a Fleet Europe contract's, so planner.a (with
+// access to tool-fleet-a) posts a Fleet North America line closed without the tool and never sees FL-30128-04.
+await step('15 Non-return fee: a Fleet North America line closed without the tool, planner.a posts the fee from My work, not Fleet Europe\'s', async () => {
+  await plannerAccess();
   const planner = await as('planner.a');
-  const title = 'Non-return fee FL-30128-04';
+  const sim = async (p) => (await (await fetch(`${SIM}/fleet/api/v1${p}`, { headers: { 'x-api-key': 'fleet-demo-key' } })).json()).items || [];
+  const owner = Object.fromEntries((await sim('/contracts?limit=500')).map((c) => [c.contractId, c.ownerOrg]));
+  const closed = (await sim('/contract-lines?status=closed_not_returned&limit=500')).filter((l) => l.nonReturnFee > 0);
+  const na = closed.filter((l) => owner[l.contractId] === 'Fleet North America').sort((a, b) => a.lineId.localeCompare(b.lineId));
+  const eu = closed.find((l) => l.lineId === 'FL-30128-04');
+  if (!na.length || !eu || owner[eu.contractId] !== 'Fleet Europe') throw new Error('the fleet mock has no Fleet North America line closed without the tool, or FL-30128-04 is not Fleet Europe\'s: ' + JSON.stringify(closed.map((l) => [l.lineId, owner[l.contractId]])));
+  const line = na[0];
+  const title = 'Non-return fee ' + line.lineId;
+  const fee = '$' + Math.round(line.nonReturnFee).toLocaleString('en-US');
   const row = await until(
     async () => ((await getJson(planner, '/api/screens/mywork')).items || []).find((i) => i.title === title),
     'no "' + title + '" item in My work (the fleet source must have synced)',
     SYNC,
     planner,
   );
-  if (!/\$180/.test(row.cause || '') || !/AGR-20991/.test(row.cause || '')) throw new Error('the item reads: ' + row.cause);
+  if (!row.cause?.includes(fee) || !row.cause.includes(line.serial)) throw new Error(`the item reads: ${row.cause} (expected ${fee} and ${line.serial})`);
+  const mine = ((await getJson(planner, '/api/screens/mywork')).items || []).map((i) => i.title);
+  if (mine.includes('Non-return fee FL-30128-04')) throw new Error("planner.a's My work lists Fleet Europe's fee FL-30128-04");
+  const theirs = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
+  if (theirs.ok || theirs.error?.code !== 'tenant_boundary') throw new Error("planner.a could post Fleet Europe's fee: " + JSON.stringify(theirs).slice(0, 200));
   await planner.goto(`${base}/#/mywork`);
   await planner.locator('#mywork').waitFor();
   const li = planner.locator('#mywork li', { hasText: title }).first();
@@ -838,9 +855,9 @@ await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a post
     UI,
     planner,
   );
-  const again = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
+  const again = await callAction(planner, 'nonReturnFee.post', { line_id: line.lineId });
   if (again.ok || again.error?.code !== 'duplicate') throw new Error('a second post is not a duplicate: ' + JSON.stringify(again));
-  return 'posted once, the second post is a duplicate';
+  return `${line.lineId} (${line.serial}, ${fee}) posted once, the second post is a duplicate; FL-30128-04 (Fleet Europe) refused`;
 });
 // ---------------------------------------------------------------- 16
 await step('16 Battery: a BAT return reads four paths and the hazardous-transport line', async () => {

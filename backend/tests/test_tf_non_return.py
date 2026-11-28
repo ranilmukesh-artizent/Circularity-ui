@@ -248,3 +248,50 @@ def test_tf_14_the_journal_reference_of_long_line_ids_does_not_collide():
     finally:
         mp.undo()
     assert seen == [f"FEE-{LINE}"]  # a short id keeps its reference
+
+
+# ------------------------------------------------------------------ smoke-p9-3 step 15 (lead decision, 28 Nov)
+def test_non_return_fee_goes_to_the_programmes_org_unit_else_the_fleet_sources():
+    """The fee belongs to the programme that owns the contract: the org unit whose name (or id) is the contract's owner_org.
+    No such org unit: the fleet source's own org unit, with a journal note; an open item follows the programme's org unit
+    once it is set up."""
+    _line(owner="Tool fleet NR")  # the org unit's name, not its id
+    _sync()
+    assert [i["org_unit_id"] for i in _mine()] == [ORG]
+    with engine.begin() as c:  # the fleet source exists once it is connected (the smoke's source.reconnect): a stand-in row
+        added = c.execute(
+            text(
+                "INSERT INTO source_system (id, vendor, type, status) "
+                "VALUES ('fleet', 'Fleet', 'fleet_contracts', 'disconnected') ON CONFLICT (id) DO NOTHING RETURNING id"
+            )
+        ).scalar()
+        was = c.execute(text("SELECT org_unit_id FROM source_system WHERE id = 'fleet'")).scalar()
+        c.execute(text("UPDATE source_system SET org_unit_id = NULL WHERE id = 'fleet'"))
+    try:
+        _line(owner="Fleet Europe")  # a programme no org unit is named after, from a source bound to none: the group's
+        _sync()
+        assert [i["org_unit_id"] for i in _mine()] == ["workspace"]
+        assert call(ACTION, {"line_id": LINE}, "planner.a")["error"]["code"] == "tenant_boundary"
+        with engine.begin() as c:
+            c.execute(text("UPDATE source_system SET org_unit_id = 'Customer B' WHERE id = 'fleet'"))
+        _sync()  # the source's own org unit
+        assert [i["org_unit_id"] for i in _mine()] == ["Customer B"]
+        with SessionLocal() as s:
+            logs = s.execute(text("SELECT input ->> 'log' FROM action_journal WHERE action = 'work.route'")).scalars().all()
+        assert "owner_org Fleet Europe has no org unit" in logs
+        with engine.begin() as c:
+            c.execute(
+                text(
+                    "INSERT INTO org_unit (id, parent_id, kind, name) "
+                    "VALUES ('t-fleet-eu', 'workspace', 'company', 'Fleet Europe')"
+                )
+            )
+        _sync()
+        assert [i["org_unit_id"] for i in _mine()] == ["t-fleet-eu"]
+        assert call(ACTION, {"line_id": LINE}, "planner.a")["error"]["code"] == "tenant_boundary"  # not Customer A's fee
+    finally:
+        with engine.begin() as c:
+            if added:
+                c.execute(text("DELETE FROM source_system WHERE id = 'fleet'"))
+            else:
+                c.execute(text("UPDATE source_system SET org_unit_id = :o WHERE id = 'fleet'"), {"o": was})

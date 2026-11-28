@@ -69,18 +69,61 @@ def value_line(line: dict[str, Any]) -> dict[str, Any]:
     return {"type": "v", "label": title_of(line["line_id"]), "basis": BASIS, "amt": line["fee"]}
 
 
+SOURCE = "fleet"  # the fleet contract system, whose lines these are
+ROOT = "workspace"  # the group: the org unit of a fee whose programme has no org unit and whose source is bound to none
+
+
+def _owner(s: Session, contract_id: str | None) -> str | None:
+    if not contract_id:
+        return None
+    owner = s.execute(
+        text("SELECT data ->> 'owner_org' FROM canonical WHERE model = 'contract' AND key = :k"), {"k": contract_id}
+    ).scalar()
+    return str(owner) if owner else None
+
+
+def _unit_named(s: Session, owner: str) -> str | None:
+    """The org unit whose id (code) or name is the contract's `owner_org` (a programme of the fleet system: Fleet North
+    America), or None."""
+    return s.execute(
+        text("SELECT id FROM org_unit WHERE id = :o OR lower(name) = lower(:o) ORDER BY (id = :o) DESC, id LIMIT 1"),
+        {"o": owner},
+    ).scalar()
+
+
 def org_of(s: Session, serial: str, contract_id: str | None = None) -> str | None:
-    """The org unit that owns the fee (its work and the tenant boundary follow it): the `owner_org` of the line's contract, else
-    the owner of the tool's latest case, or None when neither is on file (a tenant-scoped person is then refused, R21)."""
-    if contract_id:
-        owner = s.execute(
-            text("SELECT data ->> 'owner_org' FROM canonical WHERE model = 'contract' AND key = :k"), {"k": contract_id}
-        ).scalar()
-        if owner:
-            return str(owner)
+    """The org unit that owns the fee (its work and the tenant boundary follow it). The fee belongs to the programme that owns
+    the contract (lead decision, 28 Nov): the org unit whose id or name is the contract's `owner_org`; when no org unit matches,
+    the fleet source's own org unit, else the group's root (so no item is invisible to everyone; `raise_items` journals
+    "owner_org <x> has no org unit"). With no `owner_org` on file: the owner of the tool's latest case, or None (a
+    tenant-scoped person is then refused, R21)."""
+    owner = _owner(s, contract_id)
+    if owner:
+        # a fleet source bound to no org unit leaves the fee with the group (the root, `workspace`): a group-level person sees
+        # it, a tenant's planner does not (an item of no org unit would be every tenant's)
+        return (
+            _unit_named(s, owner)
+            or s.execute(text("SELECT org_unit_id FROM source_system WHERE id = :i"), {"i": SOURCE}).scalar()
+            or ROOT
+        )
     return s.execute(
         text("SELECT owner FROM case_record WHERE data ->> 'assetId' = :a ORDER BY id DESC LIMIT 1"), {"a": serial}
     ).scalar()
+
+
+def _note_unmatched(s: Session, line: dict[str, Any], item_id: int, org: str | None) -> None:
+    owner = _owner(s, line["contract_id"])
+    if not owner or _unit_named(s, owner):
+        return
+    log = f"owner_org {owner} has no org unit"
+    payload = {"item_id": item_id, "line_id": line["line_id"], "owner_org": owner, "org_unit_id": org, "log": log}
+    s.execute(
+        text(
+            "INSERT INTO action_journal (action, input, actor, role, case_id, at) "
+            "VALUES ('work.route', CAST(:p AS jsonb), 'system', 'System', NULL, :now)"
+        ),
+        {"p": json.dumps(payload), "now": clock.now()},
+    )
 
 
 def item_of(s: Session, line_id: str) -> dict[str, Any] | None:
@@ -104,12 +147,17 @@ def raise_items(s: Session) -> list[int]:
     kind = next((t for t in pack.runtime.exception_types if t.id == EXCEPTION), None)
     out: list[int] = []
     for line in closed_lines(s):
-        if item_of(s, line["line_id"]) is not None:
+        org = org_of(s, line["serial"], line["contract_id"])
+        if (had := item_of(s, line["line_id"])) is not None:
+            # an open item follows its owner: the org unit of the programme may be set up after the line was first synced
+            if had["status"] == "open" and had["org_unit_id"] != org:
+                s.execute(text("UPDATE work_item SET org_unit_id = :o WHERE id = :i"), {"o": org, "i": had["id"]})
+                _note_unmatched(s, line, int(had["id"]), org)
             continue
         v = value_line(line)
         out.append(
             process.open_item(
-                s, kind="exception", case_id=None, org_unit_id=org_of(s, line["serial"], line["contract_id"]),
+                s, kind="exception", case_id=None, org_unit_id=org,
                 type=EXCEPTION,
                 title=title_of(line["line_id"]),
                 cause=f"Contract line {line['line_id']} closed without the tool {line['serial']}. {v['label']}: {v['basis']}, "
@@ -119,6 +167,7 @@ def raise_items(s: Session) -> list[int]:
                 due_hours=pack.runtime.sla_hours.get("exception"), by="system",
             )
         )  # fmt: skip
+        _note_unmatched(s, line, out[-1], org)
     return out
 
 
