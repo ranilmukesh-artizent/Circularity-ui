@@ -471,6 +471,18 @@ def recheck(s: Session, asset_key: str, *, pack_of: PackOf | None = None) -> lis
             released.append(cid)
     finally:
         _override.reset(token)
+    # an open car case that is not held: its battery assessment may open the pack's case (P9-12.7); nothing is valued again
+    cars = s.execute(
+        text(
+            "SELECT id FROM case_record WHERE data ->> 'assetId' = :a AND stage <> 'closed' AND data ->> 'template' = :t "
+            "AND jsonb_typeof(data -> 'gateHold') IS DISTINCT FROM 'object' ORDER BY id"
+        ),
+        {"a": asset_key, "t": intake.CAR_TEMPLATE},
+    ).scalars().all()  # fmt: skip
+    for cid in cars:
+        c = store.get(s, cid, for_update=True)
+        if c is not None and intake.open_battery_case(s, c):
+            store.save(s, c)
     return released
 
 

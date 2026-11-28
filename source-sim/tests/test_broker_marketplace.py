@@ -47,7 +47,7 @@ def test_broker_bids_best_first_per_model(client):
     rad = bids(client, "RAD-7700")
     assert len(rad) == 1
     assert (rad[0]["bidId"], rad[0]["qty"], rad[0]["unitPrice"], rad[0]["domestic"]) == ("BID-7700-OS", 40, 1900, False)
-    assert rad[0]["endUserScreening"]["result"] == "none"
+    assert rad[0]["endUserScreening"] == {"result": "clear", "ref": "EUS-0106"}  # TN-08: screened clear, needs approval
     assert {b["endUserScreening"]["result"] for b in bids(client)} <= {"clear", "refer", "none"}
     assert bids(client, "NO-SUCH") == []
     assert {b["model"] for b in bids(client)} >= {"RRU-4410", "BBU-2200", "RAD-7700"}

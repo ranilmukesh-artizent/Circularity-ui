@@ -103,6 +103,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
+from di.services.canonical.schema import SHARED_ORG
 from di.services.cases import (
     approval_hold,
     battery_wait,
@@ -705,9 +706,13 @@ def open_battery_case(s: Session, c: store.Case) -> bool:
     if cond.get("battery_assessment_result") != "pack_replacement_needed":
         return False
     vin = str((c.get("vehicle") or {}).get("vin") or str(c["assetId"]).rpartition(":")[2])
+    # the owner's BMS first, then a shared one: a BMS registered with no org unit keys its packs `shared:<pack>`
     row = s.execute(
-        text("SELECT key FROM canonical WHERE model = 'asset' AND key LIKE :o AND data ->> 'vin_ref' = :v ORDER BY key LIMIT 1"),
-        {"o": f"{c['owner']}:%", "v": vin},
+        text(
+            "SELECT key FROM canonical WHERE model = 'asset' AND (key LIKE :o OR key LIKE :sh) AND data ->> 'vin_ref' = :v "
+            "ORDER BY (key LIKE :o) DESC, key LIMIT 1"
+        ),
+        {"o": f"{c['owner']}:%", "sh": f"{SHARED_ORG}:%", "v": vin},
     ).first()
     if row is None:
         return False

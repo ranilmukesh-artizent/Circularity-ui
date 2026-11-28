@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from di.core.db import SessionLocal
 from di.services.cases import mr_service_planning as planning
-from tests.helpers import call
+from tests.helpers import call, client, h
 from tests.test_mr_service_gates import _case, _get, _ok, _write, fresh, tag  # noqa: F401 - `fresh` is the autouse fixture
 
 TODAY = date(2026, 11, 26)
@@ -71,3 +71,14 @@ def test_mr_17_adopt_books_service():
     orders = _get(c["id"])["serviceOrders"]
     assert [(o["asset_tag"], o["kind"], o["due_by"]) for o in orders] == [(tag(2), "pm", "2026-12-07")]
     assert _suggest() == []  # booked: no longer suggested
+
+
+def test_mr_17_suggestion_among_the_planners_alerts():
+    """smoke-p9-11 step 7: the suggestion reaches the planner's alerts (Home, Alerts page), counted from the case's next rental
+    (27 Nov) when the workspace clock is earlier; another tenant's planner does not see it."""
+    c = _east_pump(pmDue="2026-12-20")
+    mine = client.get("/api/screens/home/alerts", headers=h("planner-a")).json()
+    want = f"Service {tag(2)} in the week of 7 Dec 2026 (lowest demand in EAST)"
+    assert [(a["t"], a["go"]) for a in mine if a["t"].startswith("Service ")] == [(want, f"product/{c['id']}/overview")]
+    theirs = client.get("/api/screens/home/alerts", headers=h("planner-b")).json()
+    assert not [a for a in theirs if a["t"].startswith("Service ")]

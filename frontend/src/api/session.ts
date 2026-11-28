@@ -107,6 +107,13 @@ export const needsSessionRead = (allowed: boolean | 'tenant', readFor: string | 
   allowed === 'tenant' && readFor !== key;
 export const rereadSession = (): Promise<void> => refreshMe();
 
+/**
+ * Tabs a page shows every account that can open it, beyond the demo's RB_SECS sections: `#/analytics/packs` is the
+ * Analytics page's Packs tab (AnalyticsPage reads route.a === 'packs'; the used-car, telecom and medical case panels link to it).
+ */
+export const PAGE_TABS: Readonly<Record<string, readonly string[]>> = { analytics: ['packs'] };
+const isPageTab = (r: RouteRef): boolean => !!r.a && (PAGE_TABS[r.page] ?? []).includes(r.a);
+
 /** true, false, or 'tenant' when the record belongs to a tenant or warehouse the account cannot see. */
 export function canRoute(r: RouteRef): boolean | 'tenant' {
   const p = r.page;
@@ -124,7 +131,7 @@ export function canRoute(r: RouteRef): boolean | 'tenant' {
     return canPage(p, 'received');
   }
   if (p === 'mcp' && r.a === 'client') return canPage(p, 'client');
-  return !r.a || !(p in ref('RB_SECS')) || canPage(p, r.a);
+  return !r.a || !(p in ref('RB_SECS')) || isPageTab(r) || canPage(p, r.a);
 }
 
 /**
@@ -137,7 +144,7 @@ export function isKnownRoute(r: RouteRef, known: string[] = []): boolean {
   if (!(p in ref('PAGES') || p in (session()?.pages ?? {}))) return false;
   const secs = ref('RB_SECS') as Record<string, string[]>;
   if (!r.a || p === 'product' || p === 'oauth' || !(p in secs)) return true;
-  return secs[p].includes(r.a) || known.includes(r.a);
+  return secs[p].includes(r.a) || known.includes(r.a) || isPageTab(r);
 }
 
 /** The account's landing route, without the leading "#/" (e.g. "home", "product/received?focus=RT-1048"). */
