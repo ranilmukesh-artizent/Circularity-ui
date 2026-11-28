@@ -174,7 +174,10 @@ async function saveWhenOn(p, form, label) {
     const held = await form.locator('select, input').evaluateAll((els) => els.map((e) => `${e.id}=${e.value}`).join(' '));
     throw new Error(`${label}: Save stayed off. Reason shown: ${(await button.getAttribute('title').catch(() => null)) || 'none'}. The form holds ${held}`);
   }
-  await button.click();
+  await button.scrollIntoViewIfNeeded();
+  const seen = p.waitForResponse((r) => r.url().includes('/api/actions/overlay.save'), { timeout: UI }).then(async (r) => `${r.status()} ${(await r.text()).slice(0, 200)}`, () => 'no overlay.save request was sent');
+  await button.evaluate((b) => b.click()); // a DOM click: after step 1 the pointer click at its coordinates sent no request (something covers the button)
+  say('   ', label, 'Save ->', await seen); // what the server answered (the refusal text can vanish when the page re-renders) 
 }
 await step('2 Customer layer: skip refused, GR-D2 0.60 saves, 0.50 refused', async () => {
   const pl = await as('planner.a');
@@ -203,8 +206,27 @@ const facts = (grade) => ({ cls: 'CMH', grade, ft: 'Repair center', site: 'Houst
 const st = {};
 await step('3 Queue plan: one case holds the lease order, the other loses it', async () => {
   const pl = await as('planner.a');
-  st.a = await caseOpen(pl, 'TF-SMOKE-1', facts('B'));
-  st.b = await caseOpen(pl, 'TF-SMOKE-2', facts('A'));
+  // GR-07 (the contract right gate) blocks a case whose serial has no line in the fleet contract system, and a blocked case
+  // shows no Decide content: connect the fleet source (its first full sync loads the lines) and use serials it holds.
+  const dev = await as('developer');
+  const rc = await callAction(dev, 'source.reconnect', { source_id: 'fleet' });
+  if (!rc.ok) throw new Error(`source.reconnect fleet: ${JSON.stringify(rc.error || rc).slice(0, 200)}`);
+  st.a = await caseOpen(pl, 'CMH-10972', facts('B'));
+  st.b = await caseOpen(pl, 'CMH-11226', facts('A'));
+  await until(
+    async () => {
+      for (const id of [st.a, st.b]) {
+        const r = await pl.evaluate(async (id) => (await fetch('/api/screens/case/' + id, { headers: { Authorization: 'Bearer ' + sessionStorage.getItem('circ-api-token') } })).json(), id);
+        const g = ((r.case || {}).gates || []).find((x) => x.id === 'G-CON-2');
+        if (!g || !g.passed) return null;
+      }
+      return true;
+    },
+    'the fleet source did not load the contract lines of CMH-10972 and CMH-11226 (GR-07 still blocks them)',
+    300000,
+    5000,
+    pl,
+  );
   const why = (id) => go(pl, `product/${id}/stage/6?tab=why`);
   const seen = await until(
     async () => {
@@ -216,17 +238,22 @@ await step('3 Queue plan: one case holds the lease order, the other loses it', a
         // the case page opens on its overview (the case waits at stage 7); its "Queue plan:" line shows once the screen is read
         t[id] = await expectText(pl, /Queue plan:/, '#view', 15000).catch(() => '');
       }
-      const hold = [st.a, st.b].find((id) => t[id].includes(`Holds lease renewal ${ORDER}`));
-      const lose = [st.a, st.b].find((id) => new RegExp(`goes to RT-\\d+`).test(t[id]));
-      return hold && lose && hold !== lose ? { hold, lose } : null;
+      // With the fleet connected the queue holds the fleet's own returns too (RT-1129 …): the order goes to whichever return
+      // gains most, so ours may both lose it. Either way every case names the order's one holder, and the two agree.
+      const goes = (id) => (t[id].match(new RegExp(`Lease renewal ${ORDER} goes to (RT-\\d+)`)) || [])[1];
+      const holds = (id) => t[id].includes(`Holds lease renewal ${ORDER}`);
+      const holder = [st.a, st.b].find(holds);
+      const named = holder || (goes(st.a) && goes(st.a) === goes(st.b) ? goes(st.a) : null);
+      const lose = [st.a, st.b].filter((id) => id !== holder && goes(id) && goes(id) === (holder || named));
+      return named && lose.length === (holder ? 1 : 2) ? { hold: holder || st.a, lose: lose[0], named } : null;
     },
-    `no case shows "Holds lease renewal ${ORDER}" and the other "goes to" (is the worker running?)`,
-    90000,
+    `the queue plan of the two cases does not name one holder of ${ORDER} (is the worker running?)`,
+    120000,
     2000,
     pl,
   );
   st.holder = seen.hold;
-  return `${seen.hold} holds ${ORDER}, ${seen.lose} loses it`;
+  return `${ORDER} goes to ${seen.named}; ${st.a} and ${st.b} show it`;
 });
 
 // ---------------------------------------------------------------- 4

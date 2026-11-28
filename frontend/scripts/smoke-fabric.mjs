@@ -262,12 +262,13 @@ await step('4 Resolve a conflict in the Conflict Queue (another value, with a re
   await go('integration/conflicts');
   const kpi = async () => +(await page.locator('.frkpis').first().innerText()).match(/(\d+)\s*Open conflicts/)[1];
   const open0 = await until(async () => { const n = await kpi(); return n > 0 ? n : null; }, 'no open conflict (did the post-reset syncs run? scripts/dev/wait-idle.sh)', 60000);
+  const closed0 = +(await page.locator('.frkpis').first().innerText()).match(/(\d+)\s*Resolved or escalated/)[1];
   // the card by position: its "Choose another value" button goes away once the choice opens
   const cards = page.locator('.grid.g3 > .panel');
   const at = await cards.evaluateAll((l) => l.findIndex((c) => [...c.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Choose another value')));
   check(at >= 0, 'no open conflict card offers "Choose another value"');
   const card = cards.nth(at);
-  const kind = (await card.locator('.ph h3').innerText()).trim(), asset = (await card.locator('.pb > b').first().innerText()).trim();
+  const kind = (await card.locator('.ph h3').innerText()).trim(), asset = (await card.locator('.pb b').first().innerText()).trim();
   await card.getByRole('button', { name: 'Choose another value' }).click();
   const other = card.locator('label', { hasText: /^Keep / }).first();
   let how, t;
@@ -285,10 +286,14 @@ await step('4 Resolve a conflict in the Conflict Queue (another value, with a re
   await page.reload();
   await page.locator('.frkpis').first().waitFor();
   const open1 = await until(async () => { const n = await kpi(); return n === open0 - 1 ? n : null; }, `open conflicts did not drop by one after a reload (${open0} before)`, 30000);
+  // the queue shows open conflicts first, 60 at a time (Show more), so the resolved card is usually off the first page:
+  // the "Resolved or escalated" figure must have gone up by one instead
+  const closed1 = +(await page.locator('.frkpis').first().innerText()).match(/(\d+)\s*Resolved or escalated/)[1];
+  check(closed1 === closed0 + 1, `"Resolved or escalated" is ${closed1} after a reload, expected ${closed0 + 1}`);
   const same = page.locator('.grid.g3 > .panel', { hasText: asset }).filter({ has: page.locator('.ph h3', { hasText: kind }) });
   const chips = await same.locator('.ph .chip').allInnerTexts();
-  check(chips.includes('Resolved'), `no Resolved card for ${kind} · ${asset} after a reload (${chips.join(', ')})`);
-  return `${id}: ${kind} · ${asset}, chose ${how}; "${t}"; open ${open0} → ${open1} after a reload, card Resolved`;
+  if (chips.length) check(chips.includes('Resolved'), `${kind} · ${asset} is still not Resolved after a reload (${chips.join(', ')})`);
+  return `${id}: ${kind} · ${asset}, chose ${how}; "${t}"; open ${open0} → ${open1}, resolved ${closed0} → ${closed1} after a reload`;
 });
 
 // 5. Manual Import: Load sample file → Validate → Load rows

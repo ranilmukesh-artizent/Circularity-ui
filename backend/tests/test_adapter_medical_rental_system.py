@@ -187,6 +187,7 @@ def test_adapter_medical_rental_sync_against_the_mock():
         ("REQ-2", 5),
         ("REQ-3", 48),
         ("REQ-4", 5),
+        ("REQ-5", 12),  # the patient monitor's request: every class is listed here, the case keeps its own class's
     ]
     assert len(demand["region_forecast"]) == 8
     assert min(demand["region_forecast"], key=lambda w: w["requests"])["week_start"] == "2026-12-07"

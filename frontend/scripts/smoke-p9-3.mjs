@@ -46,12 +46,19 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+// Guard: this smoke moves source-sim's clock. Against a stack other than the main one (web :5173), say which
+// source-sim belongs to it; the default :8100 is the main stack's, and a run without it moved that clock.
+if (new URL(base).port !== '5173' && !process.env.SIM_PORT && !process.env.SIM_URL) {
+  console.error(`smoke-p9-3: ${base} is not the main stack (:5173). Set SIM_PORT or SIM_URL to its source-sim; ` +
+    'the default localhost:8100 belongs to the main stack.');
+  process.exit(2);
+}
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-3');
 const ORG = 'tool-fleet-a';
 const SID = 'fleet';
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
-const SYNC = 180000;
-const LONG = 720000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 180000; // SMOKE_SYNC_MS: a longer wait for a sync or a re-evaluation on a loaded machine
+const LONG = Number(process.env.SMOKE_LONG_MS) || 720000; // SMOKE_LONG_MS: a longer wait for the worker on a loaded machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -107,7 +114,9 @@ const until = async (fn, msg, ms, p) => {
 };
 
 let stepsRun = 0;
+const SKIP = (process.env.SMOKE_SKIP || '').split(',').filter(Boolean); // SMOKE_SKIP=1,2: debug a later step on the state a run left (not for the gate)
 async function step(name, fn) {
+  if (SKIP.includes(name.split(' ')[0])) return;
   stepsRun += 1;
   const t0 = Date.now();
   try {
@@ -124,7 +133,8 @@ async function step(name, fn) {
 // ---------------------------------------------------------------- 1
 await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async () => {
   const admin = await as('admin');
-  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Tool fleet A' });
+  // named after the fleet programme the pack serves (the contracts' owner_org): its non-return fees come here (step 15)
+  await must(admin, 'org.create', { id: ORG, parent_id: 'workspace', kind: 'company', name: 'Fleet North America' });
   const dev = await as('developer');
   await must(dev, 'source.reconnect', { source_id: SID });
   // the Open case step names the org unit itself (source.update's edit form needs the whole connection, so no bind here)
@@ -144,7 +154,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
   await must(dev, 'workflow.publish', { id: wf.id });
   // the first full sync (queued by the reconnect) may still be running with the default graph: a sync queued meanwhile is
   // dropped as a duplicate, so let it finish, then read everything again through the published workflow (mode full)
-  await until(async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length >= 1, 'the first sync of ' + SID + ' did not finish', SYNC, dev);
+  await until(async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length >= 1, 'the first sync of ' + SID + ' did not finish', LONG, dev); // a first full sync on a loaded worker takes minutes
   // (its job may still read as running just after the history shows it, and the new sync is then dropped: ask again until it ran)
   const runs = async () => ((await getJson(dev, '/api/screens/integration/sources/' + SID)).sync_history || []).length;
   await until(async () => {
@@ -152,7 +162,7 @@ await step('1 Returns: 18 tool cases opened, CMH-48213 from contract_end', async
     await must(dev, 'source.sync', { source_id: SID });
     await dev.waitForTimeout(8000);
     return (await runs()) >= 2;
-  }, 'the second sync of ' + SID + ' did not run', SYNC, dev);
+  }, 'the second sync of ' + SID + ' did not run', LONG, dev);
   const n = await until(
     async () => {
       // the Returned assets read, counted by the tool serials in it (CMH-48213 ...): 18 once the sync has run
@@ -214,7 +224,7 @@ await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-441
         await pg.goto(`${base}/#/product/${id}/overview`);
         try {
           last = await pg.locator('[data-testid="tf-grade"]').first().innerText({ timeout: 45000 });
-        } catch (e) {
+        } catch {
           last = 'no grade panel: ' + String((await pg.locator('#view').innerText({ timeout: 3000 }).catch(() => '(no view)'))).replace(/\s+/g, ' ').slice(0, 120);
           return null;
         }
@@ -300,7 +310,17 @@ await step('4 Recall quarantine: BRK-51007 (repair recall RC-2026-017) is releas
   await approver.goto(`${base}/#/product/${id}/overview`);
   await approver.locator('#view').waitFor();
   const card = approver.locator('[data-testid="tf-quarantine"]').first();
-  await card.waitFor({ timeout: UI });
+  // the recall sync queues behind a running repairlog sync (the worker runs one job at a time): reload until the card shows
+  for (let t = 0; ; t += 60000) {
+    try {
+      await card.waitFor({ timeout: 60000 });
+      break;
+    } catch (e) {
+      if (t >= LONG) throw e;
+      await approver.reload();
+      await approver.locator('#view').waitFor();
+    }
+  }
   const before = await card.innerText();
   if (!/RC-2026-017 \(repair\)/.test(before) || !/release, redeploy, resell/.test(before)) throw new Error('the quarantine card reads: ' + before.replace(/\s+/g, ' '));
   await approver.locator('textarea[aria-label="Why the tool is released"]').fill('Impact mechanism replaced at the depot');
@@ -447,10 +467,8 @@ await step('9 Paths: CMH-48213 reads six valued paths and the renewal FC-30117-R
   const v = await getJson(admin, '/api/screens/toolfleet/' + row.id);
   if ((v.paths || []).length !== 6) throw new Error(`expected six paths, got ${(v.paths || []).length}`);
   const release = v.paths.find((p) => p.k === 'release');
-  // With the fleet mock's whole book of renewals and orders in the demand pool (357 records), the valuer takes the best net
-  // for this tool, which is not always its own contract's renewal FC-30117-R (that one wins only when it is the one offer, as in
-  // the unit tests): require a named renewal or order of the feed.
-  const FLEET_LINE = /(Fleet renewal|New fleet order) FC-\d+-R/;
+  // A return takes the renewal of its OWN contract (FC-30117-R for this tool), whatever else the fleet mock offers.
+  const FLEET_LINE = /Fleet renewal FC-30117-R/;
   if (!release.lines.some((l) => FLEET_LINE.test(l.label))) {
     throw new Error('the re-issue lines do not name a fleet renewal or order: ' + release.lines.map((l) => l.label).join(' | '));
   }
@@ -568,11 +586,23 @@ async function runToFinance(id, reached = /^9 .*Finance|^10 /) {
   await w.goto(`${base}/#/product/${id}/stage/8`);
   await w.locator('#view').waitFor();
   let s = '';
-  for (let i = 0; i < 40; i++) {
+  // The clock moves only while no step waits on the worker to send it (a queued step that waits for nothing else): on a
+  // loaded machine one long sync (repairlog, ~10 min) holds the one worker, and 40 moves spent meanwhile ran out before the
+  // step was even sent (writer 105). At most 40 moves, as before; the wait is bounded by LONG.
+  const admin = await as('admin');
+  const end = Date.now() + LONG;
+  for (let moves = 0, held = 0; Date.now() < end; ) {
     s = await stageOf(w);
     if (reached.test(s)) break;
-    await advance();
+    const steps = (await toolView(admin, id).catch(() => ({}))).followThrough?.steps || [];
+    const sending = steps.some((x) => x.status === 'queued' && !x.waiting);
+    held = sending ? held + 1 : 0;
+    if ((!sending || held % 20 === 0) && moves < 40) { // a queued step that waits on the clock still gets a move a minute
+      await advance();
+      moves++;
+    }
     await w.waitForTimeout(3000);
+    if (sending || moves >= 40) await w.reload().then(() => w.locator('#view').waitFor()).catch(() => {});
   }
   if (!reached.test(s)) throw new Error(`${id} did not reach Finance after the clock moved: ${s}`);
   return s;
@@ -708,7 +738,26 @@ await step('13 Key account: CRH-44120 (contract FC-30140, Westmark Supply) waits
 // ---------------------------------------------------------------- 14
 await step('14 Follow-through: CMH-48213 re-issued, the sim clock moves, the fleet line reads issued, Finance confirms, realised against predicted', async () => {
   const admin = await as('admin');
-  const id = await caseIdOf(admin, 'CMH-48213');
+  // The feed's return carries no workbench grade, so its estimate is C and a C tool cannot be issued to a fleet (the release path
+  // is closed: "must be refurbished"). A manual case for the same serial (another reason, so another case) is a grade A tool
+  // on the same contract line: the re-issue the step follows through.
+  // The fleet contract system is connected read-only: the lease step is only sent once its access is Read / write (source.update
+  // with a write operation sets it; the fleet source has no system owner in the directory, so the owner request cannot be used).
+  const fsrc = await getJson(admin, '/api/screens/integration/sources/fleet');
+  const fl = (function find(o) {
+    if (o && typeof o === 'object') {
+      if (o.id === 'fleet' && 'method' in o) return o;
+      for (const v of Object.values(o)) {
+        const r = find(v);
+        if (r) return r;
+      }
+    }
+    return null;
+  })(fsrc);
+  if (!fl) throw new Error('no fleet source on the Integration screen');
+  const fd = { type: fl.type, name: fl.name, vendor: fl.vendor, ver: fl.ver, env: fl.env, url: fl.url, method: fl.method, cfg: { ...(fl.cfg || {}) }, interval: fl.interval, auth: fl.auth, owner: fl.owner };
+  await must(admin, 'source.update', { mode: 'edit', id: 'fleet', d: fd, maps: (fl.mappings || []).filter(Array.isArray), ops: { read: fl.read?.length ? fl.read : ['contracts'], write: ['lease re-issue'] }, note: 'Smoke: send the lease re-issue' });
+  const id = await openTool(admin, 'CMH-48213', { cls: 'CMH', grade: 'A', site: 'Houston', rul: 75 });
   const before = await toolView(admin, id);
   if (before.followThrough) throw new Error(`${id} was approved already (an earlier step took CMH-48213?)`);
   const how = await submitAndApprove(id, 'release');
@@ -769,16 +818,32 @@ await step('17 Fit-for-use threshold: planner.a proposes 60, lowering is refused
 });
 
 // ---------------------------------------------------------------- 15
-await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a posts the $180 fee from My work', async () => {
+// A fee belongs to the programme that owns the contract (lead decision, 28 Nov): the org unit named after the contract's owner_org
+// (step 1 names tool-fleet-a "Fleet North America"). AGR-20991's line FL-30128-04 is a Fleet Europe contract's, so planner.a (with
+// access to tool-fleet-a) posts a Fleet North America line closed without the tool and never sees FL-30128-04.
+await step('15 Non-return fee: a Fleet North America line closed without the tool, planner.a posts the fee from My work, not Fleet Europe\'s', async () => {
+  await plannerAccess();
   const planner = await as('planner.a');
-  const title = 'Non-return fee FL-30128-04';
+  const sim = async (p) => (await (await fetch(`${SIM}/fleet/api/v1${p}`, { headers: { 'x-api-key': 'fleet-demo-key' } })).json()).items || [];
+  const owner = Object.fromEntries((await sim('/contracts?limit=500')).map((c) => [c.contractId, c.ownerOrg]));
+  const closed = (await sim('/contract-lines?status=closed_not_returned&limit=500')).filter((l) => l.nonReturnFee > 0);
+  const na = closed.filter((l) => owner[l.contractId] === 'Fleet North America').sort((a, b) => a.lineId.localeCompare(b.lineId));
+  const eu = closed.find((l) => l.lineId === 'FL-30128-04');
+  if (!na.length || !eu || owner[eu.contractId] !== 'Fleet Europe') throw new Error('the fleet mock has no Fleet North America line closed without the tool, or FL-30128-04 is not Fleet Europe\'s: ' + JSON.stringify(closed.map((l) => [l.lineId, owner[l.contractId]])));
+  const line = na[0];
+  const title = 'Non-return fee ' + line.lineId;
+  const fee = '$' + Math.round(line.nonReturnFee).toLocaleString('en-US');
   const row = await until(
     async () => ((await getJson(planner, '/api/screens/mywork')).items || []).find((i) => i.title === title),
     'no "' + title + '" item in My work (the fleet source must have synced)',
     SYNC,
     planner,
   );
-  if (!/\$180/.test(row.cause || '') || !/AGR-20991/.test(row.cause || '')) throw new Error('the item reads: ' + row.cause);
+  if (!row.cause?.includes(fee) || !row.cause.includes(line.serial)) throw new Error(`the item reads: ${row.cause} (expected ${fee} and ${line.serial})`);
+  const mine = ((await getJson(planner, '/api/screens/mywork')).items || []).map((i) => i.title);
+  if (mine.includes('Non-return fee FL-30128-04')) throw new Error("planner.a's My work lists Fleet Europe's fee FL-30128-04");
+  const theirs = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
+  if (theirs.ok || theirs.error?.code !== 'tenant_boundary') throw new Error("planner.a could post Fleet Europe's fee: " + JSON.stringify(theirs).slice(0, 200));
   await planner.goto(`${base}/#/mywork`);
   await planner.locator('#mywork').waitFor();
   const li = planner.locator('#mywork li', { hasText: title }).first();
@@ -790,9 +855,9 @@ await step('15 Non-return fee: AGR-20991 closed without the tool, planner.a post
     UI,
     planner,
   );
-  const again = await callAction(planner, 'nonReturnFee.post', { line_id: 'FL-30128-04' });
+  const again = await callAction(planner, 'nonReturnFee.post', { line_id: line.lineId });
   if (again.ok || again.error?.code !== 'duplicate') throw new Error('a second post is not a duplicate: ' + JSON.stringify(again));
-  return 'posted once, the second post is a duplicate';
+  return `${line.lineId} (${line.serial}, ${fee}) posted once, the second post is a duplicate; FL-30128-04 (Fleet Europe) refused`;
 });
 // ---------------------------------------------------------------- 16
 await step('16 Battery: a BAT return reads four paths and the hazardous-transport line', async () => {

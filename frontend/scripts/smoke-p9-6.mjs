@@ -42,6 +42,11 @@ import path from 'node:path';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const out = process.env.SMOKE_OUT || path.join(tmpdir(), 'smoke-p9-6');
 const ORG = 'Customer A';
 const SOURCES = ['dvreg', 'dvlab', 'dvmkt'];
@@ -54,7 +59,7 @@ const UNWIPED = ['272', '247', '250', '267', '246', '251', '242', '260', '261', 
 const MKT = SIM + '/device-market/v1';
 const LAB = SIM + '/device-lab/v1';
 const UI = Number(process.env.SMOKE_UI_MS) || 30000; // SMOKE_UI_MS: a slower machine
-const SYNC = 240000;
+const SYNC = Number(process.env.SMOKE_SYNC_MS) || 240000; // SMOKE_SYNC_MS: a longer wait for a sync on a loaded machine
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -157,6 +162,19 @@ async function readOnly(p, sid, resources) {
   const g = JSON.parse(JSON.stringify(w.graph));
   const conn = g.nodes.find((n) => n.k === 'conn');
   conn.cfg = { ...(conn.cfg || {}), resources, mode: 'full' };
+  // an extra system registered here (dvmkt) has no field mapping, and the default graph's Map step then fails the publish
+  // checks ("No field mapping is defined for dvmkt yet"): drop the Map step and what follows it, as smoke-p9-3's fleet graph
+  // has no Map step either (lead decision, the same as smoke-p9-final)
+  const maps = (await getJson(p, '/api/screens/integration/sources/' + encodeURIComponent(sid)))?.mappings || [];
+  if (!maps.length) {
+    const drop = new Set(g.nodes.filter((n) => n.k === 'map').map((n) => n.id));
+    for (let grew = true; grew; ) {
+      grew = false;
+      for (const e of g.edges || []) if (drop.has(e.a) && !drop.has(e.b)) { drop.add(e.b); grew = true; }
+    }
+    g.nodes = g.nodes.filter((n) => !drop.has(n.id));
+    g.edges = (g.edges || []).filter((e) => !drop.has(e.a) && !drop.has(e.b));
+  }
   await must(p, 'workflow.save', { id: wf.id, name: w.name, owner: w.owner, trig: w.trig, graph: g });
   await must(p, 'workflow.publish', { id: wf.id });
 }
@@ -221,6 +239,18 @@ async function step(name, fn) {
 await step('1 Sources: dvreg, dvlab and dvmkt registered and synced, the device cases open', async () => {
   const admin = await as('admin');
   const dev = await as('developer');
+  // Step 3's diversion acts only once the customer has published it (the pack only offers it as a sample: P9-6.14, an
+  // overlay op with its own maker-checker). Customer A publishes the step diversion before any case opens, so each case is
+  // decided with it; the wholesale shortcut sample stays off (writer 102: run 1 showed no diversion on any device case).
+  const step2nd = {
+    id: 'op-1', op: 'add_step', stage: 'condition', step: 'Second grading check', owner_role: 'Planner',
+    when: [{ fact: 'valuer.partner', op: 'in', value: ['P02', 'P04'] }],
+  };
+  const layer = { pack_key: 'device', org_unit_id: ORG };
+  const planner = await as('planner.a');
+  await must(planner, 'overlay.save', { ...layer, ops: [step2nd] });
+  await must(planner, 'overlay.submit', layer);
+  await must(await as('approver'), 'overlay.approve', layer);
   for (const sid of SOURCES) await must(dev, 'source.reconnect', { source_id: sid }); // (action) registers an extra system, then connects it
   // trade-ins and listings belong to an org unit (a trade-in of a source bound to none stays pending): bind the lab and the market
   for (const sid of ['dvlab', 'dvmkt']) {

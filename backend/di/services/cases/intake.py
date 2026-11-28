@@ -103,6 +103,7 @@ from di.repositories.packs import active_pack, published_keys, published_pack
 from di.services.actions.models import intake_predictor
 from di.services.actions.registry import ActionError
 from di.services.canonical import store as canonical
+from di.services.canonical.schema import SHARED_ORG
 from di.services.cases import (
     approval_hold,
     battery_wait,
@@ -499,7 +500,10 @@ def valuer_input(c: Mapping[str, Any], template_key: str) -> dict[str, Any]:
     """What the template's valuer decides a case on: the snapshot taken when it opened (`valuer`), else rebuilt from
     the case's own fields (a case opened before the snapshot was kept)."""
     if isinstance(c.get("valuer"), dict):
-        return copy.deepcopy(c["valuer"])
+        out = copy.deepcopy(c["valuer"])
+        if template_key == "tool_fleet" and c.get("contract_id"):
+            out["contract"] = str(c["contract_id"])  # the return's own contract: its renewal is the one it takes
+        return out
     facts = dict(c)
     return tool_fleet_case(c["id"], facts) if template_key == "tool_fleet" else device_lot(c["id"], facts | {"model": ""})
 
@@ -702,9 +706,13 @@ def open_battery_case(s: Session, c: store.Case) -> bool:
     if cond.get("battery_assessment_result") != "pack_replacement_needed":
         return False
     vin = str((c.get("vehicle") or {}).get("vin") or str(c["assetId"]).rpartition(":")[2])
+    # the owner's BMS first, then a shared one: a BMS registered with no org unit keys its packs `shared:<pack>`
     row = s.execute(
-        text("SELECT key FROM canonical WHERE model = 'asset' AND key LIKE :o AND data ->> 'vin_ref' = :v ORDER BY key LIMIT 1"),
-        {"o": f"{c['owner']}:%", "v": vin},
+        text(
+            "SELECT key FROM canonical WHERE model = 'asset' AND (key LIKE :o OR key LIKE :sh) AND data ->> 'vin_ref' = :v "
+            "ORDER BY (key LIKE :o) DESC, key LIMIT 1"
+        ),
+        {"o": f"{c['owner']}:%", "sh": f"{SHARED_ORG}:%", "v": vin},
     ).first()
     if row is None:
         return False

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from di.core import policy
 from di.core.auth import STREAM_TICKET_SECONDS, issue_stream_ticket
-from di.core.deps import CurrentPrincipal, DbSession
+from di.core.deps import CurrentPrincipal, DbSession, PersonPrincipal
 from di.schemas.auth import DelegationIn, Login
 from di.services import auth, oidc
 
@@ -33,7 +33,7 @@ def me(p: CurrentPrincipal):
 
 
 @router.post("/auth/stream-ticket")
-def stream_ticket(p: CurrentPrincipal):
+def stream_ticket(p: PersonPrincipal):
     """A short-lived ticket for GET /api/stream?ticket= (EventSource cannot send the bearer token as a header)."""
     return {"ticket": issue_stream_ticket(p.account), "expires_in": STREAM_TICKET_SECONDS}
 
@@ -45,7 +45,7 @@ def delegations(p: CurrentPrincipal):
 
 
 @router.put("/access/delegations/{scope}")
-def set_delegation(scope: str, body: DelegationIn, p: CurrentPrincipal, session: DbSession):
+def set_delegation(scope: str, body: DelegationIn, p: PersonPrincipal, session: DbSession):
     """What the Approver may decide (the demo's access.setDelegation; the full action arrives in B8/B12)."""
     p.require("manageAccess")
     return auth.set_delegation(session, scope, body.enabled, p.account.id)

@@ -45,11 +45,12 @@ def test_rental_system_needs_the_key(client):
 
 
 def test_rental_system_seed(client):
-    """Four open requests, the six hospitals, East with one decontamination line and the others with two."""
+    """Five open requests (four for pumps, one for the patient monitor), the six hospitals, East with one decontamination line
+    and the others with two."""
     reqs = get(client, "requests")
-    assert [r["reqId"] for r in reqs] == ["REQ-1", "REQ-2", "REQ-3", "REQ-4"]
-    assert [r["hospitalId"] for r in reqs] == ["HOSP-A", "HOSP-B", "HOSP-C", "HOSP-B"]
-    assert {r["deviceClass"] for r in reqs} == {"infusion_pump"}
+    assert [r["reqId"] for r in reqs] == ["REQ-1", "REQ-2", "REQ-3", "REQ-4", "REQ-5"]
+    assert [r["hospitalId"] for r in reqs] == ["HOSP-A", "HOSP-B", "HOSP-C", "HOSP-B", "HOSP-A"]
+    assert [r["deviceClass"] for r in reqs] == ["infusion_pump"] * 4 + ["patient_monitor"]
     assert {(r["startDate"], r["days"], r["region"]) for r in reqs} == {("2026-11-27", 30, "EAST")}
     assert set(reqs[0]) == {"reqId", "hospitalId", "deviceClass", "startDate", "days", "region", "requestedAt"}
     first, again = (datetime.fromisoformat(r["requestedAt"]) for r in (reqs[1], reqs[3]))
@@ -68,7 +69,7 @@ def test_rental_returns_and_isolation_ward(client):
     rows = get(client, "returns")
     by = {r["tag"]: r for r in rows}
     assert set(rows[0]) == {"returnId", "tag", "hospitalId", "ward", "wardType", "depot", "checkedInAt", "previousRentalEnd"}
-    assert len(by) == len(rows) == 45 and by["SYN-MR-IP-0001"]["depot"] == "EAST"
+    assert len(by) == len(rows) == 46 and by["SYN-MR-IP-0001"]["depot"] == "EAST"  # 45 pumps and the monitor SYN-MR-PM-0007
     iso = sorted(r["tag"] for r in rows if r["wardType"] == "isolation")
     assert iso == ["SYN-MR-IP-0010", "SYN-MR-IP-0011"]
     assert {by[t]["hospitalId"] for t in iso} == {"HOSP-D"}
@@ -115,13 +116,13 @@ def test_rental_dispatch_idempotent(client):
     assert (doc["tag"], doc["reqId"], doc["evidence"]) == ("SYN-MR-IP-0001", "REQ-2", EVIDENCE)
     two = client.post(f"{API}/dispatches", json=body, headers=KEY)
     assert two.status_code == 200 and two.json() == doc  # a repeat: the first document, nothing new
-    assert [r["reqId"] for r in get(client, "requests")] == ["REQ-1", "REQ-3", "REQ-4"]  # dispatched: no longer open
+    assert [r["reqId"] for r in get(client, "requests")] == ["REQ-1", "REQ-3", "REQ-4", "REQ-5"]  # dispatched: no longer open
     other = client.post(f"{API}/dispatches", json=body | {"tag": "SYN-MR-IP-0002"}, headers=KEY)
     assert other.status_code == 409
     third = client.post(f"{API}/dispatches", json=body | {"reqId": "REQ-3"}, headers=KEY)
     assert third.status_code == 201 and third.json()["dispatchId"] == "DSP-0002"
     client.post("/_sim/reset", params={"system": "mr_rental"}).raise_for_status()
-    assert len(get(client, "requests")) == 4
+    assert len(get(client, "requests")) == 5
 
 
 def test_rental_dispatch_validates(client):
@@ -136,4 +137,4 @@ def test_rental_dispatch_validates(client):
     for body, status in cases:
         assert client.post(f"{API}/dispatches", json=body, headers=KEY).status_code == status, body
     assert client.post(f"{API}/dispatches", content=b"not json", headers=KEY).status_code == 400
-    assert len(get(client, "requests")) == 4
+    assert len(get(client, "requests")) == 5

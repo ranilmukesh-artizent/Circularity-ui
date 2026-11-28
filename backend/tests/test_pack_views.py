@@ -229,3 +229,19 @@ def test_x_09_stage_agents_on_case():
     assert got == want and len(got) == 7
     demo = client.get("/api/screens/case/RT-1051", headers=h("planner-a")).json()
     assert demo["packStages"] is None  # the industrial demo's case page is unchanged
+
+
+def test_x_09_caseless_exception_takes_its_pack_wording():
+    """An item with no case (a manifest serial that never arrived) shows the label and action of the pack that names its
+    type (`EX-IT-MISSING`); the cause, which says the serial, stays the row's."""
+    label = next(t for t in load_pack("itad").runtime.exception_types if t.id == "EX-IT-MISSING")
+    with SessionLocal() as s:
+        process.open_item(
+            s, kind="exception", case_id=None, org_unit_id=ORG, type="EX-IT-MISSING",
+            title="SN-X was expected back and has no case",
+            cause="SN-X is on the manifest", action="old action", owner_role="Admin", due_hours=None, by="system",
+        )  # fmt: skip
+        s.commit()
+    rows = client.get("/api/screens/mywork", headers=h("admin")).json()["items"]
+    row = next(i for i in rows if i["cause"] == "SN-X is on the manifest")
+    assert (row["title"], row["action"]) == (label.label, label.action)

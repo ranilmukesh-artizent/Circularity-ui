@@ -36,6 +36,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { replayTheDraft } from './p9-replay.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-10');
@@ -43,16 +44,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const ORG = 'Customer A';
 const SOURCES = ['tn_inv', 'tn_decom', 'tn_bench', 'tn_spares', 'tn_broker', 'tn_recycler'];
 const sn = (n) => 'SN-TN-' + String(n).padStart(4, '0');
-// The mocks' units: n % 6 picks the model (0 RAD-7700, 1 RRU-4410, 3 BBU-5200, 4 LCD-100G); 0001-0033 are the removed ones.
+// The mocks' units: n % 6 picks the model (0 RAD-7700, 1 RRU-4410, 3 BBU-5200, 4 LCD-100G), except 0015, pinned a BBU-2200 (the
+// model brokers bid on and no region needs, so only its failed wipe closes the resale); 0001-0033 are the removed ones.
 const UNITS = {
   1: { model: 'RRU-4410', site: 'SITE-100' },
   6: { model: 'RAD-7700', site: 'SITE-105' },
   7: { model: 'RRU-4410', site: 'SITE-106' },
   12: { model: 'RAD-7700', site: 'SITE-111' },
-  15: { model: 'BBU-5200', site: 'SITE-114' },
+  15: { model: 'BBU-2200', site: 'SITE-114' },
   202: { model: 'LCD-100G', site: 'SITE-301' }, // never in the inventory
 };
 const MODELER = `${base}/#/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`;
+const HISTORY = path.join(ROOT, 'fixtures/replay/telecom_network.csv'); // replayed before the publish step (owner decision, 28 Nov)
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const UI = 400000; // the dev stack answers slowly while the worker syncs and other stacks share the machine
 const FIRST = 400000; // a first page load after sign-in
 const SYNC = 180000;
@@ -114,6 +123,23 @@ async function open(p, url, ready = '#view') {
   await p.goto(url);
   await p.reload();
   await p.locator(ready).first().waitFor({ timeout: FIRST });
+}
+
+/** Analytics > Packs for one pack: open Analytics, pick its Packs tab (as a person does; #/analytics/packs opens it too), then
+ * the pack. */
+async function openPacks(p, key, question) {
+  await open(p, `${base}/#/analytics`);
+  await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
+  const pick = p.locator('select[aria-label="Pack"]');
+  await pick.waitFor({ timeout: UI });
+  await pick.selectOption(key);
+  // a worked question draws its chart only once chosen (PackQuestions: "Choose a question.")
+  const btn = p.getByTestId('pack-questions').getByRole('button', { name: question });
+  if (await btn.waitFor({ timeout: 60000 }).then(() => true, () => false)) {
+    await btn.click();
+    await p.locator('[data-question]').first().waitFor({ timeout: UI }).catch(() => {});
+  }
+  await p.waitForTimeout(800);
 }
 
 async function step(name, fn) {
@@ -224,12 +250,12 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
 // ---------------------------------------------------------------- 2 (TN-05)
 await step('2 The unit not in the inventory: "Unit not in network inventory" on the case and in My work', async () => {
   const p = await as('planner.a');
-  await inCase(p, 202, /Unit not in network inventory/, '"Unit not in network inventory"');
+  await inCase(p, 202, /Serial not in network inventory/, '"Serial not in network inventory" (the gate reason; the exception "Unit not in network inventory" is in My work below)');
   let where = '';
   for (const acct of ['warehouse1', 'warehouse2', 'admin', 'planner.a']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/Unit not in network inventory/.test(await text(q)) || (await text(q)).includes(sn(202))) {
       where = acct;
       break;
@@ -254,14 +280,16 @@ await step('3 The unit whose wipe failed twice: "Wipe failed twice: storage dest
 await step('4 The export approvals: RAD-7700 with "keep as spares", the approver approves one', async () => {
   const ap = await as('approver');
   await open(ap, base + '/#/mywork');
-  await waitText(ap, /RAD-7700/, 'no RAD-7700 export approval in the approver\'s My work (the seed has no screened-clear RAD-7700 bid?)', UI);
+  // the item names the bid (BID-7700-OS, the broker's RAD-7700 bid), the class and the alternative, not the model
+  await waitText(ap, /BID-7700-\S+.*Export class 5A002/, 'no RAD-7700 export approval (bid BID-7700-..., class 5A002) in the approver\'s My work', UI);
   const t = await text(ap);
   if (!/keep as spares/i.test(t)) throw new Error('the RAD-7700 export approval does not show "keep as spares"');
   // the case page of one of the two RAD-7700 units (SN-TN-0006, 0012): approve where the page offers it
   let id = '';
   for (const n of [6, 12]) {
     await open(ap, `${base}/#/product/${need(n)}/stage/7`);
-    if (await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).count()) { id = need(n); break; }
+    // the stage draws after the route change: wait a moment for the button instead of counting at once
+    if (await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().waitFor({ timeout: 60000 }).then(() => true, () => false)) { id = need(n); break; }
   }
   if (!id) throw new Error('neither RAD-7700 case (SN-TN-0006, SN-TN-0012) offers Approve on stage 7');
   await ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click();
@@ -275,7 +303,11 @@ await step('4 The export approvals: RAD-7700 with "keep as spares", the approver
 await step('5 The routes: redeploy with New spend avoided and net 9,435.00; the second RRU-4410 fills nothing twice', async () => {
   const p = await as('planner.a');
   const t1 = await inCase(p, 1, /Redeploy to a site/, '"Redeploy to a site"');
-  if (!/New spend avoided/.test(t1)) throw new Error(`${sn(1)} does not show "New spend avoided"`);
+  if (!/New spend avoided/.test(t1)) {
+    // the Decision packet's "How ... is built" draws after the page's first text: read that tab again until the line shows
+    await open(p, `${base}/#/product/${need(1)}/stage/6?tab=packet`);
+    await waitText(p, /New spend avoided/, `${sn(1)} does not show "New spend avoided"`, 120000);
+  }
   if (!/9,435\.00|9,435|9\.4k/.test(t1)) throw new Error(`${sn(1)} does not show the net 9,435.00`);
   const t7 = await inCase(p, 7, /Site demand SD-112 filled by SN-TN-0001/, '"Site demand SD-112 filled by SN-TN-0001"');
   if (!/Refurbish as a spare/.test(t7)) throw new Error(`${sn(7)} does not recommend "Refurbish as a spare"`);
@@ -289,13 +321,22 @@ await step('6 The diversion that skips the configuration wipe is refused, with t
   await startCompose(p, 'urgent site outage: skip the configuration wipe');
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();
-  if (!/Blocked \(/.test(t) || !/wipe|G-NET-CFG/i.test(t)) throw new Error('Compose shows no "Blocked (...)" refusal naming the wipe guardrail');
+  // the refusal reads "Blocked by Configuration wipe certificate: Blocked: this skips the compliance guardrail ..." (was "Blocked (...)")
+  if (!/Blocked (?:by|\()[^\n]*(?:wipe|G-NET-CFG)/i.test(t)) throw new Error('Compose shows no "Blocked by ..." refusal naming the wipe guardrail');
   return /already wiped spare/i.test(t) ? 'refused, with the suggestion (an already wiped spare)' : 'refused (the suggestion text "already wiped spare" is not shown on the draft)';
 });
 
 // ---------------------------------------------------------------- 7 (TN-18, TN-19)
 await step('7 Cross-region alert "Transfer to the region buying new" and the held proposal "Reduce purchase requisition"', async () => {
   const p = await as('planner.a');
+  // Customer A reads the workspace's telecom flow until it has its own, and planner.a may not read the workspace (tenant
+  // boundary): give the org its own flow in the Modeler first, as a person does (p9-replay.mjs does the same before the replay)
+  await open(p, MODELER, '.mdl-life');
+  const fork = p.getByRole('button', { name: /^Give .* its own flow$/ });
+  if (await fork.waitFor({ timeout: 8000 }).then(() => true, () => false)) {
+    await fork.click();
+    await fork.waitFor({ state: 'detached', timeout: UI });
+  }
   // (action: telecom.crossRegion) no page lists the alert yet: the Modeler's read action
   const m = await getJson(p, `/api/screens/modeler?template=telecom_network&org=${encodeURIComponent(ORG)}`);
   const fid = m?.flow?.id;
@@ -320,19 +361,19 @@ await step('7 Cross-region alert "Transfer to the region buying new" and the hel
 await step('8 The analytics question and the modelled replay figures', async () => {
   const p = await as('planner.a');
   const notes = [];
-  await open(p, `${base}/#/analytics/packs`);
-  const pick = p.locator('select[aria-label="Pack"]');
-  if (await pick.count()) await pick.selectOption('telecom_network').catch(() => {});
-  await p.waitForTimeout(800);
+  await openPacks(p, 'telecom_network', /Why are we still buying new power units when returns are coming in\?/);
   await waitText(p, /Why are we still buying new power units when returns are coming in\?/, 'Analytics > Packs does not show the question "Why are we still buying new power units when returns are coming in?"', UI);
   if (!/PSU-48/.test(await text(p))) throw new Error('the power unit question shows no chart rows (PSU-48)');
   notes.push('question with its chart');
 
+  // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, sim: SIM, timeout: UI })})`);
   await openSetupTab(p, 60000, { base, org: ORG, compose: COMP || null });
   await compose(p).waitFor();
   const tab = p.locator('.rl li[data-stop="publish"] a.rl-stop');
   if (await tab.count()) await tab.click();
-  await p.waitForTimeout(800);
+  // the replay report loads after the step draws: wait for its "modelled" label rather than a fixed 800 ms
+  await compose(p).getByText(/modelled/i).first().waitFor({ timeout: 60000 }).catch(() => {});
   const t = await compose(p).innerText();
   if (!/modelled/i.test(t)) throw new Error('the Compose publish step does not label the replay figures "modelled"');
   notes.push('replay figures labelled modelled');

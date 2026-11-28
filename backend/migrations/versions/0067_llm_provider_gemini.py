@@ -9,8 +9,8 @@ delete rows from the shared dev database, and a migration runs once.
 
 from alembic import op
 
-revision = "0066"
-down_revision = "0065"
+revision = "0067"
+down_revision = "0066"
 branch_labels = None
 depends_on = None
 

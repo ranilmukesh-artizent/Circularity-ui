@@ -2,7 +2,8 @@
 per week, each device of the lot a line that is released or held for its factory-reset record.
 
     refresh(s, case, pack)   the case's `lot`, read from the canonical store: the lot's serials (`asset.lot_serials` of the lot's
-                             asset key) and each serial's `condition.factory_reset`; every valuation does it first
+                             asset key) and each serial's `condition.factory_reset`, keyed with the lot key's prefix (a shared
+                             source writes `shared:`, whoever owns the case); every valuation does it first
     recheck(s, lot_key)      the open lots holding a line for a record that arrived are valued again (worker `case.gateRecheck`)
 
 `case["lot"]` is `{id, model, week, grade, qty, released, held, heldKeys, lines}`; a line is `{serial, status: "released" |
@@ -55,7 +56,9 @@ def refresh(s: Session, c: store.Case, pack: Pack) -> None:
     if not isinstance(serials, list) or not serials:
         c.pop("lot", None)
         return
-    keys = {x: serial_key(c.get("owner"), x) for x in serials}
+    lot_key = str(c.get("assetId") or "")
+    prefix = lot_key.split(":", 1)[0] if ":" in lot_key else c.get("owner")  # the lot's unit (`shared` too), else the owner
+    keys = {x: serial_key(prefix, x) for x in serials}
     rows = s.execute(
         text("SELECT key, data -> 'factory_reset' FROM canonical WHERE model = 'condition' AND key = ANY(:k)"),
         {"k": list(keys.values())},

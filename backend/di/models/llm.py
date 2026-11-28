@@ -10,7 +10,7 @@ llm_model = Table(
     "llm_model",
     metadata,
     Column("id", Text, primary_key=True),
-    Column("provider", Text, nullable=False),  # groq, gemini (migration 0066), test
+    Column("provider", Text, nullable=False),  # groq, gemini (migration 0067), test
     Column("model", Text, nullable=False),
     Column("key_ref", Text),  # "env:<VAR>": the setting that holds the key
     Column("rpm", Integer, nullable=False),

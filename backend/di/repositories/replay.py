@@ -258,11 +258,16 @@ def held_demand(s: Session, batch_id: int) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def set_status(s: Session, run_id: int, status: str, *, report: dict[str, Any] | None = None, error: str | None = None) -> None:
+def set_status(
+    s: Session, run_id: int, status: str, *, report: dict[str, Any] | None = None, error: str | None = None,
+    draft_hash: str | None = None,
+) -> None:  # fmt: skip
+    """`draft_hash`: the hash of the draft graph the run replayed (a draft run; review P9-7.9 F1), kept when None."""
     s.execute(
         text(
             "UPDATE replay_run SET status = :st, report = CAST(:r AS jsonb), error = :e, "
+            "draft_hash = COALESCE(:h, draft_hash), "
             "finished_at = CASE WHEN :st IN ('done', 'failed') THEN now() ELSE NULL END WHERE id = :i"
         ),
-        {"st": status, "r": json.dumps(report) if report is not None else None, "e": error, "i": run_id},
+        {"st": status, "r": json.dumps(report) if report is not None else None, "e": error, "h": draft_hash, "i": run_id},
     )

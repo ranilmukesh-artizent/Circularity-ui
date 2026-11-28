@@ -235,3 +235,23 @@ def test_scim_actions_are_system_only_and_never_an_agents():
         out = helpers.call(action, {"external_id": "x", "email": "a@example.com", "name": "n", "active": True, "groups": [],
                                     "group_id": "g"}, "admin")  # fmt: skip
         assert out["ok"] is False and out["error"]["code"] == "out_of_scope"
+
+
+def test_x_10_scim_email_change_of_an_admin_is_ignored():
+    """Review P9-8.23 F1: SCIM never moves the Admin account's sign-in email, so OIDC with the new email is not Admin."""
+    from di.services import oidc
+
+    with SessionLocal() as s:
+        old = next(u["email"] for u in state.items(s, "idp_users") if u.get("acct") == "admin")
+    body = {"schemas": [USER], "userName": "evil@example.com", "emails": [{"value": "evil@example.com", "primary": True}],
+            "displayName": "Admin", "active": True}  # fmt: skip
+    r = helpers.client.put("/scim/v2/Users/admin", json=body, headers=BEARER)
+    assert r.status_code == 200, r.text
+    with SessionLocal() as s:
+        assert next(u["email"] for u in state.items(s, "idp_users") if u.get("acct") == "admin") == old
+        got = oidc.resolve_directory_user(s, "evil@example.com", [])
+        assert got is None or got.role != "Admin"
+        back = oidc.resolve_directory_user(s, old, [])
+        assert back is not None and back.role == "Admin"
+        notes = s.execute(text("SELECT data->>'note' FROM state_item WHERE collection = 'events'")).scalars().all()
+    assert any("SCIM email change ignored for an Admin account" in (n or "") for n in notes)

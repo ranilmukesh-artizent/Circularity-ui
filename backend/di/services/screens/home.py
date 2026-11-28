@@ -172,7 +172,9 @@ def alerts(ctx: CallContext) -> list[dict]:
                 }
             )
     if can_page(ctx, "product", "case"):
-        for c in visible_cases(ctx):
+        vis = visible_cases(ctx)
+        out += medical_rental_alerts(ctx.session, [c for c in vis if c.get("template") == "medical_rental"])
+        for c in vis:
             s: Any = active_step(c)
             k = ex_clock(c, s) if s else None
             if k and k["level"]:
@@ -243,6 +245,39 @@ def alerts(ctx: CallContext) -> list[dict]:
                 }
             )
     return sorted(out, key=lambda x: -x["sev"])  # the demo sorts unacknowledged first, then by severity (stable)
+
+
+def medical_rental_alerts(s: Session, cases: list[Case]) -> list[dict]:
+    """The medical rental segment's notices among the alerts (P9-11.16 "overview alerts"; P9-11.15): the turnaround alert
+    `AL-MR-TURNAROUND` of the org units of the rental cases the account sees, and the service-week suggestion
+    `SR-MR-SVCWEEK` of each of those cases. Nothing without a visible rental case (the demo's alerts are unchanged)."""
+    if not cases:
+        return []
+    from di.core import clock
+    from di.services.cases import mr_service_planning as svc
+    from di.services.cases import mr_turnaround as mt
+    from di.services.modeler.pack import load_pack
+
+    out: list[dict] = []
+    for a in mt.alerts_for(s, sorted({c["owner"] for c in cases}), load_pack(svc.TEMPLATE)):
+        out.append(
+            {"id": f"mr:{a.id}:{a.depot}", "kind": "suggest", "ic": "clock", "h": "alert", "t": a.text,
+             "s": f"{a.action} · {a.avg_days:g} days on average · {a.to_role}", "sev": 1, "go": "analytics/packs",
+             "ack": False}
+        )  # fmt: skip
+    today = clock.now().date()
+    for c in cases:
+        if c.get("stage") == "closed":
+            continue
+        # "within the next rental period": from today, or from the case's next rental when it starts later
+        starts = [d for q in c.get("rentalRequests") or [] if (d := svc._day(q.get("start_date"))) is not None]
+        x = svc.suggest_case(s, c, max(today, min(starts, default=today)))
+        if x is not None:
+            out.append(
+                {"id": f"mr:{svc.RULE}:{x.case_id}", "kind": "suggest", "ic": "bell", "h": "dec", "t": x.text,
+                 "s": f"{x.case_id} · {x.kind} due {x.due}", "sev": 1, "go": f"product/{x.case_id}/overview", "ack": False}
+            )  # fmt: skip
+    return out
 
 
 def _plural(n: int, one: str, many: str) -> str:

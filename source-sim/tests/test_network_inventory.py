@@ -70,6 +70,12 @@ def test_network_inventory_seed_and_paging(client):
     assert not {serial(n) for n in range(201, 209)} & {r["serial"] for r in rows}
 
 
+def test_unit_0015_is_a_bbu_2200(client):
+    """SN-TN-0015 (the bench's wipe that failed twice) is the baseband brokers bid on and no region needs (smoke p9-10 step 3)."""
+    one = client.get(f"{API}/elements", params={"serial": serial(15)}, headers=KEY).json()["elements"][0]
+    assert (one["model"], one["status"], one["region"], one["manufacturer"]) == ("BBU-2200", "removed", "North", "MFR-B")
+
+
 def test_network_inventory_filters(client):
     one = client.get(f"{API}/elements", params={"serial": serial(5)}, headers=KEY).json()
     assert [r["serial"] for r in one["elements"]] == [serial(5)] and one["next"] is None

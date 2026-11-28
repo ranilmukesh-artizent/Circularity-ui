@@ -21,8 +21,13 @@ interface Hold {
   id: string; reason?: string; repairEstimate?: number; limit?: number; income?: number | null; incomeBasis?: string | null;
   alternative?: { route: string; net: number } | null;
 }
+interface TestResult { result?: string; standard?: string; at?: string }
+interface ServiceRead {
+  certificationExpiry?: string; pmDue?: string; source?: string; ageDays?: number;
+  functionalTest?: TestResult | null; electricalSafety?: TestResult | null; notes?: { text: string; kind?: string }[];
+}
 interface MedFacts {
-  rentalRequests?: Request[]; serviceRead?: { certificationExpiry?: string; pmDue?: string };
+  rentalRequests?: Request[]; serviceRead?: ServiceRead;
   serviceCheck?: { requests: ReqCheck[]; proposed: { input: { asset_tag: string; kind: string; due_by: string } } | null };
   serviceOrders?: Order[]; approvalHolds?: Hold[]; valuer?: { book_value?: number };
   close?: { turnaround_hours?: number; rerented_within_48h?: boolean; utilisation?: number; certificate_ref?: string; posted?: { write_off?: { amount: number; at?: string } } };
@@ -70,6 +75,26 @@ export function certRows(c: CaseRec): CertRow[] {
 export function serviceDates(c: CaseRec): [string, string][] {
   const r = facts(c).serviceRead;
   return [['Certification to', r?.certificationExpiry], ['Preventive maintenance due', r?.pmDue]].filter((x): x is [string, string] => Boolean(x[1]));
+}
+
+const testLine = (t: TestResult | null | undefined) =>
+  t?.result ? [t.result === 'fail' ? 'Failed' : t.result === 'pass' ? 'Passed' : t.result, t.standard, t.at].filter(Boolean).join(' · ') : null;
+
+/**
+ * What the service system says about the unit's condition (MR-07): the two test results and the condition notes, then the source
+ * and age of the read. A cosmetic note is shown as such; it changes no eligibility (the gates decide that, not this line).
+ */
+export function conditionRows(c: CaseRec): [string, string][] {
+  const r = facts(c).serviceRead;
+  if (!r) return [];
+  const notes = (r.notes ?? []).map((n) => (n.kind ? `${n.text} (${n.kind})` : n.text)).join('; ');
+  const age = r.ageDays != null ? `${r.ageDays} days old` : null;
+  return [
+    ['Functional test', testLine(r.functionalTest)],
+    ['Electrical safety', testLine(r.electricalSafety)],
+    ['Condition notes', notes || 'None recorded'],
+    ['Read from', [r.source, age].filter(Boolean).join(' · ') || null],
+  ].filter((x): x is [string, string] => Boolean(x[1]));
 }
 
 /** What the close measured: check-in to dispatch against 48 hours, and the share of the cycle the device earns. */

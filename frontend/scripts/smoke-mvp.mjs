@@ -32,6 +32,13 @@
 import { chromium } from '@playwright/test';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+// Guard: this smoke moves source-sim's clock. Against a stack other than the main one (web :5173), say which
+// source-sim belongs to it; the default :8100 is the main stack's, and a run without it moved that clock.
+if (new URL(base).port !== '5173' && !process.env.SIM_PORT && !process.env.SIM_URL) {
+  console.error(`smoke-mvp: ${base} is not the main stack (:5173). Set SIM_PORT or SIM_URL to its source-sim; ` +
+    'the default localhost:8100 belongs to the main stack.');
+  process.exit(2);
+}
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const shots = process.env.SMOKE_SHOTS || ''; // a folder: a screenshot of the page is saved there when a step fails
 const ORG = 'company-x';
@@ -451,7 +458,7 @@ await step('7 Admin starts the case autopilot from the Agents page; it stops at 
   }, `run ${run} did not stop at a held proposal`, 90000 * K, 3000);
   const pid = +row.match(/Proposal (\d+)/)[1];
   const prow = await admin.locator(`#agp-${pid}`).innerText();
-  check(/decision\.submit/.test(prow) && prow.includes(id), `proposal ${pid} is not the submit of ${id}: ${prow.replace(/\s+/g, ' ')}`);
+  check(/Submit for review/.test(prow) && prow.includes(id), `proposal ${pid} is not the submit of ${id}: ${prow.replace(/\s+/g, ' ')}`);
   // (no UI for a Planner: the Agents page is Admin and Developer only) planner-a accepts with the page's own action
   const pl = await as('planner-a');
   const acc = await callAction(pl, 'proposal.accept', { id: pid });

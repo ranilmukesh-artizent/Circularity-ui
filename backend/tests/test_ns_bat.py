@@ -21,7 +21,7 @@ from di.connectors.registry import ADAPTERS
 from di.core.db import SessionLocal, engine
 from di.services.canonical import store as canonical
 from di.services.canonical.schema import serial_key, vin_key
-from di.services.cases import intake
+from di.services.cases import gate_hold, intake
 from di.services.cases import store as cases
 from di.services.cases.decide import decide_case
 from di.services.modeler.compile import CompiledRule, FlowVersion
@@ -119,6 +119,33 @@ def test_ns_bat_01_ev_assessment_opens_battery_case(world):
     assert [x["case"] for x in car["linked"]] == [bat["id"]] and car["linked"][0]["template"] == "battery"
     assert (bat["battery"]["soh_pct"], bat["battery"]["chemistry"], bat["battery"]["market"]) == (74, "NMC", "EU")
     assert vin_key(ORG, uc.vin(44)) == car["assetId"]  # the car case is the one keyed by the VIN
+
+
+def test_ns_bat_01_assessment_on_an_unheld_car_finds_a_shared_pack(world):
+    """smoke-p9-12 step 3: the car is not held (no EV step in an overlay) and the BMS was registered with no org unit
+    (source.reconnect of an unregistered system), so its packs are keyed `shared:<pack>`. The assessment landing queues the
+    car's recheck, and the recheck opens the shared pack's case for the owner's car."""
+    with SessionLocal() as s:
+        s.execute(text("UPDATE source_system SET org_unit_id = NULL WHERE id = 'bat_bms'"))
+        s.commit()
+    car = uc.open_car(44, like=6)
+    assert car.get("gateHold") is None
+    _write_pack(_pack_row(org_unit_id=None))
+    done = {"assessmentId": "BA-0044", "vin": uc.vin(44), "status": "complete", "batterySoh": 74,
+            "result": "pack_replacement_needed", "org_unit_id": ORG}  # fmt: skip
+    uc.write("uc_insp", "battery_assessments", done)
+    with SessionLocal() as s:
+        queued = s.execute(
+            text("SELECT count(*) FROM job WHERE kind = 'case.gateRecheck' AND payload ->> 'asset_key' = :k"),
+            {"k": car["assetId"]},
+        ).scalar_one()
+        gate_hold.recheck(s, car["assetId"])  # what the queued job runs
+        s.commit()
+    assert queued == 1
+    car = uc.get(car["id"])
+    assert [x["template"] for x in car.get("linked") or []] == ["battery"]
+    bat = uc.get(car["linked"][0]["case"])
+    assert bat["assetId"] == "shared:BP-044" and bat["linked_case"] == car["id"]
 
 
 def test_ns_bat_01_a_replacement_needed_without_a_pack_on_file_opens_nothing(world):

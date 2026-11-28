@@ -44,11 +44,6 @@ export function workId(i: WorkItem): number | null {
   return i.id.startsWith('w:') ? Number(i.id.slice(2)) : null;
 }
 
-/** The proposal's number (p:7), or null. */
-export function proposalId(i: WorkItem): number | null {
-  return i.id.startsWith('p:') ? Number(i.id.slice(2)) : null;
-}
-
 const NON_RETURN = 'Non-return fee ';
 
 /** P9-3.18: the contract line of a `non_return` exception ("Non-return fee FL-30128-04"), or null for any other row. */

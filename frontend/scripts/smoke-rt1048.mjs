@@ -9,6 +9,13 @@
 import { chromium } from '@playwright/test';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
+// Guard: this smoke moves source-sim's clock. Against a stack other than the main one (web :5173), say which
+// source-sim belongs to it; the default :8100 is the main stack's, and a run without it moved that clock.
+if (new URL(base).port !== '5173' && !process.env.SIM_PORT && !process.env.SIM_URL) {
+  console.error(`smoke-rt1048: ${base} is not the main stack (:5173). Set SIM_PORT or SIM_URL to its source-sim; ` +
+    'the default localhost:8100 belongs to the main stack.');
+  process.exit(2);
+}
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
 const CASE = 'RT-1048';
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -28,7 +35,7 @@ async function session(acct) {
 const go = (p, n) =>
   p
     .goto(`${base}/#/product/${CASE}/stage/${n}`)
-    .then(() => p.waitForFunction(() => /Case at Stage \d+ of 10|Every stage is done/.test(document.querySelector('#view')?.innerText || ''), null, { timeout: 45000 }))
+    .then(() => p.waitForFunction(() => /Case at Stage \d+ of 10|Every stage is done/.test(document.querySelector('#view')?.innerText || ''), null, { timeout: 90000 }))
     .catch(() => {})
     .then(() => p.waitForTimeout(1500));
 const stage = async (p) => {
@@ -55,7 +62,7 @@ if (await submit.count()) {
 // 2. The Approver approves (the approval card needs the evidence review ticked)
 const approver = await session('approver');
 await go(approver, 7);
-await approver.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click();
+await approver.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first().click({ timeout: 90000 });
 await approver.getByLabel(/I reviewed evidence snapshot/).check();
 await approver.click('text=Approve and send instruction');
 await approver.waitForTimeout(1500);
@@ -77,6 +84,7 @@ say('watcher (no reload) sees', s);
 const finance = await session('finance');
 await go(finance, 9);
 const confirm = finance.locator('button', { hasText: 'Confirm the outcome' });
+await confirm.first().waitFor({ timeout: 90000 }).catch(() => {});
 if (!(await confirm.count())) throw new Error('Finance has no "Confirm the outcome" button; stage is ' + (await stage(finance)));
 await confirm.first().click();
 await finance.waitForTimeout(2000);

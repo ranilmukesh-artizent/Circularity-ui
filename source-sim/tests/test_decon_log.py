@@ -71,7 +71,7 @@ def test_decon_log_seed(fresh):
     rows = cycles(fresh)
     assert rows and all(set(r) == FIELDS for r in rows)
     by_tag = {r["tag"]: r for r in rows}
-    assert len(by_tag) == len(rows) == 39  # one per return, the batch of six left out
+    assert len(by_tag) == len(rows) == 40  # one per return (the monitor SYN-MR-PM-0007 too), the batch of six left out
     assert not {tag(n) for n in range(20, 26)} & set(by_tag)
     assert [r["cycleEndedAt"] for r in rows] == sorted(r["cycleEndedAt"] for r in rows)
     returns = {r["tag"]: r for r in fresh.get("/rental-system/api/returns", headers={"x-api-key": "mr_rental-demo-key"}).json()}
@@ -81,16 +81,16 @@ def test_decon_log_seed(fresh):
         start, end = datetime.fromisoformat(r["cycleStartedAt"]), datetime.fromisoformat(r["cycleEndedAt"])
         assert start < end, t
         assert (end < check_in) == (t == tag(5)), t  # MR-S4 alone ended before its check-in
-    assert by_tag[tag(5)]["cycleId"] == "DC-0005"
+    assert by_tag[tag(5)]["cycleId"] == "DC-0005" and by_tag["SYN-MR-PM-0007"]["cycleId"] == "DC-0907"
     assert {r["tag"] for r in rows if r["enhanced"]} == {tag(10), tag(11)}  # the isolation-ward returns
     assert {r["method"] for r in rows if r["enhanced"]} == {"enhanced"} and {r["result"] for r in rows} == {"pass"}
-    assert len({r["cycleId"] for r in rows}) == 39 and all(r["operatorRef"].startswith("OP-") for r in rows)
+    assert len({r["cycleId"] for r in rows}) == 40 and all(r["operatorRef"].startswith("OP-") for r in rows)
     assert len(cycles(fresh, tag=tag(1))) == 1 and cycles(fresh, tag=tag(21)) == []
 
 
 def test_decon_log_filters(fresh):
     assert fresh.get(f"{API}/cycles", params={"updatedSince": "last week"}, headers=KEY).status_code == 400
-    assert len(cycles(fresh, updatedSince="2020-01-01")) == 39 and cycles(fresh, updatedSince="2035-01-01T00:00:00Z") == []
+    assert len(cycles(fresh, updatedSince="2020-01-01")) == 40 and cycles(fresh, updatedSince="2035-01-01T00:00:00Z") == []
 
 
 def test_decon_log_same_seed_same_json(fresh):
@@ -102,14 +102,14 @@ def test_decon_log_same_seed_same_json(fresh):
 def test_decon_records_arrive_later(fresh):
     """Six hours on, four records (0020 to 0023) and four events; 0024 and 0025 never get one."""
     scheduler.tick()
-    assert len(cycles(fresh)) == 39 and events() == []
+    assert len(cycles(fresh)) == 40 and events() == []
     fresh.post("/_sim/clock/advance", json={"hours": 5}).raise_for_status()
     scheduler.tick()
-    assert len(cycles(fresh)) == 39 and events() == []
+    assert len(cycles(fresh)) == 40 and events() == []
     advanced = fresh.post("/_sim/clock/advance", json={"hours": 1.1})  # the route ticks the scheduler itself
     assert advanced.status_code == 200 and advanced.json()["scheduled_ran"] == 4
     rows = cycles(fresh)
-    assert len(rows) == 43
+    assert len(rows) == 44
     arrived = [r for r in rows if r["tag"] in {tag(n) for n in range(20, 24)}]
     assert [r["tag"] for r in sorted(arrived, key=lambda r: r["tag"])] == [tag(n) for n in range(20, 24)]
     assert all(

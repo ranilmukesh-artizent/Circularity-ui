@@ -42,6 +42,7 @@ from di.core import jobs
 from di.core.db import SessionLocal
 from di.repositories import flows as flow_repo
 from di.repositories import replay as repo
+from di.repositories import rollouts as rollout_repo
 from di.repositories.flows import FlowRow
 from di.repositories.live_rules import live_pack
 from di.repositories.orgs import units
@@ -402,9 +403,10 @@ def run_job(payload: dict[str, Any]) -> dict[str, Any]:
             pack = live_pack(s, {"template": f.template_key, "owner": batch.org_unit_id})
             rep = replay_run.replay(
                 batch, repo.ok_items(s, batch.id), flow_version(s, f, pack, r["flow_ver"]), pack=pack, run_id=run_id,
-                label=r["flow_ver"], demand=repo.ok_demand(s, batch.id),
+                label=r["flow_ver"], demand=repo.ok_demand(s, batch.id), session=s,
             )  # fmt: skip
-            repo.set_status(s, run_id, "done", report=rep.model_dump(mode="json"))
+            replayed = rollout_repo.draft_hash(f.draft) if r["flow_ver"] == "draft" else None  # the draft it ran on
+            repo.set_status(s, run_id, "done", report=rep.model_dump(mode="json"), draft_hash=replayed)
             s.commit()
     except Exception as e:
         log.exception("replay run %s failed", run_id)

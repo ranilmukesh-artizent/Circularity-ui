@@ -81,7 +81,7 @@ describe('P9-4.10 flipLine (SD-09)', () => {
     expect(flipLine({ from: 'upgrade', crossing: { from: 'upgrade', to: 'fix', credit_pct: 0.28 } })).toBe('Fix and return beats Upgrade with credit above 28% credit');
   });
   it('says the best stays best when nothing flips, and when nothing can be offered', () => {
-    expect(flipLine({ from: 'upgrade', crossing: null })).toBe('Upgrade stays best at every credit up to 40%');
+    expect(flipLine({ from: 'upgrade', crossing: null })).toBe('Upgrade with credit stays best at every credit up to 40%');
     expect(flipLine({ from: null, crossing: null })).toBe('No option can be offered yet');
   });
   it('names where the expected margin peaks', () => {

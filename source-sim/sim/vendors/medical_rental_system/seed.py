@@ -28,11 +28,15 @@ DEPOTS = (  # id, label, latitude, longitude, decontamination lines
     ("WEST", "West depot (synthetic)", 37.5, -122.0, 2),
     ("NORTH", "North depot (synthetic)", 44.0, -93.0, 2),
 )
-REQUESTS = (  # id, hospital, requested at
-    ("REQ-1", "HOSP-A", "2026-11-25T14:00:00+00:00"),
-    ("REQ-2", "HOSP-B", "2026-11-25T15:00:00+00:00"),
-    ("REQ-3", "HOSP-C", "2026-11-25T16:00:00+00:00"),
-    ("REQ-4", "HOSP-B", "2026-11-26T08:00:00+00:00"),  # asks again 17 hours after REQ-2
+MONITOR_CLASS = "patient_monitor"
+REQUESTS = (  # id, hospital, requested at, device class
+    ("REQ-1", "HOSP-A", "2026-11-25T14:00:00+00:00", DEVICE_CLASS),
+    ("REQ-2", "HOSP-B", "2026-11-25T15:00:00+00:00", DEVICE_CLASS),
+    ("REQ-3", "HOSP-C", "2026-11-25T16:00:00+00:00", DEVICE_CLASS),
+    ("REQ-4", "HOSP-B", "2026-11-26T08:00:00+00:00", DEVICE_CLASS),  # asks again 17 hours after REQ-2
+    # the one request for a patient monitor: after the $1,350 repair is approved SYN-MR-PM-0007 is re-rented here (lead
+    # decision, 28 Nov), not retired
+    ("REQ-5", "HOSP-A", "2026-11-26T10:00:00+00:00", MONITOR_CLASS),
 )
 WEEKS = tuple((date(2026, 11, 30) + timedelta(weeks=i)).isoformat() for i in range(8))
 FORECAST = {  # weekly requests for the 8 weeks from 30 Nov 2026
@@ -52,6 +56,18 @@ ISOLATION = {10, 11}  # SYN-MR-IP-0010 and 0011 come back from HOSP-D's isolatio
 HOSPITAL_OVERRIDE = {10: "HOSP-D", 11: "HOSP-D", 12: "HOSP-B"}
 EAST_CYCLE = ("HOSP-A", "HOSP-B", "HOSP-C", "HOSP-D")
 GROUP_HOSPITAL = {"WEST": "HOSP-E", "NORTH": "HOSP-F"}
+# the patient monitor with the $1,350 repair (biomed_service's SYN-MR-PM-0007): a return 40 days old, so it is in no depot's
+# turnaround window (no turnaround row) and no return count above changes
+MONITOR = {
+    "returnId": "RET-0046",
+    "tag": "SYN-MR-PM-0007",
+    "hospitalId": "HOSP-B",
+    "ward": "Ward 2",
+    "wardType": "general",
+    "depot": "EAST",
+    "checkedInAt": (AS_OF - timedelta(days=40, hours=2)).isoformat(),
+    "previousRentalEnd": "2026-10-17",
+}
 
 
 def tag(n: int) -> str:
@@ -76,10 +92,10 @@ def requests() -> list[dict]:
     region = {h: r for h, _lat, _lon, r in HOSPITALS}
     return [
         {
-            "reqId": req, "hospitalId": h, "deviceClass": DEVICE_CLASS, "startDate": START_DATE, "days": DAYS,
+            "reqId": req, "hospitalId": h, "deviceClass": cls, "startDate": START_DATE, "days": DAYS,
             "region": region[h], "requestedAt": at,
         }
-        for req, h, at in REQUESTS
+        for req, h, at, cls in REQUESTS
     ]  # fmt: skip
 
 
@@ -119,7 +135,8 @@ def _returns() -> list[tuple[dict, dict]]:
 
 
 def returns() -> list[dict]:
-    return [r for r, _t in _returns()]
+    """The pumps' returns (tags 1 to 45), then the patient monitor's (MONITOR)."""
+    return [r for r, _t in _returns()] + [dict(MONITOR)]
 
 
 def turnaround() -> list[dict]:

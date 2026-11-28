@@ -41,6 +41,7 @@ def _stock() -> list[tuple[int, str, int, str]]:
 def _clean() -> None:
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM work_item WHERE type = 'AL-UC-AGEING'"))
+        conn.execute(text("DELETE FROM job WHERE kind = 'uc.ageing'"))
         conn.execute(text("DELETE FROM provenance WHERE key LIKE :p"), {"p": "%:SYNUC%"})
         conn.execute(text("DELETE FROM canonical WHERE key LIKE :p"), {"p": "%:SYNUC%"})
 
@@ -104,6 +105,22 @@ def test_uc_19_alert_one_model_one_lot(stock):
     assert [tuple(r) for r in rows] == [
         ("EV crossovers ageing at North lot", "Planner", "Move cars to the lot where demand is higher", "exception")
     ]
+
+
+def test_uc_19_worker_job_opens_the_alert(stock):
+    """The app raises the alert itself: the worker's `uc.ageing` job (queued by the periodic step) syncs the alerts of every
+    org unit whose dealer system wrote cars on a lot."""
+    from di import worker
+
+    worker.enqueue_uc_ageing()
+    worker.enqueue_uc_ageing()  # the periodic step runs every 30 s: one job queued, not two
+    with SessionLocal() as s:
+        queued = s.execute(text("SELECT count(*) FROM job WHERE kind = 'uc.ageing' AND status = 'queued'")).scalar_one()
+    assert queued == 1
+    worker.HANDLERS["uc.ageing"]({})
+    with SessionLocal() as s:
+        rows = s.execute(text("SELECT title, org_unit_id FROM work_item WHERE type = 'AL-UC-AGEING' AND status = 'open'")).all()
+    assert [tuple(r) for r in rows] == [("EV crossovers ageing at North lot", ORG)]
 
 
 def test_uc_19_alert_closes_when_the_cars_move(stock):

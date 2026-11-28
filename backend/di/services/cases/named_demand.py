@@ -49,7 +49,8 @@ def _order(kind: str, key: str, d: dict[str, Any]) -> dict[str, Any]:
     need = _days(d, "need_days")
     if kind == "lease":
         rate, term = d.get("lease_rate") or 0, d.get("proposed_term_months") or 12
-        return head | {"renew": bool(d.get("contract_ref")), "site": site, "need": need, "rate": rate, "term": int(term)}
+        own = {"contract": str(d["contract_ref"])} if d.get("contract_ref") else {}  # the contract this renews
+        return head | {"renew": bool(d.get("contract_ref")), "site": site, "need": need, "rate": rate, "term": int(term)} | own
     if kind == "so":
         return head | {"site": site, "need": need, "price": d.get("price") or 0}
     if kind == "bid":

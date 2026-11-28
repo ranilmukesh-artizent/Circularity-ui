@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseRec, GateRow } from '../../../api/case';
 import {
-  QUESTIONS_HREF, certRows, deconLine, followRows, medicalView, repairHold, serviceLines, turnaroundLines, writeOffLine,
+  QUESTIONS_HREF, certRows, conditionRows, deconLine, followRows, medicalView, repairHold, serviceLines, turnaroundLines, writeOffLine,
 } from './medView';
 
 const med = (over: Record<string, unknown> = {}): CaseRec =>
@@ -37,6 +37,20 @@ describe('certification window against the rental (MR-06)', () => {
     expect(certRows(ok)[0]).toMatchObject({ ok: true, text: 'In date for the whole rental', advice: null });
   });
   it('has no rows without requests', () => expect(certRows(med())).toEqual([]));
+});
+
+describe('condition read (MR-07)', () => {
+  it('shows the test results, a cosmetic note and the source with its age', () => {
+    const c = med({ serviceRead: {
+      source: 'mr_biomed', ageDays: 2.5, functionalTest: { result: 'pass', at: '2026-09-27' },
+      electricalSafety: { standard: 'IEC 62353', result: 'pass', at: '2026-09-27' }, notes: [{ text: 'Housing scuff', kind: 'cosmetic' }],
+    } });
+    expect(conditionRows(c)).toEqual([
+      ['Functional test', 'Passed · 2026-09-27'], ['Electrical safety', 'Passed · IEC 62353 · 2026-09-27'],
+      ['Condition notes', 'Housing scuff (cosmetic)'], ['Read from', 'mr_biomed · 2.5 days old'],
+    ]);
+  });
+  it('is empty without a service read', () => expect(conditionRows(med())).toEqual([]));
 });
 
 describe('turnaround and service planning (MR-17, MR-18, MR-22)', () => {

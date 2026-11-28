@@ -763,6 +763,10 @@ def _upsert(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         u = state.need(ctx.session, "idp_users", aid)
     elif acct is not None and rule is not None and acct.role != "Admin":
         _apply_rule(ctx, acct, rule, email)
+    if acct is not None and acct.role == "Admin" and str(u.get("email") or "").lower() != email:
+        # review P9-8.23 F1: the directory never moves the Admin account's sign-in email (OIDC links by email)
+        _log(ctx, "identity.scim.ignored", f"SCIM email change ignored for an Admin account ({u['id']}: {email})")
+        email = str(u.get("email") or "")
     keep = {
         "email": email,
         "name": i["name"],

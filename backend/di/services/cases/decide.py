@@ -58,7 +58,7 @@ from di.services.engine.routes import POLICY, Route, fail, rank_routes
 from di.services.modeler import plain_guardrail
 from di.services.modeler.apply import FLOW_REMOVED
 from di.services.modeler.compile import FLOW, CompiledRule, FlowVersion
-from di.services.modeler.gate_checks.data import media_facts
+from di.services.modeler.gate_checks.data import ITAD, media_facts
 from di.services.modeler.gates import (
     Cond,
     GateDef,
@@ -502,6 +502,15 @@ def _extra(rec: Route | None, figures: Mapping[str, Mapping[str, float]]) -> Map
 
 
 # ---------------------------------------------------------------- the decider
+def vendors_for(pack: Pack, session: Session | None) -> list[dict[str, Any]] | None:
+    """The canonical vendors G-DS-1 qualifies a route's downstream vendors on (P9-13.3), read with `session`; None without a
+    session, or for a pack with no route that names downstream roles or no G-DS-1. `decide_case` sets them on the case it
+    decides; the replay reads them once per run and sets them on each item (review 13 F3), so both judge the same vendors."""
+    if session is None or not any(r.downstream_roles for r in pack.routes) or not any(g.id == "G-DS-1" for g in pack_gates(pack)):
+        return None
+    return vendor_facts.records(session)
+
+
 def decide_case(
     case_or_facts: str | Mapping[str, Any],
     pack: Pack,
@@ -534,14 +543,21 @@ def decide_case(
         for model, data in car_facts.records(session, str(c["assetId"])).items():  # the car's money facts (P9-9.11)
             if not isinstance(c.get(model), Mapping):  # the gates, diversions and valuer read them as `asset.<fact>`
                 c[model] = data
+    if pack.key == ITAD and session is not None and c.get("assetId"):  # the CMDB's and the logistics' records of the asset
+        for model, data in car_facts.records(session, str(c["assetId"])).items():  # G-DATA-1 reads `asset.media` and
+            if not isinstance(c.get(model), Mapping):  # `condition.erasures`, the valuer `market.new_price` (P9-12.3)
+                c[model] = data
+        if not c.get("cls") and (c.get("asset") or {}).get("asset_class"):  # `class.has_media` triggers G-DATA-1
+            c["cls"] = c["asset"]["asset_class"]
     if sane := media_facts(c, pack):  # an ITAD asset's media: G-DATA-2 triggers on `media.sanitisable` (P9-12.3)
         c["media"] = {**(c.get("media") or {}), **sane}
     if pack.key == capital_facts.PACK:  # the device, market and work facts the medical capital gates read (P9-12.9)
         capital_facts.lay(c)
     roled = [r for r in pack.routes if r.downstream_roles]
-    own_vendors = "vendors" not in c and bool(roled) and session is not None and any(g.id == "G-DS-1" for g in pack_gates(pack))
-    if own_vendors:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
-        c["vendors"] = vendor_facts.records(cast(Session, session))
+    vendors = None if "vendors" in c else vendors_for(pack, session)
+    own_vendors = vendors is not None
+    if vendors is not None:  # the canonical vendors G-DS-1 qualifies (P9-13.3); not kept on the case
+        c["vendors"] = vendors
     before = dict(c)  # what the valuers read: the case as it was before a hold set its stage and recommendation
     results = gate_hold.apply(c, [], pack, as_of)  # 1. gates (and the hold), before any valuation or queue plan
     blocked = frozenset(i for r in results if not r.passed and r.effect.kind == "block" for i in r.effect.routes)

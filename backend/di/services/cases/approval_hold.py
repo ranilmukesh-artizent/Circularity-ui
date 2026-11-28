@@ -42,8 +42,8 @@ def _holds(case: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def _cause(case: Mapping[str, Any], hold: Mapping[str, Any]) -> str:
-    if hold.get("kind") == "guardrail":  # a customer's approval guardrail stated in words (P9-10.14): its own cause
-        return str(hold["cause"])
+    if hold.get("kind") == "guardrail" or hold.get("cause"):  # a customer's guardrail in words (P9-10.14), a medical repair
+        return str(hold["cause"])  # over its limit (AP-MR-REPAIR, P9-11.9): the hold's own cause
     rec = case.get("recommendation") or {}
     return (
         f"{hold['reason']}. Retail gross after recon {_money(hold.get('retail_after_recon'))}, auction gross "

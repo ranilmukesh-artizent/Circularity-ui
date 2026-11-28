@@ -612,7 +612,7 @@ def test_run(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         return d
 
     if ready:
-        replay_run.replay(batch, ready, FlowVersion(None, 0, ()), pack=draft, decide=watch, label="draft")
+        replay_run.replay(batch, ready, FlowVersion(None, 0, ()), pack=draft, decide=watch, label="draft", session=s)
     traces += [_trace(k, d, stages, limits) for k, d in decided.items()]
     stops = stop_reasons.group(traces, stages)
     n_decided = sum(1 for t in traces if t.stage is None)
@@ -885,7 +885,7 @@ def _flow(row: dict[str, Any], ctx: CallContext) -> Any:
 
 def _report(f: Any, ctx: CallContext) -> dict[str, Any] | None:
     """The replay report of the flow's draft (I-16 `ReplayReport` as stored), or None before a replay is done."""
-    run = rollout_repo.done_replay(ctx.session, f.id, f.dver)
+    run = rollout_repo.done_replay(ctx.session, f)
     got = replay_repo.get_run(ctx.session, run) if run is not None else None
     return dict(got["report"]) if got and got["report"] else None
 

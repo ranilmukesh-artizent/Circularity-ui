@@ -17,6 +17,7 @@ It starts and ends with the demo reset.
 import pytest
 from sqlalchemy import text
 
+from di.core.config import get_settings
 from di.core.db import SessionLocal
 from di.services.agents.forbidden import forbidden
 from di.services.execution import variance
@@ -24,8 +25,8 @@ from di.services.execution.steps import steps_for
 from di.services.instructions import queue, writers, writers_fleet
 from tests import starting
 
-BASE = "/fleet/api/v1"
-PARTS = "/parts/api"
+BASE = ""  # the writers' paths are relative to the adapter's base path (writers.client adds /fleet/api/v1)
+PARTS = ""
 SERIAL = "CMH-48213"
 RELEASE = {"id": "release", "dest": {"kind": "lease", "id": "FC-30117-R"}}
 HARVEST = {"id": "harvest", "dest": {"kind": "wo", "id": "RO-1, RO-2", "wos": ["RO-1", "RO-2"]}}
@@ -134,6 +135,29 @@ def test_tf_10_release_writes_fleet_line(fake):
     with SessionLocal() as s:  # a resend: the line is issued already, nothing is written twice
         again = writers_fleet.fleet_issue(s, _ins("fleet_issue"), _case(RELEASE), {})
     assert len(fake.patches) == 1 and again.detail["duplicate"] is True
+
+
+def test_tf_10_release_url_names_the_fleet_base_once(fake, monkeypatch):
+    # The real client already ends in the adapter's base path: the writer's path must not repeat it (a doubled
+    # /fleet/api/v1/fleet/api/v1 made every lease step fail with a 404, smoke-p9-3 step 14).
+    monkeypatch.undo()
+    with SessionLocal() as s:
+        real = writers.client(s, "fleet")
+        parts = writers.client(s, "parts")
+        try:
+            sim = get_settings().source_sim_url.rstrip("/")
+            monkeypatch.setattr(writers, "client", lambda *_: fake)
+            writers_fleet.fleet_issue(s, _ins("fleet_issue"), _case(RELEASE), {})
+            writers_fleet.parts_issue(s, _ins("parts_issue"), _case(HARVEST), {})
+            urls = [(parts if p.startswith("/repair-orders") else real).url(p) for p, _ in fake.patches]
+        finally:
+            real.close()
+            parts.close()
+    assert urls == [
+        f"{sim}/fleet/api/v1/contract-lines/FL-30117-03",
+        f"{sim}/parts/api/repair-orders/open/RO-1",
+        f"{sim}/parts/api/repair-orders/open/RO-2",
+    ]
 
 
 def test_tf_10_release_without_a_returned_line_is_refused(fake):

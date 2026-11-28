@@ -14,7 +14,7 @@ Groq (key GROQ_API_KEY): the tool-calling chat models of the account, each check
 request (the limits are the response headers': 1,000 requests a day and 8,000 tokens a minute per model; 30 requests a
 minute is Groq's published free-tier figure; `openai/gpt-oss-120b`, the row of migration 0036, also has 200,000 tokens a day).
 
-Gemini (key GEMINI_API_KEY, migration 0066, di.services.llm.compat): checked on 27 Nov 2026 with one tool-calling request
+Gemini (key GEMINI_API_KEY, migration 0067, di.services.llm.compat): checked on 27 Nov 2026 with one tool-calling request
 per model on a free-tier key. The Flash-Lite models answered in about a second; `gemini-3.8-flash` answered 503 (high
 demand); every Pro and Gemini 4 model answered 429 (no free quota), and the 2.5 models are closed to new keys, so none of
 those is a row. Google does not put its free-tier limits in response headers, so the limits below are what third-party
@@ -47,7 +47,7 @@ MODELS: tuple[tuple[str, str, str, str, int, int, int, int, tuple[str, ...], int
 
 def ensure_models(s: Session) -> int:
     """Insert the missing rows; the number inserted. A row the database refuses (a provider its check does not know yet:
-    a database before migration 0066) is skipped, the others still go in."""
+    a database before migration 0067) is skipped, the others still go in."""
     n = 0
     for mid, provider, model, key_ref, rpm, tpm, rpd, ctx, roles, priority in MODELS:
         try:

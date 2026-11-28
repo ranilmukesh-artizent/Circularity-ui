@@ -20,7 +20,7 @@
  *   7  approver: My work shows "Recon $2,800 over the $2,500 limit" for VIN ...007; approves on the case page; the Execute stage
  *      shows the recon order, lot transfer and listing steps.
  *   8  planner.a tries "dealer trade within the group: skip the title check" in Compose and sees the refusal (P9-9.14).
- *   9  planner.a: the alert "EV crossovers ageing at North lot" (P9-9.18); Analytics > Packs shows "Why are EV crossovers sitting
+ *   9  planner.a: the alert "EV crossovers ageing at North lot" in My work (P9-9.18, the worker's uc.ageing job); Analytics > Packs shows "Why are EV crossovers sitting
  *      longer on our lots?" with its chart (P9-9.19); the replay figures labelled modelled on the Compose publish step (P9-9.15).
  *
  * A check that needs a task not built yet (P9-9.13 to 9.16, 9.18, 9.19) looks for its marker file in the repository: while the
@@ -42,6 +42,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { replayTheDraft } from './p9-replay.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const shots = process.env.SMOKE_SHOTS || path.join(tmpdir(), 'smoke-p9-9');
@@ -51,6 +52,13 @@ const SOURCES = ['uc_lease', 'uc_dms', 'uc_title', 'uc_insp', 'uc_recall', 'uc_a
 const vin = (n) => 'SYNUC' + String(n).padStart(12, '0');
 const CARS = [1, 2, 3, 7, 90]; // the demo's cars: UC-S1 (retail South), UC-S2 (recall), UC-S3 (lien), UC-S7 (recon 2,800), 090 (inspection scheduled)
 const MODELER = `${base}/#/modeler?template=used_cars&org=${encodeURIComponent(ORG)}`;
+const HISTORY = path.join(ROOT, 'fixtures/replay/used_cars.csv'); // replayed before the publish step (owner decision, 28 Nov)
+const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`; // source-sim (its clock)
+// a stack on other ports has its own source-sim: never fall back to the main stack's 8100 (it would advance that clock)
+if (!process.env.SIM_URL && !process.env.SIM_PORT && new URL(base).port !== '5173') {
+  console.error('set SIM_PORT or SIM_URL to the source-sim of the stack under test (the default, 8100, is the main stack)');
+  process.exit(2);
+}
 const UI = 180000; // the dev stack answers slowly while the worker syncs (compose.systems alone takes seconds)
 const FIRST = 180000; // a first page load after sign-in
 const SYNC = 180000;
@@ -126,6 +134,23 @@ async function open(p, url, ready = '#view') {
   }
   await p.reload();
   await p.locator(ready).first().waitFor({ timeout: FIRST });
+}
+
+/** Analytics > Packs for one pack: open Analytics, pick its Packs tab (as a person does; #/analytics/packs opens it too), then
+ * the pack. */
+async function openPacks(p, key, question) {
+  await open(p, `${base}/#/analytics`);
+  await p.getByRole('tablist', { name: 'Analytics view' }).getByRole('tab', { name: 'Packs', exact: true }).click();
+  const pick = p.locator('select[aria-label="Pack"]');
+  await pick.waitFor({ timeout: UI });
+  await pick.selectOption(key);
+  // a worked question draws its chart only once chosen (PackQuestions: "Choose a question.")
+  const btn = p.getByTestId('pack-questions').getByRole('button', { name: question });
+  if (await btn.waitFor({ timeout: 60000 }).then(() => true, () => false)) {
+    await btn.click();
+    await p.locator('[data-question]').first().waitFor({ timeout: UI }).catch(() => {});
+  }
+  await p.waitForTimeout(800);
 }
 
 async function step(name, fn) {
@@ -272,7 +297,7 @@ await step('4 The lien: "Clear title, no open finance" on the routes, "Lien foun
   for (const acct of ['planner.a', 'admin', 'approver']) {
     const q = await as(acct);
     await open(q, base + '/#/mywork');
-    await q.waitForTimeout(800);
+    await q.waitForTimeout(4000); // My work reads about 160 items: 800 ms is before it draws
     if (/Lien found after check-in/.test(await text(q))) {
       where = acct;
       break;
@@ -300,7 +325,7 @@ await step('5 The open recall: "Open recall: no retail until remedied", Re-check
 // ---------------------------------------------------------------- 6
 await step('6 The channels: Retail South lot at 21,489.50, auction, dealer trade, salvage not considered', async () => {
   const p = await as('planner.a');
-  const t = await inCase(p, need(1), /Retail\s*[·\-:]\s*South lot/i, { vin: vin(1), label: '"Retail · South lot"' });
+  const t = await inCase(p, need(1), /Retail(?: lot)?\s*[·\-:]\s*South lot/i, { vin: vin(1), label: '"Retail lot · South lot"' }, true); // read afresh: the text cached by step 3 can predate the decision
   if (!/21,489\.50|21,490|21\.5k/.test(t)) throw new Error('VIN ...001 does not show the net 21,489.50 (or 21,490, 21.5k)');
   for (const [rx, what] of [[/Auction/i, 'auction'], [/Dealer trade/i, 'dealer trade'], [/Not considered/, '"Not considered" for salvage']]) {
     if (!rx.test(t)) throw new Error(`VIN ...001 does not list ${what}`);
@@ -340,24 +365,26 @@ await step('8 The diversion that skips the title check is refused', async () => 
 await step('9 The ageing alert, the analytics question and the modelled replay figures', async () => {
   const p = await as('planner.a');
   const notes = [];
-  // the alert, on the pages that list suggestions and alerts
-  let alert = false;
-  for (const url of [`${base}/#/home`, `${base}/#/modeler/overview`, MODELER]) {
-    await open(p, url);
-    await p.waitForTimeout(600);
-    if (/EV crossovers ageing at North lot/.test(await text(p))) {
-      alert = true;
-      break;
+  // the alert: the worker's uc.ageing job opens it as a My work exception for the Planner (within a minute of the dealer sync);
+  // Home and the Modeler are looked at too, in case a page lists it there
+  let alert = '';
+  await until(async () => {
+    for (const url of [`${base}/#/mywork`, `${base}/#/home`, `${base}/#/modeler/overview`]) {
+      await open(p, url);
+      await p.waitForTimeout(url.endsWith('mywork') ? 4000 : 800); // My work reads about 160 items: 800 ms is before it draws
+      if (/EV crossovers ageing at North lot/.test(await text(p))) return (alert = url.replace(/^.*#/, '#'));
     }
-  }
-  needs('9.18', alert, 'the alert "EV crossovers ageing at North lot"', notes);
+    return null;
+  }, 'the alert "EV crossovers ageing at North lot" is not on My work, Home or the Modeler overview', 120000, p).catch((e) => {
+    if (merged('9.18')) throw e;
+  });
+  needs('9.18', !!alert, `the alert "EV crossovers ageing at North lot"${alert ? ` (${alert})` : ''}`, notes);
 
-  // the worked question, in Analytics > Packs
-  await open(p, `${base}/#/analytics/packs`);
-  const pick = p.locator('select[aria-label="Pack"]');
-  if (await pick.count()) await pick.selectOption('used_cars').catch(() => {});
-  await p.waitForTimeout(800);
-  const q = /Why are EV crossovers sitting longer on our lots\?/.test(await text(p));
+  // the worked question, in Analytics > Packs. The pack's card reads "Why are EV crossovers sitting longer on our lots?" (No data
+  // yet: the cases carry no lot facts); the worked question WQ-UC-1 with the chart is titled "Where do returned EV crossovers
+  // sell fastest?" in di/services/questions/used_cars.py (the plan's title is the card's): choose it by "EV crossovers"
+  await openPacks(p, 'used_cars', /EV crossovers/);
+  const q = await waitText(p, /Why are EV crossovers sitting longer on our lots\?/, '', 60000).then(() => true, () => false);
   needs('9.19', q, 'the question "Why are EV crossovers sitting longer on our lots?"', notes);
   if (q) {
     const t = await text(p);
@@ -366,11 +393,14 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   }
 
   // the replay figures, on the Compose publish step of the composition of step 2
+  // the replay figures show only from a real replay of the draft (owner decision, 28 Nov): run one in the Modeler first
+  notes.push(`replayed the draft (${await replayTheDraft(p, { modeler: MODELER, csv: HISTORY, open, sim: SIM, timeout: UI })})`);
   await openSetupTab(p, 60000, { base, org: ORG, compose: COMP || null });
   await compose(p).waitFor();
   const tab = p.locator('.rl li[data-stop="publish"] a.rl-stop');
   if (await tab.count()) await tab.click();
-  await p.waitForTimeout(800);
+  // the replay report loads after the step draws (Replay report, then the figures): wait for it rather than a fixed 800 ms
+  await compose(p).getByText(/modelled/i).first().waitFor({ timeout: 60000 }).catch(() => {});
   const t = await compose(p).innerText();
   needs('9.15', /modelled/i.test(t) && /uplift|straight-through/i.test(t), 'the replay figures labelled modelled on the publish step', notes);
   return notes.join('; ');

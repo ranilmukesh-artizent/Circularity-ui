@@ -241,9 +241,20 @@ def approval_holds(facts: Mapping[str, Any], pack: Pack, values: Sequence[PathVa
     income = None if rate is None else _money(days * use * float(rate))
     retire = next((v for v in values if v["k"] == "retire" and v["ok"]), None)
     who = g.owner.replace("_", " ")
+    rule = next((r for r in pack.runtime.suggestion_rules if r.get("id") == g.id), None)
+    # what My work's approval item says (`approval_hold.sync` opens it for a hold of kind "value"): figures, then the alternative
+    cause = " ".join(
+        x for x in (
+            f"Repair estimate ${repair:,.0f} against a ${limit:,.0f} limit.",
+            None if income is None else f"Rental income over the next period ${income:,.0f} ({days:g} days at {use * 100:g}% "
+            f"utilisation at {float(rate):g} a day).",
+            None if retire is None else f"Instead, retire: net {_money(retire['net']):,.0f}.",
+        ) if x
+    )  # fmt: skip
     return [
         {
-            "id": g.id, "owner": g.owner, "route": None,
+            "id": g.id, "owner": g.owner, "route": None, "kind": "value", "cause": cause,
+            "action": rule["action"] if rule else "Approve the repair or retire the device",
             "reason": f"The repair estimate of ${repair:,.2f} is over the ${limit:,.0f} limit: the {who} approves ({g.id})",
             "repairEstimate": float(repair), "limit": float(limit),
             "income": None if income is None else float(income),

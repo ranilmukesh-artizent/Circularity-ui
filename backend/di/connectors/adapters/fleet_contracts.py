@@ -25,7 +25,7 @@ After each sync (`after_sync`, called by di.connectors.sync) a line whose status
 TF-14); a person posts the fee with `nonReturnFee.post`, through the instruction queue.
 """
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -52,6 +52,20 @@ DEMAND = {
     "kind": "kind", "needBy": "need_by", "rateMonth": "lease_rate", "termMonths": "term_months", "renew": "renew",
     "site": "site", "toolClass": "tool_class", "customer": "buyer", "contractId": "contract_ref",
 }  # fmt: skip
+
+ISSUE_TO = "returned"  # the status of a contract line the tool fleet's re-issue writes (writers_fleet.fleet_issue)
+
+
+def issuable(line: Mapping[str, Any], cls: str) -> bool:
+    """Whether the re-issue may write a tool of class `cls` to this contract line (the source's names, as `/contract-lines`
+    returns it): a returned line of that class. The one rule of the writer (writers_fleet) and of the renewals the valuer is
+    offered (di.repositories.tool_demand)."""
+    return line.get("status") == ISSUE_TO and line.get("toolClass") == cls
+
+
+def source_line(data: Mapping[str, Any]) -> dict[str, Any]:
+    """A canonical `contract_line` record's data in the source's names (the inverse of `LINE`)."""
+    return {src: data.get(to) for src, to in LINE.items()}
 
 
 def facts_of(model: str, key: str, doc: dict[str, Any], names: dict[str, str], transform: str) -> list[Fact]:

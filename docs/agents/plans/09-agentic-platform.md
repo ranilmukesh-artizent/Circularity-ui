@@ -978,7 +978,7 @@ each story went.
 - [x] P9-7.6 Back-test report page with PDF export
 - [x] P9-7.7 FR market canary for service desk tables
 - [x] P9-7.8 Phase 7 demo smoke script
-- [ ] P9-7.9 Phase 7 gate
+- [x] P9-7.9 Phase 7 gate
 - [x] P9-8.1 Adapter registry with environments and owner approval
 - [x] P9-8.2 Field mapping suggestions with calibrated confidence
 - [x] P9-8.3 Discovery samples 500 records from the test connection
@@ -1000,8 +1000,8 @@ each story went.
 - [x] P9-8.19 Compose test run shows where cases stopped
 - [x] P9-8.20 Compose agent mapping, approve and publish steps
 - [x] P9-8.21 DMN and BPMN export from the Modeler
-- [ ] P9-8.22 Compose demo smoke
-- [ ] P9-8.23 Phase 8 gate
+- [x] P9-8.22 Compose demo smoke
+- [x] P9-8.23 Phase 8 gate
 - [x] P9-9.1 Used-car pack data file
 - [x] P9-9.2 Vehicle lease and dealer system mocks
 - [x] P9-9.3 Title and lien service mock
@@ -1022,8 +1022,8 @@ each story went.
 - [x] P9-9.18 Lot ageing flag alert and suggestion
 - [x] P9-9.19 Used-car worked analytics questions
 - [x] P9-9.20 Sold and learn with residual gain or loss
-- [ ] P9-9.21 Used-car demo smoke
-- [ ] P9-9.22 Phase 9 gate
+- [x] P9-9.21 Used-car demo smoke
+- [x] P9-9.22 Phase 9 gate
 - [x] P9-10.1 Telecom network pack data file
 - [x] P9-10.2 Network inventory and decommission tracker mocks
 - [x] P9-10.3 Test bench mock with wipe and firmware
@@ -1041,8 +1041,8 @@ each story went.
 - [x] P9-10.15 Cross-region transfer alert and suggestion
 - [x] P9-10.16 Telecom follow-through battery lanes and recycling
 - [x] P9-10.17 Telecom close and learn with worked questions
-- [ ] P9-10.18 Telecom demo smoke
-- [ ] P9-10.19 Phase 10 gate
+- [x] P9-10.18 Telecom demo smoke
+- [x] P9-10.19 Phase 10 gate
 - [x] P9-11.1 Medical rental pack data file
 - [x] P9-11.2 Rental system and asset management mocks
 - [x] P9-11.3 Decontamination log mock
@@ -1060,8 +1060,8 @@ each story went.
 - [x] P9-11.15 Service planning around regional demand
 - [x] P9-11.16 Turnaround alert and medical worked questions
 - [x] P9-11.17 Medical follow-through hospital evidence and close
-- [ ] P9-11.18 Medical rental demo smoke
-- [ ] P9-11.19 Phase 11 gate
+- [x] P9-11.18 Medical rental demo smoke
+- [x] P9-11.19 Phase 11 gate
 - [x] P9-12.1 Extend the standard valuer with conditions and decay
 - [x] P9-12.2 ITAD pack with manifest reconciliation
 - [x] P9-12.3 ITAD sanitisation per serial and residual decay
@@ -1073,8 +1073,8 @@ each story went.
 - [x] P9-12.9 Medical capital pack with regulatory assessment
 - [x] P9-12.10 Serialised retail returns pack
 - [x] P9-12.11 Industrial pack in the full pack format
-- [ ] P9-12.12 Next-segments demo smoke
-- [ ] P9-12.13 Phase 12 gate
+- [x] P9-12.12 Next-segments demo smoke
+- [x] P9-12.13 Phase 12 gate
 - [x] P9-13.1 Fixed-asset retirement and transfer instructions
 - [x] P9-13.2 Lease residual gain or loss on the case
 - [x] P9-13.3 Downstream vendor qualification with certificate dates

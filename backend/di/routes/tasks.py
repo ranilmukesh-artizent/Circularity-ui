@@ -17,7 +17,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from di.core.auth import Principal
-from di.core.deps import CurrentPrincipal, DbSession
+from di.core.deps import CurrentPrincipal, DbSession, PersonPrincipal
 from di.core.errors import ApiError
 from di.schemas.tasks import Task, TaskIn, TaskPage, TaskPatch
 from di.services import tasks as service
@@ -59,14 +59,14 @@ def get_task(task_id: int, p: CurrentPrincipal, session: DbSession):
 
 
 @router.post("", status_code=201, response_model=Task)
-def create_task(body: TaskIn, p: CurrentPrincipal, session: DbSession):
+def create_task(body: TaskIn, p: PersonPrincipal, session: DbSession):
     p.require(service.PERM)
     i = body.model_dump(mode="json", exclude_none=True)
     return _run("task.enqueue", i, p, session, 201)
 
 
 @router.patch("/{task_id}", response_model=Task)
-def change_task(task_id: int, body: TaskPatch, p: CurrentPrincipal, session: DbSession):
+def change_task(task_id: int, body: TaskPatch, p: PersonPrincipal, session: DbSession):
     p.require(service.PERM)
     if body.action == "reprioritise":
         if body.priority is None:
@@ -76,6 +76,6 @@ def change_task(task_id: int, body: TaskPatch, p: CurrentPrincipal, session: DbS
 
 
 @router.delete("/{task_id}", response_model=Task)
-def cancel_task(task_id: int, p: CurrentPrincipal, session: DbSession):
+def cancel_task(task_id: int, p: PersonPrincipal, session: DbSession):
     p.require(service.PERM)
     return _run("task.cancel", {"id": task_id}, p, session)

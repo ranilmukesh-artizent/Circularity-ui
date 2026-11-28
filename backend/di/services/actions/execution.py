@@ -261,7 +261,8 @@ def resolve_guard(i: dict[str, Any], ctx: CallContext):
 
 @implement("settlement.resolve", emits=[])
 def settlement_resolve(i: dict[str, Any], ctx: CallContext):
-    """accept_erp: the ERP's amount is the realised credit and the case closes (its last step was acknowledged); resend: the
+    """accept_erp: the ERP's amount is the realised credit and the case closes (its last step was acknowledged), or, when the
+    pack's reporting gates still lack evidence, waits for it as the last acknowledgement does (P9-13.5); resend: the
     credit step goes out again under its idempotency key, so the ERP answers its first memo, and the item stays open until a
     new answer matches."""
     c = _case(ctx, i["case_id"])
@@ -274,7 +275,10 @@ def settlement_resolve(i: dict[str, Any], ctx: CallContext):
             "resolved": {"by": by, "note": note, "at": NOW},
         }
         settlement.close_item(ctx.session, c["id"], f"Finance accepted the ERP's {settlement.money(credit['erp_amount'])}", by)
-        lifecycle.move(ctx.session, c, "closed", f"ERP credit {settlement.money(credit['erp_amount'])} accepted: {note}", by)
+        if missing := reporting_missing(ctx.session, c):  # review 13 F2 (X-16): the same check as the last acknowledgement
+            hold_for_evidence(ctx, c, c["exec"]["steps"][-1], missing)  # closes later from case.attachReporting
+        else:
+            lifecycle.move(ctx.session, c, "closed", f"ERP credit {settlement.money(credit['erp_amount'])} accepted: {note}", by)
     else:
         c["finance"]["credit"] = credit | {"resent": {"by": by, "note": note, "at": NOW}}
         store.save(ctx.session, c)
