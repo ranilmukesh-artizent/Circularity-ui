@@ -120,6 +120,9 @@ def test_sd_04_three_options_priced():
     c = _open("CS0010042")
     o = _opts(c)
     assert set(o) == {"fix", "swap", "upgrade"} and all(x["eligible"] for x in o.values())  # fleet cover CRH, 50% of life
+    # the route names of the flow (plan 9 phase 4: `fix` "Fix and return"), as the Options tab shows them (smoke-p9-4 step 3)
+    names = {"fix": "Fix and return", "swap": "Covered swap", "upgrade": "Upgrade with credit"}
+    assert {k: x["name"] for k, x in o.items()} == names
     assert o["fix"]["days"] == 5 and o["fix"]["customer_price"] == 0 and o["swap"]["days"] == 2 and o["upgrade"]["days"] == 3
     cites = {v["cites"] for x in o.values() for v in x["lines"]}
     assert {"US terms v1", "US labour rates v1", "US cover terms v1", "US credit rules v1"} <= cites

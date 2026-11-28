@@ -19,12 +19,17 @@ valuer (`di.services.modeler.valuers.tool_fleet.CLS`; source-sim cannot import i
 in USD). `FAULT_PARTS` maps each fault code to the part indexes it replaces (MOT motor, GBX gearbox or drive train, ELE
 electronics, WEA wear parts); where a class has no such component the nearest one is used.
 
-Money: ACTUAL_COST is in the market's CURRENCY: parts + labour hours x the market's rate + the test fee, converted from
-USD at `FX` (units per USD, as the app's `fx_rate` table).
+Money: ACTUAL_COST is in the market's CURRENCY and follows the tool-fleet pack's service-desk rate cards (the cards the
+app's estimate prices with): parts at the parts card (`PARTS` x `PARTS_CARD_UPLIFT` x `FX`, rounded half up to a whole
+unit, as the card's values), labour hours x the labour card's `LABOUR_RATE`, and the terms card's `TEST_FEE` (a repair is
+always tested), times a small noise of +-2 %. So the estimate's P10 to P90 has the actuals' own spread: held out on
+7 Oct 2026 it holds 65 % (AGR, 20 repairs) to 89 % (CRH) of them; GR-S1's bar is 70 %. (Market labour rates and a random
+test fee had put every family at 47-68 %.) The cards are repeated here because source-sim cannot read the pack.
 """
 
 import random
 from datetime import UTC, date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 SEED = 26110
 FIRST_DAY, LAST_DAY = date(2023, 10, 7), date(2026, 10, 6)
@@ -35,8 +40,13 @@ MARKETS = ("DE", "UK", "US", "AU", "FR")
 MARKET_WEIGHT = (22, 14, 40, 10, 14)
 CURRENCY = {"DE": "EUR", "FR": "EUR", "UK": "GBP", "US": "USD", "AU": "AUD"}
 FX = {"USD": 1.0, "EUR": 0.92, "GBP": 0.79, "AUD": 1.52}
-LABOUR_RATE_USD = {"DE": 74.0, "UK": 70.0, "US": 78.0, "AU": 72.0, "FR": 71.0}
-TEST_FEE_USD = 25.0
+LABOUR_RATE_USD = {"DE": 74.0, "UK": 70.0, "US": 78.0, "AU": 72.0, "FR": 71.0}  # refurbishments only
+# the tool-fleet pack's service-desk cards (market_tables), in the market's currency: labour per_hour, terms test_fee, and
+# the parts card = list price x 1.05 x FX
+LABOUR_RATE = {"DE": 42.0, "FR": 46.0, "UK": 40.0, "US": 58.0, "AU": 64.0}
+TEST_FEE = {"DE": 12.0, "FR": 12.0, "UK": 11.0, "US": 14.0, "AU": 15.0}
+PARTS_CARD_UPLIFT = Decimal("1.05")
+NOISE = (0.98, 1.02)
 
 # tool_fleet CLS parts (name, price in USD), in list order
 PARTS: dict[str, list[tuple[str, float]]] = {
@@ -80,6 +90,12 @@ def fault_parts(model_class: str, fault_code: str) -> list[int]:
     return list(FAULT_PARTS[model_class][fault_code])
 
 
+def card_part(model_class: str, index: int, currency: str) -> float:
+    """The parts card's price of a part in a currency: list price x `PARTS_CARD_UPLIFT` x `FX`, half up to a whole unit."""
+    price = Decimal(str(PARTS[model_class][index][1])) * PARTS_CARD_UPLIFT * Decimal(str(FX[currency]))
+    return float(price.quantize(Decimal(1), ROUND_HALF_UP))
+
+
 def _stamp(day: date, hour: int) -> str:
     return datetime(day.year, day.month, day.day, hour, 0, 0, tzinfo=UTC).isoformat()
 
@@ -98,9 +114,9 @@ def _repair(rng: random.Random, cls: str, fault: str, band: str) -> dict:
     # the sample ticket's cell is a well-known repair (2.0 to 2.5 h), so its estimate is priced without a technician (plan 9
     # P9-4 demo: "186 similar repairs", within GR-S1's 30 % range); the same draw keeps every other row as it was
     hours = 2.0 + 0.25 * (draw % 3) if (cls, fault, band) in TIGHT else round(draw * 0.25, 2)
-    fee = rng.random() < 0.25
-    usd = sum(PARTS[cls][i][1] for i in idx) + hours * LABOUR_RATE_USD[market] + (TEST_FEE_USD if fee else 0.0)
+    rng.random()  # was the test-fee draw; kept so every later draw (and so every other column) stays as it was
     cur = CURRENCY[market]
+    cost = sum(card_part(cls, i, cur) for i in idx) + hours * LABOUR_RATE[market] + TEST_FEE[market]
     closed = _day(rng)
     lo, hi = BAND_MONTHS[band]
     return {
@@ -111,9 +127,9 @@ def _repair(rng: random.Random, cls: str, fault: str, band: str) -> dict:
         "MARKET": market,
         "PARTS": parts,
         "LABOUR_HOURS": hours,
-        "TEST_FEE_APPLIED": fee,
+        "TEST_FEE_APPLIED": True,
         "TURNAROUND_DAYS": rng.randint(3, 14),
-        "ACTUAL_COST": round(usd * FX[cur] * rng.uniform(0.95, 1.1), 2),
+        "ACTUAL_COST": round(cost * rng.uniform(*NOISE), 2),
         "CURRENCY": cur,
         "DATE_CLOSED": _stamp(closed, 16),
         "REPAIR_TYPE": "Repair and Return",
