@@ -216,7 +216,7 @@ await step('2 Grade: CMH-48213 an estimate, a late workbench grade makes CRH-441
         await pg.goto(`${base}/#/product/${id}/overview`);
         try {
           last = await pg.locator('[data-testid="tf-grade"]').first().innerText({ timeout: 45000 });
-        } catch (e) {
+        } catch {
           last = 'no grade panel: ' + String((await pg.locator('#view').innerText({ timeout: 3000 }).catch(() => '(no view)'))).replace(/\s+/g, ' ').slice(0, 120);
           return null;
         }
