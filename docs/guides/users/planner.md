@@ -15,18 +15,18 @@ organisation's decisions follow, in the Modeler, which another person approves.
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures; *Proposals for you* when an agent holds one you may act on |
-| Command Center | Key figures, Actions on me, Handed off, Portfolio charts, Actions to prioritise, Signals and capacity |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
+| Pulse | Key figures, Actions on me, Handed off, Portfolio charts, Actions to prioritise, Signals and capacity |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Analytics | Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides |
 | Modeler | Your organisation's decision flow and business rules; the **Models** panel |
-| Process Orchestration | Live run, Stages, Case run, Agents and services |
+| Data pipelines and runs | Live run, Stages, Case run, Agents and services |
 | Also | My Tasks, Alerts, Audit & Provenance, Reports, Data Checks, Settings |
 
 You see only your own customer's cases. Every page, list and figure is filtered to it, and the server refuses any
 action on another customer's case ("… belongs to Customer B, a tenant you cannot see. Request tenant access first.").
 Your account menu lists the customers you can see.
 
-Your Command Center is described as: "Prepare cases, close evidence gaps and submit decisions for review."
+Your Pulse is described as: "Prepare cases, close evidence gaps and submit decisions for review."
 
 ## What you can do
 
@@ -50,7 +50,7 @@ Your Command Center is described as: "Prepare cases, close evidence gaps and sub
 ### 1. See what needs you
 
 Open **Home → Needs you** or **My Tasks**. Cases appear there when their next step is yours: evidence to request,
-decisions to submit, cases to re-evaluate. **Command Center → Actions on me** shows the same work ranked.
+decisions to submit, cases to re-evaluate. **Pulse → Actions on me** shows the same work ranked.
 
 If an agent prepared something for you (for example the case autopilot held a *Submit for review*), Home shows
 **Proposals for you**: what the agent proposes, the case, why, the agent and the time. **Accept** runs it as you, with
@@ -63,7 +63,7 @@ accepts it (maker-checker).
 
 ### 2. Close an evidence gap
 
-1. Open a case marked *Needs evidence* (for example from **Decision Workbench → Returned assets**).
+1. Open a case marked *Needs evidence* (for example from **Cases → Returned assets**).
 2. On stage 4 or 5 the **What you do now** box names what is missing, for example **Request inspection**, and who owns
    it ("Sends the request to Inspection").
 3. Press it. A request with a work order reference goes to the owner. The case shows *Requested* and waits.
@@ -97,7 +97,7 @@ that it escalated.
 
 ## Your tools
 
-### The Decision Workbench
+### Cases
 
 - **Returned assets**: the cases of your customer with stage, recommendation and value. RT-1048 is marked *Start here*
   for `ops`.
@@ -172,25 +172,37 @@ press **Fit a candidate** to fit one on the confirmed outcomes; then **Propose p
 Approver or Admin) approves the promotion; you cannot approve a model you fitted or proposed. See
 [Approvals](../approvals.md#6-model-promotion).
 
-### Compose: set up a pack for an organisation (five steps)
+### Set up a business in five steps
 
-**Compose** (in the Modeler; the assistant's Set up mode opens it) takes one pack to a live flow for one organisation
-as a single object that a different person approves. The steps show their state (to do, done, sent back):
+**Set up** (menu: Set up, or `#/setup`; the Modeler's old Compose tab opens it) takes one template to a live flow for
+one organisation as a single object that a different person approves. The route line shows five stops and their state
+(not started, done, sent back):
 
-1. **Describe:** say in plain words what the business does. The agent shows what it read (drafted by a model when one
-   is available, always checked by the rules) and drafts the changes to the pack as a list of typed operations. The
-   rules refuse a change that loosens a locked guardrail or skips a compliance check, and say why.
-2. **Mapping:** each system the pack needs is listed with its status. A system with no adapter yet is added **from the
-   adapter registry**; the field mapping uses the suggestions and the five choices ([developer.md](developer.md)). A
-   field still waiting for its system owner blocks the submit.
+1. **Business flow:** before a setup exists there is one place to type: *Tell the assistant how returns work in your
+   business*. Under the box, **Starting from <template>** with **Change** opens a picker (a search box and one card per
+   template; arrow keys move between the cards, Enter or Space chooses). When your words read like another template
+   the page says so and offers **Start from that template**. **Draft my setup** hands the text to the assistant,
+   which asks at most one question and then drafts; **Use the template as it is** skips the conversation. The agent
+   shows what it read (drafted by a model when one is available, always checked by the rules, with the template and
+   the guardrails named in words, not by id) and drafts the changes as a list of typed operations. The rules refuse a
+   change that loosens a locked guardrail or skips a compliance check, and say why. The flow itself is the second part
+   of this step, and the assistant's column appears beside the page once a setup exists.
+2. **Systems:** each system the template needs is listed with its status. A system with no adapter yet is added **from
+   the adapter registry**; the field mapping uses the suggestions and the five choices ([developer.md](developer.md)).
+   You map and rename canonical fields; a new field is a project with us. A field still waiting for its system owner
+   blocks the submit.
 3. **Agents:** per stage, how far the agent may go and its confidence threshold (0.65 to 0.85), with value and bulk
    limits. Outside that range the submit is refused.
-4. **Approve:** you press **Submit**; the page lists what blocks it, if anything. A different person approves, or sends
-   a step back with a reason ([approver.md](approver.md)). A sent-back step shows the reason pinned to it, and the node
-   it is about.
+4. **Approve:** it holds **Access** (who may see what) above the approval. You press **Submit**; the page lists what
+   blocks it, if anything. A different person approves, or sends a step back with a reason
+   ([approver.md](approver.md)). A sent-back step shows the reason pinned to it, and the node it is about.
 5. **Publish:** after approval, a person with the right starts a canary in one region at a share of cases; the **replay
    report** (route mix, straight-through rate, approvals and exceptions a day, uplift with its band) and the rollout
-   state show on the same step. See [executive.md](executive.md) for reading them.
+   state show on the same step. Once the setup is live the step says **This setup is live**, lists what opened (Decide
+   and Understand) and offers **Open Pulse**. See [executive.md](executive.md) for reading the report.
+
+Behind the five stops the data still has seven (describe, flow, mapping, agents, access, approve, publish); a setup
+you started earlier opens on the right stop, and old links with `step=access` or `step=describe` still work.
 
 A **test run** card runs sample cases through the draft without saving anything.
 
@@ -206,7 +218,7 @@ everyone; roll it back, or replace it with the next version.
 
 ### Cases of the other industries
 
-The same Decision Workbench and **My Tasks** show cases of the other packs ([README](README.md#more-industries-plan-9)):
+The same **Cases** page and **My Tasks** show cases of the other packs ([README](README.md#more-industries-plan-9)):
 one case per VIN, serial, tag or device. Each pack has its own gates, and a gate that lacks evidence holds the case, or
 the whole batch it came in, until the evidence arrives. A few examples you may meet: title or lien on a vehicle,
 an open recall, a configuration wipe or export control on network equipment, a decontamination record or service date on

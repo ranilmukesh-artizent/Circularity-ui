@@ -187,7 +187,7 @@ const need = (n) => {
 // ---------------------------------------------------------------- 1 (TN-01)
 const compose = (p) => p.locator('section.sup-step'); // 28 Nov 2026: the Set up page's step panel (was the Compose section)
 async function startCompose(p, typed) {
-  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // #/setup, on the description form
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true, pack: 'telecom_network' }); // #/setup, on the description form
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
   await describeInAssistant(p, typed === undefined ? { title: 'Decommissioned network kit', template: 'telecom_network', timeout: UI } : { typed, timeout: UI });

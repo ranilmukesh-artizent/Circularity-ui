@@ -22,6 +22,7 @@ import { approveGuarded, caseActions, runNextStep, scrollToId } from '../caseAct
 import { useCaseUi } from '../CaseContext';
 import { gateLine, holdLine } from '../gates';
 import { co2Label, type Co2Card } from '../co2';
+import { Markdown } from '../../../components/Markdown';
 import { planLines } from '../queuePlan';
 import type { TabProps } from './index';
 
@@ -162,7 +163,7 @@ function Packet({ c, a, s }: TabProps) {
       <ul className="afhap">{a.what_if.map((w) => <li key={w.k}><span className={'chip ' + (w.on ? 'warn' : 'line')}>{w.on ? 'Enforced' : 'Guidance'}</span> <b>{w.t}</b> <span className="note">{w.d}</span></li>)}</ul>
       <h5>How {money(r.net)} is built</h5>
       <table className="t static tight afval"><tbody>{r.terms.map((t, i) => <tr key={i}><td>{t.label} <ExMethod m={tr?.terms?.[i]?.method ?? 'Modelled'} /></td><td className="r num">{money(t.amt)}</td></tr>)}</tbody></table>
-      {c.packet && <div className="afdraft"><b>Drafted rationale</b> {c.packet.prep && <AfBadge k="Prepared by agent" />}<p>{c.packet.rationale}</p></div>}
+      {c.packet && <div className="afdraft"><b>Drafted rationale</b> {c.packet.prep && <AfBadge k="Prepared by agent" />}<Markdown text={c.packet.rationale} /></div>}
       <footer className="afcf">
         {ap && c.stage === 'awaiting_approval' && <B pri onClick={() => approveGuarded(c.id, ui)}>Approve…</B>}
         {sb && <B pri onClick={() => caseActions.submit(c.id)}>Submit for review</B>}

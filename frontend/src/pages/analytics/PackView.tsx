@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { usePackView, type PackKpi, type PackQuestion, type PackStage, type PackViewData } from '../../api/analytics';
+import { useNavigate } from 'react-router';
+import { DEFAULT_FILTER, usePackView, type PackKpi, type PackQuestion, type PackStage, type PackViewData } from '../../api/analytics';
 import { money } from '../../api/format';
 import { Kpi } from '../../components/kit/Kpi';
 import { Panel } from '../../components/kit/Panel';
 import { PackQuestions } from './PackQuestionsView';
+import { DataDrawer } from './data/DataDrawer';
+import type { Labels, ViewSpec } from './data/dataView';
 import { RenewalSection } from './RenewalReport';
 
 const AUTONOMY: Record<PackStage['autonomy'], string> = { recommend: 'recommends only', limits: 'within limits', alone: 'acts alone' };
@@ -104,9 +107,17 @@ export function PackView({ view }: { view: PackViewData }) {
 
 /** Analytics › Packs: a pack select, then the pack's view, its worked questions and, for a pack with contracts, the renewals.
  *  The server picks the first pack until one is chosen (the first with cases and KPIs, else industrial). */
+const NO_LABELS: Labels = { months: [], classes: {}, routes: {} };
+
 export function PacksTab() {
   const [key, setKey] = useState('');
+  const [vd, setVd] = useState<ViewSpec | null>(null);
+  const nav = useNavigate();
   const view = usePackView(key);
+  const cases = (): ViewSpec => ({
+    title: `${view.name}: the cases behind these figures`, chart: 'pack', key: 'pack:' + view.key, days: 0, source: 'cases', section: 'pipeline', facets: [],
+    fixedChips: [`Pack: ${view.name}`], note: 'Net and carbon are modelled and estimated at decision time, not realised.',
+  });
   return (
     <>
       <div className="filters" style={{ border: 0, marginBottom: 12 }}>
@@ -114,10 +125,12 @@ export function PacksTab() {
           {view.packs.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
         </select>
         <span className="note">KPIs and questions come from the pack&apos;s own data, over the cases you may see.</span>
+        {view.cases > 0 && <button type="button" className="btn ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setVd(cases())}>View data</button>}
       </div>
       <PackView view={view} />
       <PackQuestions key={view.key} pack={view} />
       {view.renewals && <RenewalSection />}
+      {vd && <DataDrawer spec={vd} rows={[]} filter={DEFAULT_FILTER} period="" labels={NO_LABELS} canExport={false} onClose={() => setVd(null)} onOpenRow={(id) => nav('/product/' + id)} />}
     </>
   );
 }

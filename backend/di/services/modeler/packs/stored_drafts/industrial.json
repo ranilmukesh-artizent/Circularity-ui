@@ -1,0 +1,78 @@
+{
+  "pack": "industrial",
+  "note": "Model drafts of the pack's sample prompts, built by scripts/build_stored_drafts.py. Do not edit.",
+  "drafts": {
+    "fddfcb3ae476ee6b": {
+      "prompt": "Industrial assets come back from the field and from leases. Decide the route for each: redeploy, resale, internal parts use, re-lease, material recovery, external parts sale or exit. A person approves every decision before it runs.",
+      "pack_version": "1.0.0",
+      "built_at": "2026-11-28T12:38:59.683855+00:00",
+      "draft": {
+        "pack": "industrial",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [
+          "CRM",
+          "Lease management",
+          "ERP",
+          "Order management",
+          "Procurement",
+          "EAM",
+          "FSM",
+          "PLM",
+          "BOM management",
+          "QMS",
+          "Engineering",
+          "WMS",
+          "Transport management",
+          "Reverse logistics",
+          "Inspection",
+          "MRO and workshop",
+          "Device telemetry",
+          "Market pricing",
+          "Dealer network",
+          "Recycler partner",
+          "ESG & carbon"
+        ],
+        "question": null
+      }
+    },
+    "76e7634cb86c31c4": {
+      "prompt": "Value every route for a returned motor, pump, drill, control unit, tool batch or IT asset",
+      "pack_version": "1.0.0",
+      "built_at": "2026-11-28T12:39:19.130125+00:00",
+      "draft": {
+        "pack": "industrial",
+        "ops": [
+          {
+            "id": "op-1",
+            "by": "",
+            "note": "",
+            "op": "add_step",
+            "stage": "decide",
+            "when": [],
+            "step": "valuation",
+            "owner_role": "valuation_owner"
+          }
+        ],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    },
+    "85084af155e7a9a9": {
+      "prompt": "Never release an asset without its erasure certificate or its safety recertification",
+      "pack_version": "1.0.0",
+      "built_at": "2026-11-28T12:39:38.057737+00:00",
+      "draft": {
+        "pack": "industrial",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    }
+  }
+}

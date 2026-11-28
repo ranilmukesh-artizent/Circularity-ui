@@ -3,7 +3,7 @@
 **Sign in as** `admin`. Any password.
 
 Admin has "every permission on every page and tenant, plus accounts, Approver delegations and access requests". Admin
-also owns the organisation tree, approval limits, agent autonomy and the agents themselves. Admin's Command Center is
+also owns the organisation tree, approval limits, agent autonomy and the agents themselves. Admin's Pulse is
 described as: "Identify, prioritise and act on lifecycle opportunities to maximise economic, operational and
 sustainability outcomes."
 
@@ -12,9 +12,9 @@ sustainability outcomes."
 
 ## What you can see
 
-Every page and every section, for every customer: Home, Command Center (all sections, including Approvals, Outcomes
-to confirm and Integration health), My Tasks, Alerts, the Decision Workbench, Analytics, the Modeler, Reports, Data
-Checks, the Connection Fabric (all tabs), MCP & Tools (all sections), Process Orchestration, **Agents**, Audit &
+Every page and every section, for every customer: Home, Pulse (all sections, including Approvals, Outcomes
+to confirm and Integration health), My Tasks, Alerts, Cases, Analytics, the Modeler, Reports, Data
+Checks, the Connection Fabric (all tabs), MCP & Tools (all sections), Data pipelines and runs, **Agents**, Audit &
 Provenance, **Access & Governance** and Settings.
 
 ## What you can do
@@ -28,7 +28,7 @@ Everything the other roles can do (see their guides), and in addition:
 | Export and import an organisation's configuration pack | Access & Governance → Organisation |
 | Pilot mode for an organisation; the pilot report | Access & Governance → Organisation (the report also on Analytics, for the chosen *Org unit*) |
 | Approver delegations | Access & Governance → Approver delegations |
-| Decide tenant access requests and MCP proposals (not your own); revoke tenant access | Access & Governance → All requests; Command Center → Approvals |
+| Decide tenant access requests and MCP proposals (not your own); revoke tenant access | Access & Governance → All requests; Pulse → Approvals |
 | Agent autonomy per role and action type | Access & Governance → Agent autonomy |
 | Approval limits, self-approval, agent run limits | Access & Governance → Approval limits |
 | Stop or start any agent (kill switch) | Access & Governance → Agents and kill switches; Agents |

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { logos } from '../api/nav';
-import { SSO_START_URL, accounts, exchangeSsoCode, homeRoute, rolePolicy, signInEmail, signInWith, ssoConfig } from '../api/session';
+import { SSO_START_URL, accounts, exchangeSsoCode, homeRoute, markFreshSignIn, rolePolicy, signInEmail, signInWith, ssoConfig } from '../api/session';
 import type { Account } from '../api/types';
 import { Icon } from '../components/Icon';
 import { useTheme, toggleTheme } from '../utils/theme';
@@ -47,6 +47,8 @@ export function SignInPage({ next }: { next?: string }) {
 
   function entered(a: Account) {
     toast('Signed in as ' + a.label + '. ' + rolePolicy(a.role).desc, 4200);
+    // plan 11 A4: with no page asked for, the shell may land this sign-in on Set up once (while nothing is published)
+    if (!next) markFreshSignIn();
     nav('/' + (next || homeRoute(a)), { replace: true });
   }
 

@@ -6,9 +6,9 @@ import { blockedLines, changeLines } from './changeSetView';
  * what the person did not state, and the guardrail's refusals named. Used by the Describe step's review and by the Set up
  * mode of the assistant, so both read the same.
  */
-export function ChangeSetList({ cs }: { cs: ChangeSet }) {
+export function ChangeSetList({ cs, guardrails }: { cs: ChangeSet; guardrails?: Record<string, string> }) {
   const lines = changeLines(cs);
-  const blocked = blockedLines(cs);
+  const blocked = blockedLines(cs, guardrails);
   return (
     <>
       <ul className="cmp-ops">

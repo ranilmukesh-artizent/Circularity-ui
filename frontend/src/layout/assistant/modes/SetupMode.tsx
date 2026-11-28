@@ -5,6 +5,7 @@ import { useAction } from '../../../hooks/useAction';
 import { ChangeSetList } from '../../../pages/modeler/compose/ChangeSetList';
 import { changeTitle, matchLine, packLabel, setupHref, wordCountLine } from '../../../pages/modeler/compose/changeSetView';
 import type { AssistantContext, ModeDef, Status, Turn } from '../types';
+import { NO_MODEL, NO_MODEL_NEXT, draftSource, isSamplePrompt, plainFailure, progressStatus, sourceLine, templateHref } from './setupProgress';
 import './SetupMode.css';
 
 /**
@@ -60,7 +61,16 @@ const useEntry = (id: number | undefined): Entry | undefined =>
 
 const wordCount = (t: string): number => t.trim().split(/\s+/).filter(Boolean).length;
 
-const failed = (msg: string, code?: string) => (code === 'network' ? 'Could not reach Circularity. Your text is kept.' : msg);
+const failed = plainFailure;
+
+/** The text is a sample prompt of the pack (the prompts are read once for the starters, so this is a cache hit). */
+function sampleOf(pack: string, text: string): boolean {
+  try {
+    return isSamplePrompt(text, packPrompts(pack));
+  } catch {
+    return false; // not read yet (Suspense throws a promise) or unavailable: read the description as before
+  }
+}
 
 async function send(text: string, ctx: AssistantContext, io: { signal: AbortSignal; patch(f: (t: Turn) => Turn): void }): Promise<void> {
   // a flow surface has no ctx.pack: its template is the pack the draft starts from
@@ -71,10 +81,33 @@ async function send(text: string, ctx: AssistantContext, io: { signal: AbortSign
     return;
   }
   const words = wordCount(text);
-  set([{ verb: 'Reading', item: `${words} word${words === 1 ? '' : 's'} for ${org}`, limit: 'drafts only', state: 'working' }]);
+  // the server reports no stages: the status follows the time since the click (setupProgress.ts) until the draft is back
+  const began = Date.now();
+  set([progressStatus(0, words, org)]);
+  const tick = setInterval(() => {
+    if (!io.signal.aborted) set([progressStatus(Date.now() - began, words, org)]);
+  }, 1000);
+  try {
+    await draft(text, { org, pack, words }, io, set);
+  } finally {
+    clearInterval(tick);
+  }
+}
+
+async function draft(
+  text: string,
+  at: { org: string; pack: string; words: number },
+  io: { signal: AbortSignal; patch(f: (t: Turn) => Turn): void },
+  set: (status: Status[], error?: string) => void,
+): Promise<void> {
+  const { org, pack, words } = at;
   const body = text.trim();
-  // the description is read first: the match is across every pack, and the person decides which one the draft starts from
-  const read = await readDescription(body, org);
+  // the description is read first: the match is across every pack, and the person decides which one the draft starts from.
+  // A sample prompt of the picked pack needs no such reading (it is that pack's own, and `config.read` would ask a model):
+  // it goes straight to compose.start, which uses the stored draft when the pack has one.
+  const read: Awaited<ReturnType<typeof readDescription>> = sampleOf(pack, body)
+    ? { ok: false, error: { code: 'not_found', message: '' } }
+    : await readDescription(body, org);
   if (io.signal.aborted) {
     set([{ verb: 'Stopped', item: 'before a draft was made', limit: 'nothing saved', state: 'stopped' }]);
     return;
@@ -167,15 +200,27 @@ function Question({ c, onError }: { c: Composition; onError: (m: string) => void
   );
 }
 
+/** While a live draft runs: what the status says, announced politely; after a while the likely reason for the wait. */
+function Waiting({ turn }: { turn: Turn }) {
+  const s = turn.status.at(-1);
+  if (!s || s.state !== 'working') return null;
+  return (
+    <p className="st-basis st-wait" aria-live="polite" role="status">
+      {s.verb === 'Still drafting' ? 'A language model is taking its time. You can leave this open; nothing is lost.' : 'Drafts only: nothing is saved until the draft is back.'}
+    </p>
+  );
+}
+
 function SetupTurn({ turn }: { turn: Turn }) {
   const d = turn.data as SetupData | null;
   const go = useStarted(turn.id);
   const e = useEntry(d?.id ?? go);
   const [err, setErr] = useState('');
   if (d?.choice && go === undefined) return <PackChoice turn={turn.id} d={d} c={d.choice} />;
-  if (!d || !e) return null;
+  if (!d || !e) return <Waiting turn={turn} />;
   const { comp, match, names } = e;
   const cs = comp.change_set;
+  const source = draftSource(comp.steps.describe?.draft_source, comp.reading.by_model);
   const explicit = comp.reading.explicit_controls ?? comp.reading.controls.length;
   const m = matchLine(match, comp.pack_key, names);
   const pending = !!cs.question && (comp.status === 'draft' || comp.status === 'sent_back');
@@ -183,7 +228,13 @@ function SetupTurn({ turn }: { turn: Turn }) {
     <div className="st-turn">
       <p className="st-line">{wordCountLine(comp.reading.word_count, explicit, comp.reading.systems)}</p>
       <p className={m.amber ? 'st-line st-amber' : 'st-line'}>{m.text}</p>
-      <p className="st-basis">{comp.reading.by_model ? "Drafted by a language model, checked by the pack's rules" : 'Read by the rules'}</p>
+      <p className="st-basis">{sourceLine(source)}</p>
+      {source === 'rules' && (
+        <p className="st-notice" role="status">
+          {NO_MODEL} {NO_MODEL_NEXT}{' '}
+          <a href={templateHref(comp.pack_key, d.org)}>Use the template as it is</a>
+        </p>
+      )}
       {pending && <Question c={comp} onError={setErr} />}
       {err && <p className="err" role="alert">{err}</p>}
       <h4 className="st-title">{changeTitle(cs)}</h4>

@@ -6,7 +6,7 @@ import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { MappingSuggestions } from '../../integration/MappingSuggestions';
 import { statusLabel, statusTone, summaryLine } from './composeView';
-import { partsOf, readingLine, rowsText, runUnits, selectionLine, tableKey, tickedTables, toggleTable, WHOLE_SOURCE, type Part } from './systemsView';
+import { FIELD_RULE, partsOf, readingLine, rowsText, runUnits, selectionLine, tableKey, tickedTables, toggleTable, WHOLE_SOURCE, type Part } from './systemsView';
 import './systems.css';
 
 /**
@@ -84,6 +84,7 @@ function Connected({ x, sourceId, editable, onAdd }: { x: ComposeSystem; sourceI
       <div className="sys-body">
         <h5 className="sys-h">Mapping</h5>
         <p className="note">{summaryLine(x.mapping)}. Suggestions are proposals: you choose each field and nothing is saved until you save the mapping.</p>
+        <p className="note">{FIELD_RULE}</p>
         <div className="sys-actions">
           <button
             className="btn sm"

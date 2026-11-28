@@ -44,3 +44,9 @@ def pack(p: CurrentPrincipal, session: DbSession, key: str = ""):
         return svc.pack_view(session, p, key)
     except KeyError:
         raise HTTPException(404, {"code": "not_found", "message": f"No pack {key}."}) from None
+
+
+@router.get("/pack-headline")
+def pack_headline(p: CurrentPrincipal, session: DbSession, days: Annotated[int, Query(ge=1, le=730)] = 90):
+    p.require_page("analytics", "waterfall")  # the section that shows the tiles (and the rows behind them)
+    return svc.pack_headlines(session, p, days)

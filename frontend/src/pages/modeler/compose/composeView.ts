@@ -132,3 +132,9 @@ export const reportLines = (r: PublishReport): string[] => [
 /** "Canary of Customer A at 20 %" for the rollout rows; "No canary yet" with none. */
 export const rolloutLine = (rows: readonly { stage: string; region: string; share: number }[]): string =>
   rows.length ? rows.map((r) => `${r.stage === 'paused' ? 'Paused canary' : 'Canary'} of ${r.region} at ${r.share} %`).join('; ') : 'No canary yet';
+
+/** The pin of a sent-back step: who sent it back, why, and the flow node it is about; null when the step was not sent back. */
+export function sentBackPin(s: Pick<StepState, 'state' | 'note'> | undefined): { by: string | null; reason: string; node: string | null } | null {
+  if (!s || s.state !== 'sent_back' || !s.note) return null;
+  return { by: s.note.by || null, reason: s.note.reason, node: s.note.node_id || null };
+}

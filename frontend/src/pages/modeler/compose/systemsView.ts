@@ -90,3 +90,6 @@ export const readingLine = (index: number, total: number): string => `Reading ta
 export const waitedLine = (seconds: number): string => (seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s`);
 /** The seconds after which the wait is called long. */
 export const LONG_WAIT = 60;
+
+/** The mapping rule in one sentence, shown beside the suggestions on the Systems step. */
+export const FIELD_RULE = 'You map and rename canonical fields. A new field is a project with us.';

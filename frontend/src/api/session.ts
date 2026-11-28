@@ -168,3 +168,26 @@ export const tenantFilter = (): string => view().tenant;
 export function setTenantFilter(t: string): void {
   setView({ tenant: t });
 }
+
+// Plan 11 A4: a sign-in that asked for no page may be landed once on the page the menu names (Set up, while nothing is
+// published). The mark lives for the tab only; a person who goes to Home themselves is never moved.
+const FRESH_KEY = 'circ-fresh-signin';
+
+export function markFreshSignIn(): void {
+  try {
+    sessionStorage.setItem(FRESH_KEY, '1');
+  } catch {
+    /* blocked site data: no landing, Home as before */
+  }
+}
+
+/** True once after markFreshSignIn(); the mark is removed by the read. */
+export function takeFreshSignIn(): boolean {
+  try {
+    const fresh = sessionStorage.getItem(FRESH_KEY) === '1';
+    sessionStorage.removeItem(FRESH_KEY);
+    return fresh;
+  } catch {
+    return false;
+  }
+}

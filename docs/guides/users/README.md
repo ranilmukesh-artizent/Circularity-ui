@@ -105,14 +105,15 @@ What the phase-13 close adds, by role (each guide has the steps):
 
 ## One assistant (plan 10)
 
-Ask Circularity, the Modeler's assistant, the Describe dialog and Compose's helper are now one assistant. Open it with
+Ask Circularity, the Modeler's assistant, the Describe dialog and Set up's helper are now one assistant. Open it with
 the spark button in the top bar or **Ctrl+J**; in the Modeler it sits pinned in its own column. It shows which page,
 case and draft it is reading. Three modes, chosen under the box:
 
 - **Ask:** read-only answers with their sources.
 - **Change flow:** describe a change; it shows a checked, simulated preview card and applies it to the draft only when
   you press the button, with **Undo** while the draft is unchanged.
-- **Set up:** draft a flow, mappings or a composition from a prompt.
+- **Set up:** draft a flow, mappings or a composition from a prompt. On the Set up page it is the conversation that
+  starts your setup (see [planner.md](planner.md#set-up-a-business-in-five-steps)).
 
 Every step shows a status line while it works, and a sentence typed in the wrong mode gets a hint, not an error. The
 assistant never approves, publishes or changes access: what it prepares waits for a person
@@ -123,14 +124,28 @@ filters for kind, agent, pack and case. It is read-only and shows only the tenan
 case, **Run the agent on this case** lets an Admin, Planner or Approver start a propose-only autopilot run of an enabled
 agent: every write it prepares is held for a person.
 
+## The menu
+
+The left menu has three groups. **Decide** holds My Tasks, Cases and Alerts. **Understand** holds Pulse, Analytics,
+Reports and Agents. **Advanced** holds the Modeler, Connection Fabric (with Data Checks), MCP & Tools, Data pipelines
+and runs, and Audit; it is closed until you open it, and opens by itself when you are on one of its pages. *Pulse* is
+the page that opened as *Command Center* in earlier versions (its own heading still reads Command Center), *Cases* was
+*Decision Workbench*, and *Data pipelines and runs* was *Process Orchestration*. The routes did not change. **Set up**
+is the one place that builds the business flow; *Data pipelines and runs* and the Workflow Studio's **Build a
+workflow** are about moving data, not about the business flow.
+
+Until an organisation has a published setup, the menu shows only Home, Set up and Access (and My Tasks while a setup
+waits for approval), with a note that Decide and Understand open when you publish. Hiding is for display only: the
+server still checks every page and action.
+
 ## Things every role has
 
 - **Home**: a briefing, *Needs you* (items whose next step is yours), *Agent activity* (what the agent prepared) and
   *Key figures*, each explained. *Proposals for you* appears when an agent holds an action that you may accept or
   reject.
-- **Command Center**: your role's key figures and work queues. Its sections differ by role (each guide lists yours).
+- **Pulse**: your role's key figures and work queues. Its sections differ by role (each guide lists yours).
 - **My Tasks** and **Alerts**: everything whose next step is yours; escalations, failures and notifications.
-- **Process Orchestration**: the ten stages of a case, the live run, one case stage by stage, and which agent or
+- **Data pipelines and runs**: the ten stages of a case, the live run, one case stage by stage, and which agent or
   system does what.
 - **Audit & Provenance**: every fetch with its source (*Fetch log*) and evidence without provenance (*Evidence gaps*;
   not for Warehouse Managers).

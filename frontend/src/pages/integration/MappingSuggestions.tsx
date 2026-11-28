@@ -9,6 +9,7 @@ import {
   answerOwner, applyMappings, askOwner, decideMapping, suggestFieldMappings,
   type AppliedRow, type MappingBand, type MappingChoiceAnswer, type MappingChoiceInput, type MappingSuggestion, type MappingSuggestions,
 } from '../../api/integration';
+import { Markdown } from '../../components/Markdown';
 import type { ActionResult } from '../../api/types';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { toast } from '../../components/toast';
@@ -125,7 +126,7 @@ function Result({ sourceId, r }: { sourceId: string; r: MappingSuggestions }) {
                   </td>
                   <td>{pct(x.confidence)}</td>
                   <td><StatusPill tone={tone} label={label} /></td>
-                  <td>{x.reason}</td>
+                  <td>{x.proposed_by === 'model' ? <Markdown text={x.reason} /> : x.reason}</td>
                   <td><Choices sourceId={sourceId} x={x} fields={r.fields} choice={choices[keyOf(x)]} onChoice={(c) => put(x, c)} /></td>
                 </tr>
               );

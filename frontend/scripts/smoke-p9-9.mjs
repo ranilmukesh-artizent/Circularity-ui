@@ -253,7 +253,7 @@ await step('1 Connect the seven used-car systems, sync them and open the cars as
 // ---------------------------------------------------------------- 2
 const compose = (p) => p.locator('section.sup-step'); // 28 Nov 2026: the Set up page's step panel (was the Compose section)
 async function startCompose(p, typed) {
-  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // #/setup, on the description form
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true, pack: 'used_cars' }); // #/setup, on the description form
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
   await describeInAssistant(p, typed === undefined ? { title: 'Lease returns to best channel', template: 'used_cars', timeout: UI } : { typed, timeout: UI });

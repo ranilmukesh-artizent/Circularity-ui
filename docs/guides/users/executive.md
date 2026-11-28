@@ -3,7 +3,7 @@
 **Sign in as** `exec`. Any password.
 
 The Executive has the "senior view: value realised, portfolio health and ranked exceptions. Read-only, plus Notify
-the owner." You see **all customers**. Your Command Center is described as: "Value realised, portfolio health and the
+the owner." You see **all customers**. Your Pulse is described as: "Value realised, portfolio health and the
 exceptions that need attention. Drill into the cases or notify the owner."
 
 > All data is synthetic (Northfield Industrial Leasing). The enterprise systems are simulations; no real vendor system
@@ -14,17 +14,17 @@ exceptions that need attention. Drill into the cases or notify the owner."
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Exceptions, Portfolio charts, Value realisation; optionally the operational queues, read only |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages (read only) |
+| Pulse | Key figures, Exceptions, Portfolio charts, Value realisation; optionally the operational queues, read only |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages (read only) |
 | Analytics | All sections (Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides, Engineering economics, Sustainability) |
 | Modeler | Every organisation's decision flow and business rules (read only) |
-| Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Audit & Provenance, Reports, Data Checks, Settings |
 
 ## What you can do
 
 | Action | Where |
 |---|---|
-| **Notify the owner** of an exception | Command Center → Exceptions |
+| **Notify the owner** of an exception | Pulse → Exceptions |
 
 Everything else is read only. You cannot acknowledge notifications either: the people you notify do that.
 
@@ -32,7 +32,7 @@ Everything else is read only. You cannot acknowledge notifications either: the p
 
 ### 1. Read the senior view
 
-**Command Center** opens with the value figures and charts: how much value Circularity realised, how the portfolio
+**Pulse** opens with the value figures and charts: how much value Circularity realised, how the portfolio
 moves through its lifecycle and which routes it takes. **Value realisation** compares predicted with actual recovery.
 **Analytics** goes deeper: the *Recovery waterfall* from baseline to uplift, *Predicted vs actual*, *Route mix* over
 time, *Overrides* (when people changed the plan), *Sustainability* (estimated against measured CO₂e).
@@ -42,7 +42,7 @@ this month?").
 
 ### 2. Act on exceptions
 
-**Command Center → Exceptions** ranks the issues that need attention (for example decisions close to their window).
+**Pulse → Exceptions** ranks the issues that need attention (for example decisions close to their window).
 Open an exception to see what is behind it, or press **Notify owner**. In *Notify the owner* the recipient is
 prefilled by the exception type (you can change it); pick the severity (High, Medium, Low), edit the message (at
 least 5 characters) and press **Send notification**. It "creates an Actions on me item and an audit entry".
@@ -66,7 +66,7 @@ foot shows the model that values new cases, its calibration and the fitted candi
 ### 5. Read the replay report and the rollout state
 
 Before a new flow goes live, a Planner replays past decisions through it. In the Modeler's **Replay** panel (and on
-Compose's Publish step) you can read the latest report; you cannot import or run one. It shows four numbers: the route
+Set up's Publish step) you can read the latest report; you cannot import or run one. It shows four numbers: the route
 mix, the share decided without a person, approvals and exceptions a day, and the uplift with its 80 percent band. It
 also lists facts dropped for being later than the decision, and the data-quality notes. The lifecycle bar above the
 canvas shows the step the flow is at (replay, shadow, canary, full). The **Rollout** panel itself, with the canary
@@ -91,4 +91,4 @@ See [the case journey](../case-journey.md) and [Approvals](../approvals.md) for 
 ## For the technical team
 
 Executive permissions: notify (notify.send). Not tenant-scoped. Pages include modeler (read only: no manageFlows or
-approve.flows). Command Center layout: senior.
+approve.flows). Pulse layout: senior.

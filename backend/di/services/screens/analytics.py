@@ -23,6 +23,12 @@ model versions' accuracy.
                               {key, value} and up to 5 example case ids), `suggestion_rules` (as configured) and `stages`
                               ([{key, label, agent, autonomy}]), over the cases of that pack the account may see. The
                               page's own answer above is unchanged.
+    GET /api/screens/analytics/pack-headline?days=90   plan 11 D1: `packs`, one headline for each of the packs tool_fleet and
+                              device (see di.services.questions.headline) that has cases the account may see, else none:
+                              `pack`, `name`, `route_word`, `period` ({days, since, until}), `cases` (opened in the period),
+                              `closed`, `figures` (id, label, value, unit, n, of, basis, needs, note), `routes` (id, name, n,
+                              closed, net), `grades` (routes and rows of counts) and `carbon_sets`. Same tenant boundary and
+                              warehouse lock as the Packs tab; the other reads of this page are unchanged.
     GET /api/screens/analytics/renewals?since=&until=   plan 9 P9-5.7: "Contract renewals": `with_proposal` and
                               `without_proposal` ({n, renewed, rate}), `segments` (market and size band, each with both),
                               `compared` (what the proposals predicted against the recorded outcomes: n, predicted_rate,
@@ -61,14 +67,15 @@ Facade mapping (frontend/src/api/analytics.ts), for the switch-over (B17):
 | kfmt, pct, sum, DEFAULT_FILTER | frontend-only: formatting and the page's default filter                     |
 """
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from di.core import orgs, policy
+from di.core import clock, orgs, policy
 from di.core.auth import Principal
+from di.repositories import case_times
 from di.repositories import renewals as renewals_repo
 from di.repositories.common import to_fixed
 from di.repositories.constants import MODELS
@@ -81,7 +88,8 @@ from di.services.actions.registry import implement
 from di.services.engine.jsmath import js_round, js_sum
 from di.services.modeler import kpis
 from di.services.modeler.pack import Pack, pack_keys
-from di.services.questions import worked_questions
+from di.services.questions import HEADLINES, worked_questions
+from di.services.questions.headline import headline
 
 # ---------------------------------------------------------------- the closed decisions (the demo's ROWS)
 
@@ -304,3 +312,29 @@ def pack_view(session: Session, p: Principal, key: str = "") -> dict[str, Any]:
         "suggestion_rules": list(pack.runtime.suggestion_rules),
         "stages": [{"key": s.key, "label": s.label, "agent": s.agent, "autonomy": s.autonomy} for s in pack.stages],
     }
+
+
+# ---------------------------------------------------------------- the pack headline (plan 11, D1)
+HEADLINE_DAYS = (30, 90, 180, 365)
+
+
+def pack_headlines(session: Session, p: Principal, days: int = 90) -> dict[str, Any]:
+    """GET /api/screens/analytics/pack-headline: the headline of each pack in HEADLINES that has a case the account may see
+    (over any period: a pack the account sees none of is left out), over the cases opened in the last `days` days."""
+    ctx = call_ctx(p, session)
+    until = clock.now()
+    since = until - timedelta(days=days)
+    out: list[dict[str, Any]] = []
+    for key, spec in HEADLINES.items():
+        pack = active_pack(session, key, None)
+        cases = pack_cases(ctx, pack)
+        if not cases:
+            continue
+        spans = {i: (t.opened, t.closed) for i, t in case_times.times(session, [c["id"] for c in cases]).items()}
+        out.append(
+            headline(
+                spec, pack.name, cases, {r.id: list(r.classes) for r in pack.routes}, {r.id: r.name for r in pack.routes},
+                pack.grades.scale, spans, since, until, days,
+            )
+        )  # fmt: skip
+    return {"packs": out}

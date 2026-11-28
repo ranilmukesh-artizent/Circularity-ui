@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ComposeSystem, PublishInfo, PublishReport } from '../../../api/compose';
 import {
   AUTONOMY_ITEMS, BOUNDS_TEXT, MAKER_CHECKER, NEEDS_REPLAY, STEP_ITEMS, approveBlock, autonomyLabel, awaitingOwner, canMarkMappingDone, cleanRows,
-  makers, mappingSummary, needsAdapter, parseShare, publishBlock, publishLabel, reportLines, rolloutLine, stageLine, stateLine, statusLabel,
+  makers, mappingSummary, needsAdapter, parseShare, publishBlock, publishLabel, reportLines, rolloutLine, stageLine, sentBackPin, stateLine, statusLabel,
   thresholdError, thresholdText, totalMapping,
 } from './composeView';
 
@@ -119,5 +119,16 @@ describe('compose agents, approve and publish (X-10, P9-8.20)', () => {
     expect(rolloutLine([])).toBe('No canary yet');
     expect(rolloutLine([{ stage: 'canary', region: 'Customer A', share: 20 }])).toBe('Canary of Customer A at 20 %');
     expect(rolloutLine([{ stage: 'paused', region: 'FR', share: 10 }])).toBe('Paused canary of FR at 10 %');
+  });
+});
+
+describe('sentBackPin', () => {
+  it('is null unless the step was sent back', () => {
+    expect(sentBackPin(undefined)).toBeNull();
+    expect(sentBackPin({ state: 'done' })).toBeNull();
+  });
+  it('names who, why and the node', () => {
+    expect(sentBackPin({ state: 'sent_back', note: { reason: 'Act.', by: 'approver', at: 'x', node_id: 'condition' } })).toEqual({ by: 'approver', reason: 'Act.', node: 'condition' });
+    expect(sentBackPin({ state: 'sent_back', note: { reason: 'Act.', by: 'approver', at: 'x' } })?.node).toBeNull();
   });
 });

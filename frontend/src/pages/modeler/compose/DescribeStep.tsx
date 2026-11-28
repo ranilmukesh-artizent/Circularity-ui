@@ -3,8 +3,9 @@ import { answerQuestion, markStep, readDescription, type Composition, type PackM
 import { toast } from '../../../components/toast';
 import { useAction } from '../../../hooks/useAction';
 import { openAssistant } from '../../../utils/askBus';
+import { useModeler } from '../../../api/modeler';
 import { ChangeSetList } from './ChangeSetList';
-import { matchLine, wordCountLine } from './changeSetView';
+import { guardrailList, keyWords, matchLine, packLabel, wordCountLine } from './changeSetView';
 
 /**
  * Step 1 of Compose (plan 9, P9-8.18, story X-10; plan 10, T3). Before a composition exists this is a launcher: the conversation
@@ -42,7 +43,10 @@ function Drafted({ c }: { c: Composition }) {
   const editable = c.status === 'draft' || c.status === 'sent_back';
   const done = c.steps.describe.state === 'done';
   const explicit = c.reading.explicit_controls ?? c.reading.controls.length;
-  const m = matchLine(match, c.pack_key, names);
+  // pack names and guardrail texts come from the server's own reads, so the step never shows a key or an id
+  const texts = Object.fromEntries(useModeler(c.pack_key, c.org_unit_id).template.guardrails.map((g) => [g.id, g.text]));
+  const known = names ?? { [c.pack_key]: keyWords(c.pack_key), [cs.pack]: keyWords(cs.pack) };
+  const m = matchLine(match, c.pack_key, known);
 
   // the score of the match is the reading's, not stored with the composition
   useEffect(() => {
@@ -80,12 +84,12 @@ function Drafted({ c }: { c: Composition }) {
           </div>
         </div>
       )}
-      <h4>Drafted for {cs.pack} v{cs.base_version}{cs.by_model ? ' (by a model)' : ''}</h4>
-      <ChangeSetList cs={cs} />
+      <h4>Drafted for {packLabel(cs.pack, known)} v{cs.base_version}{cs.by_model ? ' (by a model)' : ''}</h4>
+      <ChangeSetList cs={cs} guardrails={texts} />
       {cs.outline && (
         <p className="note">
-          Guardrails you stated: {cs.outline.stated.join(', ') || 'none'}. From the pack: {cs.outline.from_pack.join(', ') || 'none'}.
-          Research additions: {cs.outline.research_additions.join(', ') || 'none'}. Asset fields: {cs.outline.asset_fields.join(', ')}.
+          Guardrails you stated: {guardrailList(cs.outline.stated, texts)}. From the pack: {guardrailList(cs.outline.from_pack, texts)}.
+          Research additions: {guardrailList(cs.outline.research_additions, texts)}. Asset fields: {cs.outline.asset_fields.join(', ')}.
         </p>
       )}
       <p><b>Systems:</b> {cs.systems.map((s) => s.name).join(', ') || 'none named'}</p>

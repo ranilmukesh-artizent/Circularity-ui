@@ -95,3 +95,15 @@ html { scrollbar-gutter: stable; }
 .asimg.stph .classart .thumb svg,.asimg.sm .classart .thumb svg{width:22px;height:22px}
 .asimg.stph .classart>span:last-child,.asimg.sm .classart>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .asimg.xs .classart .thumb svg{width:18px;height:18px}
+
+/* Plan 11: the menu's collapsible Advanced section and the staged-menu note (a button, so keyboard and screen readers work) */
+button.frsec.frtog{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left}
+button.frsec.frtog:hover{color:var(--side-ink)}
+button.frsec.frtog:focus-visible{outline:2px solid var(--yellow);outline-offset:-2px}
+button.frsec.frtog svg{width:14px;height:14px;transition:transform .15s}
+button.frsec.frtog[aria-expanded="true"] svg{transform:rotate(90deg)}
+html.fr .rail button.frsec.frtog{justify-content:center;padding:4px 0}
+html.fr .rail button.frsec.frtog span{display:none}
+.frstaged{margin:14px 10px 4px;font-size:12px;line-height:1.4;color:var(--side-mut)}
+html.fr .rail .frstaged{display:none}
+@media (prefers-reduced-motion:reduce){button.frsec.frtog svg{transition:none}}

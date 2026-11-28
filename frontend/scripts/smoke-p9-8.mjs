@@ -228,7 +228,7 @@ async function repairLogDocument() {
 // ---------------------------------------------------------------- 1
 await step('1 Compose: sample prompt 1, the reading, the pack and one question', async () => {
   const p = await as('planner-a');
-  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // the description form
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true, pack: 'tool_fleet' }); // the description form, starting from the tool fleet template
   await panel(p).waitFor();
   await describeInAssistant(p); // plan 10: the Describe step is Ask Circularity's Set up mode; sample prompt 1
   await openInSetup(p);
@@ -245,7 +245,9 @@ await step('1 Compose: sample prompt 1, the reading, the pack and one question',
   if (!COMP) throw new Error('no composition id in the state line');
   await q.locator('button').first().click(); // the first option (Skip is the last)
   await until(async () => (await panel(p).locator('.cmp-question').count()) === 0, 'the question stayed after the answer', UI, p);
-  await markDone(p);
+  // 28 Nov 2026: the page may move on by itself once the question is answered: go back to Business flow, mark it done unless it already is
+  await openSetupStep(p, 'describe');
+  if (!(await panel(p).getByRole('button', { name: 'Done', exact: true }).count())) await markDone(p);
   return `composition ${COMP}`;
 });
 

@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { logos, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
+import { logos, navBadges, navCounts, navStaged, navigation, type NavGroup } from '../api/nav';
 import { currentAccount, roleAvatar, signInEmail } from '../api/session';
 import { Icon } from '../components/Icon';
 import { collapseOnModeler, keepOpen, keptOpen } from './sidebarRail';
+import { COLLAPSIBLE, STAGED_NOTE, advancedOpen, menuSections } from './sidebarView';
 
 const OPEN_KEY = 'circ-react-nav-open';
+const ADV_KEY = 'circ-react-nav-advanced'; // the Advanced section: "1" open, "0" closed, absent: the default
+const loadAdv = (): boolean | undefined => {
+  try {
+    const v = localStorage.getItem(ADV_KEY);
+    return v === null ? undefined : v === '1';
+  } catch {
+    return undefined;
+  }
+};
 const loadOpen = (): Record<string, boolean> => {
   try {
     return JSON.parse(localStorage.getItem(OPEN_KEY) || '{}');
@@ -23,7 +33,9 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
 }) {
   const a = currentAccount()!;
   const [open, setOpen] = useState<Record<string, boolean>>(loadOpen);
+  const [adv, setAdv] = useState<boolean | undefined>(loadAdv);
   const groups = navigation();
+  const staged = navStaged();
   const counts = navCounts();
   const badges = navBadges();
 
@@ -77,24 +89,36 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
     if (el) el.scrollIntoView({ block: 'nearest' });
   }, [page, sectionKey, open]);
 
-  let lastSection = '';
-  const rows: JSX.Element[] = [];
-  groups.forEach((g) => {
-    if (g.section !== lastSection) {
-      lastSection = g.section;
-      rows.push(
-        g.section === 'More' ? (
-          <div key={'sec-' + g.id} className="frsec frdiv" role="presentation" />
-        ) : (
-          <div key={'sec-' + g.id} className="frsec" role="presentation">
-            {g.section}
-          </div>
-        ),
-      );
+  const groupRow = (g: NavGroup) => (
+    <Group key={g.id} g={g} active={g.id === page} open={isOpen(g.id)} onToggle={() => toggle(g.id)} sectionKey={sectionKey} counts={counts} badges={badges} />
+  );
+  const toggleAdv = (now: boolean) => {
+    setAdv(!now);
+    try {
+      localStorage.setItem(ADV_KEY, now ? '0' : '1');
+    } catch {
+      /* ignore */
     }
-    rows.push(
-      <Group key={g.id} g={g} active={g.id === page} open={isOpen(g.id)} onToggle={() => toggle(g.id)} sectionKey={sectionKey} counts={counts} badges={badges} />,
-    );
+  };
+  const rows: JSX.Element[] = [];
+  menuSections(groups).forEach((sec) => {
+    const id = sec.groups[0].id;
+    if (sec.name === COLLAPSIBLE) {
+      const on = advancedOpen(adv, sec, page);
+      rows.push(
+        <button key={'sec-' + id} type="button" className="frsec frtog" aria-expanded={on} aria-controls="ns-advanced" onClick={() => toggleAdv(on)}>
+          <span>{sec.name}</span>
+          <Icon name="chevR" />
+        </button>,
+        <div key={'adv-' + id} id="ns-advanced" role="group" aria-label={sec.name} hidden={!on}>
+          {sec.groups.map(groupRow)}
+        </div>,
+      );
+      return;
+    }
+    if (sec.name === 'More') rows.push(<div key={'sec-' + id} className="frsec frdiv" role="presentation" />);
+    else if (sec.name) rows.push(<div key={'sec-' + id} className="frsec" role="presentation">{sec.name}</div>);
+    rows.push(...sec.groups.map(groupRow));
   });
 
   return (
@@ -114,6 +138,7 @@ export function Sidebar({ page, sectionKey, rail, onRail, onSignOut }: {
       </button>
       <nav ref={navRef} className="nav frnav" aria-label="Pages">
         {rows}
+        {staged && <p className="frstaged" role="note">{STAGED_NOTE}</p>}
       </nav>
       <div className="frfoot">
         <details className="side-foot frco">

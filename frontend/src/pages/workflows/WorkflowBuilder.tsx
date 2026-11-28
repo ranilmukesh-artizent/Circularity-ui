@@ -82,9 +82,9 @@ export function WorkflowBuilder({ initialPrompt = '', onClose, onCreated }: { in
   );
 
   return (
-    <Modal title="Build a workflow with AI" wide onClose={onClose} foot={foot}>
+    <Modal title="Build a data pipeline with AI" wide onClose={onClose} foot={foot}>
       <form onSubmit={submitPrompt} className="fld">
-        <label htmlFor="wbPrompt">Describe the workflow</label>
+        <label htmlFor="wbPrompt">Describe the data pipeline</label>
         <textarea id="wbPrompt" value={s.prompt} maxLength={2000} rows={3} readOnly={s.rounds.length > 0}
           placeholder="For example: ingest from Salesforce with currency conversion and de-duplication, every 30 minutes"
           onChange={(e) => dispatch({ t: 'prompt', prompt: e.target.value })}

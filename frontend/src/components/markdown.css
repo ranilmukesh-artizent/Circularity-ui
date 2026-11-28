@@ -1,0 +1,47 @@
+/*
+ * Markdown (plan 11, E2): a model answer in a column about 360px wide. Type scale of the assistant panel (14px body, 12.5px
+ * small); tokens only, so light and dark follow the theme. First and last child have no outer margin: a one-line answer
+ * looks as plain text did.
+ */
+.md { max-width: 72ch; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol, .md blockquote, .md .md-table, .md .md-pre { margin: 0 0 8px; }
+.md .md-plain { white-space: pre-wrap; margin: 0; }
+
+.md .md-h { margin: 12px 0 4px; font-family: var(--f-display); font-weight: 650; line-height: 1.35; color: var(--ink); letter-spacing: 0; text-transform: none; }
+.md h3.md-h { font-size: 14px; }
+.md h4.md-h { font-size: 13.5px; }
+.md h5.md-h { font-size: 12.5px; color: var(--ink2); }
+
+.md ul, .md ol { padding-left: 20px; }
+.md ul ul, .md ul ol, .md ol ul, .md ol ol { margin: 2px 0 0; }
+.md li { margin: 2px 0; padding-left: 2px; }
+.md li > p { margin: 0 0 4px; }
+.md li:has(> input[type='checkbox']) { list-style: none; margin-left: -18px; }
+.md input[type='checkbox'] { margin: 0 6px 0 0; vertical-align: -1px; accent-color: var(--ink); }
+.md strong { font-weight: 650; }
+.md del { color: var(--muted); }
+.md hr { margin: 12px 0; border: 0; border-top: 1px solid var(--line); }
+
+.md a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.md a:focus-visible, .md .md-copy:focus-visible, .md .md-table:focus-visible, .md .md-pre pre:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+
+.md blockquote { padding: 0 0 0 12px; border-left: 2px solid var(--line); color: var(--ink2); }
+.md blockquote > :last-child { margin-bottom: 0; }
+
+.md code { font-family: var(--f-mono); font-size: 12px; padding: 1px 4px; background: var(--panel2); border-radius: 4px; }
+
+.md .md-pre { border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); }
+.md .md-pre-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; padding: 0 4px 0 8px; border-bottom: 1px solid var(--line2); }
+.md .md-lang { font-size: 12px; color: var(--muted); }
+.md .md-copy { margin-left: auto; min-height: 24px; padding: 0 8px; font: inherit; font-size: 12px; color: var(--ink2); background: transparent; border: 0; border-radius: 4px; cursor: pointer; touch-action: manipulation; }
+.md .md-copy:hover { color: var(--ink); background: var(--panel3); }
+.md pre { margin: 0; padding: 8px; overflow-x: auto; overscroll-behavior-x: contain; white-space: pre; overflow-wrap: normal; font-size: 12px; line-height: 1.5; }
+.md pre code { padding: 0; background: none; border-radius: 0; font-size: inherit; }
+
+.md .md-table { overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.md table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.md th, .md td { padding: 6px 8px; text-align: left; white-space: nowrap; overflow-wrap: normal; border-bottom: 1px solid var(--line2); }
+.md th { background: var(--panel2); font-weight: 600; color: var(--ink2); }
+.md tr:last-child td { border-bottom: 0; }

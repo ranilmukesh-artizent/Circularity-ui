@@ -1,0 +1,45 @@
+{
+  "pack": "tool_fleet",
+  "note": "Model drafts of the pack's sample prompts, built by scripts/build_stored_drafts.py. Do not edit.",
+  "drafts": {
+    "7092fdf52c2b5dd8": {
+      "prompt": "We lease cordless tools to building sites. Repairs over $600 go to the fleet manager. Never issue a grade C or D tool without refurbishment.",
+      "pack_version": "3.2.0",
+      "built_at": "2026-11-28T12:37:11.007228+00:00",
+      "draft": {
+        "pack": "tool_fleet",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    },
+    "b083ee9260548141": {
+      "prompt": "Our power tools come back at the end of a fleet contract. Refurbish a tool when a named contract or buyer order can take it, otherwise sell it to a trade buyer.",
+      "pack_version": "3.2.0",
+      "built_at": "2026-11-28T12:37:29.534170+00:00",
+      "draft": {
+        "pack": "tool_fleet",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    },
+    "9f4b57792d16b92d": {
+      "prompt": "Returned tools that cannot be repaired economically are harvested for parts on open repair orders, or recycled through a certified recycler.",
+      "pack_version": "3.2.0",
+      "built_at": "2026-11-28T12:37:47.213821+00:00",
+      "draft": {
+        "pack": "tool_fleet",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    }
+  }
+}

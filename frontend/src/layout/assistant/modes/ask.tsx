@@ -10,6 +10,7 @@ import { invoke } from '../../../api/actions';
 import { ask as askApi, askStartersFor, type AskCard, type AskNext, type AskStarters } from '../../../api/ask';
 import { ref } from '../../../api/client';
 import { can, canPage, currentAccount } from '../../../api/session';
+import { Markdown } from '../../../components/Markdown';
 import { toast } from '../../../components/toast';
 import { refused } from '../../../hooks/useAction';
 import { askContext } from '../context';
@@ -111,7 +112,7 @@ function AskTurn({ turn, ask }: { turn: Turn; ask: (text: string, mode?: Assista
 
   return (
     <div className="as-ans">
-      {d.text && <div className="as-text">{d.text}</div>}
+      {d.text && <Markdown text={d.text} streaming={!f} />}
       {d.created?.map((c) => (
         <p key={c.kind + c.id} className="as-note as-created">
           {c.label || `Draft ${c.id}`} —{' '}

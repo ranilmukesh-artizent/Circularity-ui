@@ -46,8 +46,8 @@ export function stops(c: Composition | null): Stop[] {
   });
 }
 
-/** How many of the five are done. */
-export const doneCount = (c: Composition | null): number => stops(c).filter((s) => s.state === 'done').length;
+/** How many of the five stops of the line are done (the same count the line shows). */
+export const doneCount = (c: Composition | null): number => pageStops(c).filter((s) => s.state === 'done').length;
 
 /** The one button: what the person does next, and the step it opens. */
 export function nextAction(c: Composition | null): { step: CompositionStep; label: string } {
@@ -102,8 +102,12 @@ export function orgName(id: string): string {
 // ---------------------------------------------------------------- the page's stops (28 Nov 2026, the workspace)
 
 /** A stop of the Set up page: Compose's five steps, plus two the page adds that have no state of their own in a composition:
- *  `flow` (the decision flow, the Modeler's own draft) and `access` (who may do what, Access & Governance's). */
+ *  `flow` (the decision flow, the Modeler's own draft) and `access` (who may do what, Access & Governance's). These seven
+ *  stay in the data and in every link; the route line shows five of them (see LINE). */
 export type StopId = CompositionStep | 'flow' | 'access';
+
+/** A screen of the page: a stop that has a screen of its own. `access` is a section of the Approve screen. */
+export type ScreenId = Exclude<StopId, 'access'>;
 
 export interface StopDef {
   id: StopId;
@@ -115,36 +119,154 @@ export interface StopDef {
 export const PAGE_STOPS: readonly StopDef[] = [
   { id: 'describe', label: 'Template', title: 'Choose a template and describe your business', help: 'Start from the pack closest to your business, then say what is different in your own words. The agent drafts the changes; you check what it read.' },
   { id: 'flow', label: 'Shape the flow', title: 'Shape the decision flow', help: 'The flow your returns follow. Tell the assistant what to change, or edit a step on the canvas. It is the same draft the Modeler shows.' },
-  { id: 'mapping', label: 'Connect systems', title: 'Connect your systems', help: 'For each system: connect it, choose the tables that matter, then map their fields to the canonical model.' },
-  { id: 'agents', label: 'Set agents', title: 'Set your agents', help: 'How far the agent of each stage may go alone. Guardrails apply whatever you choose.' },
-  { id: 'access', label: 'Access', title: 'Check who can do what', help: 'Who makes, who approves and who only reads for this organisation. Changes are made in Access & Governance.' },
-  { id: 'approve', label: 'Approve', title: 'Approve', help: 'A different person checks the whole setup and approves it, or sends a step back with a reason.' },
+  { id: 'mapping', label: 'Systems', title: 'Connect your systems', help: 'For each system: connect it, choose the tables that matter, then map their fields to the canonical model.' },
+  { id: 'agents', label: 'Agents', title: 'Set your agents', help: 'How far the agent of each stage may go alone. Guardrails apply whatever you choose.' },
+  { id: 'access', label: 'Access', title: 'Who can do what', help: 'Who makes, who approves and who only reads for this organisation. Changes are made in Access & Governance.' },
+  { id: 'approve', label: 'Approve', title: 'Approve', help: 'See who can approve, then a different person checks the whole setup and approves it, or sends a step back with a reason.' },
   { id: 'publish', label: 'Publish', title: 'Publish', help: 'Four things must be true before it goes live for a share of one region. Each line says who does it.' },
 ];
-/** The first five stops are the maker's; approve and publish are another person's. */
-export const PAGE_HANDOVER = 5;
 
 export const isStop = (v: string | null): v is StopId => !!v && PAGE_STOPS.some((s) => s.id === v);
 export const stopDef = (id: StopId): StopDef => PAGE_STOPS.find((s) => s.id === id) ?? PAGE_STOPS[0];
+/** The screen that shows a stop: an old link to `step=access` opens Approve, where Access is the first section. */
+export const screenOf = (id: StopId): ScreenId => (id === 'access' ? 'approve' : id);
 
-/** The page's route line: Compose's stops with the two page stops in place. `flowStatus` is the status of the org's decision
- *  flow for the pack (pub: as the template; draft, review or shadow: the person changed it), unknown while it loads. */
-export function pageStops(c: Composition | null, flowStatus?: string | null): Stop[] {
+/** One stop of the route line: what the person sees as a step. Its id is the id of its first stop, so a link built from it
+ *  (`step=describe`) is also a link the page always understood. */
+export interface LineDef {
+  id: CompositionStep;
+  label: string;
+  /** the stops it holds; the one with its own id is Compose's step, whose state it follows */
+  stops: readonly StopId[];
+  /** the screens it shows, in order */
+  screens: readonly ScreenId[];
+}
+
+export const LINE: readonly LineDef[] = [
+  { id: 'describe', label: 'Business flow', stops: ['describe', 'flow'], screens: ['describe', 'flow'] },
+  { id: 'mapping', label: 'Systems', stops: ['mapping'], screens: ['mapping'] },
+  { id: 'agents', label: 'Agents', stops: ['agents'], screens: ['agents'] },
+  { id: 'approve', label: 'Approve', stops: ['approve', 'access'], screens: ['approve'] },
+  { id: 'publish', label: 'Publish', stops: ['publish'], screens: ['publish'] },
+];
+/** Business flow, Systems and Agents are the maker's; Approve and Publish are another person's. */
+export const PAGE_HANDOVER = 3;
+
+/** The stop of the line that holds a stop (or screen). */
+export const lineOf = (id: StopId): CompositionStep => LINE.find((l) => l.stops.includes(id))?.id ?? 'describe';
+
+/** The screen in view: the one asked for in the link, else the one that is next. `access` reads as Approve. */
+export const screenFor = (c: Composition | null, asked: string | null): ScreenId => (c && isStop(asked) ? screenOf(asked) : currentStep(c));
+
+/** What Back and Next say for a screen (the two screens of Business flow are told apart). */
+export const SCREEN_LABEL: Record<ScreenId, string> = {
+  describe: 'Business flow: template',
+  flow: 'Business flow: the flow',
+  mapping: 'Systems',
+  agents: 'Agents',
+  approve: 'Approve',
+  publish: 'Publish',
+};
+
+/** A screen's place in its line, "Part 1 of 2", when the line has more than one screen; else null. */
+export function partLine(id: StopId): string | null {
+  const l = LINE.find((x) => x.id === lineOf(id));
+  if (!l || l.screens.length < 2) return null;
+  return `Part ${l.screens.indexOf(screenOf(id)) + 1} of ${l.screens.length}`;
+}
+
+/** The seven stops with their own states. `flowStatus` is the status of the org's decision flow for the pack (pub: as the
+ *  template; draft, review or shadow: the person changed it), unknown while it loads. The flow stop is done once it was changed
+ *  or the person went on past it; the access stop is done once the setup went to its approver. Neither has a state of its own
+ *  on the server. */
+export function stopStates(c: Composition | null, flowStatus?: string | null): Stop[] {
   const five = Object.fromEntries(stops(c).map((s) => [s.id, s]));
   const published = c?.status === 'published';
+  const wentOn = !!c && (['mapping', 'agents', 'approve'] as const).some((k) => c.steps[k]?.state === 'done');
   return PAGE_STOPS.map((d): Stop => {
     if (d.id === 'flow') {
       if (published) return { id: d.id, label: d.label, state: 'done', note: 'Done' };
       if (flowStatus && flowStatus !== 'pub') return { id: d.id, label: d.label, state: 'done', note: flowStatus === 'draft' ? 'Changed' : flowStatus === 'review' ? 'In review' : 'In shadow' };
-      return { id: d.id, label: d.label, state: 'todo', note: c ? 'As the template' : 'Not started' };
+      return { id: d.id, label: d.label, state: wentOn ? 'done' : 'todo', note: c ? 'As the template' : 'Not started' };
     }
-    if (d.id === 'access') return { id: d.id, label: d.label, state: published ? 'done' : 'todo', note: published ? 'Done' : c ? 'Review' : 'Not started' };
+    if (d.id === 'access') {
+      const passed = published || c?.steps.approve?.state === 'done' || c?.status === 'submitted' || c?.status === 'approved';
+      return { id: d.id, label: d.label, state: passed ? 'done' : 'todo', note: passed ? 'Done' : c ? 'Review' : 'Not started' };
+    }
     return { ...five[d.id], label: d.label };
   });
 }
 
-/** The stop after and before one, along the page's line. */
-export function neighbours(id: StopId): { prev: StopId | null; next: StopId | null } {
-  const i = PAGE_STOPS.findIndex((s) => s.id === id);
-  return { prev: PAGE_STOPS[i - 1]?.id ?? null, next: PAGE_STOPS[i + 1]?.id ?? null };
+/** The route line: five stops. A stop that holds two is done when both are; it is sent back when one is; it is next when the
+ *  setup's next step is in it; else it is not started and says what is left in it. */
+export function pageStops(c: Composition | null, flowStatus?: string | null): Stop[] {
+  const seven = stopStates(c, flowStatus);
+  return LINE.map((l): Stop => {
+    const own = l.stops.map((id) => seven.find((s) => s.id === id) as Stop);
+    const first = own.find((s) => s.id === l.id) as Stop;
+    if (own.every((s) => s.state === 'done')) return { id: l.id, label: l.label, state: 'done', note: 'Done' };
+    const back = own.find((s) => s.state === 'back');
+    if (back) return { id: l.id, label: l.label, state: 'back', note: back.note };
+    const now = first.state === 'now' ? first : own.find((s) => s.state === 'now');
+    if (now) return { id: l.id, label: l.label, state: 'now', note: now.note };
+    const left = first.state !== 'done' ? first : (own.find((s) => s.state !== 'done') ?? first);
+    return { id: l.id, label: l.label, state: 'todo', note: left.note };
+  });
+}
+
+/** The screen after and before one, along the page (Business flow's two screens, then Systems, and so on). */
+export function neighbours(id: StopId): { prev: ScreenId | null; next: ScreenId | null } {
+  const order = LINE.flatMap((l) => l.screens);
+  const i = order.indexOf(screenOf(id));
+  return { prev: order[i - 1] ?? null, next: order[i + 1] ?? null };
+}
+
+// ---------------------------------------------------------------- the template picker (28 Nov 2026)
+
+interface PackWords { key: string; name: string; industry: string; unit: string; classes: string[] }
+
+const words = (t: string): string[] => t.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
+/** Two words meet when one starts with the other ("tools" and "tool", "vehicles" and "vehicle"). */
+const meets = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a);
+/** Words every template shares: they say nothing about which one. */
+const COMMON = new Set(['returns', 'return', 'equipment', 'more', 'with', 'from', 'that', 'time', 'asset', 'assets', 'class']);
+
+/** The templates a search shows: every word typed is in the name, the industry, the unit or a class. All of them for no words. */
+export function filterPacks<P extends PackWords>(cards: P[], q: string): P[] {
+  const asked = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!asked.length) return cards;
+  return cards.filter((p) => {
+    const hay = [p.name, p.industry, p.unit, ...p.classes].join(' ').toLowerCase();
+    return asked.every((w) => hay.includes(w));
+  });
+}
+
+/** How many of a template's own words (name, unit, classes) the description uses. */
+function packScore(p: PackWords, said: string[]): number {
+  const own = new Set(words([p.name, p.unit, ...p.classes].join(' ')).filter((w) => !COMMON.has(w)));
+  let n = 0;
+  for (const w of own) if (said.some((x) => meets(x, w))) n++;
+  return n;
+}
+
+/**
+ * Another template the description reads like: the one that shares the most of its own words with the text, when it shares
+ * at least two and more than the chosen template does. Null otherwise (the server still matches the pack when it drafts).
+ */
+export function suggestPack<P extends PackWords>(text: string, cards: P[], current: string): P | null {
+  const said = words(text);
+  if (said.length < 3) return null;
+  const cur = cards.find((p) => p.key === current);
+  const mine = cur ? packScore(cur, said) : 0;
+  let best: P | null = null;
+  let top = 1;
+  for (const p of cards) {
+    if (p.key === current) continue;
+    const n = packScore(p, said);
+    if (n > top && n > mine) {
+      best = p;
+      top = n;
+    }
+  }
+  return best;
 }

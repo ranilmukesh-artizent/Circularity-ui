@@ -24,13 +24,15 @@ export const setupPanel = (p) => p.locator('section.sup-step');
 export const STEP_IDS = { Describe: 'describe', 'Adapter mapping': 'mapping', 'Connect systems': 'mapping', Agents: 'agents', Approve: 'approve', Publish: 'publish' };
 
 /** The Set up page of `org` (else the org of the Modeler URL `p` is on, else the default). `base` is the app's origin when `p` is not on it yet. `fresh`: the form, not the newest setup. */
-export async function openSetupTab(p, timeout = 60000, { fresh = false, compose = null, org = null, base = null } = {}) {
+export async function openSetupTab(p, timeout = 60000, { fresh = false, compose = null, org = null, base = null, pack = null } = {}) {
   const u = p.url();
   const origin = base ?? (u.startsWith('http') ? new URL(u).origin : '');
   const q = new URLSearchParams();
   const inUrl = new URLSearchParams(u.split('#')[1]?.split('?')[1] ?? '');
   const o = org ?? inUrl.get('org');
   if (o) q.set('org', o);
+  const t = pack ?? inUrl.get('template'); // the template the page starts from (the Modeler's `template` when p is on it); else the organisation's default
+  if (t) q.set('pack', t);
   if (fresh) q.set('new', '1');
   if (compose) q.set('compose', String(compose));
   const url = `${origin}/#/setup${q.toString() ? '?' + q : ''}`;
@@ -49,7 +51,7 @@ function packSample(template, title) {
 }
 
 /**
- * From the Set up page on its form (`openSetupTab(p, t, { fresh: true })`): pick a sample or type, press "Draft my setup",
+ * From the Set up page on its form (`openSetupTab(p, t, { fresh: true, pack })`): pick a sample or type, press "Draft my setup",
  * wait for the assistant's drafted turn and return the composition id. `template` is the pack of a `title` that the form
  * does not offer.
  */
@@ -76,7 +78,9 @@ export async function describeInAssistant(p, { title, typed, template, timeout =
   await turn.waitFor({ timeout });
   let foot = await turn.locator('.st-foot').innerText({ timeout });
   // a description no pack matches well (e.g. a diversion typed on its own) asks first: draft against the picked pack anyway
-  const anyway = turn.locator('.st-foot button', { hasText: /^Draft against .* anyway$/ });
+  // the assistant asks which pack to start from when the words read like another one ("Start from <matched>" / "Keep <picked>")
+  // or like none ("Draft against <picked> anyway"): take the matched pack, else draft anyway
+  const anyway = turn.locator('.st-foot button', { hasText: /^(Start from .*|Draft against .* anyway)$/ });
   if (!/Composition \d+/.test(foot) && (await anyway.count())) {
     const feet = p.locator('.st-turn .st-foot', { hasText: /Composition \d+/ });
     const had = await feet.count();

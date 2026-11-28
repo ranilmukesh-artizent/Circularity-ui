@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { useBackend } from '../api/useBackend';
-import { navigation } from '../api/nav';
-import { canRoute, currentAccount, homeRoute, isKnownRoute, needsSessionRead, rereadSession, setBackendTheme, signOut } from '../api/session';
+import { navLanding, navigation } from '../api/nav';
+import { canRoute, currentAccount, homeRoute, isKnownRoute, needsSessionRead, rereadSession, setBackendTheme, signOut, takeFreshSignIn } from '../api/session';
 import type { RouteRef } from '../api/types';
 import { NotPortedPage } from '../pages/NotPortedPage';
 import { pageFor } from '../pages/registry';
@@ -71,6 +71,14 @@ function Shell({ route, search }: { route: RouteRef; search: string }) {
   const Page = (known && pageFor(route.page)) || NotPortedPage;
 
   useEffect(() => setMenu(false), [route.page, route.a, route.b]);
+  // plan 11 A4: the first page after a sign-in that asked for none is the one the menu names (Set up, while nothing is
+  // published). Once per sign-in, and only from Home: a person who opens Home later stays there.
+  useEffect(() => {
+    if (!takeFreshSignIn() || route.page !== 'home') return;
+    const to = navLanding(); // the menu's answer is already read above (navigation())
+    if (to && to !== 'home') nav('/' + to, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the shell mounts
+  }, []);
   // a tenant made since sign-in (an org unit, a grant) is not in the session yet: read it again once before refusing the route
   const routeKey = route.page + '/' + (route.a ?? '') + '/' + (route.b ?? '');
   const [readFor, setReadFor] = useState<string | null>(null);

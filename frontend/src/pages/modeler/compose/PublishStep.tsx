@@ -7,7 +7,7 @@ import { useAction } from '../../../hooks/useAction';
 import { LifecycleBar } from '../LifecycleBar';
 import { ReplayPanel } from '../ReplayPanel';
 import { SHARE_DEFAULT, parseShare, publishLabel, reportLines, rolloutLine } from './composeView';
-import { publishChecks, type CheckState } from './publishView';
+import { liveShare, OPENED, publishChecks, type CheckState } from './publishView';
 import './publish.css';
 
 /**
@@ -55,6 +55,7 @@ export function PublishStep({ c }: { c: Composition }) {
 
   return (
     <div className="cmp-step pub">
+      {c.status === 'published' && <Opened share={liveShare(h.publish.rollouts)} />}
       <ol className="pub-list">
         <Check n={1} state={state('approved')} title="The setup is approved" who="A different person from the one who made it">
           {c.status === 'approved' || c.status === 'published'
@@ -141,6 +142,21 @@ export function PublishStep({ c }: { c: Composition }) {
         </ul>
       </details>
     </div>
+  );
+}
+
+/** The moment after publishing: what is open now and the one way on. The checklist below it stays as the record. */
+function Opened({ share }: { share: string | null }) {
+  return (
+    <section className="pub-opened" aria-labelledby="pub-opened-h">
+      <h3 id="pub-opened-h">This setup is live</h3>
+      <p>{share ? `It decides ${share}; the rest keep the live flow.` : 'It is published; no staged rollout is running now.'}</p>
+      <p>These are open now:</p>
+      <ul>
+        {OPENED.map((o) => <li key={o.area}><b>{o.area}:</b> {o.pages}</li>)}
+      </ul>
+      <a className="btn pri" href="#/command">Open Pulse</a>
+    </section>
   );
 }
 

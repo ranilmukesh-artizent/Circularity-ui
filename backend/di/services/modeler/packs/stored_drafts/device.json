@@ -1,0 +1,45 @@
+{
+  "pack": "device",
+  "note": "Model drafts of the pack's sample prompts, built by scripts/build_stored_drafts.py. Do not edit.",
+  "drafts": {
+    "af6b7ca1bf24dd3f": {
+      "prompt": "We buy back used phones and tablets. Never list a device below 60% of its forecast price. A data-wipe certificate is required before listing.",
+      "pack_version": "2.7.0",
+      "built_at": "2026-11-28T12:38:06.461272+00:00",
+      "draft": {
+        "pack": "device",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    },
+    "efc0cb639ce2c4b9": {
+      "prompt": "Trade-in devices are graded on receipt and sold on the channel with the best net price: Buy Now, Offers, Auction or a wholesale lot.",
+      "pack_version": "2.7.0",
+      "built_at": "2026-11-28T12:38:25.491077+00:00",
+      "draft": {
+        "pack": "device",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    },
+    "a981231b8ad71bce": {
+      "prompt": "Devices from a retail partner get a second grading check before we price them, and grade D devices are recycled.",
+      "pack_version": "2.7.0",
+      "built_at": "2026-11-28T12:38:42.424534+00:00",
+      "draft": {
+        "pack": "device",
+        "ops": [],
+        "assumed": [],
+        "kpis": [],
+        "systems": [],
+        "question": null
+      }
+    }
+  }
+}

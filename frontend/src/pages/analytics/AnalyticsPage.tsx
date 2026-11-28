@@ -19,15 +19,22 @@ import { openAssistant } from '../../utils/askBus';
 import { Drawer } from '../../components/Overlay';
 import { Segmented } from '../../components/kit/Segmented';
 import { PilotReportButton } from '../../components/PilotReport';
-import { toast } from '../../components/toast';
-import { downloadCsv } from '../../utils/csv';
 import { BacktestSection } from './BacktestReport';
+import { PackHeadlines } from './HeadlineSection';
 import { PacksTab } from './PackView';
-import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, PoolChart, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
+import { drills, Funnel, Heat, MixChart, ModelTable, Overrides, Scatter, Sustain, Waterfall, type Drill } from './AnalyticsCharts';
+import { AnalysisBuilder } from './AnalysisBuilder';
+import { AgeChart } from './charts/AgeBands';
+import { Flow } from './charts/Flow';
+import { HeatGrid } from './charts/HeatGrid';
+import { TrendBars } from './charts/TrendBars';
+import { ageSpec, flowSpec, fromDrill, heatSpec, measureOf, trendSpec, whole } from './charts/specs';
+import { DataDrawer } from './data/DataDrawer';
+import { facet, sentencePeriod, type Labels, type Measure, type ViewSpec } from './data/dataView';
+import { Headline } from './Headline';
 
 // View state survives leaving and coming back, as the demo's S.fA and S.drill do.
 const savedFilter = sessionScoped<AnalyticsFilter>(() => ({ ...DEFAULT_FILTER }));
-const savedDrill = sessionScoped<(Drill & { page: number }) | null>(() => null);
 
 /** Scroll a section into view and mark it, as the demo's anchorScroll does. */
 export function anchor(el: Element | null) {
@@ -54,11 +61,20 @@ const statusChip = (r: ClosedRow) =>
     expired: <span className="chip line">Offer expired</span>,
   })[r.status];
 
+/** The words the drawer and charts use for months, classes and routes: one object while those lists do not change (the charts memoise on it). */
+let lastLabels: { key: string; v: Labels } | null = null;
+function labelsFor(M: string[], CL: Record<string, { label: string }>, RT: { id: string; name: string }[]): Labels {
+  const v: Labels = { months: M, classes: Object.fromEntries(Object.entries(CL).map(([k, x]) => [k, x.label])), routes: Object.fromEntries(RT.map((r) => [r.id, r.name])) };
+  const key = JSON.stringify(v);
+  if (lastLabels?.key !== key) lastLabels = { key, v };
+  return lastLabels.v;
+}
+
 export function AnalyticsPage({ route, query }: PageProps) {
   useBackend();
   const nav = useNavigate();
   const [f, setF] = useState<AnalyticsFilter>(savedFilter.current);
-  const [drill, setDrillState] = useState(savedDrill.current);
+  const [vd, setVd] = useState<ViewSpec | null>(null); // View data: the rows behind the figure that was opened
   const [openRow, setOpenRow] = useState<string | null>(null);
   const deepRun = Number(query.get('backtest')) || null; // #/analytics?backtest=<run_id>
   const [tab, setTab] = useState<'closed' | 'packs' | 'backtest'>(deepRun ? 'backtest' : route.a === 'packs' ? 'packs' : 'closed');
@@ -70,11 +86,8 @@ export function AnalyticsPage({ route, query }: PageProps) {
     return () => { live = false; };
   }, []);
   const setFilter = (x: AnalyticsFilter) => { savedFilter.current = x; setF(x); };
-  const setDrill = (d: (Drill & { page: number }) | null) => { savedDrill.current = d; setDrillState(d); };
-  const onDrill = (d: Drill) => {
-    setDrill({ ...d, page: 0 });
-    window.setTimeout(() => document.getElementById('drill')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 30);
-  };
+  /** a chart's selection (title and test) opened as View data, under the chart's name and section (the server's names, for the export record) */
+  const drillFor = (chart: string, section: string, measure: Measure) => (d: Drill) => setVd(fromDrill(d, chart, section, measure));
 
   const sec = route.a;
   const focus = sec === 'predicted' && canPage('analytics', 'predicted');
@@ -85,20 +98,27 @@ export function AnalyticsPage({ route, query }: PageProps) {
   }, [sec, focus]);
 
   const rows = analyticsRows(f), m = metrics(rows), M = months(), orgs = analyticsOrgs();
+  const labels = labelsFor(M, assetClasses(), routes());
+  const period = sentencePeriod(labels, f.from, f.to);
+  const tenants = [...new Set(rows.map((r) => r.tenant))].sort();
   const sel = (k: 'tenant' | 'cls' | 'route', opts: [string, string][], label: string) => (
     <select className="sel" aria-label={label} value={f[k]} onChange={(e) => setFilter({ ...f, [k]: e.target.value })}>
       <option value="">{label}</option>
       {opts.map((o) => <option key={o[0]} value={o[0]}>{o[1]}</option>)}
     </select>
   );
-  const kpi = (v: string | number, l: string, s: string, d: Drill) => (
-    <button className="kpi" style={{ background: 'none' }} onClick={() => onDrill(d)}>
+  const kpi = (v: string | number, l: string, s: string, d: Drill, measure: Measure) => (
+    <button className="kpi" style={{ background: 'none' }} onClick={() => drillFor('kpi', 'waterfall', measure)(d)}>
       <div className="v num">{v}</div><div className="l">{l}</div><div className="s">{s}</div>
     </button>
   );
-  const panel = (id: string, title: string, extra: ReactNode, body: ReactNode) => (
+  /** a panel: its title, then (on the right) View data, which opens every row behind the chart */
+  const panel = (id: string, title: string, extra: ReactNode, body: ReactNode, data?: ViewSpec) => (
     <section className="panel" id={'an-' + id}>
-      <div className="ph"><h3>{title}</h3>{extra}</div>
+      <div className="ph">
+        <h3>{title}</h3>{extra}
+        {data && <button type="button" className="btn ghost sm" style={{ marginLeft: 'auto' }} onClick={() => setVd(data)}>View data</button>}
+      </div>
       <div className="pb">{body}</div>
     </section>
   );
@@ -113,14 +133,15 @@ export function AnalyticsPage({ route, query }: PageProps) {
   };
   const filterModel = (v: string) => setFilter({ ...f, model: f.model === v ? '' : v });
 
-  const predicted = () => panel('predicted', 'Predicted vs actual', <Stp n={10} />, <Scatter rows={rows} />);
+  const predicted = () => panel('predicted', 'Predicted vs actual', <Stp n={10} />, <Scatter rows={rows} />,
+    whole('Predicted vs actual', 'predicted', 'predicted', [facet.scored()], measureOf.count, 'Overridden and pending cases are left out, as in the chart.'));
   const models = () =>
     panel('models', 'Model versions: the learning loop', null, (
       <>
         <ModelTable filtered={f.model} onFilter={filterModel} />
         <div className="callout" style={{ marginTop: 12 }}>Overridden cases and pending cases are excluded from model error. Select a version to filter every chart on this page.</div>
       </>
-    ));
+    ), whole('Model versions: the learning loop', 'models', 'models', f.model ? [facet.model(f.model)] : [], measureOf.count, 'These are your rows. The table above counts every tenant\u2019s closed decisions, so its counts can be larger.'));
 
   const tabs = (
     <Segmented
@@ -157,26 +178,44 @@ export function AnalyticsPage({ route, query }: PageProps) {
     );
   }
 
+  const sections = canPage('analytics', 'waterfall');
+  const flow = () => panel('flow', 'Where do returned assets go, and how do they end?', null, <Flow rows={rows} labels={labels} onViewData={setVd} />, flowSpec());
+  const heat = () => panel('heat', 'Which route pays best for each asset class?', <span className="note">typical gain per case</span>, <HeatGrid rows={rows} labels={labels} onViewData={setVd} />, heatSpec());
+  const trend = () => panel('trend', 'How much is recovered each month, and how far ahead of the baseline are we?', null, <TrendBars rows={rows} labels={labels} onViewData={setVd} />, trendSpec());
+  const age = () => panel('age', 'How long are decisions waiting for approval?', <span className="note">open decisions</span>, <AgeChart org={f.org ?? ''} onViewData={setVd} />,
+    ageSpec({ source: 'cases', chart: 'age', key: 'all' }, []));
+
   return (
     <>
       <div className="phead">
         <div>
           <h1>Analytics</h1>
-          <p>
-            {canPage('analytics', 'waterfall')
-              ? 'Predicted and actual results stay linked, so each decision teaches the next one. The four success measures from the framework lead; every number drills to its cases.'
-              : 'Engineering economics and sustainability from closed decisions. Every number drills to its cases.'}
-          </p>
+          {!sections && <p>Engineering economics and sustainability from closed decisions. Every number drills to its cases.</p>}
         </div>
       </div>
       <div style={{ marginBottom: 12 }}>{tabs}</div>
+      {sections && <Headline m={m} total={rows.length} period={period} tenants={tenants} />}
+      {sections && (
+        <>
+          <div className="kpis ank4">
+            {kpi('+' + kfmt(m.uplift), 'additional net recovery vs baseline', `${kfmt(m.act)} recovered vs ${kfmt(m.base)} baseline (${m.base ? '+' + ((m.act / m.base - 1) * 100).toFixed(0) + '%' : '—'})`, drills.all, measureOf.uplift)}
+            {kpi(kfmt(m.avoided), 'confirmed avoided spend', `ERP-confirmed on ${m.rc.filter((r) => r.avoided).length} redeploy and parts decisions`, drills.avoid, measureOf.avoided)}
+            {kpi(m.days + ' days', 'median days to realize', `vs ${m.baseDays} today · ${m.baseDays ? Math.round((1 - m.days / m.baseDays) * 100) : 0}% faster`, drills.all, measureOf.days)}
+            {kpi(m.unresolved, 'unresolved decisions', `${m.pend} pending outcomes + ${m.liveOpen} awaiting approval`, drills.pend, measureOf.count)}
+          </div>
+          <div className="note" style={{ margin: '6px 2px 0' }}>
+            Step <Stp n={10} /> compares actuals with forecasts. Pending cases are shown as pending, never as failures. Uplift is measured against an agreed current-practice baseline (modelled), not predicted improvement.
+          </div>
+        </>
+      )}
+      {sections && <PackHeadlines onViewData={setVd} />}
       {focus && (
         <div className="grid g2 anr sect cxfocus" style={{ '--cols': 'minmax(0,1.1fr) minmax(0,1fr)' } as CSSProperties}>
           {predicted()}
           <AgentAnswer onOpen={() => nav('/analytics/models')} />
         </div>
       )}
-      <div className="panel" style={{ marginBottom: 16 }}>
+      <div className="panel" style={{ margin: '16px 0' }}>
         <div className="filters" style={{ border: 0 }}>
           <span className="note">From</span>
           <select className="sel" aria-label="From month" value={f.from} onChange={(e) => { const v = +e.target.value; setFilter({ ...f, from: v, to: Math.max(f.to, v) }); }}>
@@ -190,43 +229,35 @@ export function AnalyticsPage({ route, query }: PageProps) {
           {orgs.length > 1 && (
             <select className="sel" aria-label="Org unit" value={f.org ?? ''} onChange={(e) => setFilter({ ...f, org: e.target.value })}>
               <option value="">Org unit: all</option>
-              {orgs.map((o) => <option key={o.id} value={o.id}>{'  '.repeat(o.depth) + o.name}</option>)}
+              {orgs.map((o) => <option key={o.id} value={o.id}>{'  '.repeat(o.depth) + o.name}</option>)}
             </select>
           )}
           {f.org && <PilotReportButton id={f.org} name={orgs.find((o) => o.id === f.org)?.name ?? f.org} className="btn ghost sm" />}
           {sel('cls', Object.entries(classOptions()).map(([k, v]) => [k, v.label]), 'Asset class')}
           {sel('route', routes().map((r) => [r.id, r.name]), 'Route')}
-          <button className="btn ghost sm" onClick={() => { setFilter({ ...DEFAULT_FILTER }); setDrill(null); }}>Reset filters</button>
+          <button className="btn ghost sm" onClick={() => { setFilter({ ...DEFAULT_FILTER }); setVd(null); }}>Reset filters</button>
           <span className="grow" />
           <span className="chip line">{rows.length.toLocaleString()} decisions · {m.rc.length.toLocaleString()} reconciled</span>
         </div>
       </div>
-      {canPage('analytics', 'waterfall') && (
-        <>
-          <div className="kpis ank4">
-            {kpi('+' + kfmt(m.uplift), 'additional net recovery vs baseline', `${kfmt(m.act)} recovered vs ${kfmt(m.base)} baseline (${m.base ? '+' + ((m.act / m.base - 1) * 100).toFixed(0) + '%' : '—'})`, drills.all)}
-            {kpi(kfmt(m.avoided), 'confirmed avoided spend', `ERP-confirmed on ${m.rc.filter((r) => r.avoided).length} redeploy and parts decisions`, drills.avoid)}
-            {kpi(m.days + ' days', 'median days to realize', `vs ${m.baseDays} today · ${m.baseDays ? Math.round((1 - m.days / m.baseDays) * 100) : 0}% faster`, drills.all)}
-            {kpi(m.unresolved, 'unresolved decisions', `${m.pend} pending outcomes + ${m.liveOpen} awaiting approval`, drills.pend)}
-          </div>
-          <div className="note" style={{ margin: '6px 2px 0' }}>
-            Step <Stp n={10} /> compares actuals with forecasts. Pending cases are shown as pending, never as failures. Uplift is measured against an agreed current-practice baseline (modelled), not predicted improvement.
-          </div>
-        </>
-      )}
       {aRow('minmax(0,1.6fr) minmax(0,1fr)', [
         ['waterfall', () => panel('waterfall', 'Recovery waterfall: baseline to Circularity', <Stp n={10} />, (
-          <><Waterfall m={m} onDrill={onDrill} /><div className="note">Select a bar to open its cases. Bars show reconciled decisions only.</div></>
-        ))],
-        ['pipeline', () => panel('pipeline', 'Pipeline: case to reconciled', null, <Funnel rows={rows} m={m} onDrill={onDrill} />)],
+          <><Waterfall m={m} onDrill={drillFor('waterfall', 'waterfall', measureOf.uplift)} /><div className="note">Select a bar to open its cases. Bars show reconciled decisions only.</div></>
+        ), whole('Recovery waterfall: baseline to Circularity', 'waterfall', 'waterfall', [facet.status('reconciled')], measureOf.uplift))],
+        ['pipeline', () => panel('pipeline', 'Pipeline: case to reconciled', null, <Funnel rows={rows} m={m} onDrill={drillFor('pipeline', 'pipeline', measureOf.count)} />,
+          whole('Pipeline: case to reconciled', 'pipeline', 'pipeline', [], measureOf.count, 'Decisions a person approved. Cases opened that no one has approved yet are not rows here.'))],
       ])}
-      {aRow('', [['mix', () => panel('mix', 'Route mix over time', <span className="note">decisions carried out per month</span>, <MixChart rows={rows} onDrill={onDrill} />)]])}
+      {aRow('', [['pipeline', flow]])}
+      {aRow('minmax(0,1.15fr) minmax(0,1fr)', [['mix', heat], ['waterfall', trend]])}
+      {aRow('', [['mix', () => panel('mix', 'Route mix over time', <span className="note">decisions carried out per month</span>, <MixChart rows={rows} onDrill={drillFor('mix', 'mix', measureOf.count)} />,
+        whole('Route mix over time', 'mix', 'mix', [facet.carriedOut()], measureOf.count))]])}
       {focus
         ? aRow('', [['models', models]])
         : aRow('minmax(0,1.1fr) minmax(0,1fr)', [['predicted', predicted], ['models', models]])}
       {aRow('minmax(0,1fr) minmax(0,1fr)', [
-        ['pool', () => panel('pool', 'Pool efficiency', <Stp n={4} />, <PoolChart rows={rows} />)],
-        ['overrides', () => panel('overrides', 'Overrides', null, <Overrides rows={rows} onDrill={onDrill} />)],
+        ['overrides', () => panel('overrides', 'Overrides', null, <Overrides rows={rows} onDrill={drillFor('overrides', 'overrides', measureOf.override)} />,
+          whole('Overrides', 'overrides', 'overrides', [facet.override()], measureOf.override))],
+        ['pipeline', age],
       ])}
       {aRow('minmax(0,1.5fr) minmax(0,1fr)', [
         ['eng', () => panel('eng', 'Engineering economic intelligence', <span className="chip warn" style={{ height: 'auto', whiteSpace: 'normal' }}>Association, not demonstrated design cause</span>, (
@@ -234,64 +265,21 @@ export function AnalyticsPage({ route, query }: PageProps) {
             <p className="ink2" style={{ marginTop: 0 }}>
               Average value lost per case, by equipment model and component, where repair difficulty or early failure reduced recovery. Procurement and engineering can use this when choosing future fleets, alongside design evidence.
             </p>
-            <Heat rows={rows} onDrill={onDrill} />
+            <Heat rows={rows} onDrill={drillFor('eng', 'eng', measureOf.lost)} />
           </>
-        ))],
-        ['sustain', () => panel('sustain', 'Sustainability', null, <Sustain rows={rows} />)],
+        ), whole('Engineering economic intelligence', 'eng', 'eng', [facet.erosion()], measureOf.lost))],
+        ['sustain', () => panel('sustain', 'Sustainability', null, <Sustain rows={rows} />,
+          whole('Sustainability', 'sustain', 'sustain', [facet.withCo2()], measureOf.co2, 'CO2e is estimated from sample factors, or measured where a partner certificate or ERP movement exists. Estimates and measurements are never mixed in one total.'))],
       ])}
-      {drill && <DrillPanel drill={drill} rows={rows} setDrill={setDrill} onOpen={setOpenRow} />}
+      {sections && <AnalysisBuilder rows={rows} labels={labels} onViewData={setVd} />}
+      {vd && (
+        <DataDrawer
+          spec={vd} rows={rows} filter={f} period={period} labels={labels} canExport={canPage('analytics', vd.section)} onClose={() => setVd(null)}
+          onOpenRow={(id, source) => (source === 'cases' ? nav('/product/' + id) : setOpenRow(id))}
+        />
+      )}
       {openRow && <ClosedDrawer id={openRow} onClose={() => setOpenRow(null)} />}
     </>
-  );
-}
-
-function DrillPanel({ drill, rows, setDrill, onOpen }: {
-  drill: Drill & { page: number }; rows: ClosedRow[]; setDrill: (d: (Drill & { page: number }) | null) => void; onOpen: (id: string) => void;
-}) {
-  const M = months(), CL = assetClasses();
-  const list = rows.filter(drill.fn).sort((a, b) => Math.abs(b.actual || b.p50) - Math.abs(a.actual || a.p50));
-  const pg = drill.page, sh = list.slice(pg * 12, pg * 12 + 12);
-  const csv = () => {
-    downloadCsv(
-      'case,month,tenant,class,route,status,model,predicted_p50,actual,baseline\n' +
-        list.map((r) => [r.id, M[r.mi], r.tenant, r.cls, r.route, r.status, r.model, r.p50, r.actual == null ? '' : r.actual, r.baseline].join(',')).join('\n'),
-      'circularity-drill.csv',
-    );
-    toast('Exported ' + list.length + ' cases');
-  };
-  return (
-    <section className="panel sect" id="drill" style={{ marginTop: 20 }}>
-      <div className="ph">
-        <h3>Drill-through · {drill.title}</h3>
-        <span className="chip line">{list.length} cases</span>
-        <button className="btn sm" onClick={csv}>Export CSV</button>
-        <button className="btn sm ghost" aria-label="Close drill-through" onClick={() => setDrill(null)}><Icon name="close" /></button>
-      </div>
-      <div className="tw">
-        <table className="t">
-          <thead><tr><th>Case</th><th>Month</th><th>Tenant</th><th>Class</th><th>Route</th><th>Status</th><th className="r">Predicted P50</th><th className="r">Actual</th><th className="r">vs baseline</th></tr></thead>
-          <tbody>
-            {sh.length ? sh.map((r) => (
-              <tr key={r.id} tabIndex={0} onClick={() => onOpen(r.id)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen(r.id))}>
-                <td><b>{r.id}</b></td><td>{M[r.mi]}</td><td>{r.tenant}</td><td>{CL[r.cls]?.label}</td>
-                <td>{routeById(r.route).short}{r.override && <> <span className="chip warn">override</span></>}</td>
-                <td>{statusChip(r)}</td>
-                <td className="r num">{money(r.p50)}</td>
-                <td className="r num">{r.actual == null ? '—' : money(r.actual)}</td>
-                <td className={'r num ' + (r.actual != null && r.actual - r.baseline < 0 ? 'neg' : 'pos')}>{r.status === 'reconciled' ? money((r.actual ?? 0) - r.baseline) : '—'}</td>
-              </tr>
-            )) : <tr><td colSpan={9}><div className="empty"><b>No cases</b>Nothing matches this selection.</div></td></tr>}
-          </tbody>
-        </table>
-      </div>
-      <div className="filters" style={{ justifyContent: 'space-between', border: 0 }}>
-        <span className="note">Page {pg + 1} of {Math.max(1, Math.ceil(list.length / 12))}</span>
-        <span className="row">
-          <button className="btn sm" disabled={pg === 0} onClick={() => setDrill({ ...drill, page: pg - 1 })}>Previous</button>
-          <button className="btn sm" disabled={(pg + 1) * 12 >= list.length} onClick={() => setDrill({ ...drill, page: pg + 1 })}>Next</button>
-        </span>
-      </div>
-    </section>
   );
 }
 

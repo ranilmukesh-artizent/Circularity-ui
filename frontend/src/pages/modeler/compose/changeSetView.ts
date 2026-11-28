@@ -66,10 +66,23 @@ export function changeTitle(cs: ChangeSet): string {
   return `Drafted ${n} change${n === 1 ? '' : 's'}${a ? `, ${a} assumed` : ''}`;
 }
 
+/** A guardrail by its text: `texts` maps ids to the guardrail's own sentence (the template's). An id with no text reads "a guardrail", never the id. */
+export const guardrailName = (id: string, texts?: Record<string, string>): string => texts?.[id] ?? 'a guardrail';
+
+/** A list of guardrail ids as their texts, "none" for an empty list. */
+export const guardrailList = (ids: readonly string[], texts?: Record<string, string>): string => (ids.length ? ids.map((i) => guardrailName(i, texts)).join('; ') : 'none');
+
 /** The guardrail's refusals, one line each. */
-export const blockedLines = (cs: ChangeSet): string[] => cs.blocked.map((b) => `Blocked by ${b.guardrail}: ${b.text}`);
+export const blockedLines = (cs: ChangeSet, texts?: Record<string, string>): string[] =>
+  cs.blocked.map((b) => `Blocked by ${texts ? guardrailName(b.guardrail, texts) : b.guardrail}: ${b.text}`);
 
 /** A pack's name as the pack file gives it, short: "Used vehicles · lease and trade-in returns" reads "Used vehicles". */
+/** A pack key with no name to hand, as words: "tool_fleet" reads "Tool fleet". */
+export const keyWords = (key: string): string => {
+  const w = key.replace(/[_-]+/g, ' ').trim();
+  return w ? w[0].toUpperCase() + w.slice(1) : key;
+};
+
 export const packLabel = (key: string, names?: Record<string, string>): string => (names?.[key] ?? key).split(' · ')[0].trim() || key;
 
 /**

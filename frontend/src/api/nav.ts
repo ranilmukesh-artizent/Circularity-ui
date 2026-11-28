@@ -10,7 +10,7 @@ export interface NavSection { id: string; label: string; sub: string; href: stri
 export interface NavGroup { id: string; label: string; sub: string; icon: string; section: string; leaf: boolean; href: string; kids: NavSection[] }
 
 interface Badges { awaiting: number; inbox: number; integration: number; mywork?: number; mine?: number; sections: Record<string, number> }
-interface NavAnswer { groups: NavGroup[]; badges: Badges; tasks: number }
+interface NavAnswer { groups: NavGroup[]; badges: Badges; tasks: number; staged?: boolean; landing?: string | null }
 
 /** GET /api/screens/nav with the view settings it depends on. */
 function navAnswer(): NavAnswer {
@@ -29,6 +29,12 @@ function countsAnswer(): NavAnswer {
 }
 
 export const navigation = (): NavGroup[] => navAnswer().groups;
+
+/** True while the organisation has no published setup: the menu then holds only Home, Set up and Access (plan 11, A1; display only). */
+export const navStaged = (): boolean => navAnswer().staged === true;
+
+/** The page to land on when it is not the usual one: "setup" for a person who may set up while nothing is published (plan 11, A4). */
+export const navLanding = (): string | null => navAnswer().landing ?? null;
 
 /** Badges in the menu: decisions awaiting approval (Decision Workbench), the approvals inbox (Command Center),
  *  open conflicts that hold up a pending decision (Connection Fabric; di/services/screens/nav.py), and per-section badges keyed

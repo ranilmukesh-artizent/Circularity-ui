@@ -3,7 +3,7 @@
 **Sign in as** `finance`. Any password.
 
 Finance "confirms outcomes and tracks recovery, avoided spend and variance", and reads and comments on the audit log
-and the Source Map. You see **all customers**. Your Command Center is described as: "Recovered value, avoided spend and
+and the Source Map. You see **all customers**. Your Pulse is described as: "Recovered value, avoided spend and
 outcomes waiting for confirmation."
 
 > All data is synthetic (Northfield Industrial Leasing). The enterprise systems are simulations; no real vendor system
@@ -14,18 +14,18 @@ outcomes waiting for confirmation."
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Actions on me, **Outcomes to confirm**, Portfolio charts, Value realisation |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
+| Pulse | Key figures, Actions on me, **Outcomes to confirm**, Portfolio charts, Value realisation |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Asset intelligence tabs | Overview, Lifecycle, Economic, Data, Related |
 | Analytics | All sections (Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides, Engineering economics, Sustainability) |
 | Connection Fabric | Overview, Source Map, Monitor (read only; you may comment on a source) |
-| Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Audit & Provenance, Reports, Data Checks, Settings |
 
 ## What you can do
 
 | Action | Where |
 |---|---|
-| **Confirm an outcome** (actual against predicted) | Case, stage 9; Command Center → Outcomes to confirm |
+| **Confirm an outcome** (actual against predicted) | Case, stage 9; Pulse → Outcomes to confirm |
 | Comment on a source or record | Connection Fabric (source drawer), Audit |
 | Acknowledge notifications | Home, My Tasks, Alerts |
 
@@ -33,7 +33,7 @@ outcomes waiting for confirmation."
 
 ### 1. Find the outcomes to confirm
 
-**Command Center → Outcomes to confirm** ("Results that need Finance") lists the cases whose instructions are all
+**Pulse → Outcomes to confirm** ("Results that need Finance") lists the cases whose instructions are all
 acknowledged and whose actual costs and value have been reported. **Home → Needs you** and **My Tasks** list them too.
 
 ### 2. Confirm an outcome
@@ -63,7 +63,7 @@ the case.
 - **Predicted vs actual**: forecast against outcome across cases.
 - **Model versions**: the learning loop.
 - **Overrides**: when people changed the plan, and what it cost or saved.
-- **Command Center → Value realisation**: predicted against actual recovery.
+- **Pulse → Value realisation**: predicted against actual recovery.
 
 ### 5. Retirement, residual and credit at close
 

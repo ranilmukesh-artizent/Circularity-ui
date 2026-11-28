@@ -15,3 +15,9 @@
 .st-empty p { margin: 0; }
 .st-starters { display: grid; gap: 8px; }
 .st-starters .st-start.btn { display: block; width: 100%; text-align: left; white-space: normal; height: auto; min-height: 32px; padding: 6px 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.st-notice { padding: 8px 12px; border-left: 3px solid var(--as-hold, var(--warn)); background: var(--panel2); border-radius: var(--as-radius, 8px); }
+/* the wait line is text only: no spinner, no motion of its own */
+@media (prefers-reduced-motion: reduce) { .st-wait, .st-notice { transition: none; animation: none; } }
+/* One yellow button on screen: while a turn offers its own primary answer, the composer's send button is a plain one. */
+.as-panel:has(.st-turn .btn.pri) .as-comp-b .btn.pri { background: var(--panel); border-color: var(--line); color: inherit; }
+.as-panel:has(.st-turn .btn.pri) .as-comp-b .btn.pri:hover:not(:disabled) { background: var(--panel2); filter: none; }

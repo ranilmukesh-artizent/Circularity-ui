@@ -9,7 +9,9 @@ Writes nothing.
 
 from di.services.cases import mr_turnaround as _mt
 from di.services.device import analytics
-from di.services.questions import medical_rental, telecom_network, used_cars  # noqa: F401
+from di.services.questions import device as device_headline
+from di.services.questions import medical_rental, telecom_network, tool_fleet, used_cars  # noqa: F401
+from di.services.questions.headline import Spec
 
 #: The worked questions of each pack that has any (ids in `analytics.REGISTRY`); the Packs tab lists the selected pack's own.
 PACK_QUESTIONS: dict[str, tuple[str, ...]] = {
@@ -18,6 +20,10 @@ PACK_QUESTIONS: dict[str, tuple[str, ...]] = {
     "telecom_network": ("wq_tn_1", "wq_tn_2"),
     "medical_rental": (_mt.QUESTION_ID, "retired_earliest"),
 }
+
+
+#: The packs whose Analytics opens on a headline (plan 11, D1): the figures of each, from `di.services.questions.headline`.
+HEADLINES: dict[str, Spec] = {tool_fleet.SPEC.key: tool_fleet.SPEC, device_headline.SPEC.key: device_headline.SPEC}
 
 
 def worked_questions(pack_key: str) -> list[dict[str, str]]:

@@ -14,15 +14,15 @@ second person (maker-checker). You see **all customers**.
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures; *Proposals for you* when an agent holds one you may act on |
-| Command Center | Key figures, Actions on me, **Approvals** (approval cards, the Approvals inbox and the tenant access granted), Portfolio charts, Actions to prioritise, Signals and capacity, Value realisation |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
+| Pulse | Key figures, Actions on me, **Approvals** (approval cards, the Approvals inbox and the tenant access granted), Portfolio charts, Actions to prioritise, Signals and capacity, Value realisation |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Analytics | All sections (Recovery waterfall, Pipeline, Route mix, Predicted vs actual, Model versions, Overrides, Engineering economics, Sustainability) |
 | Modeler | Every organisation's decision flow, with Approve, Publish, Return to draft and Roll back; the **Models** panel |
 | Connection Fabric | Event Streams and Conflict Queue (read only) |
 | MCP & Tools | Tool catalog, Agent registry, Permission matrix, Call log and gate, As MCP client, Server proposals |
-| Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Audit & Provenance, Reports, Data Checks, Settings |
 
-Your Command Center is described as: "Decide what is waiting for you: treatment decisions, spend and sale terms, and
+Your Pulse is described as: "Decide what is waiting for you: treatment decisions, spend and sale terms, and
 the requests Admin delegated to you."
 
 ## What you can do
@@ -30,8 +30,8 @@ the requests Admin delegated to you."
 | Action | Where | Depends on |
 |---|---|---|
 | Approve, override or decline a decision | Case, stage 7 (approval card) | Admin's *Decisions and overrides* delegation; your approval limit |
-| Approve or decline a tenant access request, and choose when the access ends | Command Center → Approvals inbox | Admin's *Tenant access* delegation; never your own request |
-| Revoke a tenant access grant | Command Center → Approvals (*Tenant access granted*) | Admin's *Tenant access* delegation |
+| Approve or decline a tenant access request, and choose when the access ends | Pulse → Approvals inbox | Admin's *Tenant access* delegation; never your own request |
+| Revoke a tenant access grant | Pulse → Approvals (*Tenant access granted*) | Admin's *Tenant access* delegation |
 | Approve or decline an MCP server proposal | MCP & Tools → Server proposals; Approvals inbox | Admin's *MCP server proposals* delegation; never your own proposal |
 | Approve, publish, return or roll back a decision flow | Modeler | Never on a flow you made yourself |
 | Approve a model promotion | Modeler → Models (**Approve promotion**) | Never a model you fitted or proposed yourself |
@@ -50,7 +50,7 @@ You cannot submit decisions, confirm outcomes, record inspections, edit rules, c
 
 ### 1. Open your queue
 
-**Command Center → Approvals** shows:
+**Pulse → Approvals** shows:
 
 - **Approval cards**: every submitted decision, ordered by value then deadline, each with the route, the value, who
   submitted it and the pre-approval check ("nothing to flag" or the risks). A card above your limit says "Above your
@@ -134,7 +134,7 @@ You can read them; a Planner or Admin applies one to a draft, and it then comes 
 
 ### 6b. Approve a composition or a group map
 
-**A composition** (Compose, the Modeler) arrives as one object: the pack changes, the accepted field mappings and the
+**A composition** (Set up) arrives as one object: the pack changes, the accepted field mappings and the
 agent settings. **Approve** applies them all together or none; you cannot approve one you made, and the checks run again
 for you. If a step is wrong, choose the **Step**, optionally a **Node** (for example `stage:condition`), write the
 reason (15 characters or more) and press **Send back**: the reason stays pinned to that step for its maker. You start the

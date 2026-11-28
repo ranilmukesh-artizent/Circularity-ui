@@ -23,3 +23,15 @@ export function publishChecks(status: CompositionStatus, flowStatus: string, has
   const waits = { approved: false, flow: false, replay: flowStatus === 'pub', publish: !(done.approved && done.flow && done.replay) };
   return (['approved', 'flow', 'replay', 'publish'] as const).map((id) => ({ id, state: done[id] ? 'done' : waits[id] ? 'todo' : 'now' }));
 }
+
+/** What a published setup opens, by area of the menu (the menu itself is the lead's; this is the words of the confirmation). */
+export const OPENED: readonly { area: string; pages: string }[] = [
+  { area: 'Decide', pages: 'My Tasks, Cases' },
+  { area: 'Understand', pages: 'Pulse, Analytics, Agents' },
+];
+
+/** The rollout that is live: the canary rows that are not paused, as "20 % of cases in Region A"; null when none is. */
+export function liveShare(rows: readonly { stage: string; region: string; share: number }[]): string | null {
+  const live = rows.filter((r) => r.stage !== 'paused');
+  return live.length ? live.map((r) => `${r.share} % of cases in ${r.region}`).join('; ') : null;
+}

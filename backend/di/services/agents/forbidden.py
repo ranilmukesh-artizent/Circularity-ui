@@ -26,6 +26,7 @@ FORBIDDEN_ACTIONS = (
     "overlay.approve", "overlay.reject",  # plan 9 P9-1.3: a person decides which customer changes to a pack take effect
     "pack.approve", "pack.reject",  # plan 9 P9-1.6: a person decides which pack version is in force
     "credentials.rotate",  # plan 9 P9-0.4: a new secret is a person's, never an agent's (review focus 6)
+    "analytics.export",  # plan 11: taking the rows behind a chart out of the product is a person's act (journalled)
     "llm.",  # plan 9 P9-2.3: which language models run, and their limits, are a person's (llm.models, llm.setModel)
     "standingPolicy.approve", "standingPolicy.retire",  # plan 9 P9-2.5: a person decides which policy approves (R7, R21)
     "fraud.release", "fraud.reject",  # plan 9 P9-2.11: only a person clears a fraud hold or declines the held return

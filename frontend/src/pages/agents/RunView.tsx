@@ -3,6 +3,7 @@ import { reasonText, runTrace, setAgentEnabled, spanMs, spanRows, stageLabel, st
 import { ApiError } from '../../api/client';
 import { can } from '../../api/session';
 import { useAction } from '../../hooks/useAction';
+import { Markdown } from '../../components/Markdown';
 import { JourneyTimeline } from './JourneyTimeline';
 
 const STATUS_CHIP: Record<string, string> = { running: 'line', waiting: 'y', done: 'ok', failed: 'bad', stopped: 'warn', held: 'y', exception: 'bad', skipped: 'line' };
@@ -154,7 +155,7 @@ function Reading({ stage }: { stage: TraceStage }) {
   return (
     <div className="note" aria-label={`Reading of ${stage.stage}`}>
       <div>Reasoned by {model}</div>
-      <div>{reading.summary}</div>
+      <Markdown text={reading.summary} />
       {reading.findings.length > 0 && <ul>{reading.findings.map((f, i) => <li key={i}>{f.text} <span className="mono">({f.source})</span></li>)}</ul>}
       {reading.concerns.map((c, i) => (
         <div key={i}>{c.hold && <span className="chip y">held</span>} {c.kind.replace('_', ' ')}: {c.text}</div>

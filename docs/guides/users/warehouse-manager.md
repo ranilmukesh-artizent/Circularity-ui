@@ -4,7 +4,7 @@
 
 The Warehouse Manager "runs one warehouse: cases at that location, inbound expected returns, capacity and items
 awaiting handoff outcomes. Requests evidence and acknowledges notifications; WMS stays the system of record." Your
-Command Center is described as: "Your warehouse: what is on you, inbound expected returns, and items with enterprise
+Pulse is described as: "Your warehouse: what is on you, inbound expected returns, and items with enterprise
 systems awaiting an outcome."
 
 > All data is synthetic (Northfield Industrial Leasing). The enterprise systems are simulations; no real vendor system
@@ -21,11 +21,11 @@ outside your warehouse." Lists, figures and charts are filtered the same way.
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Exceptions, Actions on me, Handed off, Portfolio charts, Signals and capacity |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages (your warehouse) |
+| Pulse | Key figures, Exceptions, Actions on me, Handed off, Portfolio charts, Signals and capacity |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages (your warehouse) |
 | Asset intelligence tabs | Overview, Lifecycle, Condition, Data, Related |
 | Audit & Provenance | Fetch log |
-| Also | My Tasks, Alerts, Process Orchestration, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Reports, Data Checks, Settings |
 
 ## What you can do
 
@@ -38,12 +38,12 @@ outside your warehouse." Lists, figures and charts are filtered the same way.
 
 ### 1. See what is on you
 
-**Command Center → Actions on me** and **Home → Needs you** list what waits on you. **Exceptions** ranks the issues in
+**Pulse → Actions on me** and **Home → Needs you** list what waits on you. **Exceptions** ranks the issues in
 your warehouse. **Signals and capacity** shows what needs attention and how full the warehouse is.
 
 ### 2. Plan inbound returns
 
-**Decision Workbench → Expected returns** lists returns that are planned but not yet received (planning signals).
+**Cases → Expected returns** lists returns that are planned but not yet received (planning signals).
 **Returned assets** lists what is in your warehouse now, with each case's stage.
 
 ### 3. Close an evidence gap
@@ -54,7 +54,7 @@ the case continues when the result arrives. The Engineer records the result.
 
 ### 4. Follow what is handed off
 
-**Command Center → Handed off** lists cases with the enterprise systems, awaiting an outcome. In an approved route,
+**Pulse → Handed off** lists cases with the enterprise systems, awaiting an outcome. In an approved route,
 the warehouse steps are yours in the real world: *Warehouse moves and outbound delivery* (picks, staging and dispatch
 against the load), *Reserve unit* for a sale, *Putaway after refurbishment* for a re-lease, *Parts putaway* for
 recovered parts. The warehouse management system acknowledges each step with its document (a transfer, a

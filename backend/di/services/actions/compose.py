@@ -80,7 +80,7 @@ from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
 from di.services.agents import chain
 from di.services.agents import registry as agent_registry
-from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError, draft_change_set, read_text
+from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError, Drafter, ModelDraft, draft_change_set, read_text
 from di.services.agents.playbooks import pack_author, stop_explainer
 from di.services.cases.decide import Decision, decide_case
 from di.services.modeler import compose as core
@@ -206,11 +206,47 @@ def _failed(e: ChangeSetError) -> ActionError:
 
 
 # ---------------------------------------------------------------- start, answer
-def _draft(text_: str, org: str, packs: list[Pack], answer: str | None, ctx: CallContext) -> ChangeSet:
+def _draft(
+    text_: str, org: str, packs: list[Pack], answer: str | None, ctx: CallContext, drafter: Drafter | None = None
+) -> ChangeSet:
     try:
-        return draft_change_set(text_, org, packs=packs, answer=answer, drafter=pack_author.make_drafter(ctx))
+        return draft_change_set(text_, org, packs=packs, answer=answer, drafter=drafter or pack_author.make_drafter(ctx))
     except ChangeSetError as e:
         raise _failed(e) from e
+
+
+class StoredFirst:
+    """The drafter of `compose.start` (plan 11, C1): the stored model draft of a pack's sample prompt first, the live drafter for
+    any other text, for a retry after a refusal and for an answer. The stored draft goes through `draft_change_set` as a live
+    one does (`_accept`: every check wins), so it cannot get past a guardrail a model draft could not. `source` is what answered:
+    `stored`, `model` or `rules` (no model answered)."""
+
+    def __init__(self, live: Drafter) -> None:
+        self.live, self.stored = live, False
+
+    def __call__(
+        self, text_: str, reading: Any, packs: Sequence[Pack], answer: str | None, error: str | None
+    ) -> ModelDraft | None:
+        self.stored = False
+        if answer is None and error is None and (draft := self._find(text_, packs)) is not None:
+            self.stored = True
+            return draft
+        return self.live(text_, reading, packs, answer, error)
+
+    @staticmethod
+    def _find(text_: str, packs: Sequence[Pack]) -> ModelDraft | None:
+        for p in packs:
+            raw = core.stored_draft(p.key, load_pack(p.key).version, text_)
+            if raw is None:
+                continue
+            try:
+                return ModelDraft.model_validate(raw)
+            except ValidationError:
+                return None  # a stored draft the models no longer accept: the model answers
+        return None
+
+    def source(self, cs: ChangeSet) -> str:
+        return ("stored" if self.stored else "model") if cs.by_model else "rules"
 
 
 @guard("compose.start")
@@ -229,8 +265,12 @@ def start(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     org = i["org_unit_id"]
     keys = [i["pack_key"]] if i.get("pack_key") else pack_keys()
     packs = [active_pack(ctx.session, k, org) for k in keys]
-    cs = _draft(i["text"], org, packs, None, ctx)
+    drafter = StoredFirst(pack_author.make_drafter(ctx))
+    cs = _draft(i["text"], org, packs, None, ctx, drafter)
+    source = drafter.source(cs)
     reading = read_text(i["text"], packs).model_copy(update={"by_model": cs.by_model})
+    steps = core.new_steps()
+    steps["describe"]["draft_source"] = source  # stored (a stored model draft), model, or rules (no model answered)
     cid = ctx.session.execute(
         text(
             "INSERT INTO composition (org_unit_id, pack_key, base_version, text, reading, change_set, steps, status, created_by, "
@@ -239,10 +279,13 @@ def start(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         ),
         {
             "o": org, "p": cs.pack, "v": cs.base_version, "t": i["text"], "r": reading.model_dump_json(),
-            "c": cs.model_dump_json(), "s": json.dumps(core.new_steps()), "by": ctx.actor.id, "ed": [ctx.actor.id], "at": ctx.now,
+            "c": cs.model_dump_json(), "s": json.dumps(steps), "by": ctx.actor.id, "ed": [ctx.actor.id], "at": ctx.now,
         },
     ).scalar_one()  # fmt: skip
-    return _out(_row({"id": cid}, ctx)) | {"log": f"Started a composition for {cs.pack} at {org}"}
+    return _out(_row({"id": cid}, ctx)) | {
+        "log": f"Started a composition for {cs.pack} at {org}"
+        + {"stored": " from a stored draft", "rules": " by the rules"}.get(source, "")
+    }
 
 
 def _editable_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
@@ -259,7 +302,11 @@ def answer(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     row = _row(i, ctx, for_update=True)
     cs = _draft(row["text"], row["org_unit_id"], [_pack(row, ctx)], i["answer"], ctx)
     kept = {"stage_ops": row["change_set"]["stage_ops"]} if "stage_ops" in row["change_set"] else {}  # the agents step stays
-    _save(ctx, row["id"], change_set=cs.model_dump(mode="json") | kept, editors=_editors(row, ctx))
+    steps = {
+        **row["steps"],
+        "describe": {**row["steps"].get("describe", {}), "draft_source": "model" if cs.by_model else "rules"},
+    }
+    _save(ctx, row["id"], change_set=cs.model_dump(mode="json") | kept, steps=steps, editors=_editors(row, ctx))
     return _out(_row(i, ctx)) | {"log": f"Answered the question of composition {row['id']}"}
 
 

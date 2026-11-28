@@ -200,3 +200,23 @@ export const shareView = (id: number, roles: string[]): Promise<ActionResult<Sav
 /** Set the one alert of a view, or clear it (view.setAlert: its owner only; an agent's call is held for a person). */
 export const setViewAlert = (id: number, alert: ViewAlert | null): Promise<ActionResult<SavedView>> =>
   invoke<SavedView>('view.setAlert', alert ? { view_id: id, ...alert } : { view_id: id, clear: true });
+
+// ---------------------------------------------------------------- Pack headline (plan 11, D1)
+/** One figure of a pack's headline: `value` is null when no case supports it (then `needs` says what must exist). `basis`: counted from the
+ *  cases, modelled (the net expected at approval, not realised) or estimated (carbon from a factor set). */
+export interface HeadlineFigure {
+  id: string; label: string; value: number | null; unit: 'usd' | 'pct' | 'days' | 'count' | 'kg'; n: number; of: number;
+  basis: 'counted' | 'modelled' | 'estimated'; needs: string; note: string;
+}
+/** A route (a channel for devices) the pack's cases are on: cases, how many closed, and the net they carry (modelled). */
+export interface HeadlineRoute { id: string; name: string; n: number; closed: number; net: number }
+/** The grades against the routes used: a count per cell. */
+export interface HeadlineGrades { routes: { id: string; name: string }[]; rows: { grade: string; total: number; cells: Record<string, number> }[] }
+/** GET /api/screens/analytics/pack-headline?days= : one entry per pack with cases the account may see (tool_fleet, device). */
+export interface PackHeadline {
+  pack: string; name: string; route_word: 'route' | 'channel'; period: { days: number; since: string; until: string };
+  cases: number; closed: number; figures: HeadlineFigure[]; routes: HeadlineRoute[]; grades: HeadlineGrades; carbon_sets: string[];
+}
+/** The packs whose Analytics opens on a headline, over the cases opened in the last `days` days (an empty list: the account sees none). */
+export const usePackHeadlines = (days: number): PackHeadline[] =>
+  cached<{ packs: PackHeadline[] }>(withQuery('/api/screens/analytics/pack-headline', { days })).packs;

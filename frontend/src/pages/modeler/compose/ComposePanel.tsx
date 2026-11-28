@@ -6,6 +6,7 @@ import { ApproveStep } from './ApproveStep';
 import { DescribeStep } from './DescribeStep';
 import { MappingStep } from './MappingStep';
 import { PublishStep } from './PublishStep';
+import { SentBackPin } from './SentBackPin';
 import { STEP_ITEMS, stateLine } from './composeView';
 import './compose.css';
 
@@ -68,7 +69,7 @@ function Body({ org, pack, c, onId }: { org: string; pack: string; c: Compositio
           {STEP_ITEMS.find(([k]) => k === shown)?.[1]}: {stateLine(c.steps[shown])} · composition {c.id} is {c.status.replace('_', ' ')}
         </p>
       )}
-      {c?.steps[shown]?.note?.node_id && <p className="note">About: {c.steps[shown].note?.node_id}</p>}
+      {c && <SentBackPin c={c} step={shown} brief />}
       {shown === 'describe' && <DescribeStep org={org} pack={pack} composition={c} onStarted={onId} />}
       {shown === 'mapping' && c && <MappingStep c={c} />}
       {shown === 'agents' && c && <AgentsStep c={c} />}

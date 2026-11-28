@@ -106,3 +106,60 @@
 .sup-access-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; }
 .sup-missing { margin: 0; padding: 10px 14px; border-left: 4px solid var(--warn); background: var(--panel2); font-size: 13.5px; }
 .sup[data-reading] .sup-step { visibility: hidden; }
+
+/* ---- Approve holds Access above the approval (two sections on one screen) ---- */
+.sup-part { margin: 0 0 2px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sup-sec + .sup-sec { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
+.sup-sec > h3 { margin: 0 0 10px; font-family: var(--f-display); font-size: 16px; line-height: 1.3; }
+
+/* The template screen as one conversation (28 Nov 2026): the box first, the template in its footer, the picker a dialog. */
+.sup-split.one { grid-template-columns: minmax(0, 1fr); }
+.sup-start { max-width: 860px; }
+.sup-start > label { font-size: 17px; }
+.sup-box { border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent); border-radius: 12px; background: var(--panel); display: grid; }
+.sup-box:focus-within { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: 1px; }
+.sup-box.bad { border-color: var(--bad); }
+.sup-start .sup-box textarea { border: 0; background: none; border-radius: 12px 12px 0 0; padding: 14px 16px 8px; min-height: 108px; resize: vertical; font-size: 15px; line-height: 1.5; width: 100%; }
+.sup-start .sup-box textarea:focus-visible { outline: none; border: 0; }
+.sup-box-f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 10px 10px; border-top: 1px solid var(--line); }
+.sup-from { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer; touch-action: manipulation; }
+.sup-from-k { color: var(--muted); }
+.sup-from-v { font-family: var(--f-display); font-weight: 600; font-size: 14px; }
+.sup-from .sup-pack-stages { margin-top: 0; }
+.sup-from .sup-pack-stages i { background: var(--yellow); }
+.sup-from-c { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+.sup-from:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+@media (hover: hover) and (pointer: fine) { .sup-from:hover { border-color: color-mix(in srgb, var(--ink) 28%, transparent); background: var(--panel2); } }
+.sup-other { margin: 0; font-size: 13.5px; padding: 8px 12px; border-left: 3px solid var(--yellow); background: var(--panel2); border-radius: 0 8px 8px 0; }
+.sup-other .lnk { display: inline-block; padding: 3px 0; background: none; border: 0; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); cursor: pointer; }
+.sup-asis { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sup-samples { margin-top: 0; padding-top: 0; border-top: 0; }
+
+.sup-talk-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; max-width: 860px; }
+.sup-talk-h .note { margin: 0; flex: 1 1 320px; }
+.sup-talk { max-width: 860px; height: min(68vh, 640px); min-height: 420px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+.sup-talk > * { flex: 1; min-height: 0; }
+/* the assistant's pinned column is a fixed width in the Modeler; here it takes the whole conversation */
+.sup-talk .as-panel.pinned { width: 100%; border-right: 0; }
+
+.sup-dlg { width: min(960px, calc(100vw - 32px)); max-height: min(86vh, 820px); padding: 0; border: 1px solid var(--ink); border-radius: 14px; background: var(--panel); color: var(--ink); overscroll-behavior: contain; }
+.sup-dlg { margin-block: 8vh auto; } /* anchored near the top: the box does not jump when a search shortens the list */
+.sup-dlg::backdrop { background: color-mix(in srgb, var(--ink) 38%, transparent); }
+.sup-dlg-in { display: grid; gap: 14px; padding: 20px 22px 22px; }
+.sup-dlg-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sup-dlg-h h3 { margin: 0; font-family: var(--f-display); font-size: 18px; font-weight: 600; text-wrap: balance; }
+.sup-dlg-q { width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; font-size: 14px; }
+.sup-dlg-q:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
+.sup-dlg .note { margin: 0; }
+@media (max-width: 640px) {
+  .sup-dlg-in { padding: 16px; }
+  .sup-dlg-q, .sup-start .sup-box textarea { font-size: 16px; }
+  .sup-box-f .btn.pri { width: 100%; justify-content: center; }
+  .sup-box-f .btn.pri, .sup-asis .btn, .sup-dlg-h .btn, .sup-talk-h .btn { min-height: 44px; }
+  .sup-other .lnk { padding: 12px 0; }
+  .sup-dlg { margin-block-start: 4vh; max-height: 92vh; }
+  .sup-talk { height: min(74vh, 620px); }
+}
+.sup-back { display: grid; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-left: 3px solid var(--warn); background: var(--panel2); border-radius: 6px; }
+.sup-back .cmp-pin { display: grid; gap: 2px; }
+.sup-back .cmp-pin p { margin: 0; }

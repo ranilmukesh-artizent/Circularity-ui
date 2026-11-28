@@ -3,7 +3,7 @@
 **Sign in as** `engineer`. Any password.
 
 The Engineer "inspects assets, records assessments and test results, and owns technical eligibility". You work from
-the Repair centre and see **all customers**. Your Command Center is described as: "Inspection queue, failed
+the Repair centre and see **all customers**. Your Pulse is described as: "Inspection queue, failed
 eligibility gates, condition and parts at risk."
 
 > All data is synthetic (Northfield Industrial Leasing). The enterprise systems are simulations; no real vendor system
@@ -14,13 +14,13 @@ eligibility gates, condition and parts at risk."
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Actions on me, Handed off, Portfolio charts, Actions to prioritise, Signals and capacity |
-| Decision Workbench | Returned assets, Expected returns, Asset intelligence, the case pages |
+| Pulse | Key figures, Actions on me, Handed off, Portfolio charts, Actions to prioritise, Signals and capacity |
+| Cases | Returned assets, Expected returns, Asset intelligence, the case pages |
 | Asset intelligence tabs | Overview, Lifecycle, Condition, Product, Eligibility, Data, Related |
 | Analytics | Engineering economics, Sustainability |
 | Connection Fabric | Overview, Source Map, Source Tables, Canonical Models, Monitor (read only) |
 | MCP & Tools | Tool catalog, Agent registry, Permission matrix, Call log and gate, As MCP client, Server proposals (read only) |
-| Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Audit & Provenance, Reports, Data Checks, Settings |
 
 ## What you can do
 

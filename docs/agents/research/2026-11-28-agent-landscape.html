@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recover and the agent landscape</title>
+<meta name="description" content="Where Recover stands against the known failure modes of supply chain AI agents, and how the market is reported to handle them.">
+<style>
+:root {
+  --bg:#FAF8F5; --panel:#FFFFFF; --panel2:#F4F1EB; --panel3:#EDE8DF;
+  --ink:#141414; --ink2:#4B4541; --muted:#6B625D;
+  --line:rgba(20,20,20,.11); --line2:rgba(20,20,20,.06);
+  --yellow:#FFDD00; --yellow-ink:#141414; --yellow-soft:#FBF3D8;
+  --f-display:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;
+  --f-body:'Inter','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0E0E0D; --panel:#181816; --panel2:#1F1F1D; --panel3:#292926;
+    --ink:#F3F2EE; --ink2:#CBC8C1; --muted:#A19D95;
+    --line:#2C2B28; --line2:#21211F; --yellow-soft:rgba(255,221,0,.11);
+  }
+}
+* { box-sizing:border-box; }
+html { color-scheme:light dark; }
+body {
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.6 var(--f-body);
+  -webkit-text-size-adjust:100%;
+}
+.wrap { max-width:1040px; margin:0 auto; padding:32px 16px 64px; }
+.text { max-width:72ch; }
+h1,h2,h3 { font-family:var(--f-display); line-height:1.25; margin:0; }
+h1 { font-size:1.75rem; font-weight:700; }
+h2 { font-size:1.25rem; font-weight:700; margin:44px 0 12px; }
+h3 { font-size:1rem; font-weight:700; margin:20px 0 6px; }
+p { margin:0 0 12px; }
+ul,ol { margin:0 0 12px; padding-left:1.25em; }
+li { margin-bottom:6px; }
+a { color:var(--ink); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:hover { text-decoration-thickness:2px; }
+:focus-visible { outline:3px solid var(--yellow); outline-offset:2px; }
+@media (prefers-color-scheme: dark) { :focus-visible { outline-color:var(--yellow); } }
+code { font-family:var(--f-mono); font-size:.88em; background:var(--panel3); padding:1px 5px; border-radius:4px; }
+.meta { color:var(--muted); margin:6px 0 24px; }
+.answer { border-left:4px solid var(--yellow); background:var(--panel); padding:12px 16px; border-radius:0 var(--r) var(--r) 0; }
+.note { color:var(--ink2); background:var(--panel2); border-radius:var(--r); padding:10px 14px; }
+.ref { font-size:.8em; white-space:nowrap; }
+.ref a { color:var(--muted); }
+
+/* tables */
+.scroll { overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--panel); margin:0 0 16px; }
+table { border-collapse:collapse; width:100%; min-width:560px; font-size:.93rem; line-height:1.5; }
+.wide table { min-width:980px; }
+th,td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+th { font-family:var(--f-display); font-weight:700; background:var(--panel2); }
+tr:last-child td { border-bottom:0; }
+td:first-child, th:first-child { font-weight:600; }
+.mark { display:inline-block; width:1.1em; font-family:var(--f-mono); }
+
+/* details */
+details { border:1px solid var(--line); border-radius:var(--r); background:var(--panel); margin:0 0 10px; }
+summary { cursor:pointer; padding:12px 16px; font-family:var(--f-display); font-weight:700; list-style-position:inside; }
+summary span.st { font-family:var(--f-body); font-weight:400; color:var(--muted); margin-left:8px; }
+details[open] > summary { border-bottom:1px solid var(--line); }
+.body { padding:12px 16px 4px; }
+.body h3:first-child { margin-top:0; }
+.lists { display:grid; grid-template-columns:1fr; gap:0 24px; }
+@media (min-width:760px) { .lists { grid-template-columns:1fr 1fr; } }
+
+ul.toc { display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 8px; padding:0; list-style:none; }
+ul.toc li { margin:0; }
+.legend { color:var(--muted); font-size:.9rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior:smooth; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="text">
+  <h1>Recover and the agent landscape</h1>
+  <p class="meta">28 November 2026. Internal working document. Companion to
+    <code>2026-11-28-agent-failure-modes-coverage.md</code>.</p>
+  <p class="answer">Where we are: governance of agents is our strongest area,
+    because agents can only read, draft or hold for a person and the server
+    refuses anything else. Integration is built but unproven, since every
+    system behind it is a mock we wrote. Production readiness is the main gap:
+    no production instance, no paid model access, no security or volume testing.
+    Where the world is: market sources report that most failures of supply
+    chain agents come from fragmented data, missing real-time integration and
+    unverified actions, and that no single platform solves all of it. The
+    suites are mature and wider than we are; we cover one decision, the next
+    life of a returned asset.</p>
+  <p class="note">Everything about the market, the failure modes and the
+    vendors is reported by the linked sources, through a summary the product
+    owner pasted. We have not read those pages and have not verified any of it.
+    Numbers in brackets point to <a href="#sources">Sources</a>. Statements
+    about our own product are about code that exists and is tested on
+    synthetic data; nothing has run at a customer or against a real enterprise
+    system.</p>
+  <nav aria-label="On this page">
+    <ul class="toc">
+      <li><a href="#standing">Where Recover stands</a></li>
+      <li><a href="#modes">Failure modes</a></li>
+      <li><a href="#landscape">Landscape</a></li>
+      <li><a href="#compete">Who we compete with</a></li>
+      <li><a href="#missing">What is missing</a></li>
+      <li><a href="#claim">What not to claim</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+<section aria-labelledby="standing">
+  <h2 id="standing">Where Recover stands</h2>
+  <p class="legend">Each standing has a shape and a word; the word is the
+    one to read. Open a row to see the detail below.</p>
+  <div class="scroll" role="region" aria-label="Scorecard" tabindex="0">
+  <table>
+    <thead><tr><th scope="col">Failure mode</th><th scope="col">Standing</th></tr></thead>
+    <tbody>
+      <tr><th scope="row"><a href="#fm1">Messy or stale master data</a></th>
+        <td><span class="mark" aria-hidden="true">&#9680;</span>Partly covered</td></tr>
+      <tr><th scope="row"><a href="#fm2">Siloed systems, missing context</a></th>
+        <td><span class="mark" aria-hidden="true">&#9675;</span>Built, unproven</td></tr>
+      <tr><th scope="row"><a href="#fm3">Misread business meaning</a></th>
+        <td><span class="mark" aria-hidden="true">&#9680;</span>Partly covered</td></tr>
+      <tr><th scope="row"><a href="#fm4">Hallucination in high-stakes actions</a></th>
+        <td><span class="mark" aria-hidden="true">&#9670;</span>Covered by design</td></tr>
+      <tr><th scope="row"><a href="#fm5">Multi-agent clashes and loops</a></th>
+        <td><span class="mark" aria-hidden="true">&#9650;</span>Avoided by design</td></tr>
+      <tr><th scope="row"><a href="#fm6">Unclear accountability, weak guardrails</a></th>
+        <td><span class="mark" aria-hidden="true">&#9632;</span>Covered</td></tr>
+      <tr><th scope="row"><a href="#fm7">Expanded attack surface</a></th>
+        <td><span class="mark" aria-hidden="true">&#9680;</span>Partly covered</td></tr>
+      <tr><th scope="row"><a href="#fm8">Low planner trust</a></th>
+        <td><span class="mark" aria-hidden="true">&#9632;</span>Covered, untested with users</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section aria-labelledby="modes">
+  <h2 id="modes">Failure mode by failure mode</h2>
+  <p class="text">The summary names three root causes behind most failures:
+    fragmented data, no real-time integration across legacy systems, and
+    autonomous actions nobody verified
+    <span class="ref">[<a href="#s1">1</a>, <a href="#s2">2</a>,
+    <a href="#s3">3</a>, <a href="#s4">4</a>, <a href="#s5">5</a>,
+    <a href="#s6">6</a>]</span>. These are the eight specific modes it lists.</p>
+
+  <details id="fm1" open>
+    <summary>Messy or stale master data<span class="st">Partly covered</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report that messy or out-of-date master data is a main
+        barrier to using agents in planning, and leads them to wrong answers
+        <span class="ref">[<a href="#s7">7</a>, <a href="#s4">4</a>,
+        <a href="#s5">5</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Each source has a status (stale, unavailable, failing, sign-in
+              expired), shown in the menu and the Fabric.</li>
+            <li>Conflicts between systems are recorded; an open conflict on
+              an asset holds its decision.</li>
+            <li>Canonical checks run on every record. Evidence is re-checked
+              before a decision.</li>
+            <li>Each figure carries where it came from (provenance, fetch
+              log, evidence gaps).</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>Master data cleansing or matching across systems: no
+              duplicate resolution, no golden record.</li>
+            <li>Measured behaviour on a customer's real data quality.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm2">
+    <summary>Siloed systems, missing context<span class="st">Built, unproven</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report that agents fail for lack of context when systems are
+        siloed and not integrated in real time, and that the cause is often
+        blamed on the agent when it is integration
+        <span class="ref">[<a href="#s3">3</a>, <a href="#s1">1</a>,
+        <a href="#s7">7</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Connection Fabric: encrypted credentials, configured
+              connections, mappings that run, sync on triggers, webhooks.</li>
+            <li>An adapter registry with test and production environments,
+              import from an OpenAPI description, MCP client sources.</li>
+            <li>A canonical model that every pack maps to.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>A real connection to any named enterprise system: all are
+              synthetic mocks.</li>
+            <li>Flat-file and EDI feeds beyond the SFTP mock.</li>
+            <li>Visibility beyond the systems a customer connects (no
+              supplier tiers).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm3">
+    <summary>Misread business meaning<span class="st">Partly covered</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>A post in the summary is reported to cover how AI misreads what
+        business terms and activity mean
+        <span class="ref">[<a href="#s8">8</a>]</span>. We only have the
+        summary's description of it.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Mapping suggestions rank candidates by name and by sample
+              values, then a model reranks them.</li>
+            <li>Results come in calibrated bands (pre-ticked, check, no
+              proposal); a person confirms each one that is not certain.</li>
+            <li>A field can be sent to the system owner as a question.</li>
+            <li>Customers map and rename canonical fields; they do not add
+              new ones.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>A knowledge graph or ontology of the business.</li>
+            <li>Status codes and flags are mapped field by field, not
+              learned.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm4">
+    <summary>Hallucination in high-stakes actions<span class="st">Covered by design</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report hallucination as a risk when agents take
+        high-stakes actions, alongside loops and ethical failures
+        <span class="ref">[<a href="#s9">9</a>, <a href="#s10">10</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Values, routes and rankings come from the deterministic
+              engine, checked against 128 reference cases. The model reasons
+              and explains; it does not produce the numbers.</li>
+            <li>Every agent-prepared action that is not a read or a draft is
+              refused by the action pipeline
+              (<code>services/agents/forbidden.py</code>), whatever the
+              caller claims. A proposal holds for a person.</li>
+            <li>Answers say which lookups they used and whether a model wrote
+              them.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>Measured hallucination rates.</li>
+            <li>Evaluation sets for the model's own outputs (drafts, mapping
+              reasons) beyond unit tests.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm5">
+    <summary>Multi-agent clashes and loops<span class="st">Avoided by design</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report poor coordination between agents, and loops, as a
+        failure mode that needs governance
+        <span class="ref">[<a href="#s11">11</a>, <a href="#s2">2</a>,
+        <a href="#s6">6</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Agents of a pack run as one ordered chain of stages, not as
+              peers negotiating.</li>
+            <li>Each stage has an autonomy level, limits and a confidence
+              threshold, set in Set up and approved by a second person.</li>
+            <li>Run limits, budgets and cooldowns on the model router; kill
+              switches per agent.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>Agents that trade off competing goals (cost against speed
+              against service). Nothing here needs it today, and nothing
+              here does it.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm6">
+    <summary>Unclear accountability, weak guardrails<span class="st">Covered</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report that it is often unclear who answers for an
+        agent's action, and that guardrails are weak
+        <span class="ref">[<a href="#s12">12</a>, <a href="#s13">13</a>,
+        <a href="#s1">1</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Every write goes through one action pipeline and is
+              journalled.</li>
+            <li>Maker and checker are different people for setups, flows and
+              access.</li>
+            <li>A changed flow runs in shadow, is replayed on past items, and
+              starts for a share of one region with rollback.</li>
+            <li>Guardrails are part of a pack and apply at every autonomy
+              level. Traces of each agent run.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>An exported audit report in a form an auditor has
+              accepted.</li>
+            <li>Retention rules.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm7">
+    <summary>Expanded attack surface<span class="st">Partly covered</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report that more agents, tools and connections widen what an
+        attacker can reach
+        <span class="ref">[<a href="#s14">14</a>, <a href="#s15">15</a>,
+        <a href="#s12">12</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Access is enforced on the server: tenant boundary, warehouse
+              lock, role permissions.</li>
+            <li>Per-agent credentials; OAuth for outside MCP clients (S256
+              only, tokens bound to an audience); organisation sign-in,
+              SCIM, directory groups to roles.</li>
+            <li>Credentials for sources are encrypted. Model-written text is
+              rendered without running any HTML.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>Prompt-injection testing. A penetration test.</li>
+            <li>A review of what data leaves for the model provider (today
+              the free tiers of two public model APIs).</li>
+            <li>Secrets in a managed key service.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details id="fm8">
+    <summary>Low planner trust<span class="st">Covered, untested with users</span></summary>
+    <div class="body">
+      <h3>What the market reports</h3>
+      <p>Sources report that planners distrust agent output and adoption
+        stalls
+        <span class="ref">[<a href="#s2">2</a>, <a href="#s1">1</a>,
+        <a href="#s7">7</a>]</span>.</p>
+      <div class="lists">
+        <div>
+          <h3>What we have</h3>
+          <ul>
+            <li>Each recommendation shows its evidence, cost trace and the
+              routes it rejected.</li>
+            <li>Replay figures are labelled as modelled. Analytics compare
+              predicted with actual, and count overrides.</li>
+            <li>Autonomy starts at "recommend only" if the customer
+              chooses.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What we do not have</h3>
+          <ul>
+            <li>Evidence from real planners using it.</li>
+            <li>The model's explanations have not been judged by users.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <h3>Limits the summary names for a single platform</h3>
+  <p class="text">No single platform is reported to solve all of this out of
+    the box <span class="ref">[<a href="#s16">16</a>,
+    <a href="#s17">17</a>]</span>.</p>
+  <div class="scroll" role="region" aria-label="Limits" tabindex="0">
+  <table>
+    <thead><tr><th scope="col">Limit</th><th scope="col">Sources</th>
+      <th scope="col">Where we stand</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Garbage in still breaks agents</th>
+        <td class="ref">[<a href="#s24">24</a>, <a href="#s25">25</a>]</td>
+        <td>Same for us. We surface stale and conflicting data and hold
+          decisions on it; we do not clean it.</td></tr>
+      <tr><th scope="row">Multi-tenant SaaS against strict deployment control</th>
+        <td class="ref">[<a href="#s16">16</a>, <a href="#s23">23</a>]</td>
+        <td>In our favour on paper: the whole product runs from Docker
+          Compose, so a single-tenant or customer-hosted install is possible.
+          Not done: a hardened production deployment, high availability,
+          backups, monitoring in place (OpenTelemetry exists and is off by
+          default).</td></tr>
+      <tr><th scope="row">Suite commitment against custom build</th>
+        <td class="ref">[<a href="#s18">18</a>, <a href="#s19">19</a>]</td>
+        <td>We sit between: thirteen template packs as a starting point,
+          changed by describing the business, with a Modeler for the
+          detail.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section aria-labelledby="landscape">
+  <h2 id="landscape">The current landscape</h2>
+  <details id="landscape-details">
+    <summary>Five platform families, as reported<span class="st">open the table</span></summary>
+    <div class="body">
+      <p class="note">Vendor descriptions are as reported by the linked
+        sources and are not verified by us. The market category reference is
+        <span class="ref">[<a href="#s23">23</a>]</span>. The last column is
+        our positioning, not a feature count.</p>
+      <div class="scroll wide" role="region" aria-label="Platform comparison" tabindex="0">
+      <table>
+        <thead><tr>
+          <th scope="col">Platform</th>
+          <th scope="col">Primary strength</th>
+          <th scope="col">Reported handling of agent failures</th>
+          <th scope="col">Trade-off</th>
+          <th scope="col">Sources</th>
+          <th scope="col">Against Recover</th>
+        </tr></thead>
+        <tbody>
+          <tr><th scope="row">Blue Yonder</th>
+            <td>Planning plus warehouse and transport execution.</td>
+            <td>A supply chain knowledge graph; five domain agents under a
+              central orchestrator; every action logged and reversible.</td>
+            <td>Heavy commitment to the whole suite.</td>
+            <td class="ref">[<a href="#s18">18</a>, <a href="#s19">19</a>]</td>
+            <td>One decision: the next life of a returned asset, and the
+              handover to the systems of record.</td></tr>
+          <tr><th scope="row">Kinaxis Maestro</th>
+            <td>Real-time concurrent planning; strongest in planning and
+              disruption response.</td>
+            <td>In-memory, synchronised planning data; human-in-the-loop
+              "digital co-workers".</td>
+            <td>Not deep in execution.</td>
+            <td class="ref">[<a href="#s20">20</a>]</td>
+            <td>One decision: the next life of a returned asset, and the
+              handover to the systems of record.</td></tr>
+          <tr><th scope="row">o9 Solutions</th>
+            <td>Integrated business planning.</td>
+            <td>An enterprise knowledge graph; a planning and decision
+              layer.</td>
+            <td>Relies on external ERPs and warehouse systems for
+              execution.</td>
+            <td class="ref">[<a href="#s19">19</a>, <a href="#s21">21</a>]</td>
+            <td>A canonical model for returns, with mappings a person
+              confirms.</td></tr>
+          <tr><th scope="row">SAP and Oracle SCM</th>
+            <td>Agents native to the ERP.</td>
+            <td>Built-in role permissions and audit logs.</td>
+            <td>Reliable only when the supply chain is standardised on that
+              ERP.</td>
+            <td class="ref">[<a href="#s22">22</a>, <a href="#s21">21</a>]</td>
+            <td>Independent of the ERP; connects through adapters. Less depth
+              in any one system.</td></tr>
+          <tr><th scope="row">Palantir Foundry and AIP</th>
+            <td>A custom ontology over messy sources.</td>
+            <td>Deterministic logic tools; granular access control.</td>
+            <td>Needs heavy engineering; no prebuilt supply chain apps.</td>
+            <td>No link given in the summary.</td>
+            <td>Templates first; a setup is five steps with an approver, not
+              a build project.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="text">Across all of them it is reported that most suites are
+        multi-tenant SaaS, so strict deployment control usually means building
+        a dedicated layer <span class="ref">[<a href="#s16">16</a>,
+        <a href="#s23">23</a>]</span>.</p>
+      <p class="text"><strong>Internal observation, review meeting of
+        27 November 2026 (no source).</strong> Large engineering and IT
+        services firms are bringing similar offers to market, so speed
+        matters.</p>
+    </div>
+  </details>
+</section>
+
+<section aria-labelledby="compete">
+  <h2 id="compete">Who we compete with</h2>
+  <div class="lists">
+    <div>
+      <h3>Platforms and suites</h3>
+      <ul>
+        <li>Blue Yonder, Kinaxis, o9 Solutions, SAP, Oracle, Palantir, as
+          described above.</li>
+        <li>These are mature suites with a wider scope. We cover one
+          decision: the next life of a returned asset (redeploy, resell,
+          re-lease, parts, recycle, exit), and the handover to the systems
+          of record. Ours is a proof of concept one week into its current
+          build.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Closer competitors named in our own research</h3>
+      <p class="legend">From <code>docs/agents/research/2026-11-platform/C-competitive-landscape.md</code>
+        <span class="ref">[<a href="#s26">26</a>]</span>, dated 24 November
+        2026. Vendor claims, not tested hands-on.</p>
+      <ul>
+        <li>Retail returns: Blue Yonder returns management (with Optoro),
+          ReverseLogix, Loop, Narvar, ReturnPro, Happy Returns, Inmar. Mostly
+          consumer and retail returns, not industrial assets.</li>
+        <li>Used cars: ACV, Cox Automotive, OPENLANE. That research found no
+          product making the lessor-side lease-return decision; marked
+          unconfirmed there.</li>
+        <li>Decision intelligence: Aera Technology. It has no returns
+          content.</li>
+        <li>Kinaxis also appears in parked research that is out of scope
+          <span class="ref">[<a href="#s27">27</a>]</span>. Palantir is not
+          researched in the repository.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="missing">
+  <h2 id="missing">What is missing, in the order it blocks a customer</h2>
+  <ol class="text">
+    <li><strong>Paid model access and a production instance.</strong> Free
+      tiers rate-limit after a few requests; a demo stalled on this.</li>
+    <li><strong>A real system connected.</strong> One live connection to a
+      customer's ERP or warehouse system would prove the Fabric.</li>
+    <li><strong>Security testing.</strong> Prompt injection, a penetration
+      test, and a decision on what data may go to a model provider.</li>
+    <li><strong>Volume and async.</strong> The replay has run 200 items;
+      nothing is tested at tens of thousands. Plan 4 (async) is open.</li>
+    <li><strong>Evaluation of model outputs.</strong> Drafts and mapping
+      reasons are tested for shape, not scored for quality.</li>
+    <li><strong>User evidence.</strong> No planner or approver outside the
+      team has used it.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="claim">
+  <h2 id="claim">What not to claim</h2>
+  <ul class="text">
+    <li>That any named enterprise system is connected. Every one is a
+      synthetic mock.</li>
+    <li>"80 % done" as a measure of readiness. Most planned features exist
+      and pass their tests; readiness for a customer is the list above.</li>
+    <li>Compliance with any standard. None has been assessed.</li>
+  </ul>
+  <p class="note text">Before any of this is used with a customer, Kinective's
+    Legal team should review it, in particular the security, audit and
+    governance statements.</p>
+</section>
+
+<section aria-labelledby="sources">
+  <h2 id="sources">Sources</h2>
+  <p class="text">Market sources are those the product owner's summary cites.
+    We reached them through that summary only; we have not read them and
+    have not verified them. Vendor descriptions are as reported.</p>
+  <ol class="text" style="overflow-wrap:anywhere">
+    <li id="s1"><a href="https://www.hcltech.com/trends-and-insights/agentic-ai-supply-chain-evolution" target="_blank" rel="noopener noreferrer">hcltech.com, agentic AI supply chain evolution</a></li>
+    <li id="s2"><a href="https://intuceo.com/blog/agentic-ai-in-supply-chain/" target="_blank" rel="noopener noreferrer">intuceo.com, agentic AI in supply chain</a></li>
+    <li id="s3"><a href="https://www.linkedin.com/pulse/stop-blaming-agents-your-supply-chain-ai-has-integration-problem-2wxbf" target="_blank" rel="noopener noreferrer">linkedin.com, stop blaming agents, integration problem</a></li>
+    <li id="s4"><a href="https://sd3it.com/the-hidden-risks-of-ai-supply-chains/" target="_blank" rel="noopener noreferrer">sd3it.com, hidden risks of AI supply chains</a></li>
+    <li id="s5"><a href="https://7t.ai/blog/agentic-ai-risks-challenges-and-solutions-7tt/" target="_blank" rel="noopener noreferrer">7t.ai, agentic AI risks, challenges and solutions</a></li>
+    <li id="s6"><a href="https://www.paloaltonetworks.com/cyberpedia/what-is-agentic-ai-governance" target="_blank" rel="noopener noreferrer">paloaltonetworks.com, agentic AI governance</a></li>
+    <li id="s7"><a href="https://www.supplychainbrain.com/technology/artificial-intelligence/article/16425619/the-five-barriers-keeping-ai-agents-out-of-supply-chain-planning" target="_blank" rel="noopener noreferrer">supplychainbrain.com, barriers keeping AI agents out of planning</a></li>
+    <li id="s8"><a href="https://www.linkedin.com/posts/diwakarsinghbamentor_ai-hallucination-explained-how-business-activity-7531222738582159360-Y8VV" target="_blank" rel="noopener noreferrer">linkedin.com, AI hallucination explained, business activity</a></li>
+    <li id="s9"><a href="https://www.youtube.com/watch?v=DChOoXj_OUw" target="_blank" rel="noopener noreferrer">youtube.com, video DChOoXj_OUw</a></li>
+    <li id="s10"><a href="https://medium.com/@amitkharche/agentic-ai-pitfalls-loops-hallucinations-ethical-failures-fixes-77bd97805f9f" target="_blank" rel="noopener noreferrer">medium.com, agentic AI pitfalls: loops, hallucinations, ethical failures</a></li>
+    <li id="s11"><a href="https://www.youtube.com/watch?v=D37Ijn2o5U0" target="_blank" rel="noopener noreferrer">youtube.com, video D37Ijn2o5U0</a></li>
+    <li id="s12"><a href="https://www.blueprism.com/resources/blog/ai-agent-challenges-risks-how-overcome/" target="_blank" rel="noopener noreferrer">blueprism.com, AI agent challenges and risks</a></li>
+    <li id="s13"><a href="https://www.youtube.com/watch?v=oCQsSaAAm64" target="_blank" rel="noopener noreferrer">youtube.com, video oCQsSaAAm64</a></li>
+    <li id="s14"><a href="https://www.awsquality.com/agentic-ai-hidden-risks-how-to-manage-them/" target="_blank" rel="noopener noreferrer">awsquality.com, agentic AI hidden risks</a></li>
+    <li id="s15"><a href="https://reinsec.io/blog/agentic-ai-risks/" target="_blank" rel="noopener noreferrer">reinsec.io, agentic AI risks</a></li>
+    <li id="s16"><a href="https://intuceo.com/blog/supply-chain-ai-tools/" target="_blank" rel="noopener noreferrer">intuceo.com, supply chain AI tools</a></li>
+    <li id="s17"><a href="https://www.datarobot.com/blog/agentic-ai-supply-chain/" target="_blank" rel="noopener noreferrer">datarobot.com, agentic AI in supply chain</a></li>
+    <li id="s18"><a href="https://blueyonder.com/why-blue-yonder/ai-and-machine-learning/ai-agents" target="_blank" rel="noopener noreferrer">blueyonder.com, AI agents</a></li>
+    <li id="s19"><a href="https://agenticindex.io/compare/blue-yonder-vs-o9-solutions" target="_blank" rel="noopener noreferrer">agenticindex.io, Blue Yonder compared with o9 Solutions</a></li>
+    <li id="s20"><a href="https://www.kinaxis.com/en" target="_blank" rel="noopener noreferrer">kinaxis.com</a></li>
+    <li id="s21"><a href="https://www.bizz.ai/blog/kinaxis-vs-o9-vs-blue-yonder-vs-sap-ibp-vs-oracle-scm/" target="_blank" rel="noopener noreferrer">bizz.ai, Kinaxis, o9, Blue Yonder, SAP IBP, Oracle SCM compared</a></li>
+    <li id="s22"><a href="https://www.oracle.com/scm/oracle-vs-competition/" target="_blank" rel="noopener noreferrer">oracle.com, Oracle against the competition</a></li>
+    <li id="s23"><a href="https://www.gartner.com/reviews/market/integrated-supply-chain-ai-agents" target="_blank" rel="noopener noreferrer">gartner.com, integrated supply chain AI agents (market category)</a></li>
+    <li id="s24"><a href="https://www.slimstock.com/blog/agentic-ai-in-supply-chain/" target="_blank" rel="noopener noreferrer">slimstock.com, agentic AI in supply chain</a></li>
+    <li id="s25"><a href="https://www.youtube.com/watch?v=ftSkQFCNVyM" target="_blank" rel="noopener noreferrer">youtube.com, video ftSkQFCNVyM</a></li>
+    <li id="s26">Repository file <code>docs/agents/research/2026-11-platform/C-competitive-landscape.md</code>, 24 November 2026 (vendor claims, not tested hands-on).</li>
+    <li id="s27">Repository file <code>docs/agents/research/2026-11-platform/parked/H-resolve.md</code> (parked research, Kinaxis row).</li>
+  </ol>
+</section>
+</main>
+</div>
+
+<script>
+// Open the collapsed section an in-page link points to.
+function openTarget() {
+  var id = location.hash.slice(1);
+  if (!id) return;
+  var el = document.getElementById(id);
+  if (!el) return;
+  var d = el.closest("details");
+  if (d) d.open = true;
+  if (el.tagName === "DETAILS") el.open = true;
+}
+window.addEventListener("hashchange", openTarget);
+openTarget();
+</script>
+</body>
+</html>

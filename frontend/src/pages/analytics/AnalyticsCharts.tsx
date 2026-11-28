@@ -6,6 +6,7 @@ import {
 } from '../../api/analytics';
 import { money } from '../../api/format';
 import { onActivateKey } from '../../utils/keys';
+import { useRoving } from './charts/roving';
 import './analytics.css';
 
 export interface Drill { title: string; fn: (r: ClosedRow) => boolean }
@@ -38,15 +39,16 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
   const W = 720, H = 360, L = 64, B = 52, T = 22, n = steps.length + 2, bw = (W - L - 10) / n;
   const max = m.act * 1.04 || 1, sc = (v: number) => T + (H - T - B) * (1 - v / max);
   let run = m.base;
+  const { ref: keys, mark } = useRoving();
   return (
-    <svg className="ch big" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Recovery waterfall from baseline to Circularity, by route">
+    <svg ref={keys} className="ch big" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Recovery waterfall from baseline to Circularity, by route. Each bar opens its rows.">
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
         <g key={f}>
           <line className="gl" x1={L} x2={W} y1={fix(sc((max * f) / 1.04))} y2={fix(sc((max * f) / 1.04))} />
           <text x={L - 6} y={fix(sc((max * f) / 1.04) + 4)} textAnchor="end">{kfmt((max * f) / 1.04)}</text>
         </g>
       ))}
-      <g className="clk" data-tip={`Baseline: ${money(m.base)}. What current practice would have recovered`} onClick={() => onDrill(allReconciled)}>
+      <g className="clk" role="button" aria-label={`Baseline ${money(m.base)}. Opens the rows.`} {...mark(0)} data-tip={`Baseline: ${money(m.base)}. What current practice would have recovered`} {...keyAct(() => onDrill(allReconciled))}>
         <title>{`Baseline: ${money(m.base)}. What current practice would have recovered`}</title>
         <rect x={L + 4} y={fix(sc(m.base))} width={bw - 10} height={Math.max(0, fix(H - B - sc(m.base)))} fill="var(--chart5)" />
       </g>
@@ -58,7 +60,7 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
         const tip = `${routeById(s.id).name}: ${money(s.v)} vs baseline`;
         return (
           <g key={s.id}>
-            <g className="clk" data-tip={tip} onClick={() => onDrill({ title: routeById(s.id).name + ' · reconciled', fn: (r) => r.route === s.id && r.status === 'reconciled' })}>
+            <g className="clk" role="button" aria-label={tip + '. Opens the rows.'} {...mark(i + 1)} data-tip={tip} {...keyAct(() => onDrill({ title: routeById(s.id).name + ' · reconciled', fn: (r) => r.route === s.id && r.status === 'reconciled' }))}>
               <title>{tip}</title>
               <rect x={fix(x + 4)} y={fix(Math.min(y0, y1))} width={fix(bw - 10)} height={fix(Math.max(2, Math.abs(y0 - y1)))} fill={s.v >= 0 ? 'var(--yellow)' : 'var(--bad)'} stroke="rgba(0,0,0,.3)" />
             </g>
@@ -71,7 +73,7 @@ export function Waterfall({ m, onDrill }: { m: Metrics; onDrill: OnDrill }) {
         const x = L + (steps.length + 1) * bw;
         return (
           <>
-            <g className="clk" onClick={() => onDrill(allReconciled)}>
+            <g className="clk" role="button" aria-label={`With Circularity ${money(m.act)}. Opens the rows.`} {...mark(steps.length + 1)} {...keyAct(() => onDrill(allReconciled))}>
               <rect x={fix(x + 4)} y={fix(sc(m.act))} width={fix(bw - 10)} height={Math.max(0, fix(H - B - sc(m.act)))} fill="var(--chart1)" />
             </g>
             <text x={fix(x + bw / 2)} y={fix(sc(m.act) - 6)} textAnchor="middle" className="lbl">{kfmt(m.act)}</text>
@@ -88,9 +90,11 @@ export function MixChart({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDril
   const W = 900, H = 260, L = 44, B = 30, T = 10, bw = (W - L) / 12;
   const by = M.map((_, i) => rows.filter((r) => r.mi === i && (r.status === 'reconciled' || r.status === 'pending')));
   const raw = Math.max(1, ...by.map((a) => a.length)), mx = Math.ceil(raw / 40) * 40, sc = (v: number) => T + (H - T - B) * (1 - v / mx);
+  const { ref: keys, mark } = useRoving();
+  let k = 0;
   return (
     <>
-      <svg className="ch" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Route mix by month: decisions carried out">
+      <svg ref={keys} className="ch" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Route mix by month: decisions carried out. Each segment opens its rows.">
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
           <g key={f}>
             <line className="gl" x1={L} x2={W} y1={fix(sc(mx * f))} y2={fix(sc(mx * f))} />
@@ -107,8 +111,8 @@ export function MixChart({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDril
                 if (!n) return null;
                 const tip = `${M[i]} · ${rt.name}: ${n} (${Math.round((n / a.length) * 100)}%)`;
                 return (
-                  <rect key={rt.id} className="clk" x={fix(L + i * bw + 6)} y={fix(y1)} width={fix(bw - 12)} height={fix(y0 - y1)} fill={routeColor(rt.id, rt.color)} stroke="var(--panel)" strokeWidth=".8" data-tip={tip}
-                    onClick={() => onDrill({ title: rt.name + ' · ' + M[i], fn: (r) => r.route === rt.id && r.mi === i && (r.status === 'reconciled' || r.status === 'pending') })}>
+                  <rect key={rt.id} className="clk" role="button" aria-label={tip + '. Opens the rows.'} {...mark(k++)} x={fix(L + i * bw + 6)} y={fix(y1)} width={fix(bw - 12)} height={fix(y0 - y1)} fill={routeColor(rt.id, rt.color)} stroke="var(--panel)" strokeWidth=".8" data-tip={tip}
+                    {...keyAct(() => onDrill({ title: rt.name + ' · ' + M[i], fn: (r) => r.route === rt.id && r.mi === i && (r.status === 'reconciled' || r.status === 'pending') }))}>
                     <title>{tip}</title>
                   </rect>
                 );
@@ -250,36 +254,6 @@ export function Heat({ rows, onDrill }: { rows: ClosedRow[]; onDrill: OnDrill })
         ])}
       </div>
     </div>
-  );
-}
-
-export function PoolChart({ rows }: { rows: ClosedRow[] }) {
-  const M = months();
-  const pr = rows.filter((r) => r.pool && r.status === 'reconciled');
-  const W = 500, H = 230, L = 48, B = 30, T = 8, bw = (W - L) / 12;
-  const by = M.map((_, i) => ({ g: sum(pr.filter((r) => r.mi === i).map((r) => r.pool!.g)), o: sum(pr.filter((r) => r.mi === i).map((r) => r.pool!.o)) }));
-  const mx = Math.max(1, ...by.map((b) => b.o)), sc = (v: number) => T + (H - T - B) * (1 - v / mx);
-  const tg = sum(pr.map((r) => r.pool!.g)), to = sum(pr.map((r) => r.pool!.o));
-  return (
-    <>
-      <div className="row" style={{ marginBottom: 8 }}>
-        <span className="chip ok">+{kfmt(to - tg)} ({tg ? ((to / tg - 1) * 100).toFixed(1) : 0}%)</span>
-        <span className="note">{pr.length} pooled decisions: per-asset greedy {kfmt(tg)} vs pool-optimized {kfmt(to)}</span>
-      </div>
-      <svg className="ch pool" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Pool efficiency by month">
-        {[0, 0.5, 1].map((f) => (
-          <g key={f}><line className="gl" x1={L} x2={W} y1={fix(sc(mx * f))} y2={fix(sc(mx * f))} /><text x={L - 6} y={fix(sc(mx * f) + 4)} textAnchor="end">{kfmt(mx * f)}</text></g>
-        ))}
-        {by.map((b, i) => (
-          <g key={i}>
-            <rect x={fix(L + i * bw + 8)} y={fix(sc(b.g))} width={fix((bw - 16) / 2)} height={fix(H - B - sc(b.g))} fill="var(--chart5)"><title>{`${M[i]} greedy ${money(b.g)}`}</title></rect>
-            <rect x={fix(L + i * bw + 8 + (bw - 16) / 2)} y={fix(sc(b.o))} width={fix((bw - 16) / 2)} height={fix(H - B - sc(b.o))} fill="var(--chart1)"><title>{`${M[i]} pooled ${money(b.o)}`}</title></rect>
-            <text x={fix(L + i * bw + bw / 2)} y={H - 8} textAnchor="middle">{M[i].slice(0, 3)}</text>
-          </g>
-        ))}
-      </svg>
-      <div className="legend"><span><i style={{ background: 'var(--chart5)' }} />Per-asset greedy</span><span><i style={{ background: 'var(--chart1)' }} />Pool-optimized</span></div>
-    </>
   );
 }
 

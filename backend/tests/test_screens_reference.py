@@ -12,7 +12,7 @@ from di.core import golden, policy
 from di.core.db import engine
 from di.repositories import common, workspace
 from di.services.screens import checks
-from di.services.screens.nav import ISSUE_SQL
+from di.services.screens.nav import ISSUE_SQL, RELABEL, SECTION_LAYOUT
 from tests import starting
 from tests.helpers import client, h, live_stale_sources
 
@@ -102,10 +102,21 @@ def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
     """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
     change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
     groups = with_setup(acct, with_agents(acct, with_modeler(acct, groups)))
-    if not policy.can_page(policy.account(acct), "access", "orgs"):
-        return groups
-    kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
-    return [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
+    if policy.can_page(policy.account(acct), "access", "orgs"):
+        kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
+        groups = [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
+    return with_sections(groups)
+
+
+def with_sections(groups: list[dict]) -> list[dict]:
+    """Plan 11 A2 (decision log): the demo's menu in the sections of nav.SECTION_LAYOUT with the names of nav.RELABEL;
+    the same groups, the same ids, links and kids, only section, label and order change."""
+    order = [i for _, ids in SECTION_LAYOUT for i in ids]
+    sec = {i: s for s, ids in SECTION_LAYOUT for i in ids}
+    placed = sorted(groups, key=lambda g: order.index(g["id"]) if g["id"] in order else len(order))
+    out = [g | {"section": sec.get(g["id"], "More"), "label": RELABEL.get(g["id"], g["label"])} for g in placed]
+    assert sorted(g["id"] for g in out) == sorted(g["id"] for g in groups)  # no page lost or added by the overlay
+    return out
 
 
 def with_setup(acct: str, groups: list[dict]) -> list[dict]:
@@ -146,6 +157,7 @@ def test_navigation(acct):
     assert r.status_code == 200, r.text
     out, want = r.json(), NAV["accounts"][acct]
     assert starting.strict(out["groups"]) == starting.strict(with_org_section(acct, want["navigation"]))
+    assert out["staged"] is False and out["landing"] is None  # the demo workspace counts as published (plan 11 A1)
     tasks = want["tasks"]
     if acct == "developer":  # its stale or unconnected sources are the live Connection Fabric's (decision-log D-Fabric)
         demo_stale = sum(1 for s in common.SOURCES.values() if s["status"] in ("stale", "unavailable"))

@@ -33,6 +33,11 @@
 .pub-form input:focus-visible, .agt input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
 .pub-unit { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; }
 .pub-unit input { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+.pub-opened { margin: 0 0 20px; padding: 0 0 18px; border-bottom: 1px solid var(--line); }
+.pub-opened h3 { margin: 0 0 6px; font-family: var(--f-display); font-size: 18px; line-height: 1.3; }
+.pub-opened p { margin: 0 0 8px; max-width: 62ch; }
+.pub-opened ul { margin: 0 0 14px; padding-left: 18px; }
+.pub-opened li { margin: 2px 0; }
 .pub-hist { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
 .pub-hist summary { cursor: pointer; font-weight: 600; min-height: 24px; }
 .pub-hist summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }

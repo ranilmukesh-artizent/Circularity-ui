@@ -3,7 +3,7 @@
 **Sign in as** `developer`. Any password.
 
 The Developer (integration staff) "connects sources, builds workflows, proposes MCP servers and governs agent tools".
-You see **all customers**. Your Command Center is described as: "Health of connected systems, workflows, conflicts and
+You see **all customers**. Your Pulse is described as: "Health of connected systems, workflows, conflicts and
 MCP server proposals."
 
 > **Everything is simulated.** All data is synthetic (Northfield Industrial Leasing). Each enterprise system in the
@@ -16,13 +16,13 @@ MCP server proposals."
 | Page | Sections |
 |---|---|
 | Home | Briefing, Needs you, Agent activity, Key figures |
-| Command Center | Key figures, Actions on me, Integration health |
+| Pulse | Key figures, Actions on me, Integration health |
 | Connection Fabric | All tabs: Overview, Workflow Studio, Source Map, Source Tables, Canonical Models, Event Streams, Conflict Queue, Manual Import, Monitor |
 | MCP & Tools | All sections, including the Playground |
 | Agents | Registry, Runs, Proposals waiting for you, the tool catalogue, Models (read only, except proposals you may decide) |
-| Also | My Tasks, Alerts, Process Orchestration, Audit & Provenance, Reports, Data Checks, Settings |
+| Also | My Tasks, Alerts, Data pipelines and runs, Audit & Provenance, Reports, Data Checks, Settings |
 
-You do not see the Decision Workbench, Analytics, the Modeler or Access: decisions and access belong to other roles.
+You do not see Cases, Analytics, the Modeler or Access: decisions and access belong to other roles.
 
 ## What you can do
 
@@ -42,7 +42,7 @@ You do not see the Decision Workbench, Analytics, the Modeler or Access: decisio
 
 ### 1. Check integration health
 
-**Command Center → Integration health** and **Connection Fabric → Overview** show each source's state (healthy,
+**Pulse → Integration health** and **Connection Fabric → Overview** show each source's state (healthy,
 stale, failing, token expired), the workflows whose last run failed and the open conflicts. **Monitor** shows health
 over time against the SLA. The demo's starting data includes one failed workflow (*Ingest · Oracle Depot Repair*, a
 validation failure), so you have something to fix.
@@ -53,7 +53,7 @@ Everything about sources, credentials, mappings, tables, events, conflicts, impo
 [Connection Fabric guide](../connection-fabric.md). The [runbook](../../agents/runbook-fabric.md) covers failing
 sources, keys, webhooks, stuck runs and held records.
 
-**The adapter registry (plan 9).** **Add source** and Compose's mapping step start from the registry: the connection
+**The adapter registry (plan 9).** **Add source** and Set up's Systems step start from the registry: the connection
 templates, the generic REST connector, and entries made from an API spec. Each entry has a kind (*catalogue*,
 *generic_rest* or *from_spec*) and a state (*draft*, *tested*, *released*). Steps:
 
@@ -79,8 +79,8 @@ masked (emails, phone numbers, names, long free text).
 Workflows move data in (ingest) and approved instructions out, and can react to cases. See the
 [Workflow Studio reference](../workflow-studio.md) and the hands-on [workflow tutorial](../workflow-tutorial.md).
 
-**Workflow author and canvas samples.** Describe the workflow in a sentence (the assistant's Set up mode, or the
-workflow page). It plans the graph, asks only what it cannot assume, drafts it, checks every block against the real
+**Workflow author and canvas samples.** Describe the data pipeline in a sentence (the assistant, or **Build a workflow** on the
+workflow page, whose window is titled *Build a data pipeline with AI*). It plans the graph, asks only what it cannot assume, drafts it, checks every block against the real
 fields of the source (up to three repair rounds), test runs it dry and saves a draft with every block marked as
 AI-made. It never publishes: you read the draft and publish it yourself. On the canvas, **Test run** shows the records
 before and after each block (masked, as above) and the ones a block held; nothing is written by a test run.
@@ -134,7 +134,7 @@ proposal: another person accepts it." instead of **Accept**; you can only reject
 
 ## What you cannot do, and why
 
-- **Open a case's decision, approve, override or decline**: you do not see the Decision Workbench; decisions belong to
+- **Open a case's decision, approve, override or decline**: you do not see Cases; decisions belong to
   planners and approvers.
 - **Approve your own MCP proposal**: another person (an Approver or Admin) reviews every new server.
 - **Change agents, autonomy, limits or access**: Admin governs them.

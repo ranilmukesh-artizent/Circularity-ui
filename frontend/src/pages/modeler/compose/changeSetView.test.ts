@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChangeSet, DraftRule, OverlayOpRef, PackMatch } from '../../../api/compose';
-import { assumedCount, blockedLines, changeLines, changeTitle, matchLine, packLabel, opSentence, setupHref, wordCountLine } from './changeSetView';
+import { assumedCount, blockedLines, changeLines, changeTitle, guardrailList, guardrailName, keyWords, matchLine, packLabel, opSentence, setupHref, wordCountLine } from './changeSetView';
 
 const op = (o: Record<string, unknown>): OverlayOpRef => ({ id: 'op-1', by: '', note: '', ...o }) as unknown as OverlayOpRef;
 const rule = (over: Partial<DraftRule> = {}): DraftRule => ({
@@ -107,4 +107,16 @@ describe('setupHref', () => {
   it('opens the Set up page on the composition', () => expect(setupHref(12)).toBe('/setup?compose=12'));
   it('needs no template or org: the composition carries them', () =>
     expect(setupHref(12, { template: 'tool_fleet', org: 'Customer A' })).toBe('/setup?compose=12'));
+});
+
+describe('names, not keys', () => {
+  it('words a pack key', () => expect(keyWords('tool_fleet')).toBe('Tool fleet'));
+  it('names a guardrail by its text, never its id', () => {
+    expect(guardrailName('GR-I2', { 'GR-I2': 'No compliance skip' })).toBe('No compliance skip');
+    expect(guardrailName('GR-X')).toBe('a guardrail');
+    expect(guardrailList(['GR-I2', 'GR-X'], { 'GR-I2': 'No compliance skip' })).toBe('No compliance skip; a guardrail');
+    expect(guardrailList([])).toBe('none');
+  });
+  it('a refusal names the guardrail by its text when the texts are known', () =>
+    expect(blockedLines(set({ blocked: [{ guardrail: 'GR-I2', text: 'Not allowed.' }] }), { 'GR-I2': 'No compliance skip' })).toEqual(['Blocked by No compliance skip: Not allowed.']));
 });

@@ -12,13 +12,14 @@ import { ApproveStep } from '../modeler/compose/ApproveStep';
 import { DescribeStep } from '../modeler/compose/DescribeStep';
 import { MappingStep } from '../modeler/compose/MappingStep';
 import { PublishStep } from '../modeler/compose/PublishStep';
-import { stateLine } from '../modeler/compose/composeView';
+import { SentBackPin } from '../modeler/compose/SentBackPin';
+import { STEP_ITEMS, stateLine } from '../modeler/compose/composeView';
 import '../modeler/compose/compose.css';
 import type { PageProps } from '../registry';
 import { AccessStep } from './AccessStep';
 import { ShapeStep } from './ShapeStep';
 import { TemplateStep, takeDrafted } from './TemplateStep';
-import { compositionLabel, currentStep, isStop, LANES, live, neighbours, orgName, PAGE_HANDOVER, pageStops, pick, setupPath, stopDef, type StopId } from './setupView';
+import { compositionLabel, LANES, lineOf, live, neighbours, orgName, PAGE_HANDOVER, pageStops, partLine, pick, SCREEN_LABEL, screenFor, setupPath, stopDef, type ScreenId, type StopId } from './setupView';
 import './setup.css';
 
 /**
@@ -47,9 +48,10 @@ export function SetupPage({ query }: PageProps) {
   const pack = c?.pack_key ?? (packAsked && m.templates.some((t) => t.key === packAsked) ? packAsked : m.template.key);
   const packName = (key: string) => m.templates.find((t) => t.key === key)?.name;
   const stepAsked = query.get('step');
-  const step: StopId = c && isStop(stepAsked) ? stepAsked : currentStep(c);
+  const step: ScreenId = screenFor(c, stepAsked); // an old link to step=access shows Approve, where Access is the first section
   const def = stopDef(step);
-  const five = step !== 'flow' && step !== 'access' ? step : null; // a stop that is one of Compose's own steps
+  const part = partLine(step);
+  const five = step !== 'flow' ? step : null; // a screen that is one of Compose's own steps
 
   useEffect(() => {
     document.title = 'Set up · Circularity Decision Workbench';
@@ -105,7 +107,7 @@ export function SetupPage({ query }: PageProps) {
         </p>
       )}
       <section className="panel sup-line" aria-label="The steps of a setup" aria-busy={lone === 'reading'}>
-        <Suspense fallback={<RouteLine stops={pageStops(c)} handover={PAGE_HANDOVER} lanes={LANES} current={step} hrefFor={hrefFor} label="Set up steps" />}>
+        <Suspense fallback={<RouteLine stops={pageStops(c)} handover={PAGE_HANDOVER} lanes={LANES} current={lineOf(step)} hrefFor={hrefFor} label="Set up steps" />}>
           <Line c={c} step={step} hrefFor={hrefFor} />
         </Suspense>
       </section>
@@ -114,25 +116,27 @@ export function SetupPage({ query }: PageProps) {
         <header className="sup-step-h">
           <div>
             <h2 id="sup-step-h">{def.title}</h2>
+            {part && <p className="note sup-part">{part}, Business flow</p>}
             <p className="note">{def.help}</p>
             {c && (
               <p className="note sup-state">
-                {five ? stateLine(c.steps[five]) + '. ' : ''}{compositionLabel(c, packName(c.pack_key))}.
+                {five ? stateLine(c.steps[five]).replace(/[.\s]+$/, '') + '. ' : ''}{compositionLabel(c, packName(c.pack_key))}.
               </p>
             )}
+            {c && <SentBack c={c} step={step} />}
           </div>
           <Advanced step={step} org={org} pack={pack} />
         </header>
 
         {step === 'describe' ? (
-          <div className="sup-split">
+          <div className={'sup-split' + (c ? '' : ' one')}>
             <div className="sup-body">
               {!c && (can('managePacks')
                 ? <Suspense fallback={<StepWait />}><TemplateStep org={org} pack={pack} newest={newest} onPack={(k) => nav(setupPath({ org: orgAsked, pack: k, fresh }), { replace: true })} /></Suspense>
                 : <p className="note">Nothing is waiting for approval. A planner or an admin starts a setup; it appears here when they send it for approval.</p>)}
-              {c && <DescribeStep composition={c} />}
+              {c && <Suspense fallback={<StepWait />}><DescribeStep composition={c} /></Suspense>}
             </div>
-            {can('managePacks') && (
+            {c && can('managePacks') && (
               <aside className="sup-chat" aria-label="Assistant">
                 <AssistantPanel host="pinned" mode="setup" />
               </aside>
@@ -143,8 +147,18 @@ export function SetupPage({ query }: PageProps) {
             {c && step === 'flow' && <Suspense fallback={<StepWait h={520} />}><ShapeStep c={c} /></Suspense>}
             {c && step === 'mapping' && <Suspense fallback={<StepWait />}><MappingStep c={c} /></Suspense>}
             {c && step === 'agents' && <Suspense fallback={<StepWait />}><AgentsStep c={c} /></Suspense>}
-            {c && step === 'access' && <Suspense fallback={<StepWait />}><AccessStep c={c} /></Suspense>}
-            {c && step === 'approve' && <Suspense fallback={<StepWait />}><ApproveStep c={c} /></Suspense>}
+            {c && step === 'approve' && (
+              <>
+                <section className="sup-sec" aria-labelledby="sup-access-h">
+                  <h3 id="sup-access-h">{stopDef('access').title}</h3>
+                  <Suspense fallback={<StepWait />}><AccessStep c={c} /></Suspense>
+                </section>
+                <section className="sup-sec" aria-labelledby="sup-approval-h">
+                  <h3 id="sup-approval-h">The approval</h3>
+                  <Suspense fallback={<StepWait />}><ApproveStep c={c} /></Suspense>
+                </section>
+              </>
+            )}
             {c && step === 'publish' && <Suspense fallback={<StepWait />}><PublishStep c={c} /></Suspense>}
           </div>
         )}
@@ -170,23 +184,34 @@ function useAsked(id: number | null): Composition | 'reading' | 'missing' | null
   return got?.id === id ? got.c : 'reading';
 }
 
+/** Every step an approver sent back, with who, why and the node: the step in view without a link, the others with one to their work. */
+function SentBack({ c, step }: { c: Composition; step: ScreenId }) {
+  const steps = STEP_ITEMS.map(([k]) => k).filter((k) => c.steps[k]?.state === 'sent_back');
+  if (!steps.length) return null;
+  return (
+    <div className="sup-back" role="group" aria-label="Sent back">
+      {steps.map((k) => <SentBackPin key={k} c={c} step={k} hrefFor={k === step ? undefined : (x) => '#' + setupPath({ compose: c.id, step: x })} />)}
+    </div>
+  );
+}
+
 /** The line with the flow's state on it (a read of its own, so the page never waits for it). */
-function Line({ c, step, hrefFor }: { c: Composition | null; step: StopId; hrefFor: (id: string) => string | null }) {
+function Line({ c, step, hrefFor }: { c: Composition | null; step: ScreenId; hrefFor: (id: string) => string | null }) {
   const flow = c ? compositionHistory(c.id).publish.flow_status : null;
-  return <RouteLine stops={pageStops(c, flow)} handover={PAGE_HANDOVER} lanes={LANES} current={step} hrefFor={hrefFor} label="Set up steps" />;
+  return <RouteLine stops={pageStops(c, flow)} handover={PAGE_HANDOVER} lanes={LANES} current={lineOf(step)} hrefFor={hrefFor} label="Set up steps" />;
 }
 
 const StepWait = ({ h = 160 }: { h?: number }) => <div className="hskel" style={{ minHeight: h, margin: 0 }} role="status" aria-label="Loading this step" aria-busy="true" />;
 
 /** The full pages behind a stop: Set up is the way in, these are where everything about that part lives. */
-function Advanced({ step, org, pack }: { step: StopId; org: string; pack: string }) {
+function Advanced({ step, org, pack }: { step: ScreenId; org: string; pack: string }) {
   const flow = '#/modeler?' + new URLSearchParams({ template: pack, org }).toString();
   const links: [string, string][] = [];
   if ((step === 'describe' || step === 'flow') && canPage('modeler')) links.push([flow, 'Open this flow in the Modeler']);
   if (step === 'mapping' && canPage('integration', 'studio')) links.push(['#/integration/studio', 'Data workflows in Workflow Studio']);
   if (step === 'mapping' && canPage('integration', 'overview')) links.push(['#/integration/overview', 'Every connected source']);
   if (step === 'agents' && canPage('agents')) links.push(['#/agents', 'All agents and their runs']);
-  if (step === 'access' && canPage('access')) links.push(['#/access/accounts', 'Access & Governance']);
+  if (step === 'approve' && canPage('access')) links.push(['#/access/accounts', 'Access & Governance']);
   if (!links.length) return null;
   return (
     <ul className="sup-adv" aria-label="More on this part">
@@ -196,12 +221,12 @@ function Advanced({ step, org, pack }: { step: StopId; org: string; pack: string
 }
 
 /** Back and forward along the line, so a person never has to find the next stop. */
-function StepNav({ c, step }: { c: Composition; step: StopId }) {
+function StepNav({ c, step }: { c: Composition; step: ScreenId }) {
   const { prev, next } = neighbours(step);
   return (
     <footer className="sup-nav">
-      {prev ? <a className="btn sm ghost" href={'#' + setupPath({ compose: c.id, step: prev })}>Back: {stopDef(prev).label.toLowerCase()}</a> : <span />}
-      {next && <a className="btn sm" href={'#' + setupPath({ compose: c.id, step: next })}>Next: {stopDef(next).label.toLowerCase()}</a>}
+      {prev ? <a className="btn sm ghost" href={'#' + setupPath({ compose: c.id, step: prev })}>Back: {SCREEN_LABEL[prev]}</a> : <span />}
+      {next && <a className="btn sm" href={'#' + setupPath({ compose: c.id, step: next })}>Next: {SCREEN_LABEL[next]}</a>}
     </footer>
   );
 }

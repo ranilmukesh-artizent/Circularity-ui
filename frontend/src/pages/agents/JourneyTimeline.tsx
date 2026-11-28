@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { JourneyStage } from '../../api/agents';
 import { can } from '../../api/session';
+import { Markdown } from '../../components/Markdown';
 import { blocked, controls, currentIndex, replayFrames, STATUS_CHIP, stageTitle } from './journeyView';
 
 const text = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -36,7 +37,7 @@ function Panel({ s, caseId }: { s: JourneyStage; caseId: string | null }) {
           {reading ? (
             <div aria-label={`Reading of stage ${s.n}`}>
               <div>Reasoned by {s.reading?.model ?? 'a model'}</div>
-              <div>{reading.summary}</div>
+              <Markdown text={reading.summary} />
               {reading.findings.length > 0 && <ul>{reading.findings.map((f, i) => <li key={i}>{f.text} <span className="mono">({f.source})</span></li>)}</ul>}
               {reading.concerns.map((c, i) => <div key={i}>{c.hold && <span className="chip y">held</span>} {c.text}</div>)}
             </div>

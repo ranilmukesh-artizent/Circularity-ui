@@ -5,6 +5,8 @@
     snapshot(row) -> dict                    what a `composition_version` keeps
     stage_settings(steps) -> list[dict]      the stage-agent settings the agents step holds
     with_stage_settings(pack, settings)      the pack with those settings on its stages (what the stage chain reads)
+    stored_draft(pack_key, version, text)    the stored model draft of one of the pack's sample prompts, or None (plan 11, C1)
+    write_stored_draft(...)                  adds one to `packs/stored_drafts/<pack_key>.json` (the build script's)
 
 A composition is one approvable object: the change set (typed overlay operations, I-4), the mapping rows the owner accepted
 (`steps.mapping.fields`) and the stage-agent settings (`steps.agents.settings`: stage, autonomy, confidence threshold). The five
@@ -16,11 +18,14 @@ Owns: those rules. Never does: touch the database, call a model, or approve anyt
 (`di.services.actions.compose`) store, and approval is a person's (rule 10, `FORBIDDEN_ACTIONS`).
 """
 
+import hashlib
+import json
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any, Literal
 
 from di.services.modeler.overlay import OverlayError, OverlayOp, apply_overlay
-from di.services.modeler.pack import Pack
+from di.services.modeler.pack import PACKS_DIR, Pack
 
 Step = Literal["describe", "mapping", "agents", "approve", "publish"]
 STEPS: tuple[Step, ...] = ("describe", "mapping", "agents", "approve", "publish")
@@ -54,6 +59,54 @@ def with_stage_settings(pack: Pack, settings: Sequence[Mapping[str, Any]]) -> Pa
         for st in pack.stages
     ]  # fmt: skip
     return pack.model_copy(update={"stages": stages})
+
+
+STORED_DIR = PACKS_DIR / "stored_drafts"
+
+
+def normalise_prompt(text: str) -> str:
+    """The sample-prompt comparison: whitespace trimmed and collapsed, case ignored."""
+    return " ".join(text.split()).casefold()
+
+
+def draft_key(text: str, version: str) -> str:
+    """The key of a stored draft: a hash of the normalised prompt and the pack's version (a changed prompt or version misses)."""
+    return hashlib.sha256(f"{version}\n{normalise_prompt(text)}".encode()).hexdigest()[:16]
+
+
+def stored_draft(pack_key: str, version: str, text: str, directory: Path | None = None) -> dict[str, Any] | None:
+    """The model draft stored for `text` at this pack version: the `ModelDraft` as a dict, to be checked like a live answer.
+    None for any other text, a missing or unreadable file. Pure read."""
+    try:
+        doc = json.loads(((directory or STORED_DIR) / f"{pack_key}.json").read_text(encoding="utf-8"))
+        hit = doc["drafts"][draft_key(text, version)]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    draft = hit.get("draft") if isinstance(hit, dict) else None
+    return draft if isinstance(draft, dict) else None
+
+
+def write_stored_draft(
+    pack_key: str, version: str, text: str, draft: Mapping[str, Any], built_at: str, directory: Path | None = None
+) -> None:
+    """Add (or replace) the stored draft of one sample prompt; other prompts and other versions in the file stay."""
+    directory = directory or STORED_DIR
+    path = directory / f"{pack_key}.json"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    drafts = doc.get("drafts") if isinstance(doc.get("drafts"), dict) else {}
+    drafts[draft_key(text, version)] = {
+        "prompt": " ".join(text.split()),
+        "pack_version": version,
+        "built_at": built_at,
+        "draft": dict(draft),
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    note = "Model drafts of the pack's sample prompts, built by scripts/build_stored_drafts.py. Do not edit."
+    doc = {"pack": pack_key, "note": note, "drafts": drafts}
+    path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def _threshold_problems(steps: Mapping[str, Any]) -> list[str]:

@@ -10,6 +10,9 @@
                  cases.process.items_for for the account, plan 9 P9-1.8), `mine` (the same list without the data
                  conflicts: the count beside My Tasks) and the per-section
                  counts keyed as in NAV (conf, srcissue, wffail, inbox)
+        staged   plan 11: True while the organisation has no published setup; the menu then holds only Home, Set up and
+                 Access (display only: the server still allows whatever the role may open) and the sidebar says when
+                 the rest opens. landing: "setup" for who may open Set up while staged, else null
         tasks    the open tasks count in the menu (the demo's frCounts().tasks: Actions on me)
     GET /api/screens/nav/scope   every case id with its owner and location ({id: [owner, location]}), so the frontend
                  can evaluate the demo's canRoute for record links (true, false, or "tenant" for a record outside the
@@ -92,13 +95,75 @@ EXTRA_NAV: list[tuple[str, dict]] = [
 ]  # fmt: skip
 
 
+# 28 Nov 2026 (plan 11, A2; decision log): the menu in four sections, as an overlay on the demo's NAV. Ids and routes never
+# change; only the section, the label and the order. A group the table does not name goes last, under More.
+SECTION_LAYOUT: list[tuple[str, list[str]]] = [
+    ("", ["home", "setup"]),
+    ("Decide", ["tasks", "product", "alerts"]),
+    ("Understand", ["command", "analytics", "reports", "agents"]),
+    ("Advanced", ["modeler", "integration", "checks", "mcp", "orchestration", "audit"]),
+    ("More", ["access", "settings"]),
+]
+# New names (plan 11 A2, A3): Command Center is Pulse, Decision Workbench is Cases, Process Orchestration runs data pipelines
+# (Set up is the one entry that builds the business flow).
+RELABEL: dict[str, str] = {"command": "Pulse", "product": "Cases", "orchestration": "Data pipelines and runs"}
+# What a menu shows before a setup is published (plan 11 A1): Home, Set up and the admin group. Display only.
+STAGED_IDS = frozenset({"home", "setup", "access"})
+STAGED_ROUTE = "setup"  # where a person who may set up lands while nothing is published (A4)
+
+
 def nav_groups() -> list[dict]:
     """The demo's NAV with the EXTRA_NAV entries, each before the group it names, or the first group of the section
-    it names (else last)."""
+    it names (else last); then SECTION_LAYOUT and RELABEL applied."""
     out = list(lists()["NAV"])
     for before, g in EXTRA_NAV:
         out.insert(next((i for i, x in enumerate(out) if before in (x["id"], x.get("sec"))), len(out)), g)
-    return out
+    return regroup(out)
+
+
+def regroup(groups: list[dict]) -> list[dict]:
+    """The groups in SECTION_LAYOUT order, each with its section and label from the overlay (pure; a copy)."""
+    by_id = {g["id"]: g for g in groups}
+    placed = [(sec, by_id[i]) for sec, ids in SECTION_LAYOUT for i in ids if i in by_id]
+    named = {g["id"] for _, g in placed}
+    placed += [("More", g) for g in groups if g["id"] not in named]
+    return [g | {"sec": sec, "label": RELABEL.get(g["id"], g["label"])} for sec, g in placed]
+
+
+def staged_filter(groups: list[dict], published: bool, waiting: bool = False) -> list[dict]:
+    """The menu before a setup is published keeps Home, Set up and Access (plan 11 A1), and My Tasks when a setup waits for
+    approval (`waiting`), so the approver finds it; after publishing, all of it."""
+    keep = STAGED_IDS | {"tasks"} if waiting else STAGED_IDS
+    return groups if published else [g for g in groups if g["id"] in keep]
+
+
+def _composition_in(p: Principal, session: Session, status: str) -> bool:
+    """Is there a composition in `status` for an organisation unit the account may see?"""
+    q = "SELECT 1 FROM composition WHERE status = :st"
+    args: dict = {"st": status}
+    if policy.policy(p.account).get("tenantScoped"):
+        q += " AND org_unit_id = ANY(:o)"
+        args["o"] = policy.allowed_tenants(p.account, p.ctx)
+    return session.execute(text(q + " LIMIT 1"), args).first() is not None
+
+
+def has_submitted_setup(p: Principal, session: Session) -> bool:
+    """A setup waits for approval in an organisation unit the account may see (keeps My Tasks in the staged menu)."""
+    return _composition_in(p, session, "submitted")
+
+
+def has_published_setup(p: Principal, session: Session, cases: list[dict]) -> bool:
+    """Does the caller's organisation have a published setup? The demo workspace and any organisation that already has
+    cases count as published; else a composition in status `published` for an organisation unit the account may see."""
+    if any(can_see_case(p.account, p.ctx, c) for c in cases):
+        return True
+    return _composition_in(p, session, "published")
+
+
+def landing(p: Principal, published: bool) -> str | None:
+    """The page a person lands on when it is not their usual one: Set up for who may open it while nothing is published
+    (plan 11 A4), else None (the policy's landing stands, today Home for every role)."""
+    return None if published or not policy.can_page(p.account, STAGED_ROUTE) else STAGED_ROUTE
 
 
 def cc_layout(a: policy.Account, cc_mode: str) -> dict | None:
@@ -127,8 +192,16 @@ def cc_sec_ok(lay: dict | None, k: str) -> bool:
     }.get(k, False)
 
 
-def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", last_asset: str | None = None) -> list[dict]:
-    """nav.ts navigation(): NAV filtered by the demo's frVisible and navKids, with each link as navHref builds it."""
+def navigation(
+    p: Principal,
+    cases: list[dict],
+    cc_mode: str = "operational",
+    last_asset: str | None = None,
+    published: bool = True,
+    waiting: bool = False,
+) -> list[dict]:
+    """nav.ts navigation(): NAV filtered by the demo's frVisible and navKids, with each link as navHref builds it; before a
+    setup is published (`published` False) only Home, Set up and Access, as the account may open them."""
     a = p.account
     lay = cc_layout(a, cc_mode)
     mine = [c for c in cases if can_see_case(a, p.ctx, c)]  # the demo's myCases
@@ -143,7 +216,7 @@ def navigation(p: Principal, cases: list[dict], cc_mode: str = "operational", la
         return "#/" + g["id"] + ("/asset/" + asset if g["id"] == "product" and k == "asset" else "/" + k if k else "")
 
     out = []
-    for g in nav_groups():
+    for g in staged_filter(nav_groups(), published, waiting):
         if not policy.can_page(a, g["id"]):
             continue
         kids = [] if g.get("leaf") else kids_of(g)
@@ -190,8 +263,12 @@ def page(
 ) -> dict:
     """GET /api/screens/nav: the menu as the account sees it, its badges and the open tasks count."""
     cases = store.all_cases(session)
+    published = has_published_setup(p, session, cases)
+    waiting = not published and has_submitted_setup(p, session)
     return {
-        "groups": navigation(p, cases, cc_mode, last_asset),
+        "groups": navigation(p, cases, cc_mode, last_asset, published, waiting),
+        "staged": not published,
+        "landing": landing(p, published),
         "badges": badges(p, session, tenant_filter),
         "tasks": len(aome_items(call_ctx(p, session))),
     }
