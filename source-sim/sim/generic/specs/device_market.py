@@ -44,6 +44,7 @@ SPEC = Spec(
             update=True,
             id_format="LST-{n:04d}",
             event="devicemarket.listing",
+            stamps=("listedAt",),  # a listing the app posts is listed now (the app's body carries no listedAt)
         ),
         Resource(
             "bids",
