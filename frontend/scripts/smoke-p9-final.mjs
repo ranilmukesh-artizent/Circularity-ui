@@ -112,7 +112,6 @@ const until = async (fn, msg, ms, p) => {
     await p.waitForTimeout(1000);
   }
 };
-const waitText = (p, rx, msg, ms = UI) => until(async () => rx.test(await text(p)), msg || `"${rx}" never showed`, ms, p);
 /** Open a route and drop the read cache with a reload (a hash change alone keeps what the page read earlier). */
 async function open(p, url, ready = '#view') {
   await p.goto(url, { waitUntil: 'domcontentloaded', timeout: FIRST });
@@ -315,7 +314,9 @@ P.device = {
   async open() {
     const admin = await as('admin');
     const dev = await as('developer');
-    for (const sid of ['dvreg', 'dvlab', 'dvmkt']) await must(dev, 'source.reconnect', { source_id: sid });
+    // a reconnect queues the source's first sync, and the worker runs them in this order: the market (prices AND sales) must
+    // land before the lab's sync opens and values the cases, else GR-D8 holds them "unseen SKU, stale feed" (writer 108)
+    for (const sid of ['dvreg', 'dvmkt', 'dvlab']) await must(dev, 'source.reconnect', { source_id: sid });
     for (const sid of ['dvlab', 'dvmkt']) {
       // trade-ins and listings belong to an org unit (a trade-in of a source bound to none stays pending): bind the lab and the market
       const src = await until(() => sourceOf(dev, sid), `${sid} is not registered`, UI, dev);
@@ -324,7 +325,9 @@ P.device = {
     }
     await readWrite(['dvlab', 'dvmkt'], ORG); // the listings and payouts are sent to the market and the lab
     await syncAndWait(dev, 'dvreg'); // the registry first: a device with no registry check is held
-    await readOnly(dev, 'dvmkt', ['prices', 'launches', 'listings', 'bids', 'replacementDemand']);
+    // the market feed WITH its sales: without them every SKU is "unseen" and GR-D8 (price confidence) holds 81 of the 82
+    // device cases for the pricing analyst, so no standing policy can approve one (writer 108; lead decision 28 Nov)
+    await readOnly(dev, 'dvmkt', ['prices', 'launches', 'listings', 'bids', 'sales', 'replacementDemand']);
     await syncAndWait(dev, 'dvmkt');
     await syncAndWait(dev, 'dvlab'); // its post-sync hook opens one case per received device
     const SAMPLE = '359990000000428'; // iPhone 14, 128 GB, grade B, quote $410, partner P01 (smoke-p9-6)

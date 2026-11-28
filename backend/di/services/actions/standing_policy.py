@@ -342,6 +342,25 @@ def _fraud(case: dict[str, Any]) -> bool:
     return bool(f) and not (isinstance(f, dict) and f.get("status") == "released")
 
 
+def _exception_on_choice(ctx: CallContext, case: dict[str, Any], route: str) -> bool:
+    """Does an open exception of the case concern its chosen `route`? Any exception does, except a pack's approval item (type
+    `AP-…`, e.g. the export approval AP-TN-EXP on resale) when no failed `require_approval` gate of the case names the route
+    (its channel, the id before a colon): an approval on a route that was not chosen does not hold the decision (lead decision
+    28 Nov)."""
+    from di.services.cases.process import APPROVAL_PREFIX  # lazy: the case process imports the pipeline's callers
+
+    types = ctx.session.execute(
+        text("SELECT type FROM work_item WHERE case_id = :c AND kind = 'exception' AND status = 'open'"), {"c": case["id"]}
+    ).scalars()
+    names = {route, route.split(":", 1)[0]}
+    on_route = any(
+        not g.get("passed", True) and g.get("kind") == "require_approval" and (not g.get("routes") or names & set(g["routes"]))
+        for g in case.get("gates") or []
+        if isinstance(g, dict)
+    )
+    return any(not str(t).startswith(APPROVAL_PREFIX) or on_route for t in types)
+
+
 def decision_covered(ctx: CallContext, case: dict[str, Any], row: PolicyRow) -> bool:
     """Does the policy approve the case's submitted decision (its recommended route)? The rules, the hold policy's reasons, an open
     exception, a conflict, a fraud hold, and the owner's approval limit as it is now."""
@@ -361,6 +380,7 @@ def decision_covered(ctx: CallContext, case: dict[str, Any], row: PolicyRow) -> 
     action = ACTIONS["decision.approveByPolicy"]
     inp = {"case_id": case["id"]}
     exception, conflict = hold._case_state(action, inp, ctx)
+    exception = exception and _exception_on_choice(ctx, case, str(rec.get("id")))
     guardrails = _guardrail_holds(case)
     holds = hold.evaluate_hold(
         action=action, autonomy="limits", confidence=conf, value=value, bulk=1, open_exception=exception, conflict=conflict,

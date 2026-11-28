@@ -220,6 +220,59 @@ def test_x_05_policy_skips_holds_exceptions_and_conflicts():
     assert journal("decision.approveByPolicy") == []
 
 
+def test_policy_confidence_counts_one_route_to_one_customer_once():
+    """The same route to the same customer is one decision (the medical pack's two demand lines of one hospital, `rerent:REQ-2`
+    and `rerent:REQ-4`, the same plan): the policy compares the best with the best DISTINCT alternative, not with its twin, whose
+    identical band would read as 0.00 confidence (final smoke; lead decision 28 Nov)."""
+    c = pick_case()
+    with SessionLocal() as s:
+        k = store.get(s, c["id"], for_update=True)
+        assert k is not None
+        top = copy.deepcopy(k["recommendation"]) | {"net": 300, "p10": 0, "p90": 100, "excluded": False}
+        twin = copy.deepcopy(top) | {"id": f"{top['id']}:REQ-4", "net": 290}  # same channel, same plan
+        other = copy.deepcopy(top) | {"id": "resell", "plan": "Resell " + c["id"], "net": 150, "p10": 90, "p90": 200}  # 0.9
+        k["routes"] = [top, twin, other]
+        k["recommendation"] = k["routes"][0]
+        k.pop("chosen", None)
+        store.save(s, k)
+        s.commit()
+    pid = activate(c["owner"])
+    ok(submit(c["id"]))
+    after = case_now(c["id"])
+    assert after["stage"] == "approved" and after["approval"]["by"] == f"policy {pid} v1"
+
+
+def test_policy_not_stopped_by_an_approval_on_a_route_not_chosen():
+    """An open pack approval (`AP-TN-EXP`, the export approval on resale) on a route that was not chosen does not stop the policy
+    approving the chosen route; on the chosen route it still holds the decision (final smoke; lead decision 28 Nov)."""
+
+    def approval_on(cid: str, routes: list[str]) -> None:
+        with SessionLocal() as s:
+            k = store.get(s, cid, for_update=True)
+            assert k is not None
+            k["gates"] = [{"id": "G-NET-EXP", "passed": False, "kind": "require_approval", "hold": False, "routes": routes}]
+            store.save(s, k)
+            process.open_item(s, kind="exception", case_id=cid, org_unit_id=k["owner"], type="AP-TN-EXP", title="Export",
+                              cause=None, action=None, owner_role="Approver", due_hours=None, by="system")  # fmt: skip
+            s.commit()
+
+    c = pick_case()
+    shape(c["id"], 300)
+    pid = activate(c["owner"])
+    rec = case_now(c["id"])["recommendation"]["id"]
+    approval_on(c["id"], ["recycle" if rec == "resell" else "resell"])
+    ok(submit(c["id"]))
+    after = case_now(c["id"])
+    assert after["stage"] == "approved" and after["approval"]["by"] == f"policy {pid} v1"
+    d = pick_case_other(c["id"])
+    shape(d["id"], 300)
+    if d["owner"] != c["owner"]:
+        activate(d["owner"], name="Standing D")
+    approval_on(d["id"], [case_now(d["id"])["recommendation"]["id"]])
+    ok(submit(d["id"]))
+    hold_stays(d["id"])
+
+
 def pick_case_other(*used: str) -> dict:
     with SessionLocal() as s:
         for (cid,) in s.execute(text("SELECT id FROM case_record WHERE stage = 'awaiting_approval' ORDER BY id")).all():
