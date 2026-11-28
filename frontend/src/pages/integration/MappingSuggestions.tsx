@@ -4,7 +4,7 @@
    another field, Accept with a conversion, Not needed, Ask the owner), and "Save mapping" applies the accepted rows as a new mapping
    version. A question to the system owner holds the save until they answer. Sample values are masked by the server before they
    reach this table, and the model's own number is never shown as confidence. */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   answerOwner, applyMappings, askOwner, decideMapping, suggestFieldMappings,
   type AppliedRow, type MappingBand, type MappingChoiceAnswer, type MappingChoiceInput, type MappingSuggestion, type MappingSuggestions,
@@ -13,6 +13,8 @@ import type { ActionResult } from '../../api/types';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { toast } from '../../components/toast';
 import { refused } from '../../hooks/useAction';
+import { LONG_WAIT, modelSentence, waitedLine } from '../modeler/compose/systemsView';
+import '../modeler/compose/systems.css';
 
 const BAND: Record<MappingBand, [string, string]> = { pre_ticked: ['Pre-ticked', 'ok'], check: ['Check', 'warn'], none: ['No proposal', 'line'] };
 const pct = (c: number) => Math.round(c * 100) + '%';
@@ -23,21 +25,53 @@ const CONVERSIONS = ['number', 'int', 'upper', 'lower', 'date', 'utc', 'units:lb
 interface Choice { id: number; decision: string; target: string | null; rule: string | null; owner: string | null; reason: string | null; values?: MappingChoiceAnswer['values']; warning?: string }
 const keyOf = (x: MappingSuggestion) => x.resource + '/' + x.field;
 
-export function MappingSuggestions({ sourceId }: { sourceId: string }) {
-  const [state, setState] = useState<'idle' | 'running' | MappingSuggestions | { fail: string }>('idle');
+/** `resource` limits the run to one table of the source; `autoRun` asks as soon as the component shows. */
+/** `embedded`: the caller has its own button and words for asking (Set up's systems step), so this shows only the wait and the result. */
+export function MappingSuggestions({ sourceId, resource, autoRun, embedded, onSettled }: { sourceId: string; resource?: string; autoRun?: boolean; embedded?: boolean; onSettled?: () => void }) {
+  const [state, setState] = useState<'idle' | 'running' | 'stopped' | MappingSuggestions | { fail: string }>('idle');
+  const [waited, setWaited] = useState(0);
+  const attempt = useRef(0); // a run whose number is no longer current was stopped: its answer is dropped
+  const running = state === 'running';
   async function run() {
+    const mine = ++attempt.current;
+    setWaited(0);
     setState('running');
-    const r = await suggestFieldMappings(sourceId);
-    if (refused(r)) return setState({ fail: r.error.message });
-    setState(r.output);
+    const r = await (resource ? suggestFieldMappings(sourceId, resource) : suggestFieldMappings(sourceId));
+    if (mine !== attempt.current) return;
+    if (refused(r)) setState({ fail: r.error.message });
+    else setState(r.output);
+    onSettled?.();
   }
+  const stop = () => { attempt.current += 1; setState('stopped'); onSettled?.(); };
+  useEffect(() => {
+    if (!running) return;
+    const t = window.setInterval(() => setWaited((s) => s + 1), 1000);
+    return () => window.clearInterval(t);
+  }, [running]);
+  useEffect(() => {
+    if (autoRun) void run();
+    return () => { attempt.current += 1; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when it shows
+  }, []);
   return (
     <div style={{ marginBottom: 12 }}>
-      <div className="row" style={{ gap: 10, alignItems: 'center' }}>
-        <button className="btn sm" onClick={run} disabled={state === 'running'}>Suggest mappings</button>
-        <span className="note">Proposes a canonical field for each field in the sample. You choose; nothing is saved until you save the mapping.</span>
-      </div>
-      {state === 'running' && <div className="note"><span className="spin" /> Profiling the sample…</div>}
+      {!embedded && (
+        <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+          <button className="btn sm" onClick={run} disabled={running}>Suggest mappings</button>
+          <span className="note">Proposes a canonical field for each field in the sample. You choose; nothing is saved until you save the mapping.</span>
+        </div>
+      )}
+      {running && (
+        <div className="msg-wait" role="status">
+          <span className="spin" aria-hidden="true" />
+          <div>
+            <b>{waited >= LONG_WAIT ? 'Still working… ' : 'Reading the sample… '}<span className="mono">{waitedLine(waited)}</span></b>
+            <div className="note">A model reads the least certain fields first; the rest are matched by name and values. This takes up to about 30 seconds.</div>
+          </div>
+          <button className="btn ghost sm" onClick={stop}>Stop waiting</button>
+        </div>
+      )}
+      {state === 'stopped' && <div className="note">Stopped waiting. The server may still finish; press {embedded ? 'Suggest again' : 'Suggest mappings'} to ask again.</div>}
       {typeof state === 'object' && 'fail' in state && <div className="err">{state.fail}</div>}
       {typeof state === 'object' && 'rows' in state && <Result sourceId={sourceId} r={state} />}
     </div>
@@ -62,11 +96,13 @@ function Result({ sourceId, r }: { sourceId: string; r: MappingSuggestions }) {
     setSaved(`Saved as mapping version ${a.output.version} (${a.output.rows} rows).`);
   }
   if (!r.rows.length) return <div className="empty"><b>No sample yet</b>Sync this source once so there are records to profile.</div>;
+  const sentence = modelSentence(r.model, r.rows.length);
   return (
     <>
-      <div className="tw">
-        <table className="t static maptbl" aria-label="Suggested field mappings">
-          <thead><tr><th>Source field</th><th>Sample values</th><th>Proposed field</th><th>Confidence</th><th>Band</th><th>Reason</th><th>Your choice</th></tr></thead>
+      {sentence && <p className="note" data-testid="model-line">{sentence}</p>}
+      <div className="tw sug-wrap" tabIndex={0} role="region" aria-label="Suggested field mappings, scrollable">
+        <table className="t static maptbl sug" aria-label="Suggested field mappings">
+          <thead><tr><th className="sug-c1">Source field</th><th className="sug-c2">Sample values</th><th className="sug-c3">Proposed field</th><th className="sug-c4">Confidence</th><th className="sug-c5">Band</th><th className="sug-c6">Reason</th><th className="sug-c7">Your choice</th></tr></thead>
           <tbody>
             {r.rows.map((x) => {
               const [label, tone] = BAND[x.band];
@@ -75,7 +111,17 @@ function Result({ sourceId, r }: { sourceId: string; r: MappingSuggestions }) {
                   <td className="mono">{x.field}</td>
                   <td className="mono">{x.samples.slice(0, 3).join(', ') || '—'}</td>
                   <td className="mono">
-                    {x.target ?? <>No proposal{x.candidates.length > 0 && <span className="note"> · candidates: {x.candidates.map(([t, s]) => `${t} (${s.toFixed(2)})`).join(', ')}</span>}</>}
+                    {x.target ?? (
+                      <>
+                        <span className="sug-none">No proposal</span>
+                        {x.candidates.length > 0 && (
+                          <span className="sug-cands">
+                            <span className="note">Closest:</span>
+                            {x.candidates.slice(0, 3).map(([t, s]) => <span key={t}>{t} <span className="note">({s.toFixed(2)})</span></span>)}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </td>
                   <td>{pct(x.confidence)}</td>
                   <td><StatusPill tone={tone} label={label} /></td>
@@ -104,7 +150,7 @@ type Mode = null | 'other' | 'rule' | 'ask';
 /** The five choices of one row, or the choice already made (with the converted samples, a blocking warning, or the open question). */
 function Choices({ sourceId, x, fields, choice, onChoice }: { sourceId: string; x: MappingSuggestion; fields: string[]; choice?: Choice; onChoice: (c: Choice) => void }) {
   const [mode, setMode] = useState<Mode>(null);
-  const [field, setField] = useState(x.target ?? '');
+  const [field, setField] = useState(x.target ?? x.candidates[0]?.[0] ?? '');
   const [rule, setRule] = useState(CONVERSIONS[0]);
   const [question, setQuestion] = useState('');
   const [again, setAgain] = useState(false);
@@ -148,7 +194,7 @@ function Choices({ sourceId, x, fields, choice, onChoice }: { sourceId: string; 
   }
   return (
     <div>
-      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+      <div className="sug-acts">
         <button className="btn sm" disabled={!x.target} onClick={() => decide({ decision: 'accepted', target: x.target ?? undefined })}>Accept</button>
         <button className="btn sm" aria-pressed={mode === 'other'} onClick={() => setMode(mode === 'other' ? null : 'other')}>Choose another field</button>
         <button className="btn sm" aria-pressed={mode === 'rule'} onClick={() => setMode(mode === 'rule' ? null : 'rule')}>Accept with a conversion</button>

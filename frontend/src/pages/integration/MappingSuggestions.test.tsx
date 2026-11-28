@@ -80,6 +80,39 @@ describe('MappingSuggestions', () => {
   });
 });
 
+describe('MappingSuggestions waiting', () => {
+  it('shows the honest wait, lets the person stop waiting, and drops a late answer', async () => {
+    vi.useFakeTimers();
+    try {
+      let release: (v: unknown) => void = () => {};
+      m.suggest.mockImplementationOnce(() => new Promise((res) => { release = res; }));
+      await click();
+      expect(host.textContent).toContain('This takes up to about 30 seconds.');
+      await act(async () => { vi.advanceTimersByTime(3000); });
+      expect(host.textContent).toContain('3 s');
+      await act(async () => { vi.advanceTimersByTime(60000); });
+      expect(host.textContent).toContain('Still working…');
+      await act(async () => { btn('Stop waiting').click(); });
+      expect(host.textContent).toContain('Stopped waiting');
+      await act(async () => { release({ ok: true, output: { source_id: 'repair', by_model: false, gaps: [], waiting: 0, fields: FIELDS, rows: [row({})] } }); });
+      expect(host.querySelector('table')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('limits the run to one table and says what the model did', async () => {
+    m.suggest.mockResolvedValueOnce({
+      ok: true,
+      output: { source_id: 'repair', by_model: true, gaps: [], waiting: 0, fields: FIELDS, rows: [row({})], model: { asked: 1, answered: 1, fields: 41, seconds: 9, stopped: null } },
+    });
+    act(() => root.render(<MappingSuggestions key="auto" sourceId="repair" resource="orders" autoRun />));
+    await act(async () => {});
+    expect(m.suggest).toHaveBeenCalledWith('repair', 'orders');
+    expect(host.querySelector('[data-testid="model-line"]')!.textContent).toBe('A model read 1 of 41 fields; the rest were matched by name and values.');
+  });
+});
+
 // ---------------------------------------------------------------- P9-8.4: the five choices
 const FIELDS = ['asset.serial_number', 'asset.location', 'asset.stock_qty'];
 const out = (rows: MappingSuggestion[], waiting = 0) => ({ ok: true, output: { source_id: 'repair', by_model: false, gaps: [], waiting, fields: FIELDS, rows } });

@@ -1,4 +1,4 @@
-import { stageLabel, type AgentRow, type AgentRun, type AgentsScreen, type PackStageAgents } from '../../api/agents';
+import { stageLabel, type AgentRow, type AgentRun, type AgentsScreen, type PackSetup, type PackStageAgents } from '../../api/agents';
 
 /**
  * What the Agents page shows a business person (UI audit gaps 14 and 21): the agents grouped under their pack, each with its
@@ -85,6 +85,30 @@ export interface AgentGroup {
   rows: AgentLine[];
   /** a pack the org has but with no stage agent yet: shown as "not set up", with a link to set it up in the Modeler */
   notSetUp?: boolean;
+  /** what each approved or published setup of this pack changed, newest first */
+  setups?: SetupLine[];
+}
+
+/** One setup of a pack, as the Agents page lists it: where it applies and the stages it runs differently from the pack. */
+export interface SetupLine {
+  id: number;
+  org: string;
+  live: boolean;
+  changes: { stage: string; from: StageLevel; to: StageLevel }[];
+}
+
+/** The stages a setup runs at another level than the pack gives them. */
+export function setupLines(pack: PackStageAgents[], setups: PackSetup[] = []): SetupLine[] {
+  const base = new Map(pack.map((st) => [st.stage, st.autonomy]));
+  return setups.map((u) => ({
+    id: u.composition_id,
+    org: u.org_unit_id,
+    live: u.status === 'published',
+    changes: u.stages.flatMap((st) => {
+      const from = base.get(st.stage);
+      return from && from !== st.autonomy ? [{ stage: stageLabel(st.stage), from, to: st.autonomy }] : [];
+    }),
+  }));
 }
 
 /** Stage agents under each pack (every pack the org has; one with no stage agent is marked not set up), then the platform's other agents, then outside agents. */
@@ -101,7 +125,7 @@ export function agentGroups(s: Pick<AgentsScreen, 'agents' | 'packs' | 'runs'>):
       used.add(a.id);
       return [line(a, st.stage, st.autonomy)];
     });
-    return { key: p.key, title: p.name, note: 'One agent per stage of the journey', rows, notSetUp: rows.length === 0 };
+    return { key: p.key, title: p.name, note: 'One agent per stage of the journey', rows, notSetUp: rows.length === 0, setups: setupLines(p.stages, p.setups) };
   });
   const rest = s.agents.filter((a) => !used.has(a.id));
   const platform = rest.filter((a) => a.kind === 'internal').map((a) => line(a));

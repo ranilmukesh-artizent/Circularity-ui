@@ -118,7 +118,7 @@ log and gate** shows every agent call and the write gate that stops agents from 
 
 The **Agents** page is split into sections: *Registry* (kind, on or stopped, autonomy, tools, organisation scope),
 *Credentials*, *Proposals waiting for you*, *Runs* (step by step) and the *Tool catalogue*, and outside clients for Admin.
-**Agent activity** (linked from Home and My work) is the read-only log across all agents. On a case, **Run the agent on
+**Agent activity** (linked from Home and My Tasks) is the read-only log across all agents. On a case, **Run the agent on
 this case** starts a propose-only run: every write it prepares is held for a person. The tool catalogue shows which
 actions an agent may call; the **Models** panel shows the base model, the active calibration per template and the
 fitted models. The page is read only for you: Admin registers (**Register

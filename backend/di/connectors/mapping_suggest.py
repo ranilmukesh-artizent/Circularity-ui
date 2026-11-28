@@ -3,6 +3,8 @@
     profile(sample, field)                    -> FieldProfile   one source field, masked (the masker runs here, before
                                                                 anything is stored or sent to a model)
     suggest(profiles, sample, canonical, memory=None, rerank=None) -> [MappingProposal]
+    model_fields(profiles, canonical, memory=None, source_id=None) -> [(profile, candidates, score)]   what `suggest`
+                                                                would ask the reranker (for a caller that asks in batches)
     check_answer(profile, candidates, answer) -> error text | None   the checks a model's `RerankAnswer` must pass
     canonical_fields(models=None)             -> [CanonicalField]    from di.services.canonical.schema.MODEL_FIELDS
 
@@ -485,6 +487,28 @@ def suggest(
             out.append(_hinted(p, cands, h, by_target[str(h["canonical"])], cal))
         else:
             out.append(_propose(p, cands, rerank, cal))
+    return out
+
+
+def model_fields(
+    source_fields: Sequence[FieldProfile],
+    canonical: Sequence[CanonicalField],
+    *,
+    memory: Mapping[str, str] | None = None,
+    source_id: str | None = None,
+) -> list[tuple[FieldProfile, list[tuple[str, float]], float]]:
+    """The fields `suggest` would ask the reranker about, each with the candidates it would show and the score the curve
+    reads (`top_score`: low means unsure): a field with candidates and no pack hint. A caller with a time budget asks the
+    model about these beforehand, the least sure first, and hands `suggest` a reranker that only looks the answers up."""
+    by_target = {c.target for c in canonical}
+    out: list[tuple[FieldProfile, list[tuple[str, float]], float]] = []
+    for p in source_fields:
+        h = hint_of(source_id, p.name) if source_id else None
+        if h is not None and h.get("canonical") in by_target:
+            continue
+        cands = raw_candidates(p, canonical, memory)
+        if cands:
+            out.append((p, [(s.canon.target, s.raw) for s in cands], top_score(cands)))
     return out
 
 

@@ -7,7 +7,8 @@
                  last opened (the Asset intelligence link points at it when the account may see it, else at its first
                  visible case)
         badges   nav.ts navBadges(): cases awaiting approval, the approvals inbox, open conflicts, `mywork` (the length of
-                 cases.process.items_for for the account: My work, plan 9 P9-1.8) and the per-section
+                 cases.process.items_for for the account, plan 9 P9-1.8), `mine` (the same list without the data
+                 conflicts: the count beside My Tasks) and the per-section
                  counts keyed as in NAV (conf, srcissue, wffail, inbox)
         tasks    the open tasks count in the menu (the demo's frCounts().tasks: Actions on me)
     GET /api/screens/nav/scope   every case id with its owner and location ({id: [owner, location]}), so the frontend
@@ -80,8 +81,10 @@ ISSUE_SQL = "SELECT count(*) FROM source_system WHERE status IN ('stale', 'unava
 EXTRA_KIDS: dict[str, list[list[str]]] = {"access": [["orgs", "Organisation", "Groups, companies, sites and customers"]]}
 # Pages beyond the demo's NAV (plan 8; visible as policy.EXTRA_PAGES allows): (the group or section it goes before, the entry)
 EXTRA_NAV: list[tuple[str, dict]] = [
-    ("home", {"id": "mywork", "label": "My work", "sub": "Exceptions, approvals and questions for you", "icon": "inbox",
-              "leaf": True, "badge": "mywork"}),
+    # 28 Nov 2026 (decision log): Set up is its own entry after Home. My work is no longer in the menu: My Tasks is the one
+    # page of what waits on a person (its route #/mywork still opens it).
+    ("command", {"id": "setup", "label": "Set up", "sub": "Describe the business, connect systems, publish", "icon": "flag",
+                 "leaf": True}),
     ("More", {"id": "modeler", "label": "Modeler", "sub": "Decision process and business rules", "icon": "branch",
               "sec": "Integration", "leaf": True}),
     ("orchestration", {"id": "agents", "label": "Agents", "sub": "Registry, runs, proposals and tools", "icon": "bot",
@@ -166,11 +169,14 @@ def badges(p: Principal, session: Session, tenant_filter: str = "All") -> dict:
     wffail = len(STARTING_FAILED_WORKFLOWS)
     inbox = len(inbox_requests(ctx))
     awaiting = sum(1 for c in visible_cases(ctx, tenant_filter) if c["stage"] == "awaiting_approval")
+    mine = process.items_for(session, ctx)
     return {
         "awaiting": awaiting,
         "inbox": inbox if policy.can_page(p.account, "command", "approvals") else 0,
         "integration": conf if policy.can_page(p.account, "integration", "conflicts") else 0,
-        "mywork": len(process.items_for(session, ctx)),
+        "mywork": len(mine),
+        # the one count beside My Tasks: what waits on the person, without the data conflicts (counted on the Connection Fabric)
+        "mine": sum(1 for w in mine if w.kind != "conflict"),
         "sections": {"conf": conf, "srcissue": srcissue, "wffail": wffail, "inbox": inbox},
     }
 

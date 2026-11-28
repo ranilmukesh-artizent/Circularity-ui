@@ -9,7 +9,7 @@ export const AttentionCard = ({ head, line, btn, onClick }: { head: string; line
       <p>{line}</p>
       {btn && (
         <button className="btn sm" onClick={onClick}>
-          {btn} →
+          {btn}
         </button>
       )}
     </div>

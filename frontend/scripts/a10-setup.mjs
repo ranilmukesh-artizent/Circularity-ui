@@ -1,31 +1,77 @@
 /**
- * Plan 10, T3: the Describe step moved into the one assistant (Set up mode). Helpers for the plan-9 smokes and smoke-a10-t3.
+ * Plan 10, T3 and the Set up page (28 Nov 2026): helpers for the plan-9 smokes and smoke-a10-t3.
  *
- *   await describeInAssistant(p, { title: 'Lease returns to best channel' });   // a sample description, by the start of its title
- *   await describeInAssistant(p, { typed: 'We return motors ...' });            // or typed text
- *   await openInSetup(p);                                                       // "Open in Set up": the Describe step of the composition
+ * Set up is its own page, `#/setup` (`#/setup?compose=12&step=mapping`; `?new=1` starts another). The Modeler's old Set up
+ * tab redirects to it. Step 1 before a draft exists is a form: the description goes into `#sup-text`, "Draft my setup" hands
+ * it to the assistant's Set up mode, which reads it, asks its one question and drafts. The five steps are the stops of the
+ * route line (`.rl li[data-stop=describe|mapping|agents|approve|publish] a`); the step is the `section.sup-step`, its state
+ * line is `.sup-state` ("Not done. Setup 12, Tool fleet for Customer A, draft.").
  *
- * `openSetupTab(p)` opens the Modeler's Set up tab (the old Compose button).
- *
- * `describeInAssistant` starts from the Compose panel's launcher (or, with `launch: false`, from an assistant already in Set up
- * mode), picks a sample or types, waits for the drafted turn and returns the composition id.
+ *   await openSetupTab(p, 60000, { fresh: true });                                   // the page, on the form (org from the Modeler URL if p is there)
+ *   await describeInAssistant(p, { title: 'Lease returns to best channel', template: 'used_cars' });  // a sample, by the start of its title
+ *   await describeInAssistant(p, { typed: 'We return motors ...' });                 // or typed text
+ *   await openInSetup(p);                                                            // "Open in Set up": the composition on its Describe step
+ *   const id = await setupId(p);  await openSetupStep(p, 'mapping');                // the composition id; a step by the route line
  */
-export const SETUP_PLACEHOLDER = 'Describe how your returns work…';
-const LAUNCH = 'Describe the business in Ask Circularity';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-export async function describeInAssistant(p, { title, typed, timeout = 180000, launch = true } = {}) {
-  if (launch) await p.getByRole('button', { name: LAUNCH }).click();
-  const box = p.getByPlaceholder(SETUP_PLACEHOLDER);
+export const SETUP_PLACEHOLDER = 'Describe how your returns work…';
+
+/** The step panel of the Set up page (the old Compose section). */
+export const setupPanel = (p) => p.locator('section.sup-step');
+/** The step names of the old Compose tabs, as the route line's stop ids. */
+export const STEP_IDS = { Describe: 'describe', 'Adapter mapping': 'mapping', 'Connect systems': 'mapping', Agents: 'agents', Approve: 'approve', Publish: 'publish' };
+
+/** The Set up page of `org` (else the org of the Modeler URL `p` is on, else the default). `base` is the app's origin when `p` is not on it yet. `fresh`: the form, not the newest setup. */
+export async function openSetupTab(p, timeout = 60000, { fresh = false, compose = null, org = null, base = null } = {}) {
+  const u = p.url();
+  const origin = base ?? (u.startsWith('http') ? new URL(u).origin : '');
+  const q = new URLSearchParams();
+  const inUrl = new URLSearchParams(u.split('#')[1]?.split('?')[1] ?? '');
+  const o = org ?? inUrl.get('org');
+  if (o) q.set('org', o);
+  if (fresh) q.set('new', '1');
+  if (compose) q.set('compose', String(compose));
+  const url = `${origin}/#/setup${q.toString() ? '?' + q : ''}`;
+  if (origin) await p.goto(url);
+  else throw new Error('openSetupTab needs { base } or a page already on the app (url ' + u + ')');
+  await p.locator('#setup').waitFor({ timeout });
+  await setupPanel(p).waitFor({ timeout });
+}
+
+/** The sample description of a pack that starts with `title`, read from the pack file (the page offers only the default pack's samples). */
+function packSample(template, title) {
+  const file = fileURLToPath(new URL(`../../backend/di/services/modeler/packs/${template}.json`, import.meta.url));
+  const found = (JSON.parse(readFileSync(file, 'utf8')).prompts ?? []).find((t) => t.startsWith(title));
+  if (!found) throw new Error(`pack ${template} has no sample starting "${title}"`);
+  return found;
+}
+
+/**
+ * From the Set up page on its form (`openSetupTab(p, t, { fresh: true })`): pick a sample or type, press "Draft my setup",
+ * wait for the assistant's drafted turn and return the composition id. `template` is the pack of a `title` that the form
+ * does not offer.
+ */
+export async function describeInAssistant(p, { title, typed, template, timeout = 180000 } = {}) {
+  const box = p.locator('#sup-text');
   await box.waitFor({ timeout });
-  const before = await p.locator('.st-turn').count();
-  if (typed !== undefined) {
-    await box.fill(typed);
-    await box.press('Enter');
-  } else {
-    const start = title ? p.locator(`.st-start[title^="${title}"]`) : p.locator('.st-start');
-    await start.first().waitFor({ timeout });
-    await start.first().click();
+  let text = typed;
+  if (text === undefined) {
+    const sample = title ? p.locator('.sup-sample', { hasText: title }) : p.locator('.sup-sample');
+    await p.locator('.sup-sample').first().waitFor({ timeout: 15000 }).catch(() => {});
+    if (await sample.count()) {
+      await sample.first().click();
+      text = await box.inputValue();
+    } else if (template && title) {
+      text = packSample(template, title);
+    } else {
+      throw new Error('the form offers no sample' + (title ? ` "${title}"` : '') + ' (pass { template } for another pack, or { typed })');
+    }
   }
+  await box.fill(text);
+  const before = await p.locator('.st-turn').count();
+  await p.getByRole('button', { name: 'Draft my setup' }).click();
   const turn = p.locator('.st-turn').nth(before);
   await turn.waitFor({ timeout });
   const foot = await turn.locator('.st-foot').innerText({ timeout });
@@ -34,14 +80,19 @@ export async function describeInAssistant(p, { title, typed, timeout = 180000, l
   return id;
 }
 
-/** The Modeler's "Set up" page tab (plan 10, 3.4; it replaced the bar's Compose button): the Compose panel shows. */
-export async function openSetupTab(p, timeout = 60000) {
-  await p.locator('.mdl-tabs a[data-tab="setup"]').click();
-  await p.locator('section[aria-label="Compose"]').waitFor({ timeout });
+/** The composition id in the page's state line ("Setup 12, ..."), 0 when none shows. */
+export async function setupId(p) {
+  return Number((await setupPanel(p).locator('.sup-state').innerText().catch(() => '')).match(/Setup (\d+),/)?.[1]) || 0;
 }
 
-/** Follow "Open in Set up" of the last Set up turn; the Compose panel then shows the composition on its Describe step. */
+/** A step of the open composition by its route-line stop (a name of the old Compose tabs also works). */
+export async function openSetupStep(p, step, timeout = 60000) {
+  const id = STEP_IDS[step] ?? step;
+  await p.locator(`.rl li[data-stop="${id}"] a.rl-stop`).click({ timeout });
+}
+
+/** Follow "Open in Set up" of the last Set up turn; the page then shows the composition on its Describe step. */
 export async function openInSetup(p, timeout = 180000) {
   await p.locator('.st-turn a', { hasText: 'Open in Set up' }).last().click();
-  await p.locator('section[aria-label="Compose"] .cmp-state').waitFor({ timeout });
+  await setupPanel(p).locator('.sup-state').waitFor({ timeout });
 }

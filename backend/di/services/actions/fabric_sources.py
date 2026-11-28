@@ -1080,12 +1080,18 @@ def _family_memory(s: Any, sid: str, vendor: str) -> dict[str, str]:
 def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
     """P9-8.2 (I-19): propose canonical fields for the fields the source's stored sample has (up to 500 records per
     resource, discover.SAMPLE), with calibrated confidence, a band and a reason. The profiles are masked before the model
-    reads them (di.connectors.mapping_suggest); the model, when the router has one, only reranks the candidates. Rows:
+    reads them (di.connectors.mapping_suggest); the model, when the router has one, only reranks the candidates, in batches
+    and for at most about 25 seconds (di.services.agents.mapping_rerank; `model` says how many fields it read). Rows:
     the proposal, its `resource` and its masked `samples`; `gaps`: required canonical fields of the models proposed with
     no proposal; `decision` is the row's live choice and `waiting` the questions open to the system owner and `fields`
     the canonical fields to choose from (P9-8.4). Writes nothing."""
+    from functools import partial
+
     from di.connectors import discover, mapping_suggest
-    from di.services.agents.mapping_rerank import make_reranker
+    from di.services.agents.mapping_rerank import Ask, make_reranker
+
+    def _ask_key(res: str, p: mapping_suggest.FieldProfile) -> tuple[str, str]:
+        return (res, p.name)
 
     sid, only = str(i["source_id"]), str(i.get("resource") or "")
     s = ctx.session
@@ -1094,13 +1100,21 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
         raise ActionError("not_found", f"No source {sid}.")
     canon = mapping_suggest.canonical_fields()
     memory = _family_memory(s, sid, row.vendor)
-    rerank = make_reranker(ctx)
-    rows: list[dict[str, Any]] = []
+    profiled: list[tuple[str, list[Any], list[mapping_suggest.FieldProfile]]] = []
+    asks: list[Ask] = []
     for res, recs in discover._samples(s, sid).items():
         if only and res != only:
             continue
         sample = [p for _, p in recs]
         profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
+        profiled.append((res, sample, profiles))
+        for p, shown, score in mapping_suggest.model_fields(profiles, canon, memory=memory, source_id=sid):
+            asks.append(Ask((res, p.name), p, shown, score))
+    # model first, within a wall-clock budget: the least sure fields are read first, the rest keep the deterministic proposal
+    read = make_reranker(ctx).precompute(asks)
+    rows: list[dict[str, Any]] = []
+    for res, sample, profiles in profiled:
+        rerank = read.lookup(partial(_ask_key, res))
         for p, prop in zip(
             profiles, mapping_suggest.suggest(profiles, sample, canon, memory=memory, rerank=rerank, source_id=sid), strict=True
         ):
@@ -1117,7 +1131,11 @@ def mapping_suggest_fields(i: dict[str, Any], ctx: CallContext):
     waiting = len(mapping_decisions.open_questions(s, sid))
     by_model = any(r["proposed_by"] == "model" for r in rows)
     fields = [c.target for c in canon]  # what "Choose another field" offers
-    return {"source_id": sid, "rows": rows, "gaps": gaps, "waiting": waiting, "fields": fields, "by_model": by_model}
+    # how many of the rows a model read: asked (sent), answered (a checked answer came back), why it stopped early
+    model = read.summary() | {"fields": len(rows)}
+    return {
+        "source_id": sid, "rows": rows, "gaps": gaps, "waiting": waiting, "fields": fields, "by_model": by_model, "model": model
+    }  # fmt: skip
 
 
 # ---------------------------------------------------------------- the five choices (plan 9 P9-8.4)

@@ -111,10 +111,18 @@ export interface PackStageAgents {
   threshold: number;
 }
 
+/** What a setup's agents step changed for a pack (Set up, 28 Nov 2026): the same stage rows with that setup's settings applied. */
+export interface PackSetup {
+  composition_id: number;
+  org_unit_id: string;
+  status: string;
+  stages: PackStageAgents[];
+}
+
 export interface AgentsScreen {
   agents: AgentRow[];
   /** the stage agents under each pack */
-  packs: { key: string; name: string; stages: PackStageAgents[] }[];
+  packs: { key: string; name: string; stages: PackStageAgents[]; setups?: PackSetup[] }[];
   orgs: string[];
   mcp_tools: string[];
   runs: AgentRun[];

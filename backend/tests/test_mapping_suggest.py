@@ -3,7 +3,8 @@
 The profile, the masker, the candidates and the calibrated bands are pure; the model rerank (`mapping_rerank`) and the
 `mapping.suggest` action run through the loop and the pipeline, so this file uses `no_synced_conflicts`. Every model is a
 `FunctionModel`: no test reaches a provider (R16). Each model-first case has its four tests: accepted, refused by a
-check, retry then fallback, no model.
+check (dropped for that field, no repair round: mapping_rerank v2 asks in batches), no model. The batches, the budget
+and the action's `model` summary: tests/test_mapping_rerank_batch.py.
 """
 
 import importlib.util
@@ -21,7 +22,7 @@ from di.connectors import isotonic, mapping_suggest
 from di.connectors.mapping_suggest import MASK, RerankAnswer, canonical_fields, profile, suggest
 from di.core.db import SessionLocal
 from di.services.actions.pipeline import SYSTEM, CallContext
-from di.services.agents import runtime
+from di.services.agents import mapping_rerank, runtime
 from di.services.agents.mapping_rerank import make_reranker
 from di.services.agents.pydantic_ai_loop import PydanticAILoop
 from tests.helpers import call
@@ -46,7 +47,8 @@ DEPOT = [
 
 
 @pytest.fixture(autouse=True)
-def fresh():
+def fresh(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(mapping_rerank, "_model_wait", lambda: None)  # never wait for a real model's minute window
     runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: None))  # no model: the deterministic path (R16)
     _clean()
     yield
@@ -120,7 +122,7 @@ def test_mapping_suggest_masks_samples():
 
     def fn(messages: list, info: AgentInfo) -> ModelResponse:
         prompts.append(str(messages))
-        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, _answer(None))])
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, _answer(None, field="contact"))])
 
     runtime.set_loop(PydanticAILoop(lambda _s, _run, _role: FunctionModel(fn)))
     make_reranker(_ctx())(p, [("asset.owner_tenant", 0.5)])
@@ -160,8 +162,10 @@ def test_mapping_confidence_is_calibrated():
 
 
 # ---------------------------------------------------------------- model first (R16): the four cases
-def _answer(target: str | None, why: str = "The values look like serials.", rule: str = "copy") -> dict[str, Any]:
-    return {"target": target, "rule": rule, "why": why}
+def _answer(
+    target: str | None, why: str = "The values look like serials.", rule: str = "copy", field: str = "SERNR"
+) -> dict[str, Any]:
+    return {"answers": [{"field": field, "target": target, "rule": rule, "why": why}]}  # a batch of one field
 
 
 def _ctx() -> CallContext:
@@ -211,13 +215,13 @@ def test_mapping_suggest_rerank_may_abstain():
 def test_mapping_rerank_answer_refused_by_a_check_then_deterministic():
     base = _serial()
     seen: list[int] = []
-    runtime.set_loop(_scripted(_answer("asset.not_a_field"), seen=seen))  # a target outside the candidates, twice
+    runtime.set_loop(_scripted(_answer("asset.not_a_field"), seen=seen))  # a target outside the candidates
     p = _serial(rerank=make_reranker(_ctx()))
-    assert len(seen) == 2  # the answer, then one repair round with the error
+    assert len(seen) == 1  # the answer is dropped; no repair round
     assert (p.target, p.confidence, p.proposed_by, p.reason) == (base.target, base.confidence, "rule", base.reason)
     seen.clear()
     runtime.set_loop(_scripted(_answer(base.target, "It is 99 % certain."), seen=seen))  # a number not in the profile
-    assert _serial(rerank=make_reranker(_ctx())).proposed_by == "rule" and len(seen) == 2
+    assert _serial(rerank=make_reranker(_ctx())).proposed_by == "rule" and len(seen) == 1
     assert (
         mapping_suggest.check_answer(
             profile([{"a": "1"}], "a"),
@@ -230,12 +234,12 @@ def test_mapping_rerank_answer_refused_by_a_check_then_deterministic():
     assert mapping_suggest.check_answer(profile([{"a": "1"}], "a"), [("asset.qty", 0.5)], bad_rule)
 
 
-def test_mapping_rerank_retry_repairs_the_answer():
+def test_mapping_rerank_answer_for_another_field_is_dropped():
     base = _serial()
     seen: list[int] = []
-    runtime.set_loop(_scripted(_answer("asset.not_a_field"), _answer(base.target, "Serial numbers."), seen=seen))
+    runtime.set_loop(_scripted(_answer(base.target, "Serial numbers.", field="OTHER"), seen=seen))
     p = _serial(rerank=make_reranker(_ctx()))
-    assert len(seen) == 2 and p.proposed_by == "model" and p.reason == "Serial numbers."
+    assert len(seen) == 1 and (p.proposed_by, p.reason) == ("rule", base.reason)
 
 
 def test_mapping_rerank_no_model_and_no_key():
@@ -281,6 +285,7 @@ def test_mapping_suggest_action_profiles_the_stored_sample_and_writes_nothing():
     assert rows["inspector_email"]["samples"] == [MASK] * 5 and "example.com" not in json.dumps(out)
     assert rows["grade_text"]["resource"] == RES and rows["grade_text"]["band"] in ("pre_ticked", "check", "none")
     assert isinstance(out["gaps"], list)
+    assert out["model"] | {"seconds": 0} == {"asked": 0, "answered": 0, "fields": 4, "seconds": 0, "stopped": "no_model"}
     with SessionLocal() as s:
         assert s.execute(text("SELECT count(*) FROM field_mapping")).scalar_one() == before
         assert s.execute(text("SELECT count(*) FROM agent_run WHERE playbook = 'mapping_rerank'")).scalar_one() == 0

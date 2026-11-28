@@ -16,6 +16,7 @@ Customer A) is the hero case. All data is synthetic; no named vendor product is 
 |---|---|
 | `fixtures/demo/index.html` | The demo. Source of truth for parity: every golden file, the web app's stylesheet and its static assets are extracted from it. |
 | `frontend/src/pages/modeler/compose/`, `frontend/src/pages/mywork/` | Plan 9: Compose's five steps; My work (cases and steps waiting on you, ageing and lots). |
+| `frontend/src/pages/setup/`, `frontend/src/pages/home/TasksPage.tsx` | 28 Nov 2026: Set up (`#/setup`), the guided way in over Compose's five steps, with Home's Start here card; My Tasks, the one page of what waits on a person (My work merged into it; `#/mywork` opens it). Drawings in `components/kit/` (`RouteLine`, `TallyStrip`, `StageTrack`). |
 | `frontend` | React 18 + TS + Vite. `src/api` the facade (pages call only it), `src/pages/<area>` the pages, `src/components` shared UI (incl. `kit/`), `src/hooks`, `src/utils`, `src/layout` the app shell (sidebar, top bar, Ask panel), `src/assets`, `src/styles`. |
 | `frontend/src/pages/modeler/`, `frontend/src/pages/agents/` | Plan 8: the Modeler (canvas, inspector, checks, impact, lifecycle, history, assistant) and the Agents page (registry, proposals, runs, tool catalogue). |
 | `frontend/src/layout/assistant/` | Plan 10: the one assistant (dock and the Modeler's pinned column; Ask, Change flow and Set up modes). |

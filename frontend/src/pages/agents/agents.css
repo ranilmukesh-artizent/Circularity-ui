@@ -63,3 +63,13 @@
 #agents #agRepairAccuracy > .ph h3 { flex: 1; }
 #agents .empty { padding: 12px 16px; }
 #agents .empty b { display: block; margin-bottom: 4px; }
+
+/* What the setups of a pack changed (28 Nov 2026): one line a setup, under the pack's table. */
+#agents .ag-setups { border-top: 1px solid var(--line); padding: 12px 16px 16px; }
+#agents .ag-setups h4 { margin: 0 0 8px; font-size: 13px; }
+#agents .ag-setups ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#agents .ag-setups li { display: grid; grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) auto; gap: 8px 16px; align-items: baseline; font-size: 13px; }
+#agents .ag-setup-who { display: grid; gap: 2px; }
+#agents .ag-setup-what { display: flex; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
+#agents .ag-change s { color: var(--ink3, var(--ink2)); }
+@media (max-width: 700px) { #agents .ag-setups li { grid-template-columns: 1fr; } }

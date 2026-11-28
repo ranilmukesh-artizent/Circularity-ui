@@ -37,6 +37,42 @@ def listing(s: Session, org_unit_ids: list[str] | None = None) -> list[dict[str,
     return [_plain(r) for r in rows]
 
 
+_IN_FORCE = ("approved", "published")
+
+
+def _settings(steps: Any) -> list[dict[str, Any]]:
+    return list(((steps or {}).get("agents") or {}).get("settings") or [])
+
+
+def approved_stage_settings(s: Session, pack_key: str, org_unit_id: str) -> list[dict[str, Any]]:
+    """The stage-agent settings (`steps.agents.settings`) of the newest composition (highest id) that is approved or
+    published for exactly this pack and org unit; empty when there is none, or when that one holds no settings. The stage
+    chain runs with them (`di.services.agents.runtime`)."""
+    steps = s.execute(
+        text(
+            "SELECT steps FROM composition WHERE pack_key = :p AND org_unit_id = :o AND status = ANY(:st) "
+            "ORDER BY id DESC LIMIT 1"
+        ),
+        {"p": pack_key, "o": org_unit_id, "st": list(_IN_FORCE)},
+    ).scalar_one_or_none()
+    return _settings(steps)
+
+
+def setups(s: Session) -> list[dict[str, Any]]:
+    """Every approved or published composition that holds stage settings, newest first:
+    `{composition_id, org_unit_id, pack_key, status, settings}` (the Agents page shows them under their pack)."""
+    rows = s.execute(
+        text("SELECT id, org_unit_id, pack_key, status, steps FROM composition WHERE status = ANY(:st) ORDER BY id DESC"),
+        {"st": list(_IN_FORCE)},
+    ).mappings()
+    return [
+        {"composition_id": r["id"], "org_unit_id": r["org_unit_id"], "pack_key": r["pack_key"], "status": r["status"],
+         "settings": _settings(r["steps"])}
+        for r in rows
+        if _settings(r["steps"])
+    ]  # fmt: skip
+
+
 def add_version(s: Session, cid: int, version: int, snapshot_json: str, status: str, by: str, at: datetime) -> None:
     s.execute(
         text(

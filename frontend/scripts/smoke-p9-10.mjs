@@ -159,13 +159,12 @@ const need = (n) => {
 };
 
 // ---------------------------------------------------------------- 1 (TN-01)
-const compose = (p) => p.locator('section[aria-label="Compose"]');
+const compose = (p) => p.locator('section.sup-step'); // 28 Nov 2026: the Set up page's step panel (was the Compose section)
 async function startCompose(p, typed) {
-  await open(p, MODELER, '.mdl-tabs');
-  await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // #/setup, on the description form
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
-  await describeInAssistant(p, typed === undefined ? { title: 'Decommissioned network kit', timeout: UI } : { typed, timeout: UI });
+  await describeInAssistant(p, typed === undefined ? { title: 'Decommissioned network kit', template: 'telecom_network', timeout: UI } : { typed, timeout: UI });
   await openInSetup(p, UI);
   await compose(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
 }
@@ -218,7 +217,7 @@ await step('1 Connect the six telecom systems, open the units as cases, Compose:
   const q = compose(planner).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
   if (!/firmware/i.test(await q.innerText())) throw new Error('the one question is not about firmware');
-  COMP = Number((await compose(planner).locator('.cmp-state').innerText().catch(() => '')).match(/composition (\d+) is/)?.[1]) || 0;
+  COMP = Number((await compose(planner).locator('.sup-state').innerText().catch(() => '')).match(/Setup (\d+),/)?.[1]) || 0;
   return `${SOURCES.length} systems synced; cases ${Object.keys(cases).map((n) => `${n}=${cases[n]}`).join(', ')}; composition ${COMP || '?'}`;
 });
 
@@ -329,10 +328,9 @@ await step('8 The analytics question and the modelled replay figures', async () 
   if (!/PSU-48/.test(await text(p))) throw new Error('the power unit question shows no chart rows (PSU-48)');
   notes.push('question with its chart');
 
-  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
-  if (!COMP) await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, compose: COMP || null });
   await compose(p).waitFor();
-  const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  const tab = p.locator('.rl li[data-stop="publish"] a.rl-stop');
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();

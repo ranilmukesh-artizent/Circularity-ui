@@ -41,7 +41,7 @@ const MIN_REASON = 15;
  * The flow's status and the lifecycle buttons the account may use (the screen's `can`): a maker submits or discards
  * a draft; a different person approves (a shadow run starts), publishes or returns it with a reason.
  */
-export function LifecycleBar({ s, flush, blocking = 0, onStep }: { s: ModelerScreen; flush: () => Promise<void>; blocking?: number; onStep?: (k: RolloutStepId) => void }) {
+export function LifecycleBar({ s, flush, blocking = 0, onStep, quiet = false }: { s: ModelerScreen; flush: () => Promise<void>; blocking?: number; onStep?: (k: RolloutStepId) => void; /** no primary button and no publish: the caller publishes its own way (Set up's publish step) */ quiet?: boolean }) {
   const action = useAction();
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
@@ -70,9 +70,9 @@ export function LifecycleBar({ s, flush, blocking = 0, onStep }: { s: ModelerScr
           Shadow: {s.shadow.n} decisions, {s.shadow.agree} agree, {s.shadow.disagree} differ · {s.shadow.dv >= 0 ? '+' : ''}{poMoney(s.shadow.dv)}
         </span>
       )}
-      {can.edit && flow.status === 'draft' && <button className="btn sm pri" disabled={action.pending} onClick={() => go(() => submitFlow(flow.id))}>Submit for approval</button>}
-      {can.approve && flow.status === 'review' && <button className="btn sm pri" disabled={action.pending} onClick={() => go(() => approveFlow(flow.id))}>Approve</button>}
-      {can.approve && flow.status === 'shadow' && <button className="btn sm pri" disabled={action.pending} onClick={() => go(() => publishFlow(flow.id))}>Publish</button>}
+      {can.edit && flow.status === 'draft' && <button className={'btn sm' + (quiet ? '' : ' pri')} disabled={action.pending} onClick={() => go(() => submitFlow(flow.id))}>Submit for approval</button>}
+      {can.approve && flow.status === 'review' && <button className={'btn sm' + (quiet ? '' : ' pri')} disabled={action.pending} onClick={() => go(() => approveFlow(flow.id))}>Approve</button>}
+      {can.approve && !quiet && flow.status === 'shadow' && <button className="btn sm pri" disabled={action.pending} onClick={() => go(() => publishFlow(flow.id))}>Publish</button>}
       {can.approve && waiting && !rejecting && <button className="btn sm" onClick={() => setRejecting(true)}>Return to draft</button>}
       {can.edit && flow.status !== 'pub' && <button className="btn sm ghost" disabled={action.pending} onClick={() => go(() => discardFlow(flow.id))}>Discard draft</button>}
       {flow.returned && flow.status === 'draft' && (

@@ -1,8 +1,10 @@
 """The stage chain (plan 9, P9-2.1; registry entry I-7; research F section 8a): one agent per stage, application code
 picking the next stage, each stage leaving a typed record.
 
-    stage_defs(pack) -> [StageDef]       pure: the twelve stages of the effective pack (after the org's overlay, I-4), with
-                                         the D1 defaults for whatever the pack does not say
+    stage_defs(pack, settings=()) -> [StageDef]   pure: the twelve stages of the effective pack (after the org's overlay,
+                                         I-4), with the D1 defaults for whatever the pack does not say; `settings` are the
+                                         stage settings of the org's approved setup (Set up's agents step), applied first
+    agents_of(pack_stage) -> [agent id]  the registry agents of the chain stages that take that pack stage's settings
     build_record(defn, mod, st, case, status) -> StageRecord      pure: what a stage module says about the case now
     save_record / records_of             the table `agent_stage_record` (migration 0034), one row per (run, stage)
     run_chain(s, case_id, account=...)   starts a `stage_chain` run (agent `recover-chain`), runs it until it is blocked
@@ -18,7 +20,7 @@ action in `FORBIDDEN_ACTIONS` (AGENTS.md rule 10). Holding by stage autonomy and
 """
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Literal
@@ -28,11 +30,12 @@ from sqlalchemy.orm import Session
 
 from di.services.agents.stage_context import LEGACY_STAGE_IDS, STAGE_IDS, Autonomy, StageContext, StageId, StageKind
 from di.services.agents.stages import CHAIN, StageModule, disposition
+from di.services.modeler.compose import with_stage_settings
 from di.services.modeler.pack import Pack
 from di.services.modeler.stages import StageKey
 
 __all__ = [
-    "Autonomy", "ChainRun", "StageDef", "StageId", "StageKind", "StageRecord", "Status", "apply_reading",
+    "Autonomy", "ChainRun", "StageDef", "StageId", "StageKind", "StageRecord", "Status", "agents_of", "apply_reading",
     "build_record", "case_value",
     "pack_rul_min", "records_of", "run_chain", "save_record", "stage_context", "stage_defs",
 ]  # fmt: skip
@@ -100,10 +103,29 @@ class ChainRun:
     stages: list[StageRecord]
 
 
-def stage_defs(pack: Pack) -> list[StageDef]:
+def agents_of(stage: str) -> list[str]:
+    """The registry ids of the chain stages that take this pack stage's autonomy or threshold, in chain order (`receive`:
+    the three lifecycle stages and intake; `match`: demand and fit-for-use)."""
+    return [AGENT_IDS[sid] for sid in AGENT_IDS if THRESHOLD_FROM[sid] == stage or AUTONOMY_FROM.get(sid) == stage]
+
+
+def _limit(row: Mapping[str, Any] | None, key: str) -> Any:
+    """A limit of a setup's stage row: only a stage set to act within limits has any."""
+    v = (row.get("limits") or {}).get(key) if row and row.get("autonomy") == "limits" else None
+    return v if isinstance(v, int | float) and not isinstance(v, bool) else None
+
+
+def stage_defs(pack: Pack, settings: Sequence[Mapping[str, Any]] = ()) -> list[StageDef]:
     """The twelve stage definitions of the pack, in chain order. A threshold outside 0.65 to 0.85 raises ValueError (the
-    overlay validator, P9-1.3, refuses it first); a pack without a stage list gets the defaults."""
+    overlay validator, P9-1.3, refuses it first); a pack without a stage list gets the defaults.
+
+    `settings` are the stage settings of the org's setup (`compositions.approved_stage_settings`; rows `{stage, agent_id,
+    autonomy, limits?, threshold}` of the pack's stages): they go on the pack's stages first (`with_stage_settings`), and a
+    stage's limits go to the chain stages that take its autonomy. Empty (the default) is the pack as it is."""
+    if settings:
+        pack = with_stage_settings(pack, settings)
     by_key = {s.key: s for s in pack.stages}
+    set_by = {str(x["stage"]): x for x in settings}
     out: list[StageDef] = []
     for module in CHAIN:
         sid = module.ID
@@ -112,12 +134,15 @@ def stage_defs(pack: Pack) -> list[StageDef]:
             raise ValueError(f"the {sid} threshold {threshold} is outside {THRESHOLD_RANGE[0]} to {THRESHOLD_RANGE[1]}")
         akey = AUTONOMY_FROM.get(sid)
         own = by_key.get(akey) if akey else None
+        row = set_by.get(akey) if akey and own else None
+        value, bulk = _limit(row, "value_limit"), _limit(row, "bulk_limit")
         out.append(
             StageDef(
                 id=sid, agent_id=AGENT_IDS[sid],
                 kind="queue" if sid == "disposition" and disposition.planner_name(pack) else "deterministic",
                 autonomy=own.autonomy if own else DEFAULT_AUTONOMY[sid],
-                threshold=float(threshold), value_limit=None, bulk_limit=None, tools=tuple(module.ACTIONS),
+                threshold=float(threshold), value_limit=None if value is None else Decimal(str(value)),
+                bulk_limit=None if bulk is None else int(bulk), tools=tuple(module.ACTIONS),
             )
         )  # fmt: skip
     return out

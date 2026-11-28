@@ -1,0 +1,108 @@
+/* Set up and Home's "Start here" card (28 Nov 2026). The route line itself is components/kit/lines.css. */
+
+.sup-picks { align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.sup-pick { display: grid; gap: 3px; font-size: 12px; color: var(--ink2); min-width: 0; }
+.sup-pick select { max-width: min(360px, 78vw); }
+
+.sup-line { padding: 22px 24px 20px; }
+.sup-step { padding: 0; }
+.sup-step-h { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; align-items: flex-start; padding: 20px 24px 0; }
+.sup-step-h > div { min-width: 0; flex: 1 1 380px; }
+.sup-step-h h2 { margin: 0 0 4px; font-family: var(--f-display); font-size: 21px; line-height: 1.25; }
+.sup-step-h .note { margin: 0; max-width: 68ch; font-size: 13px; color: var(--ink2); }
+.sup-step-h .sup-state { margin-top: 6px; color: var(--muted); }
+.sup-adv { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.sup-body { padding: 14px 24px 22px; min-width: 0; }
+.sup-body .cmp-step { margin-top: 0; }
+.sup-nav { display: flex; justify-content: space-between; gap: 10px; padding: 12px 24px; border-top: 1px solid var(--line); }
+
+.sup-start { display: grid; gap: 10px; max-width: 760px; }
+.sup-start label { font-weight: 600; font-size: 14px; }
+.sup-guide { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--ink2); }
+.sup-guide li::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: var(--yellow); border: 1px solid var(--ink); vertical-align: 1px; }
+.sup-start textarea {
+  width: 100%; box-sizing: border-box; min-height: 132px; resize: vertical; padding: 12px 14px;
+  font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink);
+  background: var(--panel); border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent); border-radius: 8px;
+}
+.sup-start textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
+.sup-start textarea[aria-invalid=true] { border-color: var(--bad); }
+.sup-start .note, .sup-start .err { margin: 0; }
+.sup-start .err { color: var(--bad); font-size: 13px; }
+.sup-start .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.sup-samples { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sup-samples ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.sup-sample {
+  display: block; width: 100%; text-align: left; padding: 9px 12px; font: inherit; font-size: 13px; line-height: 1.45; color: var(--ink2);
+  background: var(--panel2); border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+}
+.sup-sample:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+@media (hover: hover) and (pointer: fine) { .sup-sample:hover { border-color: color-mix(in srgb, var(--ink) 28%, transparent); color: var(--ink); } }
+
+@media (max-width: 640px) {
+  .sup-line { padding: 16px; }
+  .sup-step-h { padding: 16px 16px 0; }
+  .sup-body { padding: 12px 16px 18px; }
+  .sup-nav { padding: 12px 16px; }
+  .sup-start textarea { font-size: 16px; }
+}
+
+/* ---- Home: Start here ---- */
+.sth { padding: 20px 22px; display: grid; gap: 18px; border-color: color-mix(in srgb, var(--ink) 22%, transparent); }
+.sth-h { display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: space-between; align-items: flex-start; }
+.sth-h > div { min-width: 0; flex: 1 1 320px; }
+.sth-h h2 { margin: 0 0 4px; font-family: var(--f-display); font-size: 19px; line-height: 1.25; }
+.sth-h p { margin: 0; font-size: 13px; color: var(--ink2); max-width: 62ch; }
+.sth-acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* ---- the workspace (28 Nov 2026): template picker, the assistant in the page, the flow editor, access ---- */
+.sup-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 400px); align-items: stretch; }
+.sup-split { border-top: 1px solid var(--line); margin-top: 16px; }
+/* the assistant stays in view while the person scrolls the templates and the form beside it */
+.sup-chat { min-width: 0; position: sticky; top: 64px; align-self: start; height: min(calc(100vh - 88px), 760px); min-height: 460px; display: flex; flex-direction: column; border-left: 1px solid var(--line); overflow: hidden; }
+.sup-chat > * { flex: 1; min-height: 0; }
+@media (max-width: 1100px) {
+  .sup-split { grid-template-columns: minmax(0, 1fr); }
+  .sup-chat { position: static; border-left: 0; border-top: 1px solid var(--line); height: min(70vh, 620px); }
+}
+.sup-body.flush { padding: 12px 0 0; }
+
+.sup-tpl { display: grid; gap: 22px; }
+.sup-packs { margin: 0; padding: 0; border: 0; min-width: 0; }
+.sup-packs legend, .sup-start > label { padding: 0; margin-bottom: 10px; font-family: var(--f-display); font-weight: 600; font-size: 15px; }
+.sup-start > label { margin-bottom: 0; }
+.sup-packgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.sup-pack {
+  position: relative; display: grid; gap: 4px; align-content: start; padding: 12px 14px 12px 16px; min-width: 0; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent); border-left: 4px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 6px; background: var(--panel); touch-action: manipulation;
+}
+.sup-pack input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.sup-pack.on { border-color: var(--ink); border-left-color: var(--yellow); background: var(--panel2); box-shadow: inset 4px 0 0 var(--yellow); border-left-width: 1px; padding-left: 19px; }
+.sup-pack:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .sup-pack:not(.on):hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); } }
+.sup-pack-name { font-family: var(--f-display); font-weight: 600; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.sup-pack-what { font-size: 12.5px; line-height: 1.4; color: var(--ink2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sup-pack-stages { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.sup-pack-stages > span { display: inline-flex; align-items: center; gap: 0; }
+.sup-pack-stages i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--panel); margin-right: 7px; position: relative; }
+.sup-pack-stages i:not(:last-child)::after { content: ''; position: absolute; left: 7px; top: 2px; width: 7px; height: 1.5px; background: var(--ink); }
+.sup-pack-stages i:last-child { margin-right: 0; }
+.sup-pack.on .sup-pack-stages i { background: var(--yellow); }
+
+.sup-shape { display: grid; gap: 12px; min-width: 0; }
+.sup-rules, .sup-inherit { margin: 0 24px; }
+.sup-rules ul { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.sup-rules li { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.sup-rules li > span { min-width: 0; overflow-wrap: anywhere; }
+.sup-flow { border-top: 1px solid var(--line); min-width: 0; --mdl-agent-w: 360px; }
+.sup-flow .mdl-cols { height: clamp(560px, 72vh, 860px); }
+.sup-step.wide .sup-nav { border-top: 1px solid var(--line); }
+
+.sup-access { display: grid; gap: 14px; }
+.sup-access-check { margin: 0; padding: 10px 14px; border-left: 4px solid var(--ok); background: var(--panel2); font-size: 13.5px; max-width: 80ch; }
+.sup-access-check.bad { border-left-color: var(--bad); }
+.sup-people td { vertical-align: top; }
+.sup-access-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; }
+.sup-missing { margin: 0; padding: 10px 14px; border-left: 4px solid var(--warn); background: var(--panel2); font-size: 13.5px; }
+.sup[data-reading] .sup-step { visibility: hidden; }

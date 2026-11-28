@@ -372,8 +372,8 @@ await step('7 Describe your business in Ask Circularity (Set up): a draft compos
   if (!prompt) throw new Error(`${packFile} has no sample prompt`);
   const pl = await as('planner.a');
   await modeler(pl, 'tool_fleet', 'Customer A');
-  // plan 10: no dialog; the Set up page tab shows the Compose panel, whose launcher opens the assistant in Set up
-  await openSetupTab(pl);
+  // 28 Nov 2026: the Set up page (#/setup) has the description form; "Draft my setup" opens the assistant in Set up
+  await openSetupTab(pl, 60000, { fresh: true });
   const id = await describeInAssistant(pl, { timeout: 120000 });
   await expectText(pl, /(Matched|Closest): Tool fleet returns \(\d+\)/, '.st-turn');
   // the one question: its options are the buttons beside Skip; pick the first

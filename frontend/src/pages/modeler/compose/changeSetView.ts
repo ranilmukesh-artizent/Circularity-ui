@@ -96,12 +96,8 @@ export function wordCountLine(words: number, controls: number, systems: string[]
   return systems.length ? `${base}, systems: ${systems.join(', ')}` : base;
 }
 
-/** The Modeler's Set up tab on one composition (a hash-router path); the template and org keep the page on the composition's pack. */
-export const setupHref = (id: number, where: { template?: string; org?: string } = {}): string => {
-  const q = new URLSearchParams();
-  if (where.template) q.set('template', where.template);
-  if (where.org) q.set('org', where.org);
-  q.set('tab', 'setup');
-  q.set('compose', String(id));
-  return `/modeler?${q.toString()}`;
+/** The Set up page on one composition (a hash-router path). The composition carries its own pack and org, so `where` is no
+ *  longer needed (28 Nov 2026: Set up is a page of its own; the Modeler's Set up tab still opens with ?tab=setup&compose=). */
+export const setupHref = (id: number, _where: { template?: string; org?: string } = {}): string => {
+  return `/setup?compose=${id}`;
 };

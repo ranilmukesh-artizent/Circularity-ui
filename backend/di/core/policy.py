@@ -61,6 +61,8 @@ EXTRA_PAGES: dict[str, tuple[str, ...]] = {
     "agents": ("Admin", "Developer"),
     # gap 12: what the agents did on the cases of the person's tenants, read only (the same roles as My work)
     "agent-activity": ("Admin", "Developer", "Planner", "Approver", "Engineer", "Finance", "Executive", "Warehouse Manager"),
+    # 28 Nov 2026: Set up (Compose's five steps as a page) for who makes or approves a composition
+    "setup": ("Admin", "Planner", "Approver"),
     "mywork": ("Admin", "Developer", "Planner", "Approver", "Engineer", "Finance", "Executive", "Warehouse Manager"),
 }
 EXTRA_SECTIONS: dict[tuple[str, str], tuple[str, ...]] = {("access", "orgs"): ("Admin",)}

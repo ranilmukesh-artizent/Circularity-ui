@@ -104,7 +104,7 @@ describe('packLabel', () => {
 });
 
 describe('setupHref', () => {
-  it('opens the Set up tab on the composition', () => expect(setupHref(12)).toBe('/modeler?tab=setup&compose=12'));
-  it('keeps the template and org of the composition', () =>
-    expect(setupHref(12, { template: 'tool_fleet', org: 'Customer A' })).toBe('/modeler?template=tool_fleet&org=Customer+A&tab=setup&compose=12'));
+  it('opens the Set up page on the composition', () => expect(setupHref(12)).toBe('/setup?compose=12'));
+  it('needs no template or org: the composition carries them', () =>
+    expect(setupHref(12, { template: 'tool_fleet', org: 'Customer A' })).toBe('/setup?compose=12'));
 });

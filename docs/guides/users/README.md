@@ -118,7 +118,7 @@ Every step shows a status line while it works, and a sentence typed in the wrong
 assistant never approves, publishes or changes access: what it prepares waits for a person
 ([plan 10](../../agents/plans/10-unified-assistant-ux.md)).
 
-**Agent activity** (linked from Home and My work): what each agent did (held, accepted, rejected, refused, run), with
+**Agent activity** (linked from Home and My Tasks): what each agent did (held, accepted, rejected, refused, run), with
 filters for kind, agent, pack and case. It is read-only and shows only the tenants and warehouse you may see. On a
 case, **Run the agent on this case** lets an Admin, Planner or Approver start a propose-only autopilot run of an enabled
 agent: every write it prepares is held for a person.

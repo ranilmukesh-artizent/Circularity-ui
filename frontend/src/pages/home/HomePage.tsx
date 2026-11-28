@@ -14,7 +14,6 @@ import { ask, launch } from '../../utils/launchers';
 import { Delta } from '../../components/kit/Delta';
 import { IconTile } from '../../components/kit/IconTile';
 import { Panel } from '../../components/kit/Panel';
-import { Ring } from '../../components/kit/Ring';
 import { Segmented } from '../../components/kit/Segmented';
 import { StatusPill } from '../../components/kit/StatusPill';
 import { Timeline } from '../../components/kit/Timeline';
@@ -22,7 +21,9 @@ import { AgentActivityLink } from './AgentActivityLink';
 import { AttentionCard } from './AttentionCard';
 import { HomeKpi } from './HomeKpi';
 import { ProposalsCard } from './ProposalsCard';
-import { TaskRow } from './TasksPage';
+import { StageTrack } from '../../components/kit/StageTrack';
+import { StartHere } from './StartHere';
+import { TaskRow } from './TaskRow';
 
 /** Hero drawing (FR_HERO): hidden on phones and in Technical mode. */
 const Hero = () => (
@@ -56,7 +57,7 @@ function Briefing() {
       <p>
         Your AI agents are ready.
         {lines.length ? '' : waiting ? (
-          <> <a href="#/mywork">{waiting} {waiting === 1 ? 'item waits' : 'items wait'} on you.</a></>
+          <> <a href="#/tasks">{waiting} {waiting === 1 ? 'item waits' : 'items wait'} on you.</a></>
         ) : ' Nothing needs you right now.'}
       </p>
       {lines.length > 0 && (
@@ -104,7 +105,8 @@ function AskBox() {
           {askStarters().map((s) => (
             <button key={s} className="btn sm" onClick={() => askSoon(s)}>{s}</button>
           ))}
-          <button className="lnk" onClick={() => setEx(true)}>View more examples →</button>
+          {canPage('setup') && <a className="btn sm" href="#/setup">Set up my business</a>}
+          <button className="lnk" onClick={() => setEx(true)}>More examples</button>
         </p>
       </div>
       {ex && (
@@ -169,16 +171,15 @@ function RightTabs() {
       </div>
       <div className="pb frrtp" role="tabpanel" id="afNeeds" hidden={tab !== 'needs'}>
         <h3 className="sr">Needs you</h3>
-        <p className="note" style={{ marginTop: 0, textAlign: 'right' }}><a className="lnk" href="#/mywork">All my work →</a></p>
         {needs.length ? (
           <>
-            <ul className="aol">{needs.slice(0, 8).map((i, k) => <TaskRow key={k} i={i} />)}</ul>
-            {needs.length > 8 && (
-              <p className="note"><a className="lnk" href="#/tasks">{needs.length - 8} more in My Tasks →</a></p>
-            )}
+            <ul className="aol">{needs.slice(0, 6).map((i, k) => <TaskRow key={k} i={i} primary={k === 0} />)}</ul>
+            <p className="note" style={{ marginBottom: 0 }}>
+              <a className="lnk" href="#/tasks">{needs.length > 6 ? `${needs.length - 6} more in My Tasks` : 'Open My Tasks'}</a>
+            </p>
           </>
         ) : (
-          <div className="empty"><b>Nothing waits on you</b>New items appear here when a step becomes yours.</div>
+          <div className="empty"><b>Nothing waits on you</b>New items appear here when a step becomes yours. <a className="lnk" href="#/tasks">Open My Tasks</a></div>
         )}
       </div>
       <div className="pb frrtp" role="tabpanel" id="frrt-activity" hidden={tab !== 'activity'}>
@@ -207,7 +208,7 @@ function RightTabs() {
                 </li>
               ))}
             </ul>
-            <a className="lnk" href="#/alerts">All alerts →</a>
+            <a className="lnk" href="#/alerts">All alerts</a>
           </>
         ) : (
           <p className="note">No notifications.</p>
@@ -325,7 +326,7 @@ function Middle({ role }: { role: string }) {
   const p = middlePanel(role);
   return (
     <Panel title={p.title} sub={p.sub} id={p.id} right={p.link && <a className="lnk" href={'#/' + p.link.go}>{p.link.label}</a>}>
-      {p.ring && <Ring {...p.ring} />}
+      {p.ring && <StageTrack {...p.ring} />}
       {p.bars?.map((b) => (
         <div className="frwf" key={b.l}>
           <span>{b.l}</span>
@@ -435,6 +436,11 @@ export function HomePage() {
       </header>
       <div className="frhg2">
         <div className="frhmain">
+          {canPage('setup') && (
+            <Suspense fallback={null}>
+              <StartHere />
+            </Suspense>
+          )}
           <AskBox />
           <div className="frkpis" id="frKpis">
             <Suspense fallback={<Skel h={104} label="Loading key numbers" />}>
@@ -444,7 +450,7 @@ export function HomePage() {
           <div className="frh2">
             <Panel
               title="Agent activity" id="afActivity" sub="What your agents and workflows are doing across systems"
-              right={<a className="lnk" href="#/audit/log">View all →</a>}
+              right={<a className="lnk" href="#/audit/log">View all</a>}
             >
               <Segmented name="act" label="Activity period" cur={act} items={[['live', 'Live'], ['today', 'Today'], ['week', 'This week']]} onPick={(v) => setHomeUi('frAct', v)} />
               <ActivityBody win={act} />

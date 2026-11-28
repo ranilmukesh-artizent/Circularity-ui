@@ -6,6 +6,11 @@ replaying it under a flow.
                                                                 store the good rows and the held ones with their reasons;
                                                                 answers the Batch. `batch_id` appends to a batch of the same
                                                                 pack and org unit.
+    replay.importSample act {pack, org_unit_id, rows?}          (28 Nov 2026) import the pack's synthetic sample history
+                                                                (`di.services.replay.sample.make_csv`; 200 rows unless said, at
+                                                                most 500) as a new batch through `replay.import`'s own guard and
+                                                                handler; answers the same Batch. An agent may run it as it may
+                                                                run `replay.import`
     replay.importDemand act {batch_id, csv}                     (P9-7.5) check a CSV of demand windows (demand_id, route, opens_at,
                                                                 closes_at, value, capacity) and store it with the batch; only for a
                                                                 pack that plans a queue (the tool fleet); answers the Batch with the
@@ -48,7 +53,7 @@ from di.services.modeler.compile import FlowVersion, compile_flow
 from di.services.modeler.flow import Flow
 from di.services.modeler.pack import Pack, load_pack, pack_keys
 from di.services.modeler.templates import template_of_pack
-from di.services.replay import history, measures
+from di.services.replay import history, measures, sample
 from di.services.replay import run as replay_run
 
 log = logging.getLogger(__name__)
@@ -68,6 +73,10 @@ _BASE = {"pack": {"req": True, "t": "string"}, "org_unit_id": {"req": True, "t":
 _declare("replay.import", "Import a history batch", "import history",
          "Check a CSV of past decisions against a pack and store it: good rows are kept, bad rows are held with a reason.",
          "act", {**_BASE, "csv": {"req": True, "t": "string"}, "batch_id": {"t": "number"}})  # fmt: skip
+_declare("replay.importSample", "Import a sample history batch", "import sample history",
+         "Import the pack's synthetic sample history (200 rows unless said, at most 500) as a new history batch, checked "
+         "like any import.",
+         "act", {**_BASE, "rows": {"t": "number"}})  # fmt: skip
 _declare("replay.importDemand", "Import demand at the time", "import demand",
          "Check a CSV of demand windows (renewal, requisition, bid or repair slot: demand_id, route, opens_at, closes_at, value, "
          "capacity) and store it with a history batch: good rows are kept, bad rows are held with a reason.",
@@ -148,6 +157,42 @@ def import_batch(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     repo.add_items(s, bid, held, held=True, start=start)
     batch = repo.refresh(s, bid)
     return {**batch.view(), "log": f"Imported {len(ok) + len(held)} history rows for {pack.key}: {len(held)} held"}
+
+
+SAMPLE_ROWS, MAX_SAMPLE_ROWS = 200, 500
+
+
+def _sample_rows(i: dict[str, Any]) -> int | None:
+    """How many sample rows are asked for (200 when not said); None when it is not a whole number from 1 to 500."""
+    n = i.get("rows")
+    if n is None:
+        return SAMPLE_ROWS
+    ok = isinstance(n, int | float) and not isinstance(n, bool) and int(n) == n and 1 <= n <= MAX_SAMPLE_ROWS
+    return int(n) if ok else None
+
+
+def _with_sample(i: dict[str, Any]) -> dict[str, Any]:
+    """The input of `replay.import` for the pack's sample history (synthetic and deterministic: `sample.make_csv`)."""
+    rows = _sample_rows(i) or SAMPLE_ROWS
+    return {"pack": i["pack"], "org_unit_id": i["org_unit_id"], "csv": sample.make_csv(i["pack"], rows)}
+
+
+@guard("replay.importSample")
+def import_sample_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:
+    if ctx.actor.role == "Executive":
+        return "out_of_scope", EXECUTIVE
+    pack = _reach(i, ctx)
+    if not isinstance(pack, Pack):
+        return pack
+    if _sample_rows(i) is None:
+        return "validation_error", f"The sample is a whole number of rows from 1 to {MAX_SAMPLE_ROWS}."
+    return import_guard(_with_sample(i), ctx)
+
+
+@implement("replay.importSample")
+def import_sample(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """A new batch of the pack's sample history, through `replay.import`'s own code: the same checks, rows and answer."""
+    return import_batch(_with_sample(i), ctx)
 
 
 def _demand_batch(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | tuple[dict[str, Any], Pack]:

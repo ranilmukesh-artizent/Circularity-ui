@@ -101,18 +101,22 @@ def test_reference_has_no_state():
 def with_org_section(acct: str, groups: list[dict]) -> list[dict]:
     """The demo's menu, with Access's Organisation section for whoever may see it (plan 8 MVP-1.5: a deliberate
     change, decision-log "Org units replace the fixed tenants"; policy.EXTRA_SECTIONS)."""
-    groups = with_mywork(with_agents(acct, with_modeler(acct, groups)))
+    groups = with_setup(acct, with_agents(acct, with_modeler(acct, groups)))
     if not policy.can_page(policy.account(acct), "access", "orgs"):
         return groups
     kid = {"id": "orgs", "label": "Organisation", "sub": "Groups, companies, sites and customers", "href": "#/access/orgs"}
     return [g | {"kids": [*g["kids"], kid]} if g["id"] == "access" else g for g in groups]
 
 
-def with_mywork(groups: list[dict]) -> list[dict]:
-    """My work (plan 9 P9-1.8, a new page for every role: policy.EXTRA_PAGES) before the first group."""
-    g = {"id": "mywork", "label": "My work", "sub": "Exceptions, approvals and questions for you", "icon": "inbox",
-         "section": "", "leaf": True, "href": "#/mywork", "kids": []}  # fmt: skip
-    return [g, *groups]
+def with_setup(acct: str, groups: list[dict]) -> list[dict]:
+    """Set up (28 Nov 2026, decision log: a new page, policy.EXTRA_PAGES) before the Command Center, so after Home.
+    My work is no longer a menu entry: My Tasks is the one page."""
+    if not policy.can_page(policy.account(acct), "setup"):
+        return groups
+    g = {"id": "setup", "label": "Set up", "sub": "Describe the business, connect systems, publish", "icon": "flag",
+         "section": "", "leaf": True, "href": "#/setup", "kids": []}  # fmt: skip
+    at = next((i for i, x in enumerate(groups) if x["id"] == "command"), len(groups))
+    return [*groups[:at], g, *groups[at:]]
 
 
 def with_modeler(acct: str, groups: list[dict]) -> list[dict]:

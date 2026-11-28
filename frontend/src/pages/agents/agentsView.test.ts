@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentRow, AgentRun, AgentsScreen } from '../../api/agents';
-import { NEVER_ALONE, STAGE_AUTONOMY, agentGroups, agentSummary, lastRunOf, plainTool } from './agentsView';
+import { NEVER_ALONE, STAGE_AUTONOMY, agentGroups, agentSummary, lastRunOf, plainTool, setupLines } from './agentsView';
 
 const row = (id: string, name: string, over: Partial<AgentRow> = {}): AgentRow => ({
   id, name, kind: 'internal', autonomy: 'act', enabled: true, org_scope: [], tools: [], created_by: null, ...over,
@@ -53,5 +53,23 @@ describe('Agents page: the business view (UI audit gaps 14 and 21)', () => {
     expect(agentSummary(row('stage-intake', 'Intake agent'))).toMatch(/what arrived/);
     expect(agentSummary(row('ext-x', 'Copilot', { kind: 'external', tools: ['a', 'b'] }))).toBe('An outside agent with 2 tools.');
     expect(plainTool('get_case_evidence')).toBe('get case evidence');
+  });
+});
+
+describe('Agents page: what a setup changed (28 Nov 2026)', () => {
+  const pack = screen.packs[0].stages;
+  it('lists only the stages a setup runs at another level', () => {
+    const lines = setupLines(pack, [
+      { composition_id: 7, org_unit_id: 'customer_a', status: 'published', stages: [{ ...pack[0], autonomy: 'recommend' }, pack[1]] },
+      { composition_id: 5, org_unit_id: 'workspace', status: 'approved', stages: pack },
+    ]);
+    expect(lines).toEqual([
+      { id: 7, org: 'customer_a', live: true, changes: [{ stage: 'Lease end', from: 'alone', to: 'recommend' }] },
+      { id: 5, org: 'workspace', live: false, changes: [] },
+    ]);
+  });
+  it('a pack without setups has none, and the group carries them', () => {
+    expect(setupLines(pack)).toEqual([]);
+    expect(agentGroups(screen)[0].setups).toEqual([]);
   });
 });

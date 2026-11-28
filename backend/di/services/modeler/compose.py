@@ -4,6 +4,7 @@
     blocking(steps, ops, pack) -> list[str]  what stops a submit, in plain words; empty when the composition may go
     snapshot(row) -> dict                    what a `composition_version` keeps
     stage_settings(steps) -> list[dict]      the stage-agent settings the agents step holds
+    with_stage_settings(pack, settings)      the pack with those settings on its stages (what the stage chain reads)
 
 A composition is one approvable object: the change set (typed overlay operations, I-4), the mapping rows the owner accepted
 (`steps.mapping.fields`) and the stage-agent settings (`steps.agents.settings`: stage, autonomy, confidence threshold). The five
@@ -33,6 +34,26 @@ def new_steps() -> dict[str, dict[str, Any]]:
 
 def stage_settings(steps: Mapping[str, Any]) -> list[dict[str, Any]]:
     return list((steps.get("agents") or {}).get("settings") or [])
+
+
+def with_stage_settings(pack: Pack, settings: Sequence[Mapping[str, Any]]) -> Pack:
+    """The pack with a composition's stage settings on its stages (agent label, autonomy and confidence threshold): what the
+    stage chain reads (`chain.stage_defs`). A stage the settings do not name is as the pack has it. Pure."""
+    by = {str(x["stage"]): x for x in settings}
+
+    def threshold(x: Mapping[str, Any], own: float) -> float:
+        t = x.get("threshold")
+        return float(t) if isinstance(t, int | float) and not isinstance(t, bool) else own
+
+    stages = [
+        st.model_copy(update={
+            "agent": by[st.key].get("agent_id") or st.agent,
+            "autonomy": by[st.key].get("autonomy") or st.autonomy,
+            "confidence": threshold(by[st.key], st.confidence),
+        }) if st.key in by else st
+        for st in pack.stages
+    ]  # fmt: skip
+    return pack.model_copy(update={"stages": stages})
 
 
 def _threshold_problems(steps: Mapping[str, Any]) -> list[str]:

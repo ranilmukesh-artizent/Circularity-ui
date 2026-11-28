@@ -1,7 +1,8 @@
 import { updateAgent, type AgentsScreen } from '../../api/agents';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
-import { NEVER_ALONE, STAGE_AUTONOMY, STAGE_AUTONOMY_NOTE, agentGroups, type AgentLine, type StageLevel } from './agentsView';
+import { orgName, setupPath } from '../setup/setupView';
+import { NEVER_ALONE, STAGE_AUTONOMY, STAGE_AUTONOMY_NOTE, agentGroups, type AgentLine, type SetupLine, type StageLevel } from './agentsView';
 
 const LEVEL_CHIP = { recommend: 'line', limits: 'y', alone: 'ok' } as const;
 const when = (iso: string) => iso.slice(0, 16).replace('T', ' ');
@@ -26,10 +27,39 @@ function Row({ l, manage, busy, toggle }: { l: AgentLine; manage: boolean; busy:
   );
 }
 
+/** What the setups of a pack changed: one line a setup, with the stages it runs at another level and the way to its agents step. */
+function Setups({ list }: { list: SetupLine[] }) {
+  return (
+    <div className="ag-setups">
+      <h4>Changed in Set up</h4>
+      <ul>
+        {list.map((u) => (
+          <li key={u.id} data-setup={u.id}>
+            <span className="ag-setup-who">
+              <b>{orgName(u.org)}</b>
+              <span className="note">{u.live ? 'Live' : 'Approved, not live yet'}</span>
+            </span>
+            <span className="ag-setup-what">
+              {u.changes.length === 0
+                ? <span className="note">Runs every stage as the pack sets it.</span>
+                : u.changes.map((c) => (
+                    <span key={c.stage} className="ag-change">
+                      {c.stage}: <s>{STAGE_AUTONOMY[c.from]}</s> <b>{STAGE_AUTONOMY[c.to]}</b>
+                    </span>
+                  ))}
+            </span>
+            <a className="lnk" href={'#' + setupPath({ compose: u.id, step: 'agents' })}>Open in Set up</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * The business view of the Agents page (UI audit gaps 14 and 21): the agents under their pack, what each does, the stage it
  * runs, how alone it may act, whether it is on and when it last ran. No model id or tool id. A stage's autonomy is the pack's
- * (set in Compose, with a checker); pausing an agent is the admin's switch.
+ * (set in Set up's agents step, with a checker; what each setup changed is listed under its pack); pausing an agent is the admin's switch.
  */
 export function AgentsBusiness({ s }: { s: AgentsScreen }) {
   const action = useAction();
@@ -56,7 +86,7 @@ export function AgentsBusiness({ s }: { s: AgentsScreen }) {
             ))}
           </dl>
           <p className="ag-never"><b>Always a person:</b> {NEVER_ALONE}</p>
-          <p className="note">Each pack sets the level of its stages in <a href="#/modeler">Compose, in the Modeler</a>; a second person approves the change.</p>
+          <p className="note">A setup changes the level of a stage in <a href="#/setup">Set up, under Set agents</a>; a second person approves the change before it runs.</p>
         </div>
       </div>
       {groups.map((g, k) => (
@@ -66,7 +96,7 @@ export function AgentsBusiness({ s }: { s: AgentsScreen }) {
             <span className="note">{g.notSetUp ? 'Not set up' : `${g.rows.length} ${g.rows.length === 1 ? 'agent' : 'agents'}${g.key === 'platform' || g.key === 'outside' ? ' · ' + g.note : ''}`}</span>
           </summary>
           {g.notSetUp ? (
-            <div className="panel"><div className="pb"><div className="empty"><b>Not set up</b>No stage agents for this pack yet. <a href="#/modeler">Set it up in the Modeler</a>.</div></div></div>
+            <div className="panel"><div className="pb"><div className="empty"><b>Not set up</b>No stage agents for this pack yet. <a href={'#' + setupPath({ pack: g.key, fresh: true })}>Start a setup from this pack</a>.</div></div></div>
           ) : (
             <div className="panel">
               <div className="tw">
@@ -75,6 +105,7 @@ export function AgentsBusiness({ s }: { s: AgentsScreen }) {
                   <tbody>{g.rows.map((l) => <Row key={l.agent.id} l={l} manage={s.can.manage} busy={action.pending} toggle={toggle} />)}</tbody>
                 </table>
               </div>
+              {g.setups && g.setups.length > 0 && <Setups list={g.setups} />}
             </div>
           )}
         </details>

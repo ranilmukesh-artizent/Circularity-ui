@@ -226,13 +226,12 @@ await step('1 Connect the seven used-car systems, sync them and open the cars as
 });
 
 // ---------------------------------------------------------------- 2
-const compose = (p) => p.locator('section[aria-label="Compose"]');
+const compose = (p) => p.locator('section.sup-step'); // 28 Nov 2026: the Set up page's step panel (was the Compose section)
 async function startCompose(p, typed) {
-  await open(p, MODELER, '.mdl-tabs');
-  await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // #/setup, on the description form
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
-  await describeInAssistant(p, typed === undefined ? { title: 'Lease returns to best channel', timeout: UI } : { typed, timeout: UI });
+  await describeInAssistant(p, typed === undefined ? { title: 'Lease returns to best channel', template: 'used_cars', timeout: UI } : { typed, timeout: UI });
   await openInSetup(p, UI);
   await compose(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
 }
@@ -244,7 +243,7 @@ await step('2 Compose: the sample prompt, one explicit control, one question, th
   if (!/\b1 explicit control\b/.test(t)) throw new Error('the reading does not say "1 explicit control": ' + (t.match(/\d+ explicit controls?/)?.[0] || 'no such line'));
   const q = compose(p).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
-  COMP = Number((await compose(p).locator('.cmp-state').innerText().catch(() => '')).match(/composition (\d+) is/)?.[1]) || 0;
+  COMP = Number((await compose(p).locator('.sup-state').innerText().catch(() => '')).match(/Setup (\d+),/)?.[1]) || 0;
   await q.getByRole('button', { name: 'Yes, if repair is under the recon limit', exact: true }).click();
   await until(async () => /hail damage under the recon limit stays retail-eligible/.test(await compose(p).innerText()), 'the draft does not show "hail damage under the recon limit stays retail-eligible"', UI, p);
   return `composition ${COMP || '?'}`;
@@ -367,10 +366,9 @@ await step('9 The ageing alert, the analytics question and the modelled replay f
   }
 
   // the replay figures, on the Compose publish step of the composition of step 2
-  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
-  if (!COMP) await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, compose: COMP || null });
   await compose(p).waitFor();
-  const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  const tab = p.locator('.rl li[data-stop="publish"] a.rl-stop');
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();

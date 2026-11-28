@@ -55,7 +55,8 @@ export interface StreamEvent {
   id: string; dir: 'in' | 'out'; type: string; caseId: string | null; decisionId: string | null; approval: string | null; ver: number | null;
   dest: string; ack: string; key: string; note?: string; ts: Date | string | number; retries?: number;
 }
-export interface Table { n: string; cl: string; desc: string; cols: [string, string][]; rows: string; x: number; y: number }
+/** `resource` and `key` are set on the tables discovered from the records a source landed (one table per resource). */
+export interface Table { n: string; cl: string; desc: string; cols: [string, string][]; rows: string; x: number; y: number; resource?: string; key?: string; auto?: boolean }
 export interface TableModel { cl: [string, string][]; t: Table[]; fk: [string, string, string][]; ww?: number; wh?: number }
 export interface HourBucket { ok: number; warn: number; bad: number }
 export interface Totals { ok: number; warn: number; bad: number; run: number; pct: number }
@@ -232,6 +233,14 @@ export function srcModels(s: Source): Record<string, MapRow[]> {
 export function tableModel(id: string): TableModel | null {
   return (tablesAnswer()?.models ?? mapAnswer()?.table_models)?.[id] ?? null;
 }
+/** May this account read the tables a source has (the Tables or Data Mapping section of the Connection Fabric)? */
+export const canReadTables = (): boolean => may('tables', 'map');
+/** The tables one source has landed, for a picker; none when the account may not read them or the read is refused. */
+export function sourceTables(id: string): Table[] {
+  return canReadTables() ? orNone(() => tableModel(id))?.t ?? [] : [];
+}
+/** Read the tables again (after a sample was fetched). */
+export const reloadTables = (): void => invalidate();
 export function syncHistory(s: Source): { ts: number; ok: boolean; rows: number; dur: string }[] {
   return detail(s.id)?.sync_history ?? [];
 }
@@ -368,7 +377,9 @@ export type MappingChoice = 'accepted' | 'replaced' | 'accepted_with_rule' | 'no
 export interface MappingDecision {
   id: number; decision: MappingChoice | 'asked_owner'; target: string | null; rule: string | null; owner: string | null; reason: string | null;
 }
-export interface MappingSuggestions { source_id: string; rows: MappingSuggestion[]; gaps: string[]; waiting: number; fields: string[]; by_model: boolean }
+/** What the model did for this run: fields it was asked about and answered, seconds spent, and why it stopped early (null: it did not). */
+export interface MappingModelNote { asked: number; answered: number; fields: number; seconds: number; stopped: 'budget' | 'no_model' | null }
+export interface MappingSuggestions { source_id: string; rows: MappingSuggestion[]; gaps: string[]; waiting: number; fields: string[]; by_model: boolean; model?: MappingModelNote }
 export const suggestFieldMappings = (sourceId: string, resource?: string) =>
   invoke<MappingSuggestions>('mapping.suggest', { source_id: sourceId, ...(resource ? { resource } : {}) });
 /** One person's choice for a suggested field (mapping.decide, P9-8.4): saves nothing until `applyMappings`. `proposed` is the

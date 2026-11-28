@@ -182,11 +182,31 @@ type Made = ActionResult<Composition & { log?: string }>;
 /** The systems a composition needs, each joined with the org's sources and the adapter registry. */
 export const useComposeSystems = (id: number): ComposeSystem[] => read<{ systems: ComposeSystem[] }>('compose.systems', { id }).systems;
 
+/** A template pack as Set up's picker shows it. */
+export interface PackCard {
+  key: string;
+  name: string;
+  industry: string;
+  /** what one item is called: "tool", "device", "vehicle" */
+  unit: string;
+  version: string;
+  stages: string[];
+  /** up to six asset classes it handles */
+  classes: string[];
+  sample: string;
+}
+
+/** Every template pack a setup can start from (a read, cached). */
+export const packCards = (): PackCard[] => read<{ packs: PackCard[] }>('compose.packs').packs;
+
 /** The pack's sample descriptions (the Describe step's buttons). */
 export const packPrompts = (pack: string): string[] => read<{ prompts: string[] }>('compose.prompts', { pack_key: pack }).prompts;
 
 /** The composition with its steps and change set (a read, cached per id). */
 export const useComposition = (id: number): Composition => read<Composition>('compose.get', { id });
+
+/** One composition, asked for once (no cache, never throws): a page that was given an id the list does not have yet. */
+export const fetchComposition = (id: number): Promise<ActionResult<Composition>> => invoke('compose.get', { id }) as Promise<ActionResult<Composition>>;
 
 /** The compositions of an org unit, or of every unit the person sees. */
 export const compositions = (org?: string): Composition[] =>
@@ -274,9 +294,18 @@ export interface StageRow {
   limits?: StageLimits | null;
 }
 
-/** The stage rows the step shows: the pack's stages with what was saved. */
+/** A registered agent that runs a stage (the Agents page's registry; its own autonomy there is read, propose or act). */
+export interface StageRunner {
+  id: string;
+  name: string | null;
+  enabled: boolean;
+  autonomy: string | null;
+}
+
+/** The stage rows the step shows: the pack's stages with what was saved, and the registered agents that run each. */
 export interface StageView extends StageRow {
   label: string;
+  runs_as?: StageRunner[];
 }
 
 export interface PublishReport {

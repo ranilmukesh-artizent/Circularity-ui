@@ -1,5 +1,6 @@
-"""P9-1.8 (G 2.11): My work is the menu's first entry for every role, with its own badge: the length of
-process.items_for for the account. Home's `tasks` count and the golden menu are unchanged (test_screens_reference)."""
+"""P9-1.8 (G 2.11): the `mywork` badge is the length of process.items_for for the account. 28 Nov 2026 (decision log):
+My work left the menu (My Tasks is the one page; `mine` is its count, the list without data conflicts) and Set up is the
+entry after Home for who makes or approves a composition. Home's `tasks` count is unchanged (test_screens_reference)."""
 
 import pytest
 from sqlalchemy import text
@@ -12,8 +13,9 @@ from tests.helpers import client, h
 ACCOUNTS = [
     "admin", "approver", "developer", "engineer", "executive", "finance", "planner-a", "planner-b", "planner-c", "wm-1", "wm-2",
 ]  # fmt: skip
-ENTRY = {"id": "mywork", "label": "My work", "sub": "Exceptions, approvals and questions for you", "icon": "inbox",
-         "section": "", "leaf": True, "href": "#/mywork", "kids": []}  # fmt: skip
+ENTRY = {"id": "setup", "label": "Set up", "sub": "Describe the business, connect systems, publish", "icon": "flag",
+         "section": "", "leaf": True, "href": "#/setup", "kids": []}  # fmt: skip
+SETS_UP = {"admin", "approver", "planner-a", "planner-b", "planner-c"}
 
 
 def _clean() -> None:
@@ -32,9 +34,14 @@ def fresh():
 
 
 @pytest.mark.parametrize("acct", ACCOUNTS)
-def test_nav_lists_mywork_for_every_role(acct):
-    groups = client.get("/api/screens/nav", headers=h(acct)).json()["groups"]
-    assert groups[0] == ENTRY and groups[1]["id"] == "home"
+def test_nav_has_one_tasks_entry_and_set_up_after_home(acct):
+    out = client.get("/api/screens/nav", headers=h(acct)).json()
+    groups = out["groups"]
+    ids = [g["id"] for g in groups]
+    assert ids[0] == "home" and "mywork" not in ids and "tasks" in ids
+    assert (groups[1] == ENTRY) == (acct in SETS_UP) and ("setup" in ids) == (acct in SETS_UP)
+    items = client.get("/api/screens/mywork", headers=h(acct)).json()["items"]
+    assert out["badges"]["mine"] == sum(1 for i in items if i["kind"] != "conflict")
 
 
 def _open(**kw) -> None:

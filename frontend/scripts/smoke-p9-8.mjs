@@ -46,7 +46,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describeInAssistant, openInSetup, openSetupTab } from './a10-setup.mjs';
+import { describeInAssistant, openInSetup, openSetupStep, openSetupTab } from './a10-setup.mjs';
 
 const base = process.argv[2] || `http://localhost:${process.env.WEB_PORT || 5173}`;
 const SIM = process.env.SIM_URL || `http://localhost:${process.env.SIM_PORT || 8100}`;
@@ -138,19 +138,19 @@ async function step(name, fn) {
 }
 
 // ---------------------------------------------------------------- Compose helpers
-const panel = (p) => p.locator('section[aria-label="Compose"]');
-const stepTab = (p, name) => panel(p).getByRole('tab', { name, exact: true });
+// 28 Nov 2026: Compose is the Set up page (#/setup); its steps are the stops of the route line, the step is `section.sup-step`
+const panel = (p) => p.locator('section.sup-step');
 async function openCompose(p, id) {
-  await open(p, `${MODELER}${id ? `&compose=${id}` : ''}`, '.mdl-tabs');
-  if (!id) await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, compose: id || null });
   await panel(p).waitFor();
 }
 let COMP = 0; // the composition id
 async function composeTab(p, name) {
   await openCompose(p, COMP);
-  await stepTab(p, name).click();
+  await openSetupStep(p, name); // 'Adapter mapping' is the stop "Connect systems" (mapping)
+  await panel(p).getByRole('heading', { name: new RegExp({ Describe: 'Describe your business', 'Adapter mapping': 'Connect your systems', Agents: 'Set your agents', Approve: 'Approve', Publish: 'Publish' }[name] ?? name) }).first().waitFor();
 }
-const systemRow = (p) => panel(p).locator('table[aria-label="Systems"] tbody tr', { hasText: LOG });
+const systemRow = (p) => panel(p).locator('section.sys', { hasText: LOG }); // one section a system (28 Nov 2026)
 const markDone = async (p) => {
   const b = panel(p).getByRole('button', { name: 'Mark done', exact: true });
   await b.waitFor();
@@ -158,7 +158,7 @@ const markDone = async (p) => {
   await b.click();
   await panel(p).getByRole('button', { name: 'Done', exact: true }).waitFor();
 };
-const stateLine = (p) => panel(p).locator('.cmp-state').innerText();
+const stateLine = (p) => panel(p).locator('.sup-state').innerText();
 
 /** A well-formed check without a DOM: tags nest and close, and there is one root. */
 function wellFormed(xml) {
@@ -221,7 +221,8 @@ async function repairLogDocument() {
 // ---------------------------------------------------------------- 1
 await step('1 Compose: sample prompt 1, the reading, the pack and one question', async () => {
   const p = await as('planner-a');
-  await openCompose(p, null);
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // the description form
+  await panel(p).waitFor();
   await describeInAssistant(p); // plan 10: the Describe step is Ask Circularity's Set up mode; sample prompt 1
   await openInSetup(p);
   await panel(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
@@ -233,7 +234,7 @@ await step('1 Compose: sample prompt 1, the reading, the pack and one question',
   });
   const q = panel(p).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
-  COMP = Number((await stateLine(p)).match(/composition (\d+) is/)?.[1]);
+  COMP = Number((await stateLine(p)).match(/Setup (\d+),/)?.[1]);
   if (!COMP) throw new Error('no composition id in the state line');
   await q.locator('button').first().click(); // the first option (Skip is the last)
   await until(async () => (await panel(p).locator('.cmp-question').count()) === 0, 'the question stayed after the answer', UI, p);
@@ -326,8 +327,7 @@ await step('3 Sample, suggestions with the five choices, the owner answers, mapp
 
   const admin = await as('admin');
   await composeTab(admin, 'Adapter mapping');
-  await systemRow(admin).getByRole('button', { name: 'Review mappings' }).click();
-  await panel(admin).getByRole('button', { name: 'Suggest mappings' }).click();
+  await systemRow(admin).getByRole('button', { name: /^Suggest (canonical mappings|again)$/ }).click();
   const table = panel(admin).locator('table[aria-label="Suggested field mappings"]');
   await table.waitFor({ timeout: 60000 });
   const rows = table.locator('tbody tr');
@@ -369,8 +369,7 @@ await step('3 Sample, suggestions with the five choices, the owner answers, mapp
   await must(eng, 'mapping.answerOwner', { decision_id: asked.decision.id, decision: 'accepted', target: sug.fields[0] }); // action: My work has no Answer button
 
   await composeTab(admin, 'Adapter mapping');
-  await systemRow(admin).getByRole('button', { name: 'Review mappings' }).click();
-  await panel(admin).getByRole('button', { name: 'Suggest mappings' }).click();
+  await systemRow(admin).getByRole('button', { name: /^Suggest (canonical mappings|again)$/ }).click();
   await panel(admin).locator('table[aria-label="Suggested field mappings"]').waitFor({ timeout: 60000 });
   const save = panel(admin).getByRole('button', { name: 'Save mapping' });
   await until(async () => (await save.isEnabled()) || null, 'Save mapping stayed off after the owner answered', UI, admin);
@@ -419,7 +418,7 @@ await step('4 Test run: reached and stopped counts by stage', async () => {
 await step('5 Agents: Condition on Recommend only at 80 %, submitted', async () => {
   const p = await as('planner-a');
   await composeTab(p, 'Agents');
-  await panel(p).locator('select[aria-label="Autonomy of Condition"]').selectOption({ label: 'Recommend only' });
+  await panel(p).getByRole('radiogroup', { name: 'Autonomy of Condition' }).getByRole('radio', { name: 'Recommend only' }).check({ force: true });
   await panel(p).getByLabel('Confidence threshold').evaluate((el) => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '80'); // a range input: set it as a person drags it
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -428,7 +427,7 @@ await step('5 Agents: Condition on Recommend only at 80 %, submitted', async () 
   await panel(p).getByRole('button', { name: 'Save settings' }).click();
   await waitText(p, /Saved the agent settings/, 'the settings were not saved');
   await markDone(p);
-  await stepTab(p, 'Approve').click();
+  await openSetupStep(p, 'Approve');
   await panel(p).getByRole('button', { name: 'Submit for approval' }).click();
   await waitText(p, /Submitted for approval/, 'the composition was not submitted');
   return 'submitted';
@@ -448,13 +447,13 @@ await step('6 Send back with a pinned note, resubmit, maker-checker, approve', a
   const p = await as('planner-a');
   await composeTab(p, 'Approve');
   await until(async () => (await panel(p).locator('[role=note]').filter({ hasText: NOTE }).count()) > 0, 'planner-a does not see the pinned note', UI, p);
-  await stepTab(p, 'Agents').click();
+  await openSetupStep(p, 'Agents');
   if (!/About: condition/.test(await panel(p).innerText())) throw new Error('the note is not pinned to the condition node');
-  await panel(p).locator('select[aria-label="Autonomy of Condition"]').selectOption({ label: 'Act within limits' });
+  await panel(p).getByRole('radiogroup', { name: 'Autonomy of Condition' }).getByRole('radio', { name: 'Act within limits' }).check({ force: true });
   await panel(p).getByRole('button', { name: 'Save settings' }).click();
   await waitText(p, /Saved the agent settings/, 'the changed settings were not saved');
   await markDone(p);
-  await stepTab(p, 'Approve').click();
+  await openSetupStep(p, 'Approve');
   await panel(p).getByRole('button', { name: 'Submit for approval' }).click();
   await waitText(p, /Submitted for approval/, 'planner-a could not resubmit');
   await until(async () => (await panel(p).getByRole('button', { name: 'Approve', exact: true }).count()) > 0, 'no Approve button for the maker to see off', UI, p);

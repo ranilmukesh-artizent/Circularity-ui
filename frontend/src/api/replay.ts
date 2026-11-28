@@ -38,6 +38,10 @@ export interface BatchView extends Batch {
 export const importHistory = (pack: string, org: string, csvText: string, batchId?: number): Promise<ActionResult<ImportedBatch>> =>
   invoke<ImportedBatch>('replay.import', { pack, org_unit_id: org, csv: csvText, ...(batchId === undefined ? {} : { batch_id: batchId }) });
 
+/** Import the pack's synthetic sample history (every value invented), so a replay can run before real history is loaded. */
+export const importSampleHistory = (pack: string, org: string, rows?: number): Promise<ActionResult<ImportedBatch>> =>
+  invoke<ImportedBatch>('replay.importSample', { pack, org_unit_id: org, ...(rows === undefined ? {} : { rows }) });
+
 export interface HeldDemand {
   n: number;
   demand_id: string;

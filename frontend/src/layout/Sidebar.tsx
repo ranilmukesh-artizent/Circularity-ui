@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { logos, navBadge, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
+import { logos, navBadges, navCounts, navigation, type NavGroup } from '../api/nav';
 import { currentAccount, roleAvatar, signInEmail } from '../api/session';
 import { Icon } from '../components/Icon';
 import { collapseOnModeler, keepOpen, keptOpen } from './sidebarRail';
@@ -155,12 +155,11 @@ function Group({ g, active, open, onToggle, sectionKey, counts, badges }: {
   counts: { tasks: number; alerts: number }; badges: ReturnType<typeof navBadges>;
 }) {
   const n =
-    g.id === 'tasks' ? counts.tasks
+    g.id === 'tasks' ? badges.mine ?? counts.tasks // what waits on the person, without the data conflicts (one page, one count)
       : g.id === 'alerts' ? counts.alerts
         : g.id === 'product' ? badges.awaiting
           : g.id === 'command' ? badges.inbox
             : g.id === 'integration' ? badges.integration
-              : g.id === 'mywork' ? navBadge('mywork')
               : 0;
   const cnt = n ? <span className={'cnt' + (g.id === 'alerts' ? ' bad' : '')}>{n}</span> : null;
   return (

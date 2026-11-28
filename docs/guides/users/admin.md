@@ -82,7 +82,7 @@ company that signs people in from its own directory (OpenID Connect) sets the `D
   a given account, with its groups, would see and be allowed to do, without signing in as them.
 
 **Adapter registry and system owners.** A connection made from the registry starts in the test environment and read
-only. As Admin you hold the right to answer for any system owner: in **My work**, a request for production access or for
+only. As Admin you hold the right to answer for any system owner: in **My Tasks**, a request for production access or for
 write-back shows the system, the access asked for and the requester's note; **Approve** or **Decline** with a reason.
 Nobody approves their own request. A person other than the drafter releases a new connector entry
 ([developer.md](developer.md)).

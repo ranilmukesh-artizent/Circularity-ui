@@ -9,7 +9,7 @@ import { view } from './view';
 export interface NavSection { id: string; label: string; sub: string; href: string; badge?: string }
 export interface NavGroup { id: string; label: string; sub: string; icon: string; section: string; leaf: boolean; href: string; kids: NavSection[] }
 
-interface Badges { awaiting: number; inbox: number; integration: number; mywork?: number; sections: Record<string, number> }
+interface Badges { awaiting: number; inbox: number; integration: number; mywork?: number; mine?: number; sections: Record<string, number> }
 interface NavAnswer { groups: NavGroup[]; badges: Badges; tasks: number }
 
 /** GET /api/screens/nav with the view settings it depends on. */

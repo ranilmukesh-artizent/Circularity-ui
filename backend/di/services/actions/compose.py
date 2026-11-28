@@ -10,6 +10,8 @@ mapping rows the owner accepted and the stage-agent settings, with maker-checker
     compose.systems        read    {id}                             the systems the change set names, each joined with the
                                                                     org's sources and the adapter registry (P9-8.18)
     compose.prompts        read    {pack_key}                       the pack's sample prompts, for the Describe step
+    compose.packs          read    {}                               every pack with its industry, unit, stages and one sample
+                                                                    (Set up's template picker)
     compose.testRun        read    {id, limit?, batch_id?}          (P9-8.19) past items through the draft: where
                                                                     cases stopped, by stage and reason; writes nothing
     compose.submit         act     {id}                             refused with the blocking list; else a snapshot
@@ -30,15 +32,23 @@ steps (drafts). Approve runs inside the action's one transaction: the overlay go
 handlers (`overlays.approve`; this actor the checker, the composition's maker the overlay's maker), then the accepted mapping
 rows become a new mapping version per source (`mapping.save_version`), then the stage-agent settings are validated and kept in
 the approved snapshot; any failure undoes all of it. Mapping rows come from `steps.mapping.fields` (`{source_id, row, state}`,
-filled by P9-8.18); the stage settings from `steps.agents.settings` (`{stage, autonomy, threshold}`). The stage chain reads its
-autonomy and threshold from the pack's stages today, so the settings are recorded and range-checked here and applied when the
-`stageAgent.set` operation (I-13, F section 8c) exists.
+filled by P9-8.18); the stage settings from `steps.agents.settings` (`{stage, autonomy, threshold}`). Since 28 Nov 2026 the
+stage chain runs with them: for a case of the pack owned by exactly the composition's org unit, the runtime reads the settings
+of the newest approved or published composition (`repositories.compositions.approved_stage_settings`) and lays them on the
+pack's stages (`chain.stage_defs(pack, settings)`: autonomy, threshold, and the limits of a stage set to act within limits).
+With no such composition the chain reads the pack alone, as before.
+
+The agents step and the agent registry (28 Nov 2026): a stage row's `agent_id` is a label (the pack's "Intake", "Condition" …),
+not a registry id. The registry agents that run a pack stage are fixed by the chain (`chain.agents_of`: `receive` is
+stage-lease, stage-return, stage-transit and stage-intake); `compose.history` lists them per stage as `runs_as`
+(`{id, name, enabled, autonomy}`). A composition never writes the registry: an agent's registry autonomy (read, propose, act)
+is global and Admin's alone (`agent.update`); the stage autonomy set here (recommend, limits, alone) is per pack and org unit.
 
 P9-8.20: the agents step is written by `compose.setStageAgents` into `steps.agents.settings` (stage, agent_id, autonomy, limits,
 threshold) and, as typed records for the audit and the approver's view, into `change_set.stage_ops` (`stageAgent.set` and one
 `param.set`): not into `change_set.ops`, which stay the overlay's five operations (I-4; the overlay validator and `parse_ops` do
-not know the stage operations). `with_stage_settings` applies the settings to a pack's stages (pure) for whoever builds the stage
-chain from a published composition. Publishing is a person's commit on an approved composition; it never writes rollout rows
+not know the stage operations). `with_stage_settings` (`di.services.modeler.compose`, re-exported here) applies the settings to a
+pack's stages (pure) for the stage chain. Publishing is a person's commit on an approved composition; it never writes rollout rows
 itself: `rollout.startCanary` does, run through `invoke` as the same person, so its own maker-checker and replay checks apply.
 The one wording, the summary of the replay report, goes through `stop_explainer` (AgentLoop) with `stop_reasons.check_text`.
 """
@@ -68,6 +78,8 @@ from di.services.actions import rollout as rollout_actions
 from di.services.actions.modeler import _boundary, _org_ok
 from di.services.actions.pipeline import CallContext, invoke
 from di.services.actions.registry import ACTIONS, ActionDef, ActionError, Risk, guard, implement
+from di.services.agents import chain
+from di.services.agents import registry as agent_registry
 from di.services.agents.config_agent import MAX_TEXT, ChangeSet, ChangeSetError, draft_change_set, read_text
 from di.services.agents.playbooks import pack_author, stop_explainer
 from di.services.cases.decide import Decision, decide_case
@@ -108,6 +120,8 @@ _DECLARED: tuple[tuple[str, str, str, Risk, dict[str, dict[str, Any]], str | Non
      "read", _ID, None),
     ("compose.prompts", "Read a pack's sample prompts", "The sample descriptions a pack offers to start a composition.", "read",
      {"pack_key": _STR}, None),
+    ("compose.packs", "List the template packs", "Every template pack a setup can start from, with what it covers.", "read",
+     {}, None),
     ("compose.testRun", "Test run a composition", "Put past items through the draft and see where cases stopped.", "read",
      {**_ID, "limit": {"t": "number"}, "batch_id": {"t": "number"}}, _MANAGE),
     ("compose.submit", "Submit a composition", "Send a finished composition to a different person for approval.", "act",
@@ -342,6 +356,25 @@ def prompts(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:  # noqa: ARG
     return {"pack_key": i["pack_key"], "prompts": [p for p in load_pack(i["pack_key"]).prompts if p]}
 
 
+@guard("compose.packs")
+def packs_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] | None:  # noqa: ARG001
+    return None if _may_read(ctx) else ("out_of_scope", f"The {ctx.actor.role} view cannot read compositions.")
+
+
+@implement("compose.packs")
+def packs(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:  # noqa: ARG001 - a read of the pack files
+    """The template picker of Set up (28 Nov 2026): each pack with its industry, what it handles, its stages and one sample."""
+    out = []
+    for k in pack_keys():
+        p = load_pack(k)
+        out.append({
+            "key": k, "name": p.name, "industry": p.industry, "unit": p.unit, "version": p.version,
+            "stages": [s.label for s in p.stages], "classes": [c.name for c in p.classes][:6],
+            "sample": next((x for x in p.prompts if x), ""),
+        })  # fmt: skip
+    return {"packs": out}
+
+
 guard("compose.systems")(get_guard)
 
 
@@ -394,12 +427,38 @@ def _mapping_summary(ctx: CallContext, sid: str, vendor: str) -> dict[str, int]:
     counts = dict.fromkeys(_MAP_KEYS, 0)
     for recs in discover._samples(s, sid).values():
         sample = [p for _, p in recs]
-        profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
-        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory, source_id=sid):
-            counts["fields"] += 1
-            counts[prop.band] += 1
+        for band, n in _band_counts(sid, sample, canon, memory).items():
+            counts["fields"] += n
+            counts[band] += n
     counts["asked_owner"] = len(mapping_decisions.open_questions(s, sid))
     return counts
+
+
+_BANDS_KEPT = 128
+_bands_cache: dict[str, dict[str, int]] = {}
+
+
+def _band_counts(sid: str, sample: list[Any], canon: Any, memory: Any) -> dict[str, int]:
+    """How many fields of one stored sample fall in each band. Profiling and scoring a sample is the slow part of the systems
+    read (seconds a source), and its answer only changes with the sample, the canonical model or what the vendor family
+    accepted before, so it is kept by a digest of those three (the newest 128; a process restart starts empty)."""
+    import hashlib
+
+    from di.connectors import mapping_suggest
+
+    key = hashlib.sha256(
+        json.dumps([sid, sample, repr(canon), repr(memory)], sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+    hit = _bands_cache.get(key)
+    if hit is None:
+        hit = {}
+        profiles = [mapping_suggest.profile(sample, f) for f in mapping_suggest.field_paths(sample)]
+        for prop in mapping_suggest.suggest(profiles, sample, canon, memory=memory, source_id=sid):
+            hit[prop.band] = hit.get(prop.band, 0) + 1
+        if len(_bands_cache) >= _BANDS_KEPT:
+            _bands_cache.pop(next(iter(_bands_cache)))
+        _bands_cache[key] = hit
+    return dict(hit)
 
 
 def _status(ctx: CallContext, src: dict[str, Any], asked: int) -> str:
@@ -781,6 +840,8 @@ def stage_agents_guard(i: dict[str, Any], ctx: CallContext) -> tuple[str, str] |
 
 @implement("compose.setStageAgents")
 def set_stage_agents(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
+    """Store the stage settings in the composition. `agent_id` is kept as a label only; nothing here writes the agent registry
+    (`agent_identity`): its autonomy (read, propose, act) is global and Admin's alone."""
     row = _row(i, ctx, for_update=True)
     th = float(i["threshold"])
     settings, ops = [], []
@@ -800,19 +861,21 @@ def set_stage_agents(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
     return _out(_row(i, ctx)) | {"threshold": th, "log": f"Set the agents of {len(settings)} stages of composition {row['id']}"}
 
 
-def with_stage_settings(pack: Pack, settings: Sequence[dict[str, Any]]) -> Pack:
-    """The pack with the composition's stage settings on its stages (agent, autonomy and confidence threshold): what the stage
-    chain reads (`chain.stage_defs`). A stage the settings do not name is as the pack has it. Pure."""
-    by = {str(x["stage"]): x for x in settings}
-    stages = [
-        st.model_copy(update={
-            "agent": by[st.key].get("agent_id") or st.agent,
-            "autonomy": by[st.key].get("autonomy") or st.autonomy,
-            "confidence": by[st.key].get("threshold") if _num(by[st.key].get("threshold")) else st.confidence,
-        }) if st.key in by else st
-        for st in pack.stages
-    ]  # fmt: skip
-    return pack.model_copy(update={"stages": stages})
+with_stage_settings = core.with_stage_settings  # moved to the pure core (28 Nov 2026), where the stage chain reads it
+
+
+def _runs_as(stage: str, agents: dict[str, Any]) -> list[dict[str, Any]]:
+    """The registry agents (`agent_identity`) of the chain stages that take this pack stage's autonomy or threshold. An id the
+    registry does not hold is listed without a name, not enabled. `autonomy` is the registry's (read, propose, act): global,
+    Admin's, never written from a composition."""
+    out = []
+    for aid in chain.agents_of(stage):
+        a = agents.get(aid)
+        out.append({
+            "id": aid, "name": a.name if a else None, "enabled": bool(a.enabled) if a else False,
+            "autonomy": a.autonomy if a else None,
+        })  # fmt: skip
+    return out
 
 
 # ---------------------------------------------------------------- publish (P9-8.20)
@@ -952,9 +1015,11 @@ def history_of(i: dict[str, Any], ctx: CallContext) -> dict[str, Any]:
         "report": {k: rep.get(k) for k in _REPORT_KEYS} if rep else None, "rollouts": live,
     }  # fmt: skip
     saved = {str(x["stage"]): x for x in core.stage_settings(row["steps"])}
+    agents = {a.id: a for a in agent_registry.all_agents(s)}
     stages = [
         {"stage": st.key, "label": STAGE_LABELS[st.key], "agent_id": saved.get(st.key, {}).get("agent_id", st.agent),
-         "autonomy": saved.get(st.key, {}).get("autonomy", st.autonomy), "limits": saved.get(st.key, {}).get("limits")}
+         "autonomy": saved.get(st.key, {}).get("autonomy", st.autonomy), "limits": saved.get(st.key, {}).get("limits"),
+         "runs_as": _runs_as(st.key, agents)}
         for st in _pack(row, ctx).stages
     ]  # fmt: skip
     threshold = next((x["threshold"] for x in saved.values() if _num(x.get("threshold"))), DEFAULT_THRESHOLD)

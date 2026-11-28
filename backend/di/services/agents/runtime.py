@@ -58,7 +58,7 @@ import di.services.actions.lifecycle  # noqa: F401 - registers transit.flagDelay
 from di.core import jobs, policy, tracing
 from di.core.auth import load_context
 from di.core.config import get_settings
-from di.repositories import stage_outcomes
+from di.repositories import compositions, stage_outcomes
 from di.repositories.live_rules import live_pack
 from di.services.actions.fraud import review_case, triage_case  # also registers fraud.hold in the worker
 from di.services.actions.pipeline import Actor, CallContext, after, invoke
@@ -399,8 +399,9 @@ def _stage_step(s: Session, run: dict, agent: registry.Agent, ctx: CallContext, 
     nxt = stage_chain.next_step(stage, sub, st, case)
     if nxt is None:
         return _save(s, run, "done", n, st | {"note": "playbook finished"})
-    try:
-        defn = chain.stage_defs(pack)[stage]
+    try:  # the stage settings of the owner's approved setup (Set up's agents step), when it has one, over the pack's
+        setup = compositions.approved_stage_settings(s, pack.key, str(case.get("owner") or "workspace"))
+        defn = chain.stage_defs(pack, setup)[stage]
     except ValueError as e:
         return _save(s, run, "failed", n, st | {"reason": str(e)})
     if isinstance(nxt, Skip):

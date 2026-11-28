@@ -146,6 +146,48 @@ def test_replay_batch_tenant_boundary():
         assert s.execute(text("SELECT count(*) FROM replay_batch")).scalar_one() == 0
 
 
+def test_import_sample_goes_through_the_import():
+    """28 Nov 2026: `replay.importSample` imports the pack's synthetic sample through `replay.import`'s guard and handler."""
+    from di.services.replay.sample import make_csv
+
+    out = ok(call("replay.importSample", {"pack": PACK, "org_unit_id": ORG}, "planner.a"))
+    assert out["rows"] == 200 and out["pack"] == PACK and out["org_unit_id"] == ORG
+    same = ok(call("replay.import", {"pack": PACK, "org_unit_id": ORG, "csv": make_csv(PACK, 200)}, "planner.a"))
+    assert same["id"] != out["id"]  # a new batch each time
+    assert {k: v for k, v in same.items() if k != "id"} == {k: v for k, v in out.items() if k != "id"}  # the same answer
+    small = ok(call("replay.importSample", {"pack": "device", "org_unit_id": ORG, "rows": 25}, "planner.a"))
+    assert (small["rows"], small["held"]) == (25, 0)
+    listed = ok(call("replay.batches", {"pack": "device", "org_unit_id": ORG}, "planner.a"))["batches"]
+    assert [b["id"] for b in listed] == [small["id"]]
+
+
+def test_import_sample_refusals_are_the_imports():
+    body = {"pack": PACK, "org_unit_id": ORG}
+    r = call("replay.importSample", body, "exec")
+    assert r["ok"] is False and r["error"]["code"] == "out_of_scope"
+    assert r["error"]["message"] == "The Executive view reads replay reports; a Planner or Admin runs them."
+    assert call("replay.importSample", body, "planner.b")["error"]["code"] == "tenant_boundary"
+    assert call("replay.importSample", body | {"pack": "nope"}, "planner.a")["error"]["code"] == "not_found"
+    assert call("replay.importSample", body | {"org_unit_id": "nope"}, "planner.a")["error"]["code"] == "not_found"
+    for bad in (0, 501, 2.5, -1):
+        r = call("replay.importSample", body | {"rows": bad}, "planner.a")
+        assert r["ok"] is False and r["error"]["code"] == "validation_error", (bad, r)
+        assert r["error"]["message"] == "The sample is a whole number of rows from 1 to 500."
+    assert ok(call("replay.importSample", body | {"rows": 500}, "planner.a"))["rows"] == 500
+    with SessionLocal() as s:
+        assert s.execute(text("SELECT count(*) FROM replay_batch")).scalar_one() == 1
+
+
+def test_import_sample_is_an_agents_as_the_import_is():
+    from di.services.actions.registry import ACTIONS
+    from di.services.agents.catalog import agent_mode
+    from di.services.agents.forbidden import forbidden
+
+    a, b = ACTIONS["replay.importSample"], ACTIONS["replay.import"]
+    assert (a.risk, a.perm, a.scope) == (b.risk, b.perm, b.scope) == ("act", "runReplay", "none")
+    assert forbidden(a.id) == forbidden(b.id) and agent_mode(a) == agent_mode(b)
+
+
 @pytest.mark.parametrize(("pack", "name"), [("tool_fleet", "tool_fleet_returns.csv"), ("device", "device.csv")])
 def test_x_06_sample_csv_valid(pack: str, name: str):
     body = (FIXTURES / name).read_text(encoding="utf-8")

@@ -67,7 +67,7 @@ async function send(text: string, ctx: AssistantContext, io: { signal: AbortSign
   const org = ctx.org, pack = ctx.pack ?? ctx.flow?.template;
   const set = (status: Status[], error?: string) => io.patch((t) => ({ ...t, status, ...(error !== undefined ? { error } : {}) }));
   if (!org || !pack) {
-    set([{ verb: 'Could not start', item: 'the description', limit: 'no template chosen', state: 'failed' }], 'Open the Modeler and pick a template and organisation first. Set up drafts for that pair.');
+    set([{ verb: 'Could not start', item: 'the description', limit: 'no template chosen', state: 'failed' }], 'Open Set up in the menu first. It drafts for the organisation chosen there.');
     return;
   }
   const words = wordCount(text);
@@ -130,7 +130,7 @@ function PackChoice({ turn, d, c }: { turn: number; d: SetupData; c: Choice }) {
           change is then a guess to check.
         </p>
       ) : (
-        <p className="st-basis">The description reads like {matched}, but {picked} is picked in the Modeler. Choose where the draft starts.</p>
+        <p className="st-basis">The description reads like {matched}, but {picked} is where this page starts. Choose where the draft starts.</p>
       )}
       <p className="st-foot">
         {!match.nearest_only && (
@@ -211,11 +211,11 @@ function Starters({ ctx, ask }: { ctx: AssistantContext; ask: (text: string, mod
 function SetupEmpty({ ctx, ask }: { ctx: AssistantContext; ask: (text: string, mode?: 'setup') => void }) {
   return (
     <div className="st-empty">
-      <p>{ctx.org ? `Describe how returns work for ${ctx.org} in a few sentences. Drafts only: nothing is published; a different person approves it.` : 'Open the Modeler and pick a template and organisation, then describe how returns work.'}</p>
+      <p>{ctx.org ? `Describe how returns work for ${ctx.org} in a few sentences. Drafts only: nothing is published; a different person approves it.` : 'Open Set up in the menu, then describe how returns work.'}</p>
       {ctx.composeId != null && (
         <p className="st-basis">
           Composition {ctx.composeId} is open in Set up. A new description drafts a new composition beside it.
-          {ctx.page !== 'modeler' && (
+          {ctx.page !== 'modeler' && ctx.page !== 'setup' && (
             <>
               {' '}
               <a href={'#' + setupHref(ctx.composeId, { template: ctx.pack, org: ctx.org })}>Open composition {ctx.composeId}</a>

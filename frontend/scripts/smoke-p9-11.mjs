@@ -149,13 +149,12 @@ const need = (k) => {
 };
 
 // ---------------------------------------------------------------- compose
-const compose = (p) => p.locator('section[aria-label="Compose"]');
+const compose = (p) => p.locator('section.sup-step'); // 28 Nov 2026: the Set up page's step panel (was the Compose section)
 async function startCompose(p, typed) {
-  await open(p, MODELER, '.mdl-tabs');
-  await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, fresh: true }); // #/setup, on the description form
   await compose(p).waitFor();
   // plan 10: the Describe step is Ask Circularity's Set up mode, then "Open in Set up" shows the composition
-  await describeInAssistant(p, typed === undefined ? { title: 'Return to re-rent', timeout: UI } : { typed, timeout: UI });
+  await describeInAssistant(p, typed === undefined ? { title: 'Return to re-rent', template: 'medical_rental', timeout: UI } : { typed, timeout: UI });
   await openInSetup(p, UI);
   await compose(p).getByRole('heading', { name: /What the agent read/ }).waitFor({ timeout: UI });
 }
@@ -213,7 +212,7 @@ await step('1 Connect the six rental systems, sync them, open the devices as cas
   const q = compose(p).locator('.cmp-question');
   if ((await q.count()) !== 1) throw new Error(`expected exactly one question, found ${await q.count()}`);
   if (!/Should servicing be brought forward when it falls due within the next rental\?/.test(await q.innerText())) throw new Error('the question is not the service question');
-  COMP = Number((await compose(p).locator('.cmp-state').innerText().catch(() => '')).match(/composition (\d+) is/)?.[1]) || 0;
+  COMP = Number((await compose(p).locator('.sup-state').innerText().catch(() => '')).match(/Setup (\d+),/)?.[1]) || 0;
   await q.getByRole('button', { name: 'Yes, always service first', exact: true }).click();
   return `${SOURCES.length} systems synced; cases ${Object.keys(TAGS).map((k) => `${TAGS[k]}=${cases[k]}`).join(', ')}; composition ${COMP || '?'}`;
 });
@@ -325,10 +324,9 @@ await step('7 The turnaround alert, the service-week suggestion and the analytic
 // ---------------------------------------------------------------- 8
 await step('8 The replay figures labelled modelled on the Compose publish step', async () => {
   const p = await as('planner.a');
-  await open(p, `${MODELER}${COMP ? `&compose=${COMP}` : ''}`, '.mdl-tabs');
-  if (!COMP) await openSetupTab(p);
+  await openSetupTab(p, 60000, { base, org: ORG, compose: COMP || null });
   await compose(p).waitFor();
-  const tab = compose(p).getByRole('tab', { name: 'Publish', exact: true });
+  const tab = p.locator('.rl li[data-stop="publish"] a.rl-stop');
   if (await tab.count()) await tab.click();
   await p.waitForTimeout(800);
   const t = await compose(p).innerText();

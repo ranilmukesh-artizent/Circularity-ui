@@ -1,8 +1,8 @@
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 import { forkFlow, saveDraft, useModeler, type Proposal } from '../../api/modeler';
 import type { ActionResult, Check, FlowGraph, ModelerScreen } from '../../api/types';
-import { can, currentAccount } from '../../api/session';
+import { can, canPage, currentAccount } from '../../api/session';
 import { useBackend } from '../../api/useBackend';
 import { toast } from '../../components/toast';
 import { useAction } from '../../hooks/useAction';
@@ -63,6 +63,8 @@ export function ModelerPage({ query }: PageProps) {
     if (k === 'template') q.delete('compose');
     nav({ search: '?' + q.toString() }, { replace: true });
   };
+  // 28 Nov 2026: Set up is a page of its own (pages/setup). The tab and an old ?compose= link lead there, so there is one Compose.
+  if (canPage('setup') && (tab === 'setup' || compose != null)) return <Navigate to={'/setup' + (compose != null ? '?compose=' + compose : '')} replace />;
   return (
     <div className="mdl mdl-page" id="modeler">
       <header className="mdl-head">
@@ -103,7 +105,7 @@ const orgLabel = (id: string) => id.charAt(0).toUpperCase() + id.slice(1).replac
 const composeParam = (v: string | null): number | null => (v && /^\d+$/.test(v) ? Number(v) : null);
 
 
-function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; compose: number | null }) {
+export function ModelerBody({ s, tab, compose }: { s: ModelerScreen; tab: PageTab; compose: number | null }) {
   const [composeId, setComposeId] = useState<number | null>(compose);
   const editable = s.can.edit;
   const action = useAction();

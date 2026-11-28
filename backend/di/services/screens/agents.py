@@ -24,10 +24,15 @@ the tool catalogue.
         llm        the language models (di.services.llm.view): [{id, provider, model, roles, rpm, tpm, rpd, enabled,
                    priority, used_minute: {requests, tokens}, used_day, cooling_until}]; Admin switches and orders them
                    with llm.setModel (plan 9 P9-2.3), other roles see an empty list
-        packs      (UI gap 14) the stage agents under each pack: [{key, name, stages: [{stage, agent, autonomy, threshold}]}],
-                   the chain's twelve stages in order with the agent that runs each and the autonomy the pack gives it
-                   (recommend, limits, alone; `chain.stage_defs`). Read only: a stage's autonomy is set in Compose
+        packs      (UI gap 14) the stage agents under each pack: [{key, name, stages: [{stage, agent, autonomy, threshold}],
+                   setups}], the chain's twelve stages in order with the agent that runs each and the autonomy the pack
+                   gives it (recommend, limits, alone; `chain.stage_defs`). Read only: a stage's autonomy is set in Compose
                    (compose.setStageAgents, maker-checker). Whatever it is, no agent runs an action in FORBIDDEN_ACTIONS
+                   setups   (28 Nov 2026) what Set up's agents step changed: [{composition_id, org_unit_id, status, stages}]
+                            for the approved or published compositions of the pack that hold stage settings, newest first,
+                            only of org units the account may see; `stages` are the same twelve rows with those settings
+                            applied. The chain runs a case of that org unit with its newest one (`agents.runtime`). This is
+                            the stage autonomy; an agent's registry autonomy (`agents[].autonomy`) is global and Admin's
         can        {manage}: the account may change agents (manageAgents). The actions check again.
 
 Access: the `agents` page (Admin, Developer). Agents never decide a proposal or change an agent: the page's buttons
@@ -72,6 +77,7 @@ from sqlalchemy.orm import Session
 from di.core import policy
 from di.core.auth import Principal
 from di.core.redact import clean
+from di.repositories import compositions
 from di.repositories import repair_accuracy as accuracy_repo
 from di.repositories.constants import TOOLS_BY_ID
 from di.repositories.model_versions import ModelRow
@@ -84,7 +90,7 @@ from di.services.agents.stage_context import STAGE_IDS
 from di.services.device import price_shadow
 from di.services.engine.predictor import FormulaPredictor
 from di.services.llm.view import models_view
-from di.services.modeler.pack import load_pack
+from di.services.modeler.pack import Pack, load_pack
 from di.services.modeler.templates import template_keys
 from di.services.service_desk import accuracy
 
@@ -164,15 +170,32 @@ def _runs(p: Principal, s: Session, names: dict[str, str]) -> list[dict[str, Any
     return out
 
 
-def _packs() -> list[dict[str, Any]]:
-    """The stage agents under each pack (UI gap 14): the chain's twelve stages as the pack defines them."""
+def _stages(pack: Pack, settings: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    defs = chain.stage_defs(pack, settings or ())
+    return [{"stage": d.id, "agent": d.agent_id, "autonomy": d.autonomy, "threshold": d.threshold} for d in defs]
+
+
+def _packs(p: Principal, s: Session) -> list[dict[str, Any]]:
+    """The stage agents under each pack (UI gap 14): the chain's twelve stages as the pack defines them, and under `setups`
+    as each approved or published setup of an org unit the account may see sets them (what the chain runs with there)."""
+    open_to_all = not policy.policy(p.account).get("tenantScoped")
+    by_pack: dict[str, list[dict[str, Any]]] = {}
+    for c in compositions.setups(s):
+        if open_to_all or p.tenant_ok(c["org_unit_id"]):
+            by_pack.setdefault(c["pack_key"], []).append(c)
     out = []
     for key in template_keys():
         pack = load_pack(key)
-        stages = [
-            {"stage": d.id, "agent": d.agent_id, "autonomy": d.autonomy, "threshold": d.threshold} for d in chain.stage_defs(pack)
-        ]
-        out.append({"key": key, "name": pack.name, "stages": stages})
+        setups = []
+        for c in by_pack.get(key, []):
+            try:
+                stages = _stages(pack, c["settings"])
+            except (ValueError, KeyError):  # settings the pack no longer takes: the chain refuses them too
+                continue
+            setups.append({
+                "composition_id": c["composition_id"], "org_unit_id": c["org_unit_id"], "status": c["status"], "stages": stages,
+            })  # fmt: skip
+        out.append({"key": key, "name": pack.name, "stages": _stages(pack), "setups": setups})
     return out
 
 
@@ -186,7 +209,7 @@ def page(p: Principal, s: Session) -> dict[str, Any]:
         "runs": _runs(p, s, {a.id: a.name for a in agents}),
         "proposals": proposals.pending_for(s, p.account, p.ctx),
         "tools": catalog(),
-        "packs": _packs(),
+        "packs": _packs(p, s),
         "llm": models_view(s) if policy.can(p.account, "manageAgents", p.ctx) else [],
         "can": {"manage": policy.can(p.account, "manageAgents", p.ctx)},
     }

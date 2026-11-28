@@ -206,7 +206,7 @@ everyone; roll it back, or replace it with the next version.
 
 ### Cases of the other industries
 
-The same Decision Workbench and **My work** show cases of the other packs ([README](README.md#more-industries-plan-9)):
+The same Decision Workbench and **My Tasks** show cases of the other packs ([README](README.md#more-industries-plan-9)):
 one case per VIN, serial, tag or device. Each pack has its own gates, and a gate that lacks evidence holds the case, or
 the whole batch it came in, until the evidence arrives. A few examples you may meet: title or lien on a vehicle,
 an open recall, a configuration wipe or export control on network equipment, a decontamination record or service date on

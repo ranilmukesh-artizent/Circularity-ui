@@ -12,3 +12,6 @@
 .cmp-inline { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); overflow-x: auto; }
 .cmp-state { margin: 0; }
 .cmp-amber { color: var(--as-hold, var(--warn)); }
+
+/* a button that is a direct child of a step keeps its own width (the step is a grid) */
+.cmp-step > .btn { justify-self: start; }

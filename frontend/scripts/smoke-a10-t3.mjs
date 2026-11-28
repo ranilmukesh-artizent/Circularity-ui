@@ -1,11 +1,11 @@
 /**
  * Plan 10, T3 (Set up mode and the Compose launcher). WRITES a draft composition: reset before and after
- * (`bash scripts/dev/reset.sh`). Needs the dock (T1) and the Set up tab (T4) merged.
+ * (`bash scripts/dev/reset.sh`). Needs the dock (T1) and the Set up page (28 Nov 2026, `#/setup`) merged.
  *
  *   node frontend/scripts/smoke-a10-t3.mjs http://localhost:5173
  *
- * As `admin`: Modeler (tool_fleet, Customer A) > Set up tab > the launcher "Describe the business in Ask Circularity" opens the
- * assistant in Set up > the first sample prompt > the reading and the match lines > answer the one question > "Drafted N changes"
+ * As `admin`: the Set up page (Customer A, a new setup) > the first sample fills the box > "Draft my setup" hands it to the
+ * assistant in Set up > the reading and the match lines > answer the one question > "Drafted N changes"
  * as plain sentences (no JSON) > "Open in Set up" shows composition N on the Describe step. Also: the old "Describe your business"
  * button and dialog are gone.
  */
@@ -46,8 +46,9 @@ try {
   await p.locator('#modeler').waitFor();
 
   await check((await p.getByRole('button', { name: 'Describe your business' }).count()) === 0, 'the "Describe your business" button is still on the Modeler');
-  await openSetupTab(p, UI); // the page tab is a link (plan 10, 3.4); the assistant's own Set up mode button is not it
-  await check((await p.locator('section[aria-label="Compose"] textarea').count()) === 0, 'the Describe step still has its own text box');
+  await openSetupTab(p, UI, { fresh: true }); // the page is #/setup; the Modeler's Set up tab only redirects to it
+  await check((await p.getByRole('button', { name: 'Describe the business in Ask Circularity' }).count()) === 0, 'the old Compose launcher button is still on the page');
+  await check((await p.locator('form.sup-start textarea#sup-text').count()) === 1, 'the Set up page has no description box before a draft');
 
   const id = await describeInAssistant(p, { timeout: UI });
   const turn = p.locator('.st-turn').last();
@@ -64,9 +65,9 @@ try {
   await p.screenshot({ path: path.join(out, 'set-up-drafted.png') });
 
   await openInSetup(p, UI);
-  const state = await p.locator('section[aria-label="Compose"] .cmp-state').innerText();
-  await check(new RegExp(`composition ${id} is`).test(state), `Open in Set up shows another composition: ${state}`);
-  await check(/Describe: /.test(state), 'not on the Describe step: ' + state);
+  const state = await p.locator('section.sup-step .sup-state').innerText();
+  await check(new RegExp(`Setup ${id},`).test(state), `Open in Set up shows another composition: ${state}`);
+  await check((await p.locator('.rl li[data-stop="describe"] a[aria-current="step"]').count()) === 1, 'not on the Describe step: ' + state);
   await check((await p.getByRole('heading', { name: /What the agent read/ }).count()) > 0, 'the Describe step shows no review');
   await check(errors.length === 0, 'page errors: ' + errors.join(' | ').slice(0, 300));
   console.log(`smoke-a10-t3: composition ${id}: ${(t1.match(/Drafted [^\n]*/) || [''])[0]}`);
