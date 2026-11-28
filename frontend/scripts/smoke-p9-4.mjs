@@ -377,7 +377,9 @@ await step('3 Ticket CS0010042: estimate, three options, credit lever, a fault p
       eng.p,
     );
     await openTab(eng.p, row.id, 'options');
-    await pageHas(eng.p, [`Options for ${draft.serial}`, ...after.options.map((o) => NAME[o.k])], 'Options after the fault');
+    // "Options for <serial>" is the line block's aria-label (not text): wait for the block, then read the option names
+    await eng.p.locator(`[aria-label="Options for ${draft.serial}"]`).waitFor({ timeout: UI });
+    await pageHas(eng.p, [draft.serial, ...after.options.map((o) => NAME[o.k])], 'Options after the fault');
     posted = `${eng.by} posted ${code} on ${draft.serial} of ${row.id}: ${after.options.length} options`;
     break;
   }

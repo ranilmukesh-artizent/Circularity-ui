@@ -80,6 +80,22 @@ def test_sample_cell_is_narrow_enough_to_price_without_a_technician():
     assert min(other) == 1.0 and max(other) == 3.5
 
 
+def test_actual_costs_follow_the_rate_cards():
+    # the estimate prices at the pack's cards (US: $58/h, $14 test fee, parts at list x 1.05); actuals at other rates put
+    # held-out coverage at 47-68 % for every family (smoke-p9-4 step 3). Each actual is the card-priced repair +-2 %.
+    rows = [r for r in history.generate(seed=26110) if r["REPAIR_TYPE"] == "Repair and Return"]
+    assert history.card_part("CRH", 0, "USD") == 168 and history.card_part("LSR", 1, "USD") == 179
+    assert history.card_part("CMH", 0, "EUR") == 251 and history.card_part("AGR", 2, "GBP") == 18
+    for r in rows:
+        cls, m = r["MODEL_CLASS"], r["MARKET"]
+        idx = [int(p["PART_NUMBER"].split("-")[1]) for p in r["PARTS"]]
+        card = sum(history.card_part(cls, i, r["CURRENCY"]) for i in idx)
+        card += r["LABOUR_HOURS"] * history.LABOUR_RATE[m] + history.TEST_FEE[m]
+        assert card * 0.98 - 0.01 <= r["ACTUAL_COST"] <= card * 1.02 + 0.01, r
+        assert r["TEST_FEE_APPLIED"] is True
+    assert (history.LABOUR_RATE["US"], history.TEST_FEE["US"]) == (58.0, 14.0)
+
+
 def test_get_repair_history_pages_and_filters(client):
     first = history_page(client, P_MODEL_CLASS="CRH", P_FAULT_CODE="MOT", P_MAX_RECORDS=500)
     total = int(first["X_TOTAL_COUNT"])
