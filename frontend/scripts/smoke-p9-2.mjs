@@ -298,7 +298,7 @@ await step('4 planner.a accepts from Home, the run resumes, approver approves RT
   const ap = await as('approver');
   await go(ap, `product/${HERO}/stage/7`);
   const approve = ap.locator('button', { hasText: /^\s*Approve (?!and send)/ }).first();
-  await approve.waitFor();
+  await approve.waitFor({ timeout: Math.max(90000, UI * 3) }); // a case page can read "Loading..." for minutes on a loaded machine
   await approve.click();
   await ap.getByLabel(/I reviewed evidence snapshot/).check();
   await ap.getByText('Approve and send instruction').click();
